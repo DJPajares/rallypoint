@@ -1,0 +1,6 @@
+# Server-only: never put the secret key in VITE_* variables or source.
+SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_PUBLISHABLE_KEY=replace-with-local-publishable-key
+SUPABASE_SECRET_KEY=replace-with-local-secret-key
+LOCAL_AUTH_ENABLED=true
+GOOGLE_AUTH_ENABLED=false
