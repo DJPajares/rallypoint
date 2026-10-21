@@ -1,6 +1,6 @@
 # RallyPoint — First Session Task Proposal
 
-**Status:** Reviewed batch authorized for publication to the selected Linear project on 2026-10-21. Publication does not authorize implementation or close unresolved policy/technology gates.  
+**Status:** Reviewed batch published to the selected Linear project on 2026-10-21. Publication does not authorize implementation or close unresolved policy/technology gates.  
 **Prepared:** 2026-10-21.  
 **Decision owner:** Darwin Jason Pajares.
 
@@ -58,6 +58,21 @@ P-01 can proceed as a research/decision brief after separate implementation/work
 | P-08 | Complete mobile/PWA session-loop evidence, including failure paths | P-05, P-06, P-07 and all applicable gates | Conditional |
 
 The order records actual prerequisites rather than requiring every task to depend on the previous number. P-05 and P-07 can be developed independently after their prerequisites; no parallel agents are authorized by this observation.
+
+## Publication record
+
+The owner-authorized batch was published after [documentation PR #1](https://github.com/DJPajares/rallypoint/pull/1) was opened. These are stable provenance links, not a task-status mirror. Read Linear for current status, assignment, actual dependencies and execution evidence. The earlier archived WDL-368–WDL-373 records were left unchanged.
+
+| Proposal reference | Published Linear issue |
+| --- | --- |
+| P-01 | [WDL-374](https://linear.app/wwonderland/issue/WDL-374/p-01-select-the-app-identity-data-and-email-approach-for-the-session) |
+| P-02 | [WDL-375](https://linear.app/wwonderland/issue/WDL-375/p-02-publish-and-share-an-organizers-unlisted-fixed-fee-session) |
+| P-03 | [WDL-376](https://linear.app/wwonderland/issue/WDL-376/p-03-join-or-waitlist-a-verified-participant-and-optional-guest-party) |
+| P-04 | [WDL-377](https://linear.app/wwonderland/issue/WDL-377/p-04-withdraw-release-seats-and-immediately-promote-the-next-party) |
+| P-05 | [WDL-378](https://linear.app/wwonderland/issue/WDL-378/p-05-track-external-payments-and-explicit-organizer-fee-waivers) |
+| P-06 | [WDL-379](https://linear.app/wwonderland/issue/WDL-379/p-06-send-truthful-email-updates-and-the-24-hour-reminder) |
+| P-07 | [WDL-380](https://linear.app/wwonderland/issue/WDL-380/p-07-check-in-participants-and-guests-without-exposing-attendance) |
+| P-08 | [WDL-381](https://linear.app/wwonderland/issue/WDL-381/p-08-verify-the-complete-first-session-loop-in-the-mobile-pwa) |
 
 ## Model guidance
 
