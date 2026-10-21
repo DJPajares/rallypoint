@@ -1,16 +1,19 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "./auth-context";
-export function useApi<T>(path: string) {
+// publicRead is only for identity-free projections: it preserves public data
+// during refresh without interrupting an unresolved private mutation below it.
+export function useApi<T>(path: string, publicRead = false) {
   const { session } = useAuth();
-  const token = session?.access_token ?? "";
+  const token = publicRead ? "" : (session?.access_token ?? "");
   const [attempt, setAttempt] = useState(0);
   const key = path + token + attempt;
   const [state, setState] = useState<{
     key: string;
+    path: string;
     data: T | null;
     error: string | null;
     loading: boolean;
-  }>({ key: "", data: null, error: null, loading: true });
+  }>({ key: "", path: "", data: null, error: null, loading: true });
   useEffect(() => {
     const controller = new AbortController();
     void (async () => {
@@ -26,11 +29,12 @@ export function useApi<T>(path: string) {
         if (!response.ok)
           throw new Error(body.error?.message ?? "Please try again.");
         if (!controller.signal.aborted)
-          setState({ key, data: body, error: null, loading: false });
+          setState({ key, path, data: body, error: null, loading: false });
       } catch (error) {
         if (!controller.signal.aborted)
           setState({
             key,
+            path,
             data: null,
             error:
               error instanceof Error
@@ -44,7 +48,11 @@ export function useApi<T>(path: string) {
   }, [key, path, token, attempt]);
   // Clear previous identity data synchronously, before the next effect runs.
   return {
-    ...(state.key === key ? state : { data: null, error: null, loading: true }),
+    ...(state.key === key
+      ? state
+      : publicRead && state.path === path && state.data
+        ? { ...state, loading: false, error: null }
+        : { data: null, error: null, loading: true }),
     retry: () => setAttempt((x) => x + 1),
   };
 }

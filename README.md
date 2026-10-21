@@ -4,8 +4,8 @@
 
 A mobile-first app for getting a recurring group together. This first scaffold
 provides the public shell, managed sessions, creator-owned groups, saved session
-drafts and unlisted publication. Reservations, payment tracking and attendance
-remain with subsequent tasks.
+drafts, unlisted publication, verified participant/+1 registration and a strict
+party waitlist. Withdrawal, payment markers and attendance remain with subsequent tasks.
 
 ## Run locally
 
@@ -115,6 +115,37 @@ synthetic sessions/groups. For an existing local installation, rerun
 `npm run db:start` to apply pending local migrations. The reset command remains
 the synthetic-only recovery option.
 
+## Join or waitlist
+
+Open a published link. Visitors see confirmed seat totals and waiting-party counts.
+Sign in to join; optionally include one guest when enabled. **Agree & join** (or
+**Agree & waitlist** when full) accepts
+the displayed fixed fee and automatic pre-start confirmation if waitlisted, including
+after cutoff. Waiting is free. A whole party waits when it cannot fit; a later solo
+cannot bypass it. Joining never grants group membership or organizer rights.
+
+Your confirmed/waitlisted result comes from the database. A party's queue position
+is current information, not a guarantee. **Refresh status and availability** rechecks
+it. Confirmed participants see display names only; organizers/co-hosts see the full
+roster and initial obligations. Participants see only their own fee information.
+No payment marker or transfer verification is implied.
+
+New joins and waiting entries close exactly at start; opening/start are checked
+using the server clock after lock waits. Existing registrations remain visible.
+Interrupted requests reuse the existing result-check/same-request recovery flow;
+there is no offline queue. Withdrawal and guest changes are not available yet.
+
+P-04 must use the same group-then-session locks and `app.fill_waitlist` helper when
+releasing seats. The helper confirms the whole head party only when it fits, once,
+creates its fee and durable registration signal, and stops at start. Current tests
+release seats with explicit synthetic SQL fixtures; this does not implement a
+participant withdrawal flow or its cancellation-fee behavior.
+
+`npm run test:api` now includes real simultaneous last-seat requests, duplicate
+joining, guest/consent denial, strict party ordering, single promotion/fee creation,
+privacy projections, no automatic membership, terminal-event denial, and opening/
+start lock-wait boundaries. Temporary synthetic test identities are cleaned up.
+
 No cloud Supabase project is linked and no Cloudflare/Resend service is provisioned.
 The configuration intentionally contains no deploy script. PWA manifest and
 192/512-pixel icons are present. Chromium installability diagnostics pass in a
@@ -142,7 +173,8 @@ the owner accepted creator-as-owner bootstrap and the pre-booking edit boundary
 for P-02. General membership and invitation policies remain separate.
 
 Session publishing reuses this shell, Auth/data boundary and migration history.
-No registration queue, payment ledger or delivery infrastructure is included.
+Registration adds party/queue records, separate initial fee obligations and durable
+registration signals. Manual payment records and outbound delivery remain later work.
 
 ## Project destinations
 

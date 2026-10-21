@@ -3,6 +3,8 @@ import type { FormEvent, ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
+import { useMutation } from "./use-mutation";
+import { RegistrationPanel } from "./registration-panel";
 import { Notice, Pending } from "./ui";
 import {
   blankSession,
@@ -22,111 +24,10 @@ type Result = {
   group?: GroupSummary;
   groupId?: string;
 };
-function useMutation(done: (result: Result) => void) {
-  const { session } = useAuth();
-  const [job, setJob] = useState<{
-    path: string;
-    body: Record<string, unknown>;
-  } | null>(null);
-  const [busy, setBusy] = useState(false),
-    [error, setError] = useState<string | null>(null);
-  const active = useRef<AbortController | null>(null);
-  const pending = useRef(false);
-  useEffect(() => () => active.current?.abort(), []);
-  async function send(
-    path: string,
-    body: Record<string, unknown>,
-    check = false,
-  ) {
-    if (active.current && !active.current.signal.aborted) return;
-    const controller = new AbortController();
-    active.current = controller;
-    setBusy(true);
-    setError(null);
-    try {
-      const response = await fetch(
-        check ? `/api/operations/${body.operationKey}` : path,
-        {
-          method: check ? "GET" : "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
-          },
-          body: check ? undefined : JSON.stringify(body),
-          signal: AbortSignal.any([
-            controller.signal,
-            AbortSignal.timeout(10000),
-          ]),
-        },
-      );
-      const result = await response.json();
-      if (!response.ok) {
-        if (response.status < 500 && !(check && response.status === 404)) {
-          pending.current = false;
-          setJob(null);
-        }
-        throw new Error(
-          result.error?.message ?? "The action could not be confirmed.",
-        );
-      }
-      if (!controller.signal.aborted) {
-        pending.current = false;
-        setJob(null);
-        done(result);
-      }
-    } catch (e) {
-      if (!controller.signal.aborted)
-        setError(
-          e instanceof Error && e.name === "Error"
-            ? e.message
-            : "The connection was interrupted. Check the result or retry the same request.",
-        );
-    } finally {
-      if (active.current === controller) active.current = null;
-      if (!controller.signal.aborted) setBusy(false);
-    }
-  }
-  return {
-    busy,
-    error,
-    uncertain: !!job,
-    run: (path: string, body: Record<string, unknown>) => {
-      if (pending.current || active.current) return;
-      pending.current = true;
-      const next = { ...body, operationKey: crypto.randomUUID() };
-      setJob({ path, body: next });
-      void send(path, next);
-    },
-    recovery: job ? (
-      <div className="request-recovery">
-        <p>
-          The result has not been confirmed. Your submitted details and request
-          key are preserved while this page stays open.
-        </p>
-        <button
-          type="button"
-          disabled={busy}
-          className="button secondary"
-          onClick={() => void send(job.path, job.body, true)}
-        >
-          Check result
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          className="text-button"
-          onClick={() => void send(job.path, job.body)}
-        >
-          Retry same request
-        </button>
-      </div>
-    ) : null,
-  };
-}
 export function CreateGroup() {
   const navigate = useNavigate(),
     [name, setName] = useState("");
-  const mutation = useMutation((result) =>
+  const mutation = useMutation<Result>((result) =>
     navigate(`/groups/${result.group?.id ?? result.groupId}`),
   );
   return (
@@ -193,7 +94,14 @@ export function GroupSessions({ group }: { group: GroupSummary }) {
             <article key={s.id} className="session-row">
               <div>
                 <span className="pill">
-                  {s.state === "draft" ? "Draft" : "Unlisted"}
+                  {
+                    {
+                      draft: "Draft",
+                      published: "Unlisted",
+                      cancelled: "Cancelled",
+                      completed: "Completed",
+                    }[s.state]
+                  }
                 </span>
                 <h3>{s.details.title || "Untitled session"}</h3>
                 <p>
@@ -283,7 +191,7 @@ function Editor({
     header.current?.focus();
     document.title = `${initial?.details.title || "Create session"} · RallyPoint`;
   }, [initial]);
-  const mutation = useMutation((result) => {
+  const mutation = useMutation<Result>((result) => {
     if (!result.session) return;
     setRecord(result.session);
     setNotice(
@@ -329,9 +237,11 @@ function Editor({
       />
     );
   }
-  const locked = !!record?.bookingsStarted;
+  const terminal =
+    record?.state === "cancelled" || record?.state === "completed";
+  const locked = !!record?.bookingsStarted || terminal;
   const url =
-    record?.state === "published"
+    record && record.state !== "draft"
       ? `${window.location.origin}/s/${record.slug}`
       : null;
   return (
@@ -341,13 +251,20 @@ function Editor({
       </Link>
       <span className="page-kicker">Make a little time together</span>
       <h1 ref={header} tabIndex={-1}>
-        {record?.state === "published"
-          ? "Your session, ready to share."
-          : "Plan the next one."}
+        {terminal
+          ? "This session is closed."
+          : record?.state === "published"
+            ? "Your session, ready to share."
+            : "Plan the next one."}
       </h1>
       <p className="lede">
         The essentials first. A shared link when you’re ready.
       </p>
+      {terminal ? (
+        <Notice>
+          This session is {record?.state}. Detail changes are closed.
+        </Notice>
+      ) : null}
       {url ? (
         <div className="share-panel">
           <div>
@@ -385,7 +302,7 @@ function Editor({
           <p role="status">{copy}</p>
         </div>
       ) : null}
-      {locked ? (
+      {record?.bookingsStarted ? (
         <Notice>
           People have booked this session. Detail changes are locked while the
           booked-event edit policy is defined.
@@ -527,15 +444,22 @@ function Editor({
 }
 export function SharedSessionPage() {
   const { slug } = useParams();
-  const result = useApi<{ session: SharedSession }>(`/api/shared/${slug}`),
+  const result = useApi<{ session: SharedSession }>(
+      `/api/shared/${slug}`,
+      true,
+    ),
     { session } = useAuth();
   const heading = useRef<HTMLHeadingElement>(null);
+  const focusedSlug = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (result.data) {
       document.title = `${result.data.session.details.title} · RallyPoint`;
-      heading.current?.focus();
+      if (focusedSlug.current !== slug) {
+        heading.current?.focus();
+        focusedSlug.current = slug;
+      }
     }
-  }, [result.data]);
+  }, [result.data, slug]);
   if (result.loading) return <Pending>Opening the session…</Pending>;
   if (result.error)
     return (
@@ -562,8 +486,41 @@ export function SharedSessionPage() {
         {d.title}
       </h1>
       <p className="lede">
-        {d.activity} · {d.capacity} seats · {feeLabel(d)} per seat
+        {d.activity} · {d.capacity}{" "}
+        {Number(d.capacity) === 1 ? "seat" : "seats"} · {feeLabel(d)} per seat
       </p>
+      {result.data.session.state !== "published" ? (
+        <Notice>
+          This session is {result.data.session.state}. Existing registrations
+          are shown for reference; new joins are closed.
+        </Notice>
+      ) : null}
+      <div className="availability" role="status">
+        <strong>
+          {result.data.session.counts.confirmedSeats} / {d.capacity}{" "}
+          {Number(d.capacity) === 1 ? "seat" : "seats"}
+          confirmed
+        </strong>
+        <span>
+          {Number(d.capacity) - result.data.session.counts.confirmedSeats} open
+          · {result.data.session.counts.waitingParties}{" "}
+          {result.data.session.counts.waitingParties === 1
+            ? "party"
+            : "parties"}{" "}
+          waiting
+        </span>
+        {result.data.session.counts.waitingParties > 0 ? (
+          <p>
+            Waiting parties go first. An open seat can remain unused when the
+            first party needs two.
+          </p>
+        ) : null}
+        {!session ? (
+          <button className="text-button" onClick={result.retry}>
+            Refresh availability
+          </button>
+        ) : null}
+      </div>
       <div className="session-info">
         <dl>
           <dt>Starts</dt>
@@ -592,21 +549,33 @@ export function SharedSessionPage() {
           </div>
         ) : null}
       </div>
-      <div className="registration-note">
-        <h2>The plan is ready.</h2>
-        <p>
-          Registration is coming in the next increment. No place can be reserved
-          on this page yet.
-        </p>
-        {!session ? (
+      {session ? (
+        <RegistrationPanel
+          key={session.user.id + slug}
+          event={result.data.session}
+          onChange={result.retry}
+        />
+      ) : (
+        <div className="registration-note">
+          <h2>
+            {result.data.session.registrationWindow === "open"
+              ? "Come along."
+              : result.data.session.registrationWindow === "closed"
+                ? "Registration is closed."
+                : "Registration opens soon."}
+          </h2>
+          <p>
+            Sign in to check your place, join, or waitlist your party. A
+            reservation does not grant group membership.
+          </p>
           <Link
             className="button secondary"
             to={`/sign-in?next=${encodeURIComponent(`/s/${slug}`)}`}
           >
             Sign in and return here
           </Link>
-        ) : null}
-      </div>
+        </div>
+      )}
       <p className="field-help">
         Before the cutoff, withdrawing removes an unpaid fee obligation. At or
         after it, the obligation remains unless the organizer waives it. Any

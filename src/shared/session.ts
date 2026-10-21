@@ -34,7 +34,7 @@ export interface SessionRecord {
   id: string;
   groupId: string;
   slug: string;
-  state: "draft" | "published";
+  state: "draft" | "published" | "completed" | "cancelled";
   version: number;
   details: SessionDetails;
   bookingsStarted: boolean;
@@ -44,6 +44,9 @@ export interface SharedSession {
   groupName: string;
   version: number;
   details: SessionDetails;
+  state: "published" | "cancelled" | "completed";
+  registrationWindow: "open" | "not_open" | "closed";
+  counts: { confirmedSeats: number; waitingParties: number };
 }
 export const blankSession = (): SessionForm => ({
   title: "",
@@ -152,8 +155,14 @@ export function normalizeSession(
 }
 export function feeLabel(d: SessionDetails) {
   const precision = currencies[d.currency as keyof typeof currencies] ?? 2;
+  const minor = BigInt(d.feeMinor ?? 0),
+    scale = BigInt(10 ** precision);
+  const fraction = (minor % scale).toString().padStart(precision, "0");
   return new Intl.NumberFormat("en", {
     style: "currency",
     currency: d.currency,
-  }).format((d.feeMinor ?? 0) / 10 ** precision);
+  })
+    .formatToParts(minor / scale)
+    .map((part) => (part.type === "fraction" ? fraction : part.value))
+    .join("");
 }
