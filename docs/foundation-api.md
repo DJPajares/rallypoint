@@ -23,12 +23,55 @@ have no table or backend-RPC grants. The server-only service principal calls
 security-invoker functions with explicit actor/target filters. RLS is enabled as
 defense in depth. Role checks read current data rather than cached JWT metadata.
 
-There are no group-create/role-assignment or event mutations. D-01 owner bootstrap
-remains open. Synthetic role fixtures do not adopt that policy. Feature tasks
-extend this API and migration history rather than adding another auth/data stack.
+## Session operations
+
+The owner accepted creator-as-owner bootstrap and the pre-booking edit boundary
+on 2026-10-22. Every mutation requires a UUID `operationKey` in its JSON body.
+
+| Method and path | Input / result | Access |
+| --- | --- | --- |
+| POST `/api/groups` | `name, operationKey`; actual owner group | Verified creator |
+| GET `/api/groups/:id/sessions` | Current drafts/published sessions | Current group manager |
+| POST `/api/groups/:id/sessions` | `groupId, intent: draft or publish, details, operationKey` | Current group manager |
+| GET `/api/sessions/:id` | Management projection/version | Current group manager |
+| POST `/api/sessions/:id` | Same fields plus expected `version`; draft/publish/update | Current group manager |
+| GET `/api/shared/:slug` | Published shareable details only | Public |
+| GET `/api/operations/:key` | Actor-owned reference and current resource state | Same actor and current group role |
+
+`SessionForm` in `src/shared/session.ts` defines the fields. Local times use the
+named timezone; invalid and ambiguous DST times are rejected. Publication requires
+positive integer capacity, end after start, opening before start, cutoff between
+opening and start, and exact currency precision. Supported minor units:
+SGD/USD/EUR/GBP (2), JPY (0), KWD (3). Integer amounts must fit JS safe precision.
+Instructions/location are intentionally shareable. Contact, organizer identity,
+private financial/payment and attendance records are excluded. Incomplete drafts
+remain private.
+
+An actor-scoped key and normalized payload are serialized transactionally.
+Same-key/same-payload replay returns one resource and its current state;
+different payloads conflict. Current roles are checked on replay. Interrupted
+requests remain unconfirmed until a result lookup or identical retry succeeds.
+A missing receipt does not prove that an in-flight request cannot still commit.
+The UI keeps the exact submitted request/key in memory and locks changes until
+resolution; keep the page open during recovery. No form data is persisted offline.
+
+Updates lock group then session and require the expected version. Every published
+detail edit increments the version and writes a durable `app.session_changes`
+signal with actor and changed fields. P-06 owns delivery; no notification is
+claimed here. There is no unpublish operation.
+
+P-03 must set `bookings_started_at` under the same session lock on the first
+booking, including waiting parties, before enabling registration. Once set, all
+detail changes are refused until the booked-event policy is accepted; withdrawals
+must not clear it. No registration table is introduced here. General assignment/
+invitation UI and membership entry remain outside this increment.
+
+Session errors add 413 oversized body, 415 non-JSON input, 422 invalid fields and
+409 idempotency/version/booked-event conflict. Failed validation never partially
+publishes. Unlisted links are shareable, not private access control.
 
 Google OAuth uses Supabase PKCE and a same-origin callback; live client/audience/
 redirect configuration is still required. Local email-code sign-in exercises
 managed sessions only: request and Auth URLs must both be loopback and the local
-flag must be enabled. It does not establish live Google integration. No Resend,
-event publishing, offline writes or hosted deployment is implemented here.
+flag must be enabled. It does not establish live Google integration. No Resend
+delivery, offline writes or hosted deployment is implemented here.

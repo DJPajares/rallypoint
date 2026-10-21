@@ -1,13 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/csr/ArrowRight";
 import { CalendarBlankIcon } from "@phosphor-icons/react/dist/csr/CalendarBlank";
 import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
-import { CircleNotchIcon } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { HouseIcon } from "@phosphor-icons/react/dist/csr/House";
 import { SignOutIcon } from "@phosphor-icons/react/dist/csr/SignOut";
 import { UsersThreeIcon } from "@phosphor-icons/react/dist/csr/UsersThree";
-import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle";
 import {
   Link,
   Navigate,
@@ -22,40 +20,14 @@ import { safeReturnPath, useAuth } from "./auth-context";
 import { useApi } from "./use-api";
 import type { GroupSummary, Identity } from "./shared/contracts";
 import "./App.css";
-
-function Pending({
-  children = "Getting things ready…",
-}: {
-  children?: ReactNode;
-}) {
-  return (
-    <p role="status" className="status">
-      <CircleNotchIcon className="spin" size={20} />
-      {children}
-    </p>
-  );
-}
-function Notice({
-  children,
-  retry,
-}: {
-  children: ReactNode;
-  retry?: () => void;
-}) {
-  return (
-    <div className="notice" role="alert">
-      <WarningCircleIcon size={22} />
-      <div>
-        {children}
-        {retry ? (
-          <button className="text-button" onClick={retry}>
-            Try again
-          </button>
-        ) : null}
-      </div>
-    </div>
-  );
-}
+import { Pending, Notice } from "./ui";
+import {
+  CreateGroup,
+  GroupSessions,
+  NewSession,
+  SessionEditor,
+  SharedSessionPage,
+} from "./session-pages";
 function PageFocus() {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -151,6 +123,31 @@ function Shell() {
             <Route path="/" element={<Home />} />
             <Route path="/sign-in" element={<SignIn />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/s/:slug" element={<SharedSessionPage />} />
+            <Route
+              path="/groups/new"
+              element={
+                <RequireAuth>
+                  <CreateGroup />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/groups/:id/sessions/new"
+              element={
+                <RequireAuth>
+                  <NewSession />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/sessions/:id/edit"
+              element={
+                <RequireAuth>
+                  <SessionEditor />
+                </RequireAuth>
+              }
+            />
             <Route
               path="/workspace"
               element={
@@ -231,8 +228,8 @@ function Home() {
           <div>
             <h3>A shared space for your next get-together</h3>
             <p>
-              Sign in to see the groups you belong to. Session publishing comes
-              next.
+              Sign in, start a group and publish the details. One shared link
+              keeps everyone on the same page.
             </p>
           </div>
           <span className="pill">Getting started</span>
@@ -247,7 +244,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
   if (loading) return <Pending />;
   if (error) return <Notice>{error}</Notice>;
   return session ? (
-    children
+    <Fragment key={session.user.id}>{children}</Fragment>
   ) : (
     <Navigate
       to={`/sign-in?next=${encodeURIComponent(pathname + search)}`}
@@ -456,6 +453,9 @@ function Workspace() {
     <section className="workspace-page">
       <span className="page-kicker">Your corner of RallyPoint</span>
       <h1>Your groups</h1>
+      <Link className="button primary" to="/groups/new">
+        Start a group ↗
+      </Link>
       <p className="lede">
         {identity.data
           ? `Good to see you, ${identity.data.displayName}.`
@@ -543,14 +543,7 @@ function GroupSetup() {
             <CheckIcon size={18} />
             You have {result.data.group.role} access.
           </p>
-          <div className="empty-state">
-            <CalendarBlankIcon size={48} weight="light" />
-            <h2>A fresh start for your next session</h2>
-            <p>
-              Your group connection is ready. Session creation and sharing will
-              be added in the next increment.
-            </p>
-          </div>
+          <GroupSessions group={result.data.group} />
         </>
       ) : null}
     </section>

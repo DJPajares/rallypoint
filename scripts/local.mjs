@@ -119,6 +119,7 @@ try {
       "--exclude",
       "realtime,storage-api,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor",
     );
+    cli("migration", "up", "--local");
     configure();
     await seed();
   } else if (command === "reset") {
