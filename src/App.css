@@ -786,3 +786,181 @@ input:disabled {
     scroll-behavior: auto !important;
   }
 }
+/* Session planning keeps the existing shell and its visible keyboard focus. */
+.editor-page {
+  max-width: 960px;
+}
+.editor-page form {
+  margin-top: 32px;
+}
+.editor-page fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.editor-page legend {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+.editor-page label {
+  display: block;
+  font-weight: 650;
+  margin-bottom: 8px;
+}
+.editor-page input:not([type="checkbox"]),
+.editor-page select,
+.editor-page textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid #cbd0c5;
+  border-radius: 8px;
+  background: #fff;
+  color: #202c24;
+  font: inherit;
+}
+.editor-page fieldset:disabled {
+  opacity: 0.65;
+}
+.editor-page fieldset:disabled input {
+  color: #202c24;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+.session-field {
+  margin-bottom: 24px;
+  min-width: 0;
+}
+.editor-page .checkbox-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.checkbox-field input {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  accent-color: #234dc4;
+}
+.form-actions,
+.request-recovery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 24px 0;
+  align-items: center;
+}
+.request-recovery p {
+  flex-basis: 100%;
+}
+.share-panel {
+  margin: 24px 0 40px;
+  background: #eaf0df;
+  padding: 24px;
+  border-radius: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+.share-panel > div {
+  flex-basis: 100%;
+}
+.share-panel a {
+  overflow-wrap: anywhere;
+}
+.share-panel p {
+  margin: 12px 0;
+}
+.session-list-section {
+  margin-top: 40px;
+}
+.session-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 0;
+  border-bottom: 1px solid #dce0d5;
+}
+.session-row h3 {
+  margin: 14px 0 8px;
+  font-size: 1.3rem;
+}
+.session-row p {
+  color: #53614f;
+}
+.session-info {
+  margin-top: 32px;
+  padding: 32px;
+  background: white;
+  border: 1px solid #dce0d5;
+  border-radius: 12px;
+}
+.session-info dl {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 18px 24px;
+  margin: 0;
+}
+.session-info dt {
+  font-weight: 650;
+}
+.session-info dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.session-instructions {
+  border-top: 1px solid #dce0d5;
+  margin-top: 28px;
+  padding-top: 20px;
+  white-space: pre-wrap;
+}
+.registration-note {
+  background: #eaf0df;
+  border-radius: 12px;
+  padding: 28px;
+  margin: 28px 0;
+}
+.registration-note p {
+  margin: 12px 0 20px;
+}
+.save-status {
+  font-weight: 650;
+  color: #28532a;
+}
+@media (max-width: 650px) {
+  .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .session-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .session-info {
+    padding: 20px;
+  }
+  .session-info dl {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .session-info dd {
+    margin-bottom: 16px;
+  }
+  .session-list-section .section-heading {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .editor-page input[type="datetime-local"] {
+    font-size: 16px;
+  }
+}

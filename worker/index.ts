@@ -1,23 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { AppEnv } from "./env";
-
-class ApiError extends Error {
-  constructor(
-    public status: number,
-    public code: string,
-    message: string,
-  ) {
-    super(message);
-  }
-}
-const json = (data: unknown, status = 200) =>
-  Response.json(data, {
-    status,
-    headers: {
-      "Cache-Control": "no-store",
-      "X-Content-Type-Options": "nosniff",
-    },
-  });
+import { ApiError, json } from "./http";
+import { sessionRoute, sessionRequest } from "./sessions";
 function connection(env: AppEnv) {
   if (
     !env.SUPABASE_URL ||
@@ -66,7 +50,8 @@ export default {
   async fetch(request: Request, env: AppEnv): Promise<Response> {
     const path = new URL(request.url).pathname;
     try {
-      if (request.method !== "GET")
+      const featureRoute = sessionRoute(path);
+      if (request.method !== "GET" && !featureRoute)
         throw new ApiError(
           405,
           "method_not_allowed",
@@ -93,7 +78,12 @@ export default {
           return json({ configured: false, auth: null });
         }
       }
+      if (featureRoute && path.startsWith("/api/shared/")) {
+        const c = connection(env);
+        return await sessionRequest(request, client(c.url, c.secret), null);
+      }
       if (
+        !featureRoute &&
         !["/api/me", "/api/workspace"].includes(path) &&
         !/^\/api\/groups\/[0-9a-f-]+\/setup$/.test(path)
       ) {
@@ -126,6 +116,8 @@ export default {
           "verified_identity_required",
           "Verify your email before continuing.",
         );
+      if (featureRoute)
+        return await sessionRequest(request, client(c.url, c.secret), user.id);
       if (path === "/api/me")
         return json({
           id: user.id,

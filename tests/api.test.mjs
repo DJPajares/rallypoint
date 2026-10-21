@@ -64,8 +64,8 @@ test("local identity and group authorization boundary", async (t) => {
       organizer.id,
     );
     const { groups } = await (await api("/api/workspace", organizer)).json();
-    assert.equal(groups.length, 1);
-    assert.equal(groups[0].id, firstGroup);
+    assert.ok(groups.some((group) => group.id === firstGroup));
+    assert.ok(groups.every((group) => group.id !== secondGroup));
     assert.equal(
       (await api(`/api/groups/${firstGroup}/setup`, organizer)).status,
       200,

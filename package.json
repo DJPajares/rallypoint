@@ -14,9 +14,10 @@
     "db:reset": "node scripts/local.mjs reset",
     "db:stop": "node scripts/local.mjs stop",
     "db:lint": "supabase db lint --local",
-    "test:api": "node --test tests/api.test.mjs"
+    "test:api": "node --test --test-concurrency=1 tests/*.test.mjs"
   },
   "dependencies": {
+    "@js-temporal/polyfill": "0.5.1",
     "@phosphor-icons/react": "2.1.10",
     "@supabase/supabase-js": "2.118.0",
     "react": "19.3.1",
