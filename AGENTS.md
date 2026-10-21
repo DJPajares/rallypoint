@@ -31,10 +31,10 @@ This is available tooling, not a requirement to introduce an API platform or a P
 
 ## Tech Direction
 
-- Accepted constraints: mobile-first PWA, shareable links, shared persistent participation state, manual payment tracking and low operating cost. No framework, package manager, database vendor, identity provider, delivery provider or hosting service is adopted yet.
+- Accepted constraints: mobile-first PWA, shareable links, shared persistent participation state, manual payment tracking and low operating cost. D-10 was accepted on 2026-10-22: React/TypeScript/Vite, npm, Cloudflare Workers, Supabase Postgres/Auth, Google OAuth and Resend; local synthetic scaffolding is authorized. Live service setup and separate policy decisions keep their own gates.
 - The PRD proposes one modular web application, one authoritative data store and bounded scheduled notifications. Its source layout is proposed; do not create empty future infrastructure merely to match it.
-- Resolve D-10 before choosing a runnable toolchain or provisioning services. Inspect current official documentation and actual provider limits when selecting dependencies.
-- `README.md` is the home for real prerequisites, configuration instructions and adopted setup/check commands once they exist. No application commands are currently available or verified.
+- Follow accepted D-10 for the runnable toolchain. Inspect current official documentation and provider limits when selecting dependency versions. Cloud provisioning, spending and deployment require their authorized scope.
+- `README.md` is the home for real prerequisites, configuration instructions and adopted setup/check commands once they exist. Use the adopted local commands in README; distinguish local synthetic evidence from live provider verification.
 - Keep local/test work isolated from real groups. Persistent schema changes require a migration and an appropriate recovery plan; production migration or service spending needs separate authorization.
 
 ## Architecture Principles

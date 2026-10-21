@@ -2,52 +2,126 @@
 
 **Fill the spots, not the chat.**
 
-Create and share group activities. Sign-ups, waitlists, and payments, all in one link.
+A mobile-first app for getting a recurring group together. This first scaffold
+provides the public shell, managed sessions, group-role boundaries and isolated
+local development. Session publication, reservations, payments and attendance
+are implemented by subsequent tasks.
 
-RallyPoint is a planned mobile-first PWA for organizers of recurring group activities, initially recreational sports. The core experience is create → share → join → show up → repeat. It works alongside group chats and tracks payments made outside the app.
+## Run locally
 
-## Project foundation
+Requirements: Node 24+ (verified with 24.16.0), npm, and a running Docker-compatible
+daemon. The first database start downloads local images. No cloud account, paid
+resource or real participant data is needed for this setup.
 
-This repository contains project documents only. There is no runnable application, package manifest, installed application dependencies, database or deployment. GitHub and Linear are the selected project destinations; task publication does not authorize implementation.
+```sh
+npm ci
+npm run db:start
+npm run dev
+```
 
-- [PRD.md](PRD.md): product purpose, supplied MVP, testable requirements, proposed structure, decisions and validation direction.
-- [AGENTS.md](AGENTS.md): shared working rules, task workflow/format, testing and human authority.
-- [CLAUDE.md](CLAUDE.md): imports the shared rules for Claude-compatible tooling.
-- [FIRST_SESSION_TASK_PROPOSAL.md](FIRST_SESSION_TASK_PROPOSAL.md): the reviewed eight-task first-session batch, publication provenance and explicit gates; not a live backlog.
+Open [the app](http://127.0.0.1:5173) and
+[the local mail inbox](http://127.0.0.1:54324).
 
-The supplied product context is the baseline. Generated detailed policies and technology choices are proposals until accepted. Linear owns approved task status and dependencies. Direct requests own standalone work; validation belongs to each change's issue execution report or linked completion/review record.
+`db:start` starts only the local RallyPoint Postgres/Auth/REST/mail services,
+writes local credentials to ignored `.dev.vars` without logging them, and seeds
+four synthetic Auth identities and two groups. The Docker network binds published
+ports to loopback. Existing unrelated containers and Supabase projects are not used.
+The development server uses port 5173 strictly, so an occupied port is an error.
 
-## Setup and verification
+In the local sign-in form, request a code for one of these fixtures and read the
+message in the local inbox. No message is sent outside the local mail sink.
 
-There are no application installation, development, build or test commands yet. Once a toolchain is accepted and implemented, record verified prerequisites and commands here. Keep credentials in supported environment/secret facilities, never in committed documents.
+| Synthetic account | Expected view |
+| --- | --- |
+| organizer@rallypoint.test | Sunday Social Club; organizer group view allowed |
+| member@rallypoint.test | Sunday Social Club; organizer group view denied |
+| outsider@rallypoint.test | Eastside Rallies; Sunday Social Club denied |
+| newcomer@rallypoint.test | Empty group list |
 
-The PRD proposes an application layout; bootstrap deliberately creates no source scaffolding or empty future directories. Selecting a stack, provisioning services and implementing the application require further work authorization.
+The fixed password in `scripts/local-env.mjs` is for these local-only test users.
+Never reuse it for a real account. Global public signup is disabled; the local
+email provider is enabled only to exercise existing synthetic identities.
+
+## Commands
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | React/Vite plus the actual local Workers runtime |
+| `npm run check` | Lint, client/Worker TypeScript checks and production build |
+| `npm run preview` | Serve built output in the local Workers runtime |
+| `npm run db:lint` | Check local SQL/function typing |
+| `npm run test:api` | Live local Auth/API permission checks; requires the app and DB running |
+| `npm run db:reset` | Recreate only the local synthetic DB from migrations and seed identities/roles |
+| `npm run db:stop` | Stop the local RallyPoint containers, preserving their data |
+
+After reset, sign out of old browser sessions and sign in again: recreated fixture
+users have new IDs. Reset is a development recovery procedure, not a production
+migration/backup plan. The helper always targets local services; it has no linked
+or remote reset path. Do not place real data in this development database.
+
+`npm run test:api` uses the synthetic passwords without logging tokens. It checks
+missing/forged sessions, group isolation, metadata role spoofing, immediate role
+revocation, backend-RPC denial, internal-table exposure and truthful empty results.
+It temporarily removes and restores the synthetic organizer role.
+
+## Configuration
+
+Copy `.dev.vars.example` only for manual configuration. `db:start` normally
+creates the real local file for you. Keep the Supabase secret/service key in that
+ignored server-only file or supported Worker secret storage. The app's public
+configuration contains only the Auth URL/publishable key and enabled methods.
+No `VITE_*` secret variables are needed.
+
+The shell works without configuration; sign-in explains the missing setup rather
+than claiming a connection succeeded. All private API responses are uncached.
+
+Google OAuth is the accepted live identity method. Its Supabase provider,
+Google client, allowed audience/origins and callback URL still need separate
+configuration and verification. The callback is `/auth/callback`; the app resumes
+only validated same-origin destinations. Set `GOOGLE_AUTH_ENABLED=true` only when
+the provider is configured. The local email-code exercise is enabled only for a
+loopback request with a loopback Auth service and `LOCAL_AUTH_ENABLED=true`.
+It does not prove live Google OAuth.
+
+No cloud Supabase project is linked and no Cloudflare/Resend service is provisioned.
+The configuration intentionally contains no deploy script. PWA manifest and
+192/512-pixel icons are present; installability and safe shell caching remain part
+of later PWA verification. There is no offline mutation queue or identity-data cache.
+
+## Where to work next
+
+- `src/`: app shell, routes, Auth provider and identity-scoped request state.
+- `worker/`: verified identity boundary and explicit trusted API operations.
+- `supabase/migrations/`: versioned schema; `app` tables are unexposed and
+  backend RPCs in `api` deny browser roles.
+- [Foundation API contract](docs/foundation-api.md): reusable operations and errors.
+- `scripts/local.mjs`: isolated local lifecycle and synthetic fixtures.
+- `tests/api.test.mjs`: focused API authorization regression checks.
+- [PRD](PRD.md): product requirements and accepted/open decisions.
+- [Agent rules](AGENTS.md), [Claude bridge](CLAUDE.md).
+
+D-10 was approved in chat on 2026-10-22. The approved stack is
+React/TypeScript/Vite/npm, Cloudflare Workers, Supabase Postgres/Auth,
+Google OAuth and Resend. The [P-01 decision brief](https://linear.app/wwonderland/document/p-01-technical-decision-recommended-stack-and-session-loop-contract-eba7e99b792c)
+contains the research and proposed future contracts. D-01 group-owner bootstrap
+and the remaining D-03/D-04/D-05 policies retain their own gates. This scaffold
+seeds explicit roles without adding a public group-owner assignment operation.
+
+The session-publishing task reuses this shell, Auth/data boundary and migration
+history. No event schema, queue, ledger, delivery infrastructure or inactive
+future directories were added.
 
 ## Project destinations
 
-- **GitHub repository:** [DJPajares/rallypoint](https://github.com/DJPajares/rallypoint), currently public; integrate through a PR to `main` and leave merging to the owner.
-- **Linear project:** [RallyPoint](https://linear.app/wwonderland/project/rallypoint-a26d48cd9e2d), project `P-WDL-4`, UUID `c069181d-b6bf-43a7-863d-d7fda47c21b1`, in wWonderland, team **wonderland (WDL)**.
-- GitHub owns source/document history; Linear owns the approved tasks and real dependency relations. Link PRs and issues explicitly; no automatic status transition or organization-wide GitHub/Linear integration is assumed.
-- The owner authorized the reviewed P-01–P-08 task publication. Earlier TP-01–TP-06 records WDL-368–WDL-373 are archived history and must remain untouched.
+- [GitHub repository](https://github.com/DJPajares/rallypoint), integration through
+  reviewed PRs to `main`; the owner controls merging.
+- [RallyPoint in Linear](https://linear.app/wwonderland/project/rallypoint-a26d48cd9e2d)
+  owns approved task status and real dependencies.
+- [WDL-382](https://linear.app/wwonderland/issue/WDL-382) owns this scaffold.
+- [Reviewed original task batch](FIRST_SESSION_TASK_PROPOSAL.md) records publication
+  provenance. WDL-382 was added later at the owner's request; archived TP tasks stay history.
 
-## Next conversation
-
-The first-session behavior and eight-task publication are reviewed; use the PRD's accepted decisions and the current Linear issue rather than restarting settled brainstorming. The stack and other explicitly listed gates remain open. Continue discuss → decide → draft tasks → approve creation for new batches; creating the current tasks does not start implementation.
-
-Copy this into a separate conversation that can access this local project:
-
-```text
-Read and follow https://raw.githubusercontent.com/DJPajares/project-bootstrap-template/main/TASK_PLANNING.md for RallyPoint at https://github.com/DJPajares/rallypoint, or /Users/wonderboi/dev/github/rallypoint. If you cannot retrieve the guide, say so.
-
-Read the actual PRD.md, AGENTS.md and README.md; use https://linear.app/wwonderland/project/rallypoint-a26d48cd9e2d for approved task status and dependencies. If repository/local access is unavailable, ask me to attach those actual documents.
-
-Continue from the current P-01–P-08 task record and the accepted first-session policies. Preserve the organizer-first, sports-first, event-agnostic PWA and low-cost boundaries. Do not restore the archived TP-01–TP-06 batch or duplicate tasks. Resolve each named policy/technical gate before dependent implementation; task publication alone is not implementation authorization. For new work, follow discuss → decide → draft tasks → approve creation.
-```
-
-The local path is not a publicly readable URL. A conversation running elsewhere needs the actual project files attached or access to a later verified repository.
-
-Bootstrap instruction provenance: [PROJECT_BOOTSTRAP.md](https://github.com/DJPajares/project-bootstrap-template/blob/ffc643068690548995a67d4bb85c3785894f9ec6/PROJECT_BOOTSTRAP.md) and its agent, Claude, requirements and task references at the same revision. Source revision is provenance, not a RallyPoint software version.
-
-## Earlier planning context
-
-The repository previously held a smaller shared-link pilot and an unapproved React/Vite, Supabase and Cloudflare Workers candidate. The current PRD records how this round extends and sequences that direction. Keep the [earlier README](https://github.com/DJPajares/rallypoint/blob/0e270f5cb1b0cb3e90a1ddebda45795dabc41714/README.md) as historical setup/layout/provider research; do not silently adopt its provider choice or reuse dated pricing/limits without current verification. No runtime verification in that document establishes behavior for an application that does not exist yet.
+Earlier documentation/planning provenance remains in Git history, including the
+[bootstrap source](https://github.com/DJPajares/project-bootstrap-template/blob/ffc643068690548995a67d4bb85c3785894f9ec6/PROJECT_BOOTSTRAP.md).
+Past provider research is not live integration evidence. Each change's PR/issue
+report records its actual checks, environment and limitations.
