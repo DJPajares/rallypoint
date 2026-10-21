@@ -1,102 +1,307 @@
-# RallyPoint — Project Plan
+# RallyPoint — Product Requirements
 
-**Where your people come together.**
+**Tagline:** Fill the spots, not the chat.  
+**Descriptor:** Create and share group activities. Sign-ups, waitlists, and payments, all in one link.  
+**Vision:** Make getting together the easy part, so every community keeps coming back.
 
-**Owner:** RallyPoint project owner (the user)
+**Status:** Planning draft with accepted first-loop access, identity, guest-party, waitlist, cancellation-fee, visibility, organizer-control and email-notification decisions. Supplied product intent remains the baseline; other detailed behavior and technical recommendations await acceptance.  
+**Owner:** Darwin Jason Pajares, product owner.  
+**Updated:** 2026-10-21.  
+**Source of intent:** The owner's RallyPoint project context and local bootstrap authorization. In the planning conversation on 2026-10-21, the owner explicitly accepted verified sign-in, group-owned first-loop events and separate membership in D-01; pre-start withdrawal, organizer-enabled +1 parties managed by the primary registrant without guest accounts, strict queue order and immediate promotion with upfront consent in D-03; cancellation-fee handling in D-04; email delivery and reminder timing in D-05; and unlisted default access, roster visibility and organizer/co-host controls in D-06. These approvals do not approve the remaining proposals or authorize implementation.
 
-**Updated:** 2026-10-21
+This document owns product requirements and product/technical decisions. `AGENTS.md` owns execution rules. The [RallyPoint Linear project](https://linear.app/wwonderland/project/rallypoint-a26d48cd9e2d) owns approved work status and dependencies; a direct authorized request owns work that has no task. Each change's completion response, or its linked review record when one exists, owns validation evidence. Nothing in this document claims that an application has been implemented or tested.
 
-**Status:** Shared-link pilot, public/invite-only private access, and sign-in timing accepted. Detailed behavior and technical direction remain proposed where identified below.
+## Purpose and audience
 
-**Approval source:** The user's RallyPoint brief establishes the vision, feature goals, and constraints. Their selection of “Set up my project” authorized the documentation bootstrap. In the subsequent planning discussion on 2026-10-21, “use the recommendations” accepted the three first-release decisions recorded below. It does not approve every earlier proposal, task creation, or application implementation.
+RallyPoint replaces the administrative work around recurring activities: chat polls, pasted rosters, spreadsheets, payment chasing, and manually filling dropouts. An organizer publishes a session and shares one link; participants can see whether they have a spot and what they need to do before showing up.
 
-This document owns product requirements and technical decisions. [AGENTS.md](AGENTS.md) owns execution rules. The Linear project linked in [README.md](README.md#project-destinations) owns task status and dependencies. Issue execution reports own observed validation evidence; the authorized request's report owns standalone setup evidence. Written requirements do not establish implemented behavior. The owner separately approved task briefs TP-01–TP-06 and confirmed the repository/Linear destinations; those approvals do not approve unresolved product policies or authorize implementation.
+The primary audience is organizers of recurring pickleball, badminton, tennis, and basketball sessions. Participants are the secondary audience. The underlying concepts remain suitable for meetups, workshops, and outdoor activities; sports terminology must not become a prerequisite for creating an event.
 
-## Purpose and tradeoffs
+The name combines a place to regroup, the act of gathering people, and the exchange that keeps a tennis rally going.
 
-Make bringing people together as effortless as showing up. Replace spreadsheets, scattered chats, and manual coordination with a clear answer to: what is happening, where and when, what does it cost, and do I have a spot?
+### Principles that guide tradeoffs
 
-Start with recreational pickleball, badminton, tennis, and basketball communities. Support gatherings as events rather than making sports, teams, matches, or scoring mandatory concepts. The experience is **Create → Share → Join → Show Up → Repeat**. Members may be called **Ralliers**; participation does not by itself prove attendance.
+- Prioritize organizer effort, full sessions, and reliable attendance over engagement features.
+- Work alongside existing group chats. Share a useful link and exportable roster; do not recreate chat.
+- Aim for event creation in under a minute and one-tap joining for a returning eligible participant. First-time identity setup, choosing a guest, or correcting invalid inputs may require more steps; measure them separately.
+- Make spot status, fee obligations, and important changes explicit before a participant acts.
+- Prefer free tiers and native capabilities, while keeping resource use bounded and costs visible. A free operating cost is a goal, not a verified provider guarantee.
+- Use an event-agnostic model with sports-first defaults and optional sport-specific profile information.
+- Deliver a polished, modern, fun mobile experience without expanding the MVP.
 
-The user's priorities are polished mobile-first UX, frictionless onboarding, shareable links, a focused PWA (an installable web application), maintainability, and zero or extremely low operating costs. Prefer native and first-party capabilities. Paid dependencies need a clear benefit and the owner's spending authorization. Resolve tradeoffs in favor of participation accuracy, privacy, and fewer steps before decorative or social complexity.
+## Scope and success
 
-## Accepted first-release boundary
+The full MVP includes groups and roles; templates, recurring series, and event duplication; capacity-controlled registration, waitlists, opening times, cancellation cutoffs, and guest +1s; fixed/split fees and manual paid/unpaid tracking; confirmations, promotions, reminders, event-change notifications and calendar export; attendance; rich link previews, text rosters and QR sharing; announcements; profiles; event visibility; and report/block/member removal.
 
-The owner accepted these recommendations in the first planning round:
+The **first useful validation slice** is one group running one complete session: create → share → join or waitlist → fill a cancellation → track a manual payment → check in. This is sequencing within the supplied MVP, not a reduction of the approved intent or an executable task batch.
 
-- **Shared-link pilot:** Existing groups create and share events, with registration, capacity, cancellations, and automated waitlists. Discovery, recurring activities, and richer social features follow.
-- **Public and invite-only private events:** Preserve both access modes in the first release. The specific invitation and admission flow remains to be decided.
-- **Sign in when creating or joining:** Public browsing stays open. Participation is account-based; guest participation is outside this release. The authentication provider remains to be selected.
+Explicit exclusions are an open discovery feed; friends, follows, feeds and DMs; in-app chat; payment processing; and a custom field builder. Payment links, QR codes, and paid markers must not be described as RallyPoint processing or verifying a bank transfer. PWA delivery does not imply offline registration.
 
-The first outcome to plan is an organizer sharing an event with eight places, a ninth person joining the waitlist, and a cancellation automatically releasing a place to that waiter. Eight places is an acceptance example, not a product capacity limit. This outcome does not establish the proposed start-time cutoff, roster policy, or notification policy.
+Later possibilities remain deferred:
 
-| Delivery horizon | Boundary and reason |
-| --- | --- |
-| Accepted first-release boundary | Shared-link creation and participation for existing groups; public and invite-only private events; accounts required to create/join, with public browsing open. |
-| User-supplied core features deferred by the accepted phasing | Public browsing/discovery, recurring activities, and richer social features including profiles and community connections. They remain intended product scope. Additional activity-specific configurations are also proposed for later delivery, while the base event stays activity-agnostic. |
-| User-supplied future features | Achievements, collectible badges, titles, quests, milestones, optional leaderboards, reputation, advanced communities, venue integrations, and partnerships. |
+| Phase | Ideas | Revisit condition |
+| --- | --- | --- |
+| 2 | Reliability indicators, milestones/streaks, team randomizer, court rotation, organizer insights | Evidence from recurring groups and a separate scope decision |
+| 3 | Discovery by area/activity, achievements, opt-in leaderboards, venue partnerships, integrated payments | Demonstrated demand and explicit product, privacy, cost, and operational decisions |
 
-Built-in payments, chat, team management, scoring, native mobile apps, AI features, and offline registration are outside the proposed first release. Displaying a cost does not process payment. No extension infrastructure is required merely because an idea is deferred.
+Success should be assessed with consented pilot observation and minimal aggregate measurement. No baseline, conversion rate, retention target, or research result is claimed.
 
-Proposed operating assumptions are one organizer per event, one place per participating account, manually entered venue/cost information, online registration, and a basic display name. These details still require acceptance where consequential.
+| Outcome | Measure and evidence | Target status |
+| --- | --- | --- |
+| Less setup effort | Timed creation from a ready organizer's start to a shareable event; observe a second session created from existing information | Under one minute is supplied intent; define the benchmark inputs before measuring |
+| Clear, quick participation | Returning eligible participant's action count; ability to correctly identify confirmed/waitlisted status | One-tap join is supplied intent; first-time onboarding measured separately |
+| Fewer unfilled cancellations | Vacancies, eligible waitlist promotions, and time until a replacement is confirmed | Establish a pilot baseline; no invented improvement target |
+| Less chasing | Organizer-reported admin time and count of manual roster/payment corrections | Compare pilot sessions with each group's prior process |
+| Communities keep returning | Groups that run a subsequent session and participant return rate | Owner sets the evaluation window and target after baseline observation |
 
-The following are **proposed acceptance contracts**, except for the explicitly accepted scope, access modes, and sign-in timing above. They elaborate feature goals without silently accepting unresolved product policies or technical mechanisms.
+Analytics tooling is not selected or required by this bootstrap. Pilot notes can establish the first baseline.
 
-## Event and participation contracts
+## Concepts, ownership, and independent states
 
-**RP-01 — Create, publish, and share.** An organizer can create an event with a title, activity, venue/location instructions, start and end, event time zone, positive capacity, visibility, and free/paid cost information. Currency is explicit when an amount is shown. Optional description and participation instructions do not delay the basic path. Reject invalid times/capacity inline and preserve entered values after a failed save. Publication produces a stable shareable URL. Owner edits preserve that URL and existing registrations; capacity cannot be reduced below confirmed participation. Drafts are owner-only. Activity labels and optional details must work for a workshop as well as a sports session.
+The following model combines supplied features, the explicitly accepted policies below, and remaining recommendations. The decision section distinguishes accepted choices from open gates before dependent implementation.
 
-**Acceptance:** Create and edit both a pickleball session and a workshop; open each published link in another session and see the intended details. The displayed time includes its zone and represents the same instant for different viewers.
+| Concept | Meaning and authority | Boundary |
+| --- | --- | --- |
+| Profile | An individual's display identity, optional photo, activities, self-declared skill and derived attendance count | A self-declared skill is not a verified rating; attendance is not a reliability score |
+| Group | A recurring community with an owner, organizers/co-hosts, and members | Membership and event registration are independent |
+| Template | Reusable activity/event defaults | No roster, payment, attendance, or notification history is copied |
+| Series | A rule connecting scheduled event occurrences | Registering for one occurrence does not reserve future occurrences |
+| Event | A dated occurrence with its own capacity, registration rules, visibility, fees and attendees | Accepted first-loop ownership: exactly one group; broader standalone-event support remains an open structural choice |
+| Registration | One participant's request for one or more seats, including an allowed guest | Counts seats, not accounts; an organizer is not automatically an attendee |
+| Waitlist | Server-ordered registrations awaiting capacity | Waiting does not confer a confirmed seat or imply payment is due |
+| Fee allocation | An amount and currency owed for a registration's chargeable seats | Fixed and split are alternatives; fee calculation is independent of payment status |
+| Payment record | An organizer/co-host's paid or unpaid marker for an allocation | A participant's statement or QR display is not proof of receipt |
+| Attendance | Unrecorded, checked in, or no-show for an eligible seat | No-show is recorded explicitly after the session, not inferred from an unpaid fee |
+| Announcement | An organizer's one-way event update | No reply thread, reactions system, DM, or chat |
 
-**RP-02 — Identify and join.** Accepted: viewing a public event requires no account, and creating or joining requires sign-in. Proposed details: use managed authentication, return the person to the same event afterward, and require only a display name beyond the provider's necessary data. One account has at most one active participation record per event; an organizer consumes a place only if they explicitly join. The response distinguishes confirmed and waitlisted participation. Repeated submissions cannot add another place or improve queue priority. If the server outcome is unknown, reconcile the existing registration before retrying.
+### Integrity and lifecycle
 
-**Acceptance:** A signed-out visitor resumes their join after sign-in. Double taps, retries after a lost response, and concurrent requests by that account produce one active result.
+- **Seat integrity:** confirmed seats never exceed capacity. Concurrent joins and promotions must resolve against one authoritative state. An ambiguous network response is not proof of a reservation.
+- **Independent state:** event lifecycle, visibility, registration window, membership, registration status, payment status and attendance remain separate. Do not build a single overloaded status flag.
+- **Event lifecycle:** draft → published → completed, or draft/published → cancelled. Published events may be edited. Registration availability is computed separately from publication, opening time, start time, capacity and eligibility. The cancellation cutoff controls fee liability, not the ability to withdraw before the event starts. Accepted promotion boundary: no promotions at or after event start. Proposed direct-join boundary: no new joins at or after event start.
+- **Registration lifecycle:** an eligible attempt becomes confirmed or waitlisted; a waitlisted registration can become confirmed; either can become cancelled through permitted withdrawal or organizer action. Repeated taps/retries must not create duplicate active registrations or repeated seat consumption.
+- **Capacity changes:** reject a reduction below the existing confirmed seat count; do not silently evict participants. Raising capacity can make the next eligible waitlist entry promotable.
+- **Removal and cancellation:** cancel the relevant registration before freeing seats. Group removal must not leave invisible active future bookings; the recommended handling is specified in D-07. Cancelling an event stops future joins, promotions and reminders while preserving its record and manually recorded payment history.
+- **History:** duplicating an event resets registration, payment, attendance and delivery state. Edits or series changes must not silently rewrite completed event history.
+- **Time:** each event has an explicit timezone. Opening times, cutoffs, recurrence and reminders use that zone; participants see clear local formatting and the event's zone when needed. Store an unambiguous instant for dated actions and preserve the series' local-time intent.
 
-**RP-03 — Allocate places fairly.** For a published future event, allocate available places in authoritative server processing order, independent of device clocks. A full event accepts a join into an ordered waitlist. Cancellation of a confirmed place automatically promotes the earliest active eligible waiter; new joins cannot jump that queue. Capacity increases apply the same promotion rule. Leaving the waitlist removes eligibility; rejoining enters at the tail. Repeating cancellation has no extra effect. Place allocation, cancellation, and related promotion must succeed consistently without intermediate overbooking or lost queue entries.
+**Accepted first-loop management controls:** organizers and co-hosts can view the full event roster and manage payment status, check-in and no-shows. Other role boundaries remain proposed: owner-managed group roles, organizer/co-host control of events, registrations and announcements, and members managing their own eligible participation/profile. A user may never escalate a role through a client request. Prevent removal of the last group owner without an explicit transfer or group closure. Final role granularity is part of D-01.
 
-**Acceptance:** Two accounts contesting the last place yield exactly one confirmation and one waiter. A cancellation racing with a new join preserves the existing waiter's priority. A failed mutation leaves a consistent prior state, and reconnecting shows the committed outcome.
+## Primary workflows
 
-**RP-04 — Maintain independent states.** Event states are draft, published, and cancelled. Whether the event has started/passed and whether it is full are separate conditions. Participation states are confirmed, waitlisted, and cancelled. Proposed cutoff: joining and self-service cancellation close at the event start; the organizer can cancel the event. Event cancellation blocks further joins/promotions and clearly invalidates reservations for everyone affected. Previously issued URLs explain cancellation instead of appearing to be valid reservations. Past events must not be presented as upcoming; a reservation never counts as observed attendance.
+1. **Create and share.** An organizer enters a group, chooses a template, duplicates an event, or starts a session. Minimum useful inputs are title/activity, start/end, timezone, location/instructions, capacity and visibility; fees and registration rules have visible defaults. Publishing validates the inputs and returns a stable event link. Optional recurrence creates bounded occurrences. Invalid input preserves the draft; failed publication must not produce duplicate events. Share by link, QR or approved text export. A QR failure leaves the link usable. Requirements: RP-01 through RP-04, RP-15 and RP-16.
+2. **Join and know the result.** A participant opens the shared link, sees the access-permitted details, fee, guest allowance and registration rules, completes only necessary identity setup, and joins. The result clearly says confirmed, waitlisted with queue information, not open yet, closed, or ineligible. A full event creates a waitlist entry if enabled. An interrupted action offers a status recheck without suggesting an unconfirmed spot is held. Requirements: RP-05 through RP-08 and RP-17.
+3. **Cancel and fill the vacancy.** An eligible participant can withdraw until the event starts, including after the cancellation cutoff. Show before withdrawal that an existing fee obligation remains after the cutoff unless the organizer waives it. Release the seats without waiting for payment resolution; the seat change and next eligible promotion use authoritative capacity. A promotion changes spot status even if its notification fails. Event cancellation ends future registration activity and sends an update rather than pretending to refund money. Requirements: RP-06 through RP-10 and RP-12.
+4. **Track the fee.** The organizer chooses free, fixed or split cost, publishes the visible amount or estimate and payment instructions, finalizes split allocations when appropriate, and marks paid/unpaid after checking their external payment account. Attendees see their own allocation and status. Invalid amounts/currency or split allocations that do not total correctly are rejected. Notification or QR failures do not alter the ledger. Requirements: RP-09 through RP-11.
+5. **Show up and repeat.** The organizer checks in participants/guests, later records actual no-shows, posts any announcement, and duplicates the session or uses the next series occurrence. Attendance counts update from check-ins without importing prior registrations or payments into the next event. Requirements: RP-03, RP-04 and RP-13 through RP-15.
 
-**Acceptance:** Exercise draft/published/cancelled and future/past boundaries. A concurrent event cancellation and join cannot leave a valid new reservation for the cancelled event.
+## Requirements and observable acceptance
 
-**RP-05 — Protect visibility and ownership.** Accepted: the pilot supports public and invite-only private events. The invitation mechanism remains open. Proposed detailed contract: only the organizer may change the event; people may manage their own participation. A private event requires organizer-granted access; knowing its ordinary URL is insufficient. Private event details, participant data, and metadata must not leak through discovery, previews, cached pages, or live channels. An unlisted page readable by anyone with a link must be named “unlisted,” not represented as private. Unlisted mode is not an additional first-release commitment. For public events, propose publicly visible participant counts; names are visible only to authorized participants and the organizer. Contact details and authentication records are never public. Enforce permissions at the authoritative data boundary and recheck them after access changes.
+The feature coverage below comes from the supplied MVP. Verified sign-in before reservation (D-01), pre-start withdrawal, organizer-enabled +1 parties that stay together in strict queue order, and immediate pre-start promotion with upfront fee consent (D-03/D-04) are accepted planning decisions. Waiting itself incurs no fee. Group-owned first-loop events, separate group membership, unlisted default access, primary-managed guests without separate accounts, cancellation-fee handling, roster/financial/attendance visibility, organizer/co-host management controls, and email delivery with a 24-hour reminder are also accepted. Other detailed defaults, role/access rules and mechanisms remain **draft recommendations**. Each referenced decision identifies its accepted portion and any dependent work still awaiting acceptance.
 
-**Acceptance:** Anonymous users, unrelated accounts, participants, and the organizer receive only their permitted reads and writes, including through direct API calls. A private link's public preview contains no event details. Sign-out does not leave private content available in a shared device cache.
+### RP-01 — Groups and roles
 
-**RP-06 — Show reliable live outcomes.** Open event pages receive participation changes without manual reload. On reconnection or return, fetch authoritative state. Pending actions have visible feedback; failures offer an understandable retry without losing context. Never confirm a place from a local counter, offline cache, or optimistic display alone. A paused/unavailable backend reports that availability cannot be verified. Proposed first-release promotion awareness is in-app on the open page or next visit; background email, SMS, and push delivery are not promised.
+Create and manage recurring communities with organizers, co-hosts and members. Require a usable group name, show the acting role, and enforce management permissions at the authoritative boundary. **Accepted for the first loop:** an event belongs to one group; eligible signed-in participants may join its unlisted event without being group members, and event registration does not automatically grant group membership or organizer rights. Group membership entry and role granularity remain open in D-01.
 
-**Acceptance:** Two sessions converge after join, cancellation, and promotion. Disconnect during a write and restore access: the UI resolves the actual result without duplicate participation. Service failure never displays a fabricated confirmation.
+**Acceptance:** an authorized organizer creates an event in their group; a member cannot change roles or another group's data; removing the final owner without transfer is rejected; a denied action leaves the group unchanged. Verify role boundaries with two groups and several roles.
 
-**RP-07 — Make mobile participation effortless.** The event page prioritizes activity, time, venue, cost, availability, and a clear next action. Use progressive disclosure and short forms. Proposed baseline: usable at 360 CSS pixels and by desktop keyboard, with labeled controls, visible focus, readable contrast, announced errors/status changes, and reduced-motion support. English is the proposed initial language; dates, zones, and currency remain explicit. Installation is optional; normal browser links always work. Provide the PWA installation assets and cache only safe shell/static resources. Offline registration and offline access to private data are excluded. Public share previews should identify the event without exposing participant data.
+### RP-02 — Event creation and editing
 
-**Acceptance:** Complete the core flow in a mobile viewport and by keyboard; inspect loading, empty, full, waitlisted, cancelled, denied, and failure states. Check installability and the server-delivered public preview metadata on the eventual hosting runtime.
+An authorized organizer can save a draft, validate required inputs, publish and edit a session. Capacity is a positive whole number, end follows start, and any opening/cutoff rules are internally consistent with the event time. Users see material changes to time, venue, capacity, visibility or fee. Changes that reduce access must invalidate newly unauthorized reads; historical public disclosure cannot be undone.
 
-## Technical direction — proposed
+**Acceptance:** publish a valid event and reopen its link; reject invalid date/capacity inputs without losing the entered draft; reject a capacity reduction below confirmed occupancy; a material edit appears on the page and creates the applicable change notification under RP-12. Verify unauthorized edits are refused.
 
-Recommend one TypeScript project: React with Vite for the mobile UI, Supabase for managed identity/PostgreSQL/live updates, and Cloudflare Workers with static assets for hosting. This keeps event/participation records in one relational source of truth and avoids maintaining an independent application server. Provider fit and current limits are observations, not a promise of permanently free hosting; dated research belongs in [README.md](README.md#cost-and-provider-notes).
+### RP-03 — Templates and duplication
 
-Put access decisions and concurrent participation transitions in authoritative operations backed by database transactions and appropriate constraints. Browser state is a presentation of those results. Row-level permissions and controlled write privileges must prevent bypassing the same rules through a different API path. Define the operation contract and meaningful errors before implementing it; do not create parallel specifications without a consumer need.
+Provide activity defaults and duplicate past events so recurring organizers do not re-enter stable information. Review date/time, fee and visibility before publishing a duplicate. Sport-related fields are optional and must not block a workshop or meetup.
 
-A small route in the same Worker deployment can serve safe public event metadata so chat previews do not depend on browser JavaScript. All other application logic should remain in the UI or authoritative backend unless a concrete need justifies more. Start with typed/manual venue information and link sharing; no paid geocoding, notification service, custom identity system, extra cache/database, upload storage, or message broker is necessary. The proposed layout has one home in the README; no application directories have been scaffolded.
+**Acceptance:** duplicate a completed badminton session and publish it for a new date without carrying over attendees, payment markers, check-ins, share secrets or previously sent notifications. Create a non-sport event without irrelevant required sport fields.
 
-Collect only necessary identity and event data. Organizers author events; Ralliers control their profile and participation. Cancellation is distinct from data deletion. Before real-user launch, the owner must accept retention durations, an account/data removal route, treatment of organizer-owned events, and backup expiry. Recommend cancelling future participation and removing/anonymizing profile data on deletion, with ownership resolved before deleting an organizer account. Test with synthetic data until these policies are settled.
+### RP-04 — Recurring series
 
-## Evidence and useful outcomes
+Create a finite series and manage an occurrence separately from future occurrences. Recommended initial recurrence is weekly on selected days with an end date; alternative recurrence patterns require an accepted scope decision. Show the number and dates before publishing. Define one occurrence versus future occurrences explicitly when editing. Timezone changes and daylight-saving boundaries must be reviewed as local-time scheduling behavior, not naive fixed-hour addition.
 
-Use a small consenting community pilot to observe whether an organizer can create/share an event without assistance, visitors can obtain a clear registration outcome, cancellations refill from the queue, and organizers choose to repeat. Record completion and drop-off points through observed sessions or minimal first-party records; a paid analytics service is unnecessary. No user research, conversion baseline, adoption target, or measured performance is claimed. Agree a representative workload and response-time target before performance acceptance.
+**Acceptance:** preview and create the stated occurrences; edit one without changing its siblings; a future-series edit preserves completed sessions and registrations already attached to unchanged occurrences. Repeating a submission must not duplicate occurrences. D-02 settles supported patterns, generation limits and treatment of booked future changes before implementation.
 
-The indicative progression is a believable event page and creation flow, then trusted end-to-end registration, then a pilot that proves cancellation/reconnection/privacy and the PWA experience. These are useful outcomes for later planning, not executable tasks or authorization to implement them. Runtime/database evidence must cover RP-01–RP-07 for the agreed release; document review alone cannot establish those outcomes.
+### RP-05 — Link entry and participant identity
 
-## Open decisions and material risks
+Keep permitted event information accessible from a shared link without an unnecessary onboarding tour. **Accepted:** public/unlisted event viewing does not require sign-in; reserving a place requires verified sign-in. Use the minimum identity needed to manage a stable registration, prevent duplicates and deliver notifications, and return the participant to the original event after sign-in. Private-event access remains subject to its separate authorization policy.
 
-The project owner decides the following in planning. The accepted release boundary, access modes, and sign-in timing do not need to be reopened:
+**Acceptance:** an unsigned visitor can view the permitted public/unlisted event details but cannot reserve a place before verified sign-in; an eligible returning signed-in participant joins in one tap after seeing the relevant rules; a new participant resumes the same event after identity setup; repeated attempts for the same active identity/event return the existing registration instead of another seat. The identity method/provider and group/role model remain open under D-01/D-10.
 
-| Decision | Recommendation and affected work |
-| --- | --- |
-| Authentication provider and private admission | Accounts and invite-only privacy are accepted. Evaluate a managed social sign-in such as Google against the actual group's access needs; confirm invitation redemption/revocation and roster visibility before their implementation. Email sign-in needs a suitable sender. Provider setup is not yet authorized. |
-| Participation policies | The first outcome includes automatic promotion following cancellation. Confirm one-person/one-place, start-time cutoff, whether promotion needs reconfirmation, and in-app versus background awareness before dependent implementation. |
-| Stack and operational tolerance | Accept or revise the proposed stack. A free-tier pilot must tolerate quota exhaustion and inactive-project pauses; an unattended public launch needs an accepted availability/recovery approach and spending ceiling. Never upgrade automatically. |
-| Real-user data and release | Set retention/removal and organizer-ownership rules, expected pilot load, and acceptable recovery/export evidence before storing real participant data. Broader public discovery also needs appropriate abuse controls before release. |
+### RP-06 — Registration window, capacity and waitlist
 
-Detailed product policy and architecture remain proposals wherever not explicitly supplied by the user. Record later accepted decisions here with their actual approval source; do not infer approval from implementation or task completion.
+Offer first-come-first-served registration with capacity limits and an optional waitlist. Determine ordering by authoritative acceptance order. **Accepted queue rule:** preserve strict party order; neither a later waitlist entry nor a new arrival bypasses the first eligible waiting party merely because the later party would fit. Enforce opening time and closure on every attempt. A full event clearly offers waiting rather than a false confirmation. Queue position is current information, not a guarantee of admission.
+
+**Acceptance:** at the opening boundary, premature requests are refused and eligible requests are accepted; two simultaneous requests for the last seat result in one confirmed seat and a truthful alternative for the other; duplicate retries consume no extra seat; no join is accepted into a cancelled event. Check authoritative behavior rather than only disabling a button.
+
+### RP-07 — Guest +1s
+
+Let organizers enable guest +1 participation and make the primary registrant responsible for its guest information and notifications. Count every guest against capacity and costs when chargeable. **Accepted:** guest participation is organizer-enabled, with at most one guest per registrant; primary and guest join and are promoted together as one party in strict queue order. A two-seat party is never partially confirmed. **Accepted guest identity:** the primary signed-in registrant manages their +1 without requiring a separate guest account. **Still proposed:** a guest receives no independent private-event access entitlement.
+
+**Acceptance of the party policy:** a two-seat party cannot confirm into one available seat and is shown as wholly waitlisted; if it heads the eligible queue, a later solo waitlist entry or new solo arrival cannot bypass it. Once two seats are available, both party seats confirm together exactly once. Guest registration is unavailable when disabled by the organizer. **Proposed guest-edit behavior:** removing a guest releases only that seat while preserving the primary's state where valid; retries create no second guest. Verify that the primary registrant can register their guest without a guest sign-in step. Private guest access and post-registration edit behavior remain proposals.
+
+### RP-08 — Withdrawal and automatic promotion
+
+Show the cancellation cutoff and fee implications before joining and again when withdrawing. **Accepted:** participants can withdraw their registration any time before the event starts, including at or after the cutoff. Withdrawal releases the appropriate confirmed seats or removes the waitlist entry. Before the cutoff, withdrawal removes any unpaid fee obligation. At or after the cutoff, an existing fee obligation remains unless the organizer explicitly waives it; seat release must not wait for that financial resolution. Any refund of money already paid is handled by the organizer outside RallyPoint. At or after event start, self-service withdrawal is closed. No in-app messaging or automatic refund is implied. **Accepted promotion:** before event start, automatically confirm the next eligible party in strict queue order when the whole party fits; there is no claim timer or additional acceptance step. Before a participant joins the waitlist, clearly explain and obtain consent that promotion can happen until event start and creates the applicable fee obligation, including after the cancellation cutoff. Waiting itself incurs no fee; a participant can leave the waitlist before promotion. Notify the registrant of promotion; delivery failure does not undo the authoritative confirmation or convert a queued notification into proof of receipt. Payment resolution does not gate seat allocation.
+
+**Acceptance of the withdrawal policy:** withdrawal just before the cutoff, exactly at it, or after it but before event start releases the reservation without double-allocating seats during a simultaneous join/promotion. Just before the cutoff, withdrawal removes any unpaid fee obligation. At and after the cutoff, the existing fee obligation is preserved unless explicitly waived; an existing paid marker remains a manual payment record. Any required paid refund is handled externally by the organizer; RallyPoint never claims to have processed it. At or after event start, self-service withdrawal is refused without changing the record. **Acceptance of the promotion policy:** the next eligible party is promoted once without a claim timer; withdrawn/removed registrants and cancelled/started events cannot be promoted; a head-of-queue party that cannot fit is not bypassed. Joining the waitlist requires visible consent to automatic pre-start confirmation and its fee implications. Before promotion, no fee is due; promotion after the cutoff applies the published fee obligation. A simultaneous waitlist withdrawal and promotion has one authoritative result, no duplicate seats, and a clearly displayed final status. Split-fee amount calculation remains open under D-04.
+
+### RP-09 — Free, fixed and split costs
+
+Support free events, a fixed fee per chargeable seat, or a shared total split across a stated set of chargeable seats. Every monetary value has a currency and valid minor-unit precision; different currencies are never silently combined. Clearly distinguish a split estimate from a finalized amount. **Accepted:** waitlisting alone creates no amount due; immediate promotion creates the applicable published fee obligation under the consent given when joining the waitlist, including after the cancellation cutoff.
+
+Recommended split behavior is equal allocation across confirmed chargeable seats at organizer finalization, with visible rounding and exact total conservation. Finalization must state the headcount and total used. **Accepted cancellation-fee policy:** before-cutoff withdrawal removes any unpaid fee obligation; at or after the cutoff, an existing fee obligation remains unless the organizer explicitly waives it. Any refund of an already-paid amount is handled by the organizer outside RallyPoint; cancellation never claims that a payment was refunded. How retained obligations participate in split finalization remains open in D-04. Later corrections are explicit and cannot silently rewrite an existing paid marker into proof of a different transfer.
+
+**Acceptance:** a fixed event with a guest shows the correct seat-based amount; a non-even split sums exactly to its total in the currency's minor units; zero chargeable seats cannot produce a divide-by-zero fee; a changed total/headcount clearly requires review and does not silently reassign payments. D-04 defines finalization and cancellation liability before fee implementation.
+
+### RP-10 — External payment instructions
+
+Show organizer-supplied payment QR codes or plain payment instructions at the approved visibility. Do not initiate, collect, reconcile, refund or guarantee payments. A QR code includes a usable fallback description/instruction. Do not require bank statements or payment receipt uploads for MVP.
+
+**Acceptance:** an entitled participant can read the instructions when the QR image is unavailable; unauthorized/public preview reads do not reveal protected payee details; removing or correcting an instruction does not alter registrations or payment markers. Display wording accurately says payment occurs outside RallyPoint.
+
+### RP-11 — Manual paid/unpaid tracking
+
+**Accepted:** organizers/co-hosts manage payment status; participants see only their own fee/payment status and cannot manage another participant's finances. Authorized organizers/co-hosts mark a registration's allocation paid or unpaid and can correct an error. Preserve who changed the marker and when. A participant sees their own status; another attendee's finances are not public roster information. Payment status does not grant a spot or trigger waitlist precedence.
+
+**Acceptance:** an organizer records and corrects a payment; an ordinary participant cannot mark themselves or others paid through a direct request; a paid but cancelled registration is still not confirmed; two edits cannot silently obscure the final saved value or actor. If a save fails, the interface does not claim payment tracking was updated.
+
+### RP-12 — Notifications and calendar
+
+**Accepted first-loop delivery:** email plus immediate in-page status for confirmations, waitlist promotions, material event changes and cancellation. Send one reminder 24 hours before event start; do not send a catch-up reminder for a later sign-up. The page always shows authoritative spot status independently of outbound delivery; email may be delayed or missed. Use consented recipient destinations and avoid sensitive roster/payment information in notification previews. Add-to-calendar exports the event's identity, time/zone, location at the viewer's access level, and link; downloading it is not a calendar-sync subscription.
+
+**Acceptance:** a join confirmation identifies confirmed versus waitlisted; a promotion is durable even if delivery fails; cancelled events stop scheduled reminders; a duplicate delivery attempt does not represent a second promotion; a calendar export opens with the intended time and consistent event identity. D-05 accepts email and reminder timing. Email provider/sender configuration, recipient selection, failed-delivery visibility and a bounded delivery/retry budget still require resolution before notification enablement.
+
+### RP-13 — Announcements
+
+Organizers/co-hosts publish one-way updates on an event for its permitted attendees. Recommended audience is confirmed participants, with an explicit option to include waitlisted registrants. Preserve the announcement on the event even if its outbound notification fails. Do not add replies, DMs or a conversation feed.
+
+**Acceptance:** an organizer posts an update, eligible participants can read it, a member cannot impersonate the organizer, and unauthorized viewers cannot read private-event announcements. A retry does not create duplicate announcements; delivery failure is distinguishable from publication failure.
+
+### RP-14 — Attendance and no-shows
+
+**Accepted management controls:** organizers/co-hosts manage check-in and no-shows; ordinary participants cannot mark other people's attendance or view their attendance history. Authorized organizers/co-hosts record check-in for confirmed participant and guest seats, correct mistakes, and mark no-shows after the session. Attendance starts unrecorded; cancelled/waitlisted seats are not counted as attendees or automatically marked no-show. Do not implement participant location tracking or reliability scoring.
+
+**Acceptance:** check in a primary and guest independently; correct a check-in without double-counting; a waitlisted person has no confirmed-seat check-in; record a no-show after the session without changing payment status. A profile's attendance count reflects the accepted completed check-ins under RP-15.
+
+### RP-15 — Profiles
+
+Provide name, optional photo, activities, optional self-reported skill level, and attendance count. Do not require a skill rating for an unrelated event. Recommended attendance count is the person's completed-event check-ins, excluding guests' attendance, waitlists, cancellations and explicit no-shows. Count visibility is settled with the profile privacy policy in D-06.
+
+**Acceptance:** edit one's own optional information without modifying others; a corrected check-in updates the count once; a guest does not inflate the primary participant's personal count; no-show history is not exposed as an unrequested public reputation score. A missing photo has a usable fallback.
+
+### RP-16 — Sharing and visibility
+
+Support public, unlisted and private event modes, rich previews, copy-as-text rosters and event-link QR codes. Public visibility does not create a discovery feed. **Accepted first-loop default:** unlisted. Anyone with the link can view basic event details; an eligible participant must sign in to join and does not automatically become a group member. An unlisted URL is not a private authorization boundary. **Accepted broader MVP boundary retained from the earlier repository:** private events require organizer-granted access; knowing the ordinary URL is insufficient. Their public preview is generic. Group membership as an admission mechanism remains a proposal; organizer-invitation redemption/revocation is still to be decided, not silently replaced by a membership-only rule. Public/unlisted previews contain only intentionally shareable event summary information, never roster, financial, report or attendance-history data.
+
+**Accepted first-loop visibility:** link visitors see basic event details and attendance counts; confirmed participants see a display-name roster; each participant sees their own fee/payment status. Organizers and co-hosts see the full roster and manage payments, check-in and no-shows. Other participants' financial and attendance history stays hidden. **Still proposed:** roster export is organizer-only and excludes payment and no-show history. It is a deliberate disclosure and cannot recall copies already pasted elsewhere.
+
+**Acceptance:** open each mode with an entitled and an unrelated identity, including direct data reads and preview requests; a private link/QR does not bypass membership; exported text respects the chosen audience and guest labels; a QR resolves to the stable event link; public/unlisted rich previews work without leaking protected fields. D-06 confirms the access matrix before publishing real group data.
+
+### RP-17 — Report, block and remove
+
+Allow reporting an event/profile/member, personal blocking, and authorized member removal. Restrict report contents and reporter identity to the moderation role; keep group administration separate from personal blocking. Recommended effects and moderation ownership are in D-07, including treatment of existing registrations. Do not imply 24-hour moderation or an appeal system that has not been staffed or scoped.
+
+**Acceptance under D-07:** submit a report without disclosing it to the reported member; an unrelated member cannot read reports or remove someone; a removed member cannot reuse membership to access private pages; affected future registrations are reconciled without phantom seats; blocking cannot silently delete another person's paid record. Verify overlapping roles and existing shared events.
+
+## Experience, data and operational boundaries
+
+- **Mobile and accessibility:** make the central loop usable on narrow screens, with keyboard access, visible focus, semantic controls, meaningful labels and programmatic errors. Never encode confirmed/waitlisted/paid solely by color. Respect reduced-motion preferences. Recommended formal accessibility target and browser/device support are launch decisions in D-08; do not claim compliance from this draft.
+- **Content:** use plain, friendly language: confirmed, waitlisted, unpaid, cancelled and checked in have distinct meanings. Show fee/currency, event timezone and material cutoffs before joining. English is the proposed first language; additional locales are not implied.
+- **PWA boundary:** recommend an installable responsive web experience with a manifest and appropriate icons. Native app-store distribution is excluded from this first implementation. Cache the application shell where useful; do not cache authenticated rosters, financial records or private event details by default. Joining, cancelling, paying-status edits and check-in require a live authoritative result. No offline write queue, background registration or stale guarantee of a seat is included. On reconnect, recheck status; clear identity-specific state on sign-out/account change.
+- **Authorization:** enforce object- and role-level access in authoritative application/data operations, not only through hidden buttons. Validate time, capacity, role and eligibility at each mutation. Denied operations must leave state unchanged. Recheck revoked membership on private access and background delivery.
+- **Privacy:** collect only necessary identity, contact destination, user-supplied profile, event, registration, guest, fee-marker, attendance and report data. Separate contact destinations from public profiles. No contacts import, advertising profile or location history is required. Do not publish exact private venues or payment instructions through previews.
+- **Security:** use maintained identity and session facilities once selected; protect sessions, validate uploads and avoid executable user-supplied content. QR images/photos are untrusted uploads. Keep secrets outside source and logs. Use test identities and synthetic events during development.
+- **Reliability:** authoritative seat changes and retries must preserve the integrity rules. Optional preview, QR or notification failures cannot roll back a valid registration or fabricate delivery success. Preserve enough non-sensitive error context to diagnose a failed operation and let users recheck its outcome.
+- **Operations and cost:** one operation's total recipients, recurrence generation, storage, retries and scheduled work must have explicit bounded limits before enabling it. Inspect aggregate cost, not just unit pricing. The owner approves paid resources and the initial operating ceiling. D-08 sets pilot workload, capacity limits, performance budget, support environments and recovery expectations before launch.
+
+### Information authority and lifecycle
+
+| Information | Authority and allowed purpose | Visibility, freshness, deletion and failure |
+| --- | --- | --- |
+| Identity/contact and profile | Person supplies their identity/profile; selected identity provider owns authentication evidence | Verified contact is for agreed transactional delivery, not a public roster field. Revalidate sessions; provider failure cannot fabricate sign-in. Account deletion and retained history require D-09 |
+| Groups, events, templates, announcements | Authorized group organizers own content; RallyPoint's persisted record is operational truth | Edits are immediately authoritative for future reads; enforce current access. Keep the source event distinct from a copy; delete/archive policy in D-09 |
+| Registration and queue | Authoritative accepted join/withdrawal operations | Re-fetch for decisions; cached availability is advisory. Guests are subordinate to their primary registration and collect minimum information. Removal must reconcile active seats |
+| Fee/payment markers | Event fee configuration plus the recording organizer, with actor/time | A marker is a manual declaration. Never reuse as external bank evidence. Preserve correction history while minimizing financial detail; retention in D-09 |
+| Attendance count | Recorded check-ins derived under RP-15 | Preserve the original attendance basis and recalculate on correction. Withhold unsupported counts rather than inventing them; no inferred reliability claim |
+| Reports and blocks | Reporter/blocker input; restricted moderation decisions | Not public profile data. Define moderator ownership, retention and deletion under D-07/D-09 before accepting real reports |
+| Photos and payment QR | User-supplied uploads; uploader must have permission to share | Store only for the intended visibility. An internal retention policy does not grant rights to third-party material. Reject unsafe uploads and provide text/image fallbacks |
+| Notification delivery | Event state determines eligibility; delivery provider supplies delivery outcome where supported | A queued request is not proof of receipt. Store minimum recipient/delivery metadata; provider use/retention, suppression and costs must be checked when selecting it |
+
+No third-party venue, sports, maps, social or payment data service is required. Calendar export and QR generation should use local/native capabilities where practical. No external service's price, terms, access or production availability has been verified by this bootstrap.
+
+## Technical direction and proposed structure
+
+Accepted technical constraints are mobile-first PWA delivery, shareable event links, persistent shared participation state, manual payment tracking, event-agnostic concepts, and low operating cost. No programming language, framework, database vendor, identity provider, messaging provider or host is selected.
+
+**Recommendation:** use one modular web application and one authoritative persistent data store. The client presents event information and issues actions; trusted application/data operations enforce identity, roles, seats, fees and history. Scheduled delivery handles reminders and change alerts using persisted event state. This fits shared capacity and recurring notifications without requiring microservices, native apps, multiple identity systems or a speculative extension framework.
+
+Stack and provider selection remains D-10. A relational data store is a proposal because memberships, seat allocation and corrections benefit from transactional integrity; it is not an accepted vendor choice. Inspect current official provider limits and maintenance cost when deciding, rather than embedding transient setup commands here.
+
+The following is a **proposed layout for later implementation**, not created source directories or a runnable scaffold:
+
+```text
+rallypoint/
+  PRD.md                 Product contract and decisions
+  AGENTS.md              Shared execution rules
+  CLAUDE.md              One-way import of AGENTS.md
+  README.md              Orientation and actual setup/check commands when adopted
+  src/
+    app/                 Shared-link pages and organizer/participant interfaces
+    domain/              Groups, event/series, registration, fees and attendance rules
+    server/              Trusted persistence, authorization and delivery scheduling
+    ui/                  Reused accessible visual/interaction primitives
+  public/                PWA manifest, icons and approved public assets
+  tests/                 Focused behavioral checks using the chosen toolchain
+```
+
+Adapt these areas to the selected framework rather than forcing a second routing/server system. Use schema migrations when persistent storage is introduced; isolate local/test data from real groups. Agree a backup/recovery method before storing pilot data. Provider configuration, credentials, package versions, and runnable commands belong in the README/setup guidance once real, not in this product contract.
+
+## Validation and delivery direction
+
+Sequence useful outcomes rather than building all infrastructure first:
+
+1. Prove a shareable group-owned session and truthful capacity/waitlist status, including cancellation and guest rules after D-01/D-03/D-06 decisions.
+2. Complete the organizer's session loop with fixed/split allocations, manual payments, notifications/calendar, announcements and attendance after their relevant decisions.
+3. Reduce repeat effort with templates, duplication and bounded series; complete sharing, profiles and trust controls; validate the entire supplied MVP with recurring pilot groups.
+
+These are indicative outcomes, not executable tasks, assignments, estimates or authorization to create issues. Later planning may overlap independent outcomes while respecting actual dependencies.
+
+Before calling an implemented MVP ready, collect evidence for:
+
+- Complete organizer and participant walkthroughs for a sport session and a non-sport event.
+- Simultaneous last-seat joins; withdrawal/promotion races; duplicate retries; guests that do not fit; opening/cutoff/start boundaries; role denial and membership revocation.
+- Fee rounding and headcount changes; paid/unpaid correction without changing slot status; attendance correction and count provenance.
+- Private/unlisted/public reads, link previews, exports and announcements under different identities; malicious/invalid uploads and report access.
+- Real selected-channel notifications with failure/retry and cancellation suppression; calendar time/identity; series local-time scheduling; PWA install and offline error behavior on the chosen browser/device scope.
+- Focused automated checks and the adopted lint/type/build checks; changed interactive flows in an actual runtime. No new end-to-end suite is implied by this specification.
+- Resource limits, restore procedure, privacy/deletion handling, moderation ownership and relevant provider permissions before real pilot data or launch.
+
+Evidence must identify the version/artifact, environment, date, scenarios checked, results and gaps. Specification review is not runtime verification. The product owner accepts consequential product decisions and launch readiness; implementation completion does not authorize repository publication, deployment, merging or spending.
+
+## Decisions and uncertainty
+
+The project context supplies the name, audience, principles, MVP feature list, exclusions, future phases and core experience. Those remain the baseline. On 2026-10-21, the owner accepted verified sign-in before reservation; pre-start withdrawal with retained post-cutoff fee liability; organizer-enabled +1 parties that join/promote together in strict queue order; and immediate pre-start promotion with upfront fee consent and no fee for waiting. The owner also accepted group-owned first-loop events, unlisted default link access, separate group membership, primary-managed guests without separate accounts, before-cutoff removal of unpaid fees, externally handled refunds of already-paid money, the first-loop roster/financial/attendance visibility and organizer/co-host controls, and email plus immediate in-page status with a reminder 24 hours before start and no catch-up reminder for later sign-ups. The rows below distinguish accepted portions from remaining proposals; none authorizes implementation or task creation.
+
+| ID | Open decision and recommendation | Tradeoff and dependent work |
+| --- | --- | --- |
+| D-01 | **Partly accepted, 2026-10-21:** public/unlisted viewing without sign-in; verified sign-in before reservation; each first-loop event belongs to one group; eligible nonmembers can join its unlisted event; event registration does not grant membership. **Still proposed:** one accountable owner plus organizers/co-hosts and explicit membership entry | Accepted in the owner's planning replies. Sign-in method/provider remains open under D-10; resolve role granularity, membership entry and broader standalone-event support before their implementation |
+| D-02 | Series controls. Recommend bounded weekly recurrence on selected days, explicit end date, occurrence versus future edit scope, and preview before applying changes | Simpler than a general recurrence editor. Set generation ceiling and booked-occurrence change handling before series implementation |
+| D-03 | **Partly accepted, 2026-10-21:** withdrawal before event start; organizer-enabled one guest, managed by the primary registrant without a separate guest account; primary/guest stay together; strict queue order without later-party bypass; immediate promotion before event start without a claim timer, with upfront fee consent. Waiting is free and leaving before promotion is allowed. **Still proposed:** no new direct joins from event start; private guest access and post-registration edits | Accepted in the owner's planning replies. Strict party order can leave a vacancy while the first eligible party needs two seats; the owner accepted this tradeoff. Fee effects are in D-04. Resolve remaining guest details and direct-join closure before their implementation |
+| D-04 | **Partly accepted, 2026-10-21:** before-cutoff withdrawal removes unpaid fee obligations; at or after cutoff an existing obligation remains unless explicitly waived; waiting is free; immediate promotion creates the published fee obligation, including after cutoff, with prior consent; the organizer handles any already-paid refund outside RallyPoint. **Still proposed:** equal split finalized by organizer, explicit review of finalized split corrections and original payment-history preservation | Accepted in the owner's planning replies. Resolve split finalization, retained obligations versus replacement-seat charges and correction/refund recording before their implementation. Filling a late vacancy does not itself constitute the organizer waiver already required by the accepted policy |
+| D-05 | **Partly accepted, 2026-10-21:** email plus immediate in-page status for confirmations, promotions and material changes; one reminder 24 hours before start, with no catch-up reminder for later sign-ups. The event page remains authoritative when email is delayed/missed. **Open:** provider/sender, reminder recipients, retry/resource ceiling and failed-delivery visibility | Accepted in the owner's planning reply. Resolve provider/sender permissions, recipient rules and bounded delivery/failure behavior before enabling outbound email; do not add SMS, browser push or multiple providers to the first loop |
+| D-06 | **Partly accepted, 2026-10-21:** first-loop events default to unlisted; basic details/counts for link visitors; eligible verified participants may join without automatic membership; display-name roster for confirmed participants; own fee/payment status for each participant; full roster and payment/check-in/no-show controls for organizers/co-hosts; other participants' financial and attendance history hidden. **Broader accepted intent:** organizer-granted private access, with exact invitation/admission mechanics still open. **Still proposed:** membership as an admission basis, exports, detailed profile/attendance-count and private guest visibility | Accepted in the owner's planning replies. Unlisted links are shareable, not private access control. Resolve remaining private/profile/export policies before implementing them; first-loop role assignment remains open under D-01 |
+| D-07 | Blocking, member removal and moderation. Recommend a personal block prevents new joins to blocker-organized events and hides blocked profile details from the blocker; it does not silently cancel existing shared-event bookings. Organizer member removal revokes private membership, prevents new joins to that group's events until an organizer restores eligibility, and explicitly cancels that member's future active registrations, triggering normal seat reconciliation; payment history remains. Owner handles reports initially | Shared groups and organizer roles can overlap. Decide precedence, report access, response expectations and existing-booking handling before implementing/enabling these controls |
+| D-08 | Pilot support and operating envelope. Recommend start with the actual pilot groups' devices and expected session sizes, visible accessible interactions, and no paid resources without explicit owner approval | No workload, latency target, browser matrix, formal accessibility target, storage ceiling or recovery objective was supplied. Set concrete acceptance limits before load validation and pilot launch; verify current provider quotas before commitment |
+| D-09 | Retention, account/group deletion and report history. Recommend allow deletion/anonymization of personal profile/contact data, retain only the minimum group/event record required for authorized reconciliation, and restrict any retained moderation/payment history | Exact retention duration, backup expiry and deletion obligations are not established. Decide policy and cleanup responsibility before collecting real pilot data; this draft makes no legal-compliance claim |
+| D-10 | Stack and providers. Recommend one maintained web/PWA toolchain, managed identity/storage where it materially reduces maintenance, and one data authority with transactional seat changes. The earlier repository proposed React/Vite, Supabase and Cloudflare Workers; retain that as an unapproved candidate, not a selected stack | Research current official capabilities, free-tier ceilings, portability and maintenance after product decisions. Blocks runnable scaffolding and service provisioning; does not block documents or workflow design |
+
+Key risks are organizer/admin scope overwhelming the first usable loop, identity friction undermining joining, races oversubscribing seats, party fairness leaving vacancies, missed promotions/reminders, privacy leaks through previews/exports, and free-tier exhaustion. Mitigate with the bounded delivery sequence, pilot timing, authoritative integrity checks, explicit D-03 tradeoff, truthful in-page status, access-matrix tests and hard resource ceilings. Revisit a recommendation when pilot evidence contradicts it; update the accepted contract rather than quietly shipping a different rule.
+
+### Earlier repository planning and this update
+
+The [earlier repository PRD](https://github.com/DJPajares/rallypoint/blob/0e270f5cb1b0cb3e90a1ddebda45795dabc41714/PRD.md) recorded an eight-place shared-link pilot, public and organizer-invited private access, and sign-in when creating/joining. Account-only participation and a smaller payment-free batch reflected that earlier planning pass; the current owner's supplied MVP and explicit planning approvals add primary-managed +1s, manual payment tracking, attendance and email. The current eight-task batch starts with an unlisted fixed-fee increment; it does not claim the broader public/private MVP is finished or erase the earlier organizer-granted private-access intent. Eight and twelve are verification examples, not product limits.
+
+The prior six Linear tasks WDL-368–WDL-373 are archived history. The owner explicitly authorized publication of the reviewed P-01–P-08 batch and this GitHub PR on 2026-10-21; task publication does not approve the remaining policy/technology gates or authorize implementation. Earlier provider/layout research remains available through the immutable [previous README](https://github.com/DJPajares/rallypoint/blob/0e270f5cb1b0cb3e90a1ddebda45795dabc41714/README.md); its numbers and service assumptions must be rechecked before use. No earlier proposed stack became accepted through this documentation update.
+
