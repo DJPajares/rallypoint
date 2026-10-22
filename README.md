@@ -73,7 +73,11 @@ preview; it points Wrangler at the old build directory.
 
 - `apps/web`: Next.js App Router pages, client Auth/UI and dynamic API routes.
 - `packages/domain`: browser-safe contracts, session validation, exact money formatting and auth return-path validation.
-- `packages/api`: server-only verified-identity operations and explicit Supabase RPC calls.
+- `apps/api`: the API as a Hono app with Zod-validated requests: verified identity
+  and explicit Supabase RPC calls. The web app mounts it at `/api` on the same
+  port, so there is one deployment and one URL. It must stay free of Next.js and
+  host-specific code (`tests/api-boundary.test.mjs` enforces this) so it can run
+  on its own later without a rewrite.
 - `supabase`: unchanged local project identity and migration history.
 - `scripts` / `tests`: root local lifecycle and meaningful integration checks.
 
@@ -298,7 +302,7 @@ and [accepted design](docs/superpowers/specs/2026-10-22-split-session-cost-desig
 ## Where to work next
 
 - `apps/web/`: native Next routes, app shell, Auth and identity-scoped request state.
-- `packages/api/`: verified identity boundary and trusted API operations.
+- `apps/api/`: verified identity boundary and trusted API operations (Hono + Zod).
 - `packages/domain/`: shared browser-safe types and validation.
 - `supabase/migrations/`: versioned schema; `app` tables are unexposed and
   backend RPCs in `api` deny browser roles.
