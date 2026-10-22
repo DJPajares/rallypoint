@@ -1,19 +1,19 @@
 # Foundation API
 
-The browser authenticates with Supabase Auth. The Worker verifies the access
+The browser authenticates with Supabase Auth. The Next.js API route delegates to the server-only `packages/api` boundary, which verifies the access
 token with `getUser`, requires a verified managed email, and derives the actor
 from that response. Editable metadata is display-only. All responses use
 `Cache-Control: no-store`. Rejected unread bodies are discarded without parsing,
 bounded to 16 KiB and one second, so small authorization/method errors remain
 visible through the local proxy.
 
-| GET path | Result | Access |
-| --- | --- | --- |
-| `/api/health` | `{ status: "ok" }`, Worker liveness only | Public |
-| `/api/config` | Public Auth URL/key and enabled methods, never the server key | Public |
-| `/api/me` | Own `{ id, email, displayName }` | Verified identity |
-| `/api/workspace` | `{ groups: [{ id, name, role }] }`, current memberships only | Verified identity |
-| `/api/groups/:id/setup` | `{ group: { id, name, role } }` | Current owner/organizer/co-host in that group |
+| GET path                | Result                                                        | Access                                        |
+| ----------------------- | ------------------------------------------------------------- | --------------------------------------------- |
+| `/api/health`           | `{ status: "ok" }`, Worker liveness only                      | Public                                        |
+| `/api/config`           | Public Auth URL/key and enabled methods, never the server key | Public                                        |
+| `/api/me`               | Own `{ id, email, displayName }`                              | Verified identity                             |
+| `/api/workspace`        | `{ groups: [{ id, name, role }] }`, current memberships only  | Verified identity                             |
+| `/api/groups/:id/setup` | `{ group: { id, name, role } }`                               | Current owner/organizer/co-host in that group |
 
 Failures use `{ error: { code, message } }`: 401 missing/invalid session, 403
 unverified identity or denied role, 404 unknown operation, 405 unsupported method,
@@ -30,17 +30,17 @@ defense in depth. Role checks read current data rather than cached JWT metadata.
 The owner accepted creator-as-owner bootstrap and the pre-booking edit boundary
 on 2026-10-22. Every mutation requires a UUID `operationKey` in its JSON body.
 
-| Method and path | Input / result | Access |
-| --- | --- | --- |
-| POST `/api/groups` | `name, operationKey`; actual owner group | Verified creator |
-| GET `/api/groups/:id/sessions` | Current drafts/published sessions | Current group manager |
-| POST `/api/groups/:id/sessions` | `groupId, intent: draft or publish, details, operationKey` | Current group manager |
-| GET `/api/sessions/:id` | Management projection/version | Current group manager |
-| POST `/api/sessions/:id` | Same fields plus expected `version`; draft/publish/update | Current group manager |
-| GET `/api/shared/:slug` | Shareable details, counts and lifecycle | Public |
-| GET `/api/operations/:key` | Actor-owned reference and current resource state | Same actor; current group role for management operations |
+| Method and path                 | Input / result                                             | Access                                                   |
+| ------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------- |
+| POST `/api/groups`              | `name, operationKey`; actual owner group                   | Verified creator                                         |
+| GET `/api/groups/:id/sessions`  | Current drafts/published sessions                          | Current group manager                                    |
+| POST `/api/groups/:id/sessions` | `groupId, intent: draft or publish, details, operationKey` | Current group manager                                    |
+| GET `/api/sessions/:id`         | Management projection/version                              | Current group manager                                    |
+| POST `/api/sessions/:id`        | Same fields plus expected `version`; draft/publish/update  | Current group manager                                    |
+| GET `/api/shared/:slug`         | Shareable details, counts and lifecycle                    | Public                                                   |
+| GET `/api/operations/:key`      | Actor-owned reference and current resource state           | Same actor; current group role for management operations |
 
-`SessionForm` in `src/shared/session.ts` defines the fields. Local times use the
+`SessionForm` in `packages/domain/src/session.ts` defines the fields. Local times use the
 named timezone; invalid and ambiguous DST times are rejected. Publication requires
 positive integer capacity, end after start, opening before start, cutoff between
 opening and start, and exact currency precision. Supported minor units:
@@ -76,7 +76,7 @@ publishes. Unlisted links are shareable, not private access control.
 
 - GET `/api/registrations/:slug` returns `{ registration }` for the verified actor.
 - POST to the same path accepts `{ operationKey, version, seats: 1|2,
-  guestName: string, consent: true }` and returns `{ registration, operationKey }`.
+guestName: string, consent: true }` and returns `{ registration, operationKey }`.
   The verified server identity supplies the primary; caller actor/role fields
   never supply authority. Display names are display-only snapshots.
 - Public session projection adds `state`, `registrationWindow` and `counts`

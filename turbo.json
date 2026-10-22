@@ -1,0 +1,33 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "globalDependencies": [".oxlintrc.json", "tsconfig.base.json"],
+  "remoteCache": { "enabled": false },
+  "tasks": {
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "passThroughEnv": [
+        "SUPABASE_URL",
+        "SUPABASE_PUBLISHABLE_KEY",
+        "SUPABASE_SECRET_KEY",
+        "LOCAL_AUTH_ENABLED",
+        "GOOGLE_AUTH_ENABLED"
+      ]
+    },
+    "lint": {},
+    "typecheck": {
+      "dependsOn": ["^typecheck"],
+      "outputs": []
+    },
+    "build": {
+      "dependsOn": ["^typecheck"],
+      "cache": false,
+      "outputs": [".next/**", "!.next/cache/**"]
+    },
+    "build:cloudflare": {
+      "dependsOn": ["^typecheck"],
+      "cache": false,
+      "outputs": [".open-next/**"]
+    }
+  }
+}

@@ -3,16 +3,14 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 import { localEnv, fixturePassword } from "../scripts/local-env.mjs";
-import { normalizeSession, feeLabel } from "../src/shared/session.ts";
+import { normalizeSession, feeLabel } from "../packages/domain/src/session.ts";
 const env = localEnv(),
   base = process.env.RALLYPOINT_TEST_URL ?? "http://127.0.0.1:5173";
 assert.ok(["127.0.0.1", "localhost"].includes(new URL(base).hostname));
 const sql = (q) =>
-  execFileSync(
-    "npx",
-    ["--no-install", "supabase", "db", "query", "--local", q],
-    { stdio: "pipe" },
-  );
+  execFileSync("pnpm", ["exec", "supabase", "db", "query", "--local", q], {
+    stdio: "pipe",
+  });
 const valid = () => ({
   title: "Twelve-seat test session",
   activity: "Badminton",

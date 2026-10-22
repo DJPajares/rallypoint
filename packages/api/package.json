@@ -1,0 +1,19 @@
+{
+  "name": "@rallypoint/api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./env": "./src/env.ts"
+  },
+  "scripts": {
+    "lint": "oxlint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@rallypoint/domain": "workspace:*",
+    "@supabase/supabase-js": "2.118.0",
+    "server-only": "0.0.1"
+  }
+}

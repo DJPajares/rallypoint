@@ -243,6 +243,12 @@ Accepted technical constraints are mobile-first PWA delivery, shareable event li
 
 The owner accepted the [P-01 technical recommendation](https://linear.app/wwonderland/document/p-01-technical-decision-recommended-stack-and-session-loop-contract-eba7e99b792c) for local scaffolding. Postgres is the authoritative store; the Worker verifies identity and checks current group roles through deliberately exposed backend operations. Provider account access and live integration still require evidence. The separate D-01/D-03/D-04/D-05 policy proposals remain open. Actual commands and pinned package versions belong in README and the lockfile.
 
+On 2026-10-22, the owner directly requested conversion to Turborepo, Next.js and
+pnpm (D-11). The current implementation direction is one Next.js App Router app
+with shared domain and server-only API workspace packages. This supersedes the
+Vite/npm portion of D-10. Cloudflare through OpenNext, Supabase Auth/Postgres,
+Google OAuth and Resend retain their existing roles and live-service gates.
+
 The following is a **proposed layout for later implementation**, not created source directories or a runnable scaffold:
 
 ```text
@@ -300,6 +306,7 @@ The project context supplies the name, audience, principles, MVP feature list, e
 | D-08 | Pilot support and operating envelope. Recommend start with the actual pilot groups' devices and expected session sizes, visible accessible interactions, and no paid resources without explicit owner approval | No workload, latency target, browser matrix, formal accessibility target, storage ceiling or recovery objective was supplied. Set concrete acceptance limits before load validation and pilot launch; verify current provider quotas before commitment |
 | D-09 | Retention, account/group deletion and report history. Recommend allow deletion/anonymization of personal profile/contact data, retain only the minimum group/event record required for authorized reconciliation, and restrict any retained moderation/payment history | Exact retention duration, backup expiry and deletion obligations are not established. Decide policy and cleanup responsibility before collecting real pilot data; this draft makes no legal-compliance claim |
 | D-10 | **Accepted, 2026-10-22:** React/TypeScript/Vite, npm, Cloudflare Workers, Supabase Postgres/Auth, Google OAuth and Resend. The owner approved the recommended stack and starting WDL-382 local synthetic scaffolding | No further stack gate for local development. Live Google/sender/hosting setup, cloud provisioning, spending and deployment remain separate; D-01/D-03/D-04/D-05 policy gates are unchanged |
+| D-11 | **Accepted, 2026-10-22:** convert the existing app to a Turborepo monorepo, Next.js and pnpm, as directly requested by the owner | Supersedes the Vite/npm portion of D-10. Preserve existing URLs, visual design, authorization, queue/fee policy and database history. Local conversion and review are authorized; cloud provisioning, spending and deployment retain their own gates |
 
 Key risks are organizer/admin scope overwhelming the first usable loop, identity friction undermining joining, races oversubscribing seats, party fairness leaving vacancies, missed promotions/reminders, privacy leaks through previews/exports, and free-tier exhaustion. Mitigate with the bounded delivery sequence, pilot timing, authoritative integrity checks, explicit D-03 tradeoff, truthful in-page status, access-matrix tests and hard resource ceilings. Revisit a recommendation when pilot evidence contradicts it; update the accepted contract rather than quietly shipping a different rule.
 

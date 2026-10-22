@@ -32,3 +32,12 @@ output/
 supabase/.temp/
 supabase/.branches/
 .playwright-cli/
+
+# Workspace and Next.js generated state
+.next/
+.open-next/
+.turbo/
+.superpowers/
+*.tsbuildinfo
+**/next-env.d.ts
+!**/.env.example
