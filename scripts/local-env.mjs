@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 
 export function localEnv() {
   const env = Object.fromEntries(
-    readFileSync(new URL("../.dev.vars", import.meta.url), "utf8")
+    readFileSync(new URL("../apps/web/.env.local", import.meta.url), "utf8")
       .split("\n")
       .filter((line) => /^[A-Z_]+=/.test(line))
       .map((line) => {

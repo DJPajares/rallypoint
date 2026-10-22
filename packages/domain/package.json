@@ -1,0 +1,19 @@
+{
+  "name": "@rallypoint/domain",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./contracts": "./src/contracts.ts",
+    "./session": "./src/session.ts",
+    "./registration": "./src/registration.ts",
+    "./navigation": "./src/navigation.ts"
+  },
+  "scripts": {
+    "lint": "oxlint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@js-temporal/polyfill": "0.5.1"
+  }
+}

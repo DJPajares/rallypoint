@@ -2,32 +2,35 @@
 
 **Fill the spots, not the chat.**
 
-A mobile-first app for getting a recurring group together. This first scaffold
+A mobile-first app for getting a recurring group together. The app
 provides the public shell, managed sessions, creator-owned groups, saved session
 drafts, unlisted publication, verified participant/+1 registration and a strict
-party waitlist. Withdrawal, payment markers and attendance remain with subsequent tasks.
+party waitlist, whole-party withdrawal and immediate promotion. Payment controls
+and attendance remain with subsequent tasks.
 
 ## Run locally
 
-Requirements: Node 24+ (verified with 24.16.0), npm, and a running Docker-compatible
+Requirements: Node 24+ (verified with 24.16.0), pnpm 11.14.0 (pinned in
+`packageManager`), and a running Docker-compatible
 daemon. The first database start downloads local images. No cloud account, paid
 resource or real participant data is needed for this setup.
 
 ```sh
-npm ci
-npm run db:start
-npm run dev
+pnpm install --frozen-lockfile
+pnpm db:start
+pnpm dev
 ```
 
 Open [the app](http://127.0.0.1:5173) and
 [the local mail inbox](http://127.0.0.1:54324).
 
 `db:start` starts only the local RallyPoint Postgres/Auth/REST/mail services,
-applies pending local migrations, writes local credentials to ignored `.dev.vars`
+applies pending local migrations, writes local credentials to ignored `apps/web/.env.local` and
+`apps/web/.dev.vars`
 without logging them, and seeds
 four synthetic Auth identities and two groups. The Docker network binds published
 ports to loopback. Existing unrelated containers and Supabase projects are not used.
-The development server uses port 5173 strictly, so an occupied port is an error.
+Next.js uses port 5173 on loopback. Free that port before starting the app.
 
 In the local sign-in form, request a code for one of these fixtures and read the
 message in the local inbox. No message is sent outside the local mail sink.
@@ -45,33 +48,62 @@ email provider is enabled only to exercise existing synthetic identities.
 
 ## Commands
 
-| Command            | Purpose                                                                        |
-| ------------------ | ------------------------------------------------------------------------------ |
-| `npm run dev`      | React/Vite plus the actual local Workers runtime                               |
-| `npm run check`    | Lint, client/Worker TypeScript checks and production build                     |
-| `npm run preview`  | Serve built output in the local Workers runtime                                |
-| `npm run db:lint`  | Check local SQL/function typing                                                |
-| `npm run test:api` | Live local Auth/API permission checks; requires the app and DB running         |
-| `npm run db:reset` | Recreate only the local synthetic DB from migrations and seed identities/roles |
-| `npm run db:stop`  | Stop the local RallyPoint containers, preserving their data                    |
+| Command                 | Purpose                                                                          |
+| ----------------------- | -------------------------------------------------------------------------------- |
+| `pnpm dev`              | Turbo runs Next.js development at 127.0.0.1:5173                                 |
+| `pnpm check`            | Workspace lint/type checks and Next production build                             |
+| `pnpm build`            | Build the Next.js app through Turbo                                              |
+| `pnpm start`            | Serve the built Next.js app on Node at port 5173                                 |
+| `pnpm build:cloudflare` | Build the local OpenNext Cloudflare Worker artifact                              |
+| `pnpm preview`          | Serve that artifact locally on Workers at port 5173                              |
+| `pnpm db:lint`          | Check local SQL/function typing                                                  |
+| `pnpm test:api`         | Real local Auth/API and page/navigation regression tests; app/DB must be running |
+| `pnpm db:start`         | Start/reuse local services, apply pending migrations and refresh synthetic setup |
+| `pnpm db:reset`         | Recreate only the local synthetic DB and seed identities/roles                   |
+| `pnpm db:stop`          | Stop the local containers while preserving data                                  |
+
+Choose one server at a time on port 5173. Run `pnpm build` before `pnpm start`,
+or `pnpm build:cloudflare` before `pnpm preview`. To test another loopback port,
+set `RALLYPOINT_TEST_URL` when running the suite. No command deploys the app. If this checkout previously ran Vite, remove its
+obsolete generated `.wrangler/deploy/config.json` before the first OpenNext
+preview; it points Wrangler at the old build directory.
+
+## Workspace
+
+- `apps/web`: Next.js App Router pages, client Auth/UI and dynamic API routes.
+- `packages/domain`: browser-safe contracts, session validation, exact money formatting and auth return-path validation.
+- `packages/api`: server-only verified-identity operations and explicit Supabase RPC calls.
+- `supabase`: unchanged local project identity and migration history.
+- `scripts` / `tests`: root local lifecycle and meaningful integration checks.
+
+Workspace dependencies use `workspace:*`. Turbo orders package checks and caches
+lint/type results inside this checkout's `.turbo/cache` (including in Git worktrees). Builds, dev servers and database/integration commands are not
+cached; build artifacts may contain server environment values and must be treated
+as credential-bearing. Remote caching is disabled.
+The six new page/navigation checks cover server-rendered home HTML, native deep
+links/404s, manifest/icons and safe auth return paths without browser globals.
 
 After reset, sign out of old browser sessions and sign in again: recreated fixture
 users have new IDs. Reset is a development recovery procedure, not a production
 migration/backup plan. The helper always targets local services; it has no linked
 or remote reset path. Do not place real data in this development database.
 
-`npm run test:api` uses the synthetic passwords without logging tokens. It checks
+`pnpm test:api` uses the synthetic passwords without logging tokens. It checks
 missing/forged sessions, group isolation, metadata role spoofing, immediate role
 revocation, backend-RPC denial, internal-table exposure and truthful empty results.
 It temporarily removes and restores the synthetic organizer role.
 
 ## Configuration
 
-Copy `.dev.vars.example` only for manual configuration. `db:start` normally
+Copy `apps/web/.env.example` to `apps/web/.env.local` only for manual configuration. `db:start` normally
 creates the real local file for you. Keep the Supabase secret/service key in that
-ignored server-only file or supported Worker secret storage. The app's public
+ignored server-only file or supported runtime secret storage. `db:start` also
+writes app-local `.dev.vars` for Workers preview. The app's public
 configuration contains only the Auth URL/publishable key and enabled methods.
-No `VITE_*` secret variables are needed.
+Never expose the server key through `NEXT_PUBLIC_*`, Next config `env`, source,
+logs or client caches. API configuration is read at runtime; private responses
+and mutation result lookups stay `no-store`. Production runtime secrets are a
+separate setup step.
 
 The shell works without configuration; sign-in explains the missing setup rather
 than claiming a connection succeeded. All private API responses are uncached.
@@ -108,11 +140,11 @@ under its booking transaction's session lock before enabling registration; after
 that all detail changes are locked pending the booked-event edit contract.
 P-06 owns outbound change notifications; no email is sent here.
 
-`npm run test:api` also checks owner bootstrap, private drafts, invalid
+`pnpm test:api` also checks owner bootstrap, private drafts, invalid
 publication, simultaneous retry/version conflicts, share projections, booked-edit
 denial and operation-result recovery. Tests run serially and clean up their
 synthetic sessions/groups. For an existing local installation, rerun
-`npm run db:start` to apply pending local migrations. The reset command remains
+`pnpm db:start` to apply pending local migrations. The reset command remains
 the synthetic-only recovery option.
 
 ## Join or waitlist
@@ -158,7 +190,7 @@ creates one fee and one durable signal before start. Email delivery is independe
 and belongs to P-06. If a response is interrupted, keep the page open and use
 **Check result** or **Retry same request** before taking another action.
 
-`npm run test:api` checks simultaneous last-seat joins, duplicate joining and
+`pnpm test:api` checks simultaneous last-seat joins, duplicate joining and
 withdrawal, guest/consent denial, strict ordering, withdrawal/promotion/new-join
 races, fee preservation, privacy, no automatic membership, terminal-event denial,
 and opening/cutoff/start lock waits. Independent HTTP clients use real local Auth
@@ -176,15 +208,18 @@ past and inspect the departing parties' retained fees. Refresh as each actor;
 public and other participant views must not expose financial records.
 
 No cloud Supabase project is linked and no Cloudflare/Resend service is provisioned.
-The configuration intentionally contains no deploy script. PWA manifest and
+The configuration contains no deploy script. Next production and local OpenNext
+build/preview are separate checks; neither provisions a cloud resource. The
+adapter uses no R2/ISR cache in this app. PWA manifest and
 192/512-pixel icons are present. Chromium installability diagnostics pass in a
 normal local browser profile; actual device installation and safe shell caching
 remain part of later PWA verification. There is no offline mutation queue or identity-data cache.
 
 ## Where to work next
 
-- `src/`: app shell, routes, Auth provider and identity-scoped request state.
-- `worker/`: verified identity boundary and explicit trusted API operations.
+- `apps/web/`: native Next routes, app shell, Auth and identity-scoped request state.
+- `packages/api/`: verified identity boundary and trusted API operations.
+- `packages/domain/`: shared browser-safe types and validation.
 - `supabase/migrations/`: versioned schema; `app` tables are unexposed and
   backend RPCs in `api` deny browser roles.
 - [Foundation API contract](docs/foundation-api.md): reusable operations and errors.
@@ -196,7 +231,10 @@ remain part of later PWA verification. There is no offline mutation queue or ide
 D-10 was approved in chat on 2026-10-22. The approved stack is
 React/TypeScript/Vite/npm, Cloudflare Workers, Supabase Postgres/Auth,
 Google OAuth and Resend. The [P-01 decision brief](https://linear.app/wwonderland/document/p-01-technical-decision-recommended-stack-and-session-loop-contract-eba7e99b792c)
-contains the research and proposed future contracts. The remaining D-01
+contains the original research and proposed future contracts. On 2026-10-22,
+the owner requested Next.js, Turborepo and pnpm, replacing the original frontend
+and package-manager choice under D-11. Cloudflare remains the hosting target
+through OpenNext; Supabase and accepted product policies remain in place. The remaining D-01
 membership and D-03/D-04/D-05 policies retain their own gates. On 2026-10-22
 the owner accepted creator-as-owner bootstrap and the pre-booking edit boundary
 for P-02. General membership and invitation policies remain separate.

@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { writeFileSync, readFileSync } from "node:fs";
+import { writeFileSync, readFileSync, chmodSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 import {
   localEnv,
@@ -9,7 +9,7 @@ import {
 } from "./local-env.mjs";
 
 function cli(...args) {
-  return execFileSync("npx", ["--no-install", "supabase", ...args], {
+  return execFileSync("pnpm", ["exec", "supabase", ...args], {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     maxBuffer: 40 * 1024 * 1024,
@@ -24,12 +24,18 @@ function configure() {
   if (!url || !key || !secret || new URL(url).hostname !== "127.0.0.1")
     throw new Error("Local configuration could not be read safely.");
   writeFileSync(
-    ".dev.vars",
+    "apps/web/.env.local",
     `SUPABASE_URL=${url}\nSUPABASE_PUBLISHABLE_KEY=${key}\nSUPABASE_SECRET_KEY=${secret}\nLOCAL_AUTH_ENABLED=true\nGOOGLE_AUTH_ENABLED=false\n`,
     { mode: 0o600 },
   );
+  chmodSync("apps/web/.env.local", 0o600);
+  const nextEnv = readFileSync("apps/web/.env.local", "utf8");
+  writeFileSync("apps/web/.dev.vars", nextEnv + "NEXTJS_ENV=development\n", {
+    mode: 0o600,
+  });
+  chmodSync("apps/web/.dev.vars", 0o600);
   console.log(
-    "Local credentials written to ignored .dev.vars (values are not logged).",
+    "Local credentials written to ignored apps/web/.env.local (values are not logged).",
   );
 }
 async function seed() {

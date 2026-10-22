@@ -1,0 +1,14 @@
+packages:
+  - apps/*
+  - packages/*
+
+allowBuilds:
+  esbuild: true
+  sharp: true
+  workerd: true
+  supabase: true
+  rclone.js: false
+
+minimumReleaseAgeExclude:
+  - "@opennextjs/aws@4.1.12"
+  - "@opennextjs/cloudflare@1.20.13"

@@ -30,11 +30,9 @@ const api = (path, actor) =>
     headers: actor ? { Authorization: `Bearer ${actor.token}` } : {},
   });
 const sql = (query) =>
-  execFileSync(
-    "npx",
-    ["--no-install", "supabase", "db", "query", "--local", query],
-    { stdio: "pipe" },
-  );
+  execFileSync("pnpm", ["exec", "supabase", "db", "query", "--local", query], {
+    stdio: "pipe",
+  });
 test("local identity and group authorization boundary", async (t) => {
   const organizer = await login("organizer"),
     member = await login("member"),
