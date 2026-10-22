@@ -98,7 +98,7 @@ begin
   select * into s from app.sessions where id=p_session_id;
   if not found then raise insufficient_privilege using message='group_access_denied';end if;
   perform app.require_manager(p_actor_id,s.group_id);
-  return app.payment_instructions_result(p_session_id,null,null)-'operationKey'-'removedPath';
+  return app.payment_instructions_result(p_session_id,null,null)-'operationKey'-'removedPath'-'imagePath';
 end;
 $$;
 
@@ -140,7 +140,7 @@ begin
   if r.action='payment_instructions' then
     select * into s from app.sessions where id=r.resource_id;
     perform app.require_manager(p_actor_id,s.group_id);
-    return app.payment_instructions_result(s.id,p_key,null)-'removedPath';
+    return app.payment_instructions_result(s.id,p_key,null)-'removedPath'-'imagePath';
   end if;
   return app.read_operation_before_payment_instructions(p_actor_id,p_key);
 end;

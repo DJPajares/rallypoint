@@ -107,6 +107,7 @@ test("organizers save, correct and remove instructions and one QR without changi
   const managed = await ok(await f.get(f.organizer, path(f)));
   assert.equal(managed.paymentInstructions.revision, 4);
   assert.equal(managed.paymentInstructions.updatedBy, "Mika");
+  assert.ok(!("imagePath" in managed), "Storage paths never reach a browser");
   const view = await registration(f, f.actors[0]);
   assert.deepEqual(view.paymentInstructions, {
     text: "PayNow 9000 1111\nReference: your name",
@@ -122,27 +123,43 @@ test("organizers save, correct and remove instructions and one QR without changi
   assert.deepEqual(new Uint8Array(await image.arrayBuffer()), otherPng);
   assert.equal(snapshot(f), before, "Seats, fees and paid markers unchanged");
 
-  r = await ok(await save(f, f.organizer, { revision: 4, action: "remove_image" }));
+  r = await ok(
+    await save(f, f.organizer, { revision: 4, action: "remove_image" }),
+  );
   assert.equal(r.paymentInstructions.hasImage, false);
-  assert.equal(r.paymentInstructions.text, "PayNow 9000 1111\nReference: your name");
+  assert.equal(
+    r.paymentInstructions.text,
+    "PayNow 9000 1111\nReference: your name",
+  );
   assert.deepEqual(await objects(f), []);
   assert.equal((await qr(f, f.actors[0])).status, 404);
-  assert.equal((await registration(f, f.actors[0])).paymentInstructions.hasImage, false);
+  assert.equal(
+    (await registration(f, f.actors[0])).paymentInstructions.hasImage,
+    false,
+  );
   r = await ok(await save(f, f.organizer, { revision: 5, action: "remove" }));
   assert.equal(r.paymentInstructions, null);
-  assert.equal("paymentInstructions" in (await registration(f, f.actors[0])), false);
+  assert.equal(
+    "paymentInstructions" in (await registration(f, f.actors[0])),
+    false,
+  );
   assert.equal(snapshot(f), before);
 });
 
 test("only current organizers write and only booked people read", async (t) => {
-  const f = await splitFixture(t, { feeMode: "fixed", seats: [1, 1], capacity: 2 });
+  const f = await splitFixture(t, {
+    feeMode: "fixed",
+    seats: [1, 1],
+    capacity: 2,
+  });
   const waiting = await f.join(f.actors[2]);
   assert.equal(waiting.state, "waitlisted");
   const [confirmed, , waiter, other] = f.actors;
   const secret = "PayNow 9123 4567 to Synthetic Payee";
   for (const actor of [confirmed, waiter, other])
     assert.equal(
-      (await save(f, actor, { revision: 0, action: "save", text: secret })).status,
+      (await save(f, actor, { revision: 0, action: "save", text: secret }))
+        .status,
       403,
     );
   assert.equal(
@@ -164,14 +181,21 @@ test("only current organizers write and only booked people read", async (t) => {
   assert.equal((await upload(f, confirmed, png, "image/png", 2)).status, 403);
 
   for (const actor of [confirmed, waiter]) {
-    assert.equal((await registration(f, actor)).paymentInstructions.text, secret);
+    assert.equal(
+      (await registration(f, actor)).paymentInstructions.text,
+      secret,
+    );
     assert.equal((await qr(f, actor)).status, 200);
   }
   const outsider = JSON.stringify(await registration(f, other));
-  assert.ok(!outsider.includes("PayNow") && !outsider.includes(f.session.id + "/"));
+  assert.ok(
+    !outsider.includes("PayNow") && !outsider.includes(f.session.id + "/"),
+  );
   assert.equal((await qr(f, other)).status, 403);
   assert.equal((await qr(f, null)).status, 401);
-  const shared = await (await f.get(null, `/api/shared/${f.session.slug}`)).text();
+  const shared = await (
+    await f.get(null, `/api/shared/${f.session.slug}`)
+  ).text();
   assert.ok(!shared.includes("PayNow") && !shared.includes("payment"));
 
   await ok(
@@ -180,8 +204,15 @@ test("only current organizers write and only booked people read", async (t) => {
       partyId: f.parties[0].id,
     }),
   );
-  assert.equal("paymentInstructions" in (await registration(f, confirmed)), false);
-  assert.equal((await qr(f, confirmed)).status, 403, "Withdrawn people lose access");
+  assert.equal(
+    "paymentInstructions" in (await registration(f, confirmed)),
+    false,
+  );
+  assert.equal(
+    (await qr(f, confirmed)).status,
+    403,
+    "Withdrawn people lose access",
+  );
   assert.equal(
     f.sql(
       "select has_table_privilege('anon','app.payment_instructions','select') or has_table_privilege('authenticated','app.payment_instructions','select');",
@@ -198,13 +229,20 @@ test("only current organizers write and only booked people read", async (t) => {
         "Content-Type": "application/json",
         "Content-Profile": "api",
       },
-      body: JSON.stringify({ p_actor_id: f.organizer.id, p_slug: f.session.slug }),
+      body: JSON.stringify({
+        p_actor_id: f.organizer.id,
+        p_slug: f.session.slug,
+      }),
     },
   );
   assert.equal(direct.status, 403);
-  const { error } = await createClient(env.SUPABASE_URL, env.SUPABASE_PUBLISHABLE_KEY, {
-    auth: { persistSession: false },
-  })
+  const { error } = await createClient(
+    env.SUPABASE_URL,
+    env.SUPABASE_PUBLISHABLE_KEY,
+    {
+      auth: { persistSession: false },
+    },
+  )
     .storage.from("payment-qr")
     .download(`${f.session.id}/${(await objects(f))[0]}`);
   assert.ok(error, "The bucket is private");
@@ -215,7 +253,13 @@ test("uploads refuse unsafe, mismatched, oversized or text-less images", async (
   let r = await upload(f, f.organizer, png, "image/png", 0);
   assert.equal(r.status, 409);
   assert.equal((await r.json()).error.code, "instructions_required");
-  await ok(await save(f, f.organizer, { revision: 0, action: "save", text: "Cash at the door" }));
+  await ok(
+    await save(f, f.organizer, {
+      revision: 0,
+      action: "save",
+      text: "Cash at the door",
+    }),
+  );
   for (const [bytes, type] of [
     [svg, "image/svg+xml"],
     [svg, "image/png"],
@@ -246,26 +290,56 @@ test("uploads refuse unsafe, mismatched, oversized or text-less images", async (
     [{ revision: -1, action: "remove" }, 422],
   ])
     assert.equal((await save(f, f.organizer, body)).status, status);
-  assert.equal((await upload(f, f.organizer, png, "image/png", "x")).status, 422);
+  assert.equal(
+    (await upload(f, f.organizer, png, "image/png", "x")).status,
+    422,
+  );
 });
 
 test("stale revisions and replays never overwrite or leave extra images", async (t) => {
   const f = await splitFixture(t, { feeMode: "fixed", seats: [1] });
   const key = crypto.randomUUID();
-  await ok(await save(f, f.organizer, { revision: 0, action: "save", text: "First" }, key));
+  await ok(
+    await save(
+      f,
+      f.organizer,
+      { revision: 0, action: "save", text: "First" },
+      key,
+    ),
+  );
   const replay = await ok(
-    await save(f, f.organizer, { revision: 0, action: "save", text: "First" }, key),
+    await save(
+      f,
+      f.organizer,
+      { revision: 0, action: "save", text: "First" },
+      key,
+    ),
   );
   assert.equal(replay.paymentInstructions.revision, 1);
-  let r = await save(f, f.organizer, { revision: 0, action: "save", text: "Other" }, key);
+  let r = await save(
+    f,
+    f.organizer,
+    { revision: 0, action: "save", text: "Other" },
+    key,
+  );
   assert.equal(r.status, 409);
   assert.equal((await r.json()).error.code, "idempotency_conflict");
-  r = await save(f, f.organizer, { revision: 0, action: "save", text: "Stale tab" });
+  r = await save(f, f.organizer, {
+    revision: 0,
+    action: "save",
+    text: "Stale tab",
+  });
   assert.equal(r.status, 409);
   assert.equal((await r.json()).error.code, "stale_payment_instructions");
-  const recovered = await ok(await f.get(f.organizer, `/api/operations/${key}`));
+  const recovered = await ok(
+    await f.get(f.organizer, `/api/operations/${key}`),
+  );
   assert.equal(recovered.paymentInstructions.text, "First");
-  assert.equal((await f.get(f.actors[0], `/api/operations/${key}`)).status, 404);
+  assert.ok(!("imagePath" in recovered) && !("removedPath" in recovered));
+  assert.equal(
+    (await f.get(f.actors[0], `/api/operations/${key}`)).status,
+    404,
+  );
 
   const uploadKey = crypto.randomUUID();
   const both = await Promise.all([
@@ -283,25 +357,39 @@ test("stale revisions and replays never overwrite or leave extra images", async 
   assert.equal((await r.json()).error.code, "stale_payment_instructions");
   assert.equal((await objects(f)).length, 1, "Replays leave one stored image");
   assert.equal(
-    f.sql(`select revision from app.payment_instructions where session_id='${f.session.id}';`),
+    f.sql(
+      `select revision from app.payment_instructions where session_id='${f.session.id}';`,
+    ),
     "2",
   );
 });
 
 test("cancelled sessions refuse changes and hide instructions from participants", async (t) => {
   const f = await splitFixture(t, { feeMode: "fixed", seats: [1] });
-  await ok(await save(f, f.organizer, { revision: 0, action: "save", text: "Bank 123" }));
+  await ok(
+    await save(f, f.organizer, {
+      revision: 0,
+      action: "save",
+      text: "Bank 123",
+    }),
+  );
   await ok(await upload(f, f.organizer, png, "image/png", 1));
   await ok(
     await f.post(f.organizer, `/api/sessions/${f.session.id}/cancel`, {
       operationKey: crypto.randomUUID(),
     }),
   );
-  assert.equal("paymentInstructions" in (await registration(f, f.actors[0])), false);
+  assert.equal(
+    "paymentInstructions" in (await registration(f, f.actors[0])),
+    false,
+  );
   assert.equal((await qr(f, f.actors[0])).status, 403);
   const r = await save(f, f.organizer, { revision: 2, action: "remove" });
   assert.equal(r.status, 409);
   assert.equal((await r.json()).error.code, "session_closed");
   assert.equal((await upload(f, f.organizer, png, "image/png", 2)).status, 409);
-  assert.equal((await ok(await f.get(f.organizer, path(f)))).paymentInstructions.text, "Bank 123");
+  assert.equal(
+    (await ok(await f.get(f.organizer, path(f)))).paymentInstructions.text,
+    "Bank 123",
+  );
 });

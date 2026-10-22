@@ -9,6 +9,7 @@ import { useMutation } from "./use-mutation";
 import { SplitFee } from "./split-fee";
 import { CancelSession, CancelledRoster } from "./cancellation-controls";
 import { RegistrationPanel } from "./registration-panel";
+import { PaymentInstructionsEditor } from "./payment-instructions";
 import { ActivityPicker } from "./activity-picker";
 import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import { ClockCountdownIcon } from "@phosphor-icons/react/dist/csr/ClockCountdown";
@@ -530,6 +531,9 @@ function Editor({
           </p>
         ) : null}
       </form>
+      {record && !terminal ? (
+        <PaymentInstructionsEditor sessionId={record.id} slug={record.slug} />
+      ) : null}
       {record && !terminal ? (
         <CancelSession
           record={record}

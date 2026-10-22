@@ -82,6 +82,8 @@
   /* The ticket stub and other navy blocks that stay navy in dark mode. */
   --color-stub: light-dark(var(--palette-navy-700), var(--palette-navy-600));
   --color-on-stub: var(--palette-white);
+  /* Behind uploaded QR codes: scanners need a light quiet zone in dark mode too. */
+  --color-qr-backdrop: var(--palette-white);
   /* The one primary action per screen. Neon fill, always with navy text. */
   --color-action: light-dark(var(--palette-neon-400), var(--palette-neon-300));
   --color-action-hover: light-dark(

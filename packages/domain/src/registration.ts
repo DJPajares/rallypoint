@@ -91,9 +91,29 @@ export interface OwnParty {
   splitClaim?: OwnSplitClaim;
   splitHistory?: OwnSplitChange[];
 }
+/** Shown only to organizers/co-hosts and the session's booked people. */
+export interface PaymentInstructions {
+  text: string;
+  hasImage: boolean;
+  /** Changes whenever the instructions change, so a stale image is refetched. */
+  imageRevision: number;
+}
+/** Organizer/co-host view: the revision to write against and the last change. */
+export interface ManagedPaymentInstructions {
+  revision: number;
+  paymentInstructions: {
+    text: string;
+    hasImage: boolean;
+    imageType: string | null;
+    revision: number;
+    updatedAt: string;
+    updatedBy: string;
+  } | null;
+}
 export interface RegistrationView {
   own: OwnParty | null;
   canManage: boolean;
+  paymentInstructions?: PaymentInstructions;
   rosterAllowed: boolean;
   counts: Counts;
   split?: SplitSummary;

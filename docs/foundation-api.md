@@ -105,6 +105,41 @@ window. A cancelled draft still returns `404 not_found` publicly. Cancellations,
 rosters, actor data and fee records are never added to the public share response.
 All responses remain `no-store`; direct browser roles have no RPC/table grants.
 
+## Payment instructions (P-05b contract)
+
+| Method and path                                                          | Input / result                                                             | Access                                                            |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| GET `/api/sessions/:id/payment-instructions`                             | `{revision, paymentInstructions}`; `revision` is 0 before the first save   | Current group manager                                             |
+| POST `/api/sessions/:id/payment-instructions`                            | `operationKey, revision, action: save (with text) / remove_image / remove` | Current group manager                                             |
+| POST `/api/sessions/:id/payment-instructions/qr?operationKey=&revision=` | Raw PNG/JPEG/WebP body with its `Content-Type`; same result                | Current group manager                                             |
+| GET `/api/registrations/:slug/payment-qr`                                | Image bytes, `no-store`, `nosniff`, `sandbox` CSP                          | Manager, or own confirmed/waitlisted party on a published session |
+
+Instructions are stored in `app.payment_instructions`, apart from the
+booked-locked session details, so they can be saved after bookings start
+without changing the session version, parties, fees or paid markers. Text is
+trimmed and has 1–1000 characters. A session has at most one image: 1 MiB at
+most, declared type matching its file signature (SVG and other types are
+refused). An image needs saved text so it always has a fallback. Every write
+names the revision it read: `409 stale_payment_instructions` instead of an
+overwrite. It records actor/time and uses an operation receipt (`GET
+/api/operations/:key` recovers it). An image replay is matched by its SHA-256.
+Cancelled sessions return `409 session_closed`. Errors: `422 invalid_image`,
+`413 image_too_large`, `409 instructions_required`,
+`422 invalid_payment_instructions`.
+
+The image lives in the private `payment-qr` Storage bucket (created by the
+migration) at `<sessionId>/<random id>`. Browsers never receive the path, a
+public URL or a signed URL. Every read rechecks entitlement and streams the
+bytes uncached. The API removes replaced, replayed and rejected objects after
+the write settles, and sweeps unreferenced objects older than 10 minutes on the
+next write.
+
+Entitled readers (organizers/co-hosts, or the actor's own confirmed or
+waitlisted party on a published session) get `paymentInstructions: {text,
+hasImage, imageRevision}` in `GET /api/registrations/:slug`. Everyone else gets
+no such key. That includes link visitors, unrelated accounts, withdrawn parties
+and cancelled sessions. The public share response never includes it.
+
 ## Registration contract
 
 - GET `/api/registrations/:slug` returns `{ registration }` for the verified actor.

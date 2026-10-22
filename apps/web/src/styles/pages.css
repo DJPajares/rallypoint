@@ -387,6 +387,33 @@
 .roster li span {
   color: var(--color-text-muted);
 }
+.how-to-pay,
+.payment-editor,
+.payment-qr-field {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}
+.payment-editor {
+  margin-block: var(--space-4);
+}
+.how-to-pay > *,
+.payment-editor > *,
+.payment-qr-field > * {
+  margin: 0;
+  justify-self: stretch;
+}
+.payment-text {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.payment-qr {
+  justify-self: start;
+  width: min(100%, 240px);
+  height: auto;
+  border-radius: var(--radius-sm);
+  background: var(--color-qr-backdrop);
+}
 .fee-controls {
   display: grid;
   gap: var(--space-1);
