@@ -1,0 +1,464 @@
+/* App frame: top bar (tablet/desktop), bottom bar (phone), floating menu. */
+.app {
+  min-height: 100dvh;
+}
+.skip-link {
+  position: fixed;
+  top: calc(12px + var(--safe-top));
+  left: calc(12px + var(--safe-left));
+  z-index: 100;
+  padding: 10px 16px;
+  border-radius: var(--pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(calc(-100% - 24px - var(--safe-top)));
+  transition: transform var(--standard) var(--ease);
+}
+.skip-link:focus {
+  transform: none;
+}
+
+/* Top bar */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  padding-top: var(--safe-top);
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: saturate(1.4) blur(14px);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-inner {
+  max-width: var(--content);
+  margin: 0 auto;
+  height: var(--topbar);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* The floating menu sits in this bar's right rail; keep clear of it. */
+  padding: 0 calc(var(--gutter) + var(--fab) + 12px) 0 var(--gutter);
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: auto;
+  color: var(--ink);
+  text-decoration: none;
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.03em;
+}
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #13235b;
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  padding-bottom: 3px;
+}
+.brand-mark span {
+  color: #c6f432;
+}
+.topnav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.topnav a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--pill);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    color var(--fast) var(--ease),
+    background-color var(--fast) var(--ease);
+}
+.topnav a:hover {
+  color: var(--ink);
+  background: var(--sunken);
+}
+.topnav a[aria-current="page"] {
+  color: var(--ink);
+}
+.topnav a[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: -10px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+.create-top {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 44px;
+  margin-left: 8px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--pill);
+  background: var(--neon);
+  color: var(--on-neon);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color var(--fast) var(--ease);
+}
+.create-top:hover {
+  background: var(--neon-hover);
+}
+
+/* Main */
+main {
+  max-width: var(--content);
+  margin: 0 auto;
+  padding: 32px var(--gutter) 72px;
+  padding-left: max(var(--gutter), var(--safe-left));
+  padding-right: max(var(--gutter), var(--safe-right));
+}
+
+/* Floating menu */
+.fab {
+  position: fixed;
+  z-index: 40;
+  top: calc(var(--safe-top) + (var(--topbar) - var(--fab)) / 2);
+  right: max(var(--gutter), var(--safe-right));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  transition:
+    transform var(--standard) var(--ease),
+    opacity var(--standard) var(--ease);
+}
+@media (min-width: 1232px) {
+  /* Align with the content column instead of the viewport edge. */
+  .fab {
+    right: calc((100vw - var(--content)) / 2 + var(--gutter));
+  }
+}
+.chip-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--fab);
+  height: var(--fab);
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.fab-trigger {
+  transition:
+    box-shadow var(--fast) var(--ease),
+    background-color var(--fast) var(--ease);
+}
+.fab-trigger:hover {
+  background: var(--sunken);
+}
+.fab-icon {
+  display: inline-flex;
+  animation: fab-spin var(--standard) var(--ease);
+}
+@keyframes fab-spin {
+  from {
+    opacity: 0;
+    transform: rotate(-90deg);
+  }
+}
+.fab-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+.fab-item {
+  animation: fab-in var(--standard) var(--ease) both;
+}
+@keyframes fab-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.88);
+  }
+}
+.fab-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.fab-action > span:first-child {
+  padding: 6px 12px;
+  border-radius: var(--pill);
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+.fab-action:focus-visible {
+  outline: none;
+}
+.fab-action:focus-visible .chip-button {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+.fab-action:hover .chip-button {
+  background: var(--sunken);
+}
+
+/* Bottom bar (phones only) */
+.bottombar {
+  display: none;
+}
+.back-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 20px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.back-chip:hover {
+  color: var(--ink);
+}
+.sticky-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Tablet: compact bar, icon-over-nothing; labels stay but tighter. */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .topnav a {
+    padding: 0 10px;
+    font-size: 13px;
+  }
+  .create-top {
+    padding: 0;
+    width: 44px;
+  }
+  .create-top .create-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  main {
+    padding-top: 28px;
+  }
+}
+@media (min-width: 1200px) {
+  .topnav a svg {
+    display: none;
+  }
+  main {
+    padding: 44px var(--gutter) 88px;
+  }
+}
+
+/* Phone */
+@media (max-width: 767px) {
+  .app[data-signed-in] .topbar {
+    display: none;
+  }
+  .topbar {
+    position: static;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: 0;
+  }
+  main {
+    /* The menu chip (and the back chip on detail pages) share this first row. */
+    padding-top: calc(var(--safe-top) + 72px);
+    padding-bottom: calc(var(--bottombar) + var(--safe-bottom) + 40px);
+  }
+  .app:not([data-signed-in]) main {
+    padding-top: 12px;
+  }
+  .fab {
+    top: calc(var(--safe-top) + 12px);
+  }
+  .app:not([data-signed-in]) .fab {
+    top: calc(var(--safe-top) + (var(--topbar) - var(--fab)) / 2);
+  }
+  .fab[data-hidden] {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(calc(-100% - 12px - var(--safe-top)));
+  }
+  .bottombar {
+    display: block;
+    position: fixed;
+    z-index: 30;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(var(--bottombar) + var(--safe-bottom));
+    padding: 0 max(8px, var(--safe-left)) var(--safe-bottom)
+      max(8px, var(--safe-right));
+    background: color-mix(in srgb, var(--card) 94%, transparent);
+    backdrop-filter: saturate(1.4) blur(14px);
+    -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    border-top: 1px solid var(--line);
+  }
+  .bottombar ul {
+    list-style: none;
+    margin: 0 auto;
+    padding: 0;
+    max-width: 520px;
+    height: var(--bottombar);
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: center;
+  }
+  /* Column three belongs to the create button. */
+  .bottombar li.after-create:nth-child(3) {
+    grid-column: 4;
+  }
+  .bottombar a {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 56px;
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .bottombar a[aria-current="page"] {
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .bottombar a[aria-current="page"]::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    width: 28px;
+    height: 4px;
+    border-radius: 4px;
+    background: var(--accent);
+  }
+  .create-bottom {
+    position: absolute;
+    left: 50%;
+    top: calc(var(--create) / -2.6);
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--create);
+    height: var(--create);
+    border-radius: 50%;
+    border: 4px solid var(--paper);
+    background: var(--neon);
+    color: var(--on-neon);
+    box-shadow: var(--shadow-float);
+    transition: transform var(--fast) var(--ease);
+  }
+  .create-bottom:active {
+    transform: translateX(-50%) scale(0.94);
+  }
+  /* Detail pages own the bottom of the screen. */
+  .app[data-detail] .bottombar {
+    display: none;
+  }
+  .app[data-detail] main {
+    padding-bottom: calc(var(--safe-bottom) + 120px);
+  }
+  .back-chip {
+    position: fixed;
+    z-index: 40;
+    top: calc(var(--safe-top) + 12px);
+    left: max(var(--gutter), var(--safe-left));
+    width: var(--fab);
+    height: var(--fab);
+    justify-content: center;
+    margin: 0;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: var(--shadow);
+  }
+  .back-chip span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .app:not([data-signed-in]) .back-chip {
+    position: static;
+    width: auto;
+    height: auto;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    margin-bottom: 16px;
+  }
+  .app:not([data-signed-in]) .back-chip span {
+    position: static;
+    width: auto;
+    height: auto;
+    clip: auto;
+  }
+  .sticky-actions {
+    position: fixed;
+    z-index: 25;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    flex-wrap: nowrap;
+    padding: 12px max(var(--gutter), var(--safe-right))
+      calc(12px + var(--safe-bottom)) max(var(--gutter), var(--safe-left));
+    background: color-mix(in srgb, var(--card) 94%, transparent);
+    backdrop-filter: saturate(1.4) blur(14px);
+    -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    border-top: 1px solid var(--line);
+  }
+  .sticky-actions > .button {
+    flex: 1;
+  }
+}

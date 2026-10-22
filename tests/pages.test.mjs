@@ -14,6 +14,9 @@ test("public home is usable HTML before client JavaScript runs", async () => {
 });
 test("native page deep links render without server-side browser globals", async () => {
   for (const path of [
+    "/home",
+    "/sessions",
+    "/dues",
     "/workspace",
     "/groups/new",
     "/groups/11111111-1111-4111-8111-111111111111",
