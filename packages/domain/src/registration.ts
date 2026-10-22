@@ -72,7 +72,9 @@ export const feeStanding = (fee: Fee) =>
       ? "Waived"
       : fee.markedPaid
         ? "Paid"
-        : "Unpaid";
+        : fee.totalMinor === 0
+          ? "Nothing due"
+          : "Unpaid";
 export interface OwnParty {
   id: string;
   state: "confirmed" | "waitlisted" | "withdrawn" | "removed";
@@ -100,6 +102,7 @@ export interface RegistrationView {
     state?: string;
     fee?: ManagedFee | null;
     splitClaim?: ManagedSplitClaim;
+    splitUndoRequiresReview?: boolean;
     /** Organizers/co-hosts only; one entry per confirmed seat. */
     attendance?: SeatAttendance[];
   }>;

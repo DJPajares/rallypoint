@@ -6,6 +6,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
 import { useMutation } from "./use-mutation";
+import { SplitFee } from "./split-fee";
 import { RegistrationPanel } from "./registration-panel";
 import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import { ClockCountdownIcon } from "@phosphor-icons/react/dist/csr/ClockCountdown";
@@ -429,7 +430,28 @@ function Editor({
                 disabled={disabledFields}
               />
             </Field>
-            <Field id="fee" label="Fixed fee per seat">
+            <Field id="feeMode" label="Pricing">
+              <SelectField
+                id="feeMode"
+                value={form.feeMode ?? "fixed"}
+                onChange={(next) =>
+                  setForm({ ...form, feeMode: next as "fixed" | "split" })
+                }
+                options={[
+                  { value: "fixed", label: "Fee per seat" },
+                  { value: "split", label: "Total to split" },
+                ]}
+                disabled={disabledFields}
+              />
+            </Field>
+            <Field
+              id="fee"
+              label={
+                form.feeMode === "split"
+                  ? "Total session cost"
+                  : "Fixed fee per seat"
+              }
+            >
               <AffixInput
                 id="fee"
                 prefix={form.currency}
@@ -629,7 +651,13 @@ export function SharedSessionPage() {
                 <CoinsIcon size={20} aria-hidden="true" />
                 Fee
               </dt>
-              <dd>{feeLabel(d)} per seat, paid to the organizer</dd>
+              <dd>
+                {shared.split ? (
+                  <SplitFee summary={shared.split} />
+                ) : (
+                  <>{feeLabel(d)} per seat, paid to the organizer</>
+                )}
+              </dd>
             </div>
             <div>
               <dt>

@@ -178,6 +178,10 @@ test("reviewed split corrections", async (t) => {
       assert.equal((await view(f)).uncoveredMinor, 4000);
       assert.equal((await payment(f, 0, "undo_waiver")).status, 200);
       assert.equal(count(f), 1);
+      assert.equal(
+        (await registration(f)).roster[0].splitUndoRequiresReview,
+        false,
+      );
       assert.equal((await view(f)).uncoveredMinor, 0);
       assert.equal((await payment(f, 0, "waive")).status, 200);
       assert.equal(
@@ -237,6 +241,10 @@ test("reviewed split corrections", async (t) => {
       const d = await (await f.get(f.actors[0], "/api/dues")).json();
       const claim = d.splitClaims.find((x) => x.partyId === f.parties[0].id);
       assert.equal(claim.splitClaim.waived, true);
+      assert.equal(
+        (await registration(f)).roster[0].splitUndoRequiresReview,
+        true,
+      );
       assert.equal(claim.splitClaim.estimateMinor, null);
       assert.equal(
         d.dues.some((x) => x.partyId === f.parties[0].id),
@@ -368,17 +376,15 @@ test("reviewed split corrections", async (t) => {
         });
       assert.ok(
         (
-          await browser
-            .schema("api")
-            .rpc("correct_split", {
-              p_actor_id: f.organizer.id,
-              p_actor_name: "Fake",
-              p_key: crypto.randomUUID(),
-              p_slug: f.session.slug,
-              p_basis: p.basis,
-              p_total_minor: 9000,
-              p_reason: "Fake",
-            })
+          await browser.schema("api").rpc("correct_split", {
+            p_actor_id: f.organizer.id,
+            p_actor_name: "Fake",
+            p_key: crypto.randomUUID(),
+            p_slug: f.session.slug,
+            p_basis: p.basis,
+            p_total_minor: 9000,
+            p_reason: "Fake",
+          })
         ).error,
       );
       for (const input of [

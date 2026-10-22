@@ -238,6 +238,18 @@ test("organizer split finalization", async (t) => {
     },
   );
   await t.test(
+    "completed sessions can finalize without changing attendance",
+    async (t) => {
+      const f = await splitFixture(t, { seats: [1] });
+      f.moveStart(-1000);
+      f.sql(
+        `update app.sessions set state='completed' where id='${f.session.id}'`,
+      );
+      assert.equal((await finalize(f, await preview(f))).status, 200);
+      assert.equal((await own(f, f.actors[0])).own.fee.totalMinor, 12000);
+    },
+  );
+  await t.test(
     "only a current manager can preview, apply or recover",
     async (t) => {
       const f = await splitFixture(t, { seats: [1] });
@@ -261,15 +273,13 @@ test("organizer split finalization", async (t) => {
       });
       assert.ok(
         (
-          await browser
-            .schema("api")
-            .rpc("finalize_split", {
-              p_actor_id: f.organizer.id,
-              p_actor_name: "Fake",
-              p_key: crypto.randomUUID(),
-              p_slug: f.session.slug,
-              p_basis: p.basis,
-            })
+          await browser.schema("api").rpc("finalize_split", {
+            p_actor_id: f.organizer.id,
+            p_actor_name: "Fake",
+            p_key: crypto.randomUUID(),
+            p_slug: f.session.slug,
+            p_basis: p.basis,
+          })
         ).error,
       );
       f.sql(

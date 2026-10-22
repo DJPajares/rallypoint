@@ -1,3 +1,4 @@
+import { feeLabel } from "./session.ts";
 import { InputError } from "./session.ts";
 
 export type FeeMode = "fixed" | "split";
@@ -187,3 +188,6 @@ export function estimateNextParty(
     result += base + (BigInt(payingSeats + i) < remainder ? 1n : 0n);
   return Number(result);
 }
+
+export const splitMoney = (currency: string, amount: number) =>
+  feeLabel({ currency, feeMinor: amount });

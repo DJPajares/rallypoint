@@ -9,6 +9,9 @@ import { useApi } from "./use-api";
 import { useMutation } from "./use-mutation";
 import { useIsPhone } from "./frame";
 import { ShareButton } from "./share-button";
+import { SplitFee } from "./split-fee";
+import { splitMoney } from "@rallypoint/domain/fees";
+import { SplitControls, PendingSplitControls } from "./split-controls";
 import { FeeControls } from "./fee-controls";
 import { SeatAttendanceControls } from "./attendance-controls";
 import {
@@ -43,6 +46,7 @@ export function RegistrationPanel({
   // first and hands focus back before this panel moves it to the heading).
   const phone = useIsPhone();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [undoPartyId, setUndoPartyId] = useState<string | undefined>();
   const mutation = useMutation<{ registration: RegistrationView }>((value) => {
     setSheetOpen(false);
     setChanged(value.registration);
@@ -91,8 +95,9 @@ export function RegistrationPanel({
   const attendance = view.roster.flatMap((p) => p.attendance ?? []);
   const seatsTotal = attendance.length,
     checkedIn = attendance.filter((a) => a.state === "checked_in").length;
+  const split = view.split ?? event.split;
   const cutoffTerms = d.cutoffAt
-    ? `Cancel before ${when(d.cutoffAt)} and no fee is due; after that, the fee stays unless the organizer waives it.`
+    ? `Cancel before ${when(d.cutoffAt)} and no fee is due; after that, your ${split ? "share" : "fee"} stays unless the organizer waives it.`
     : "";
   const ownTone: Tone =
     event.state !== "published" || !own
@@ -192,10 +197,20 @@ export function RegistrationPanel({
           {own.state === "waitlisted" ? (
             <p>
               Waiting is free. If places open before the start, your party moves
-              in automatically and the fee applies.
+              in automatically and{" "}
+              {split
+                ? "your seats count toward the final split."
+                : "the fee applies."}
             </p>
           ) : null}
-          {own.fee ? (
+          {split && own.splitClaim ? (
+            <SplitFee
+              summary={split}
+              claim={own.splitClaim}
+              fee={own.fee}
+              history={own.splitHistory}
+            />
+          ) : own.fee ? (
             <p>
               <strong>
                 {own.fee.liabilityState === "removed_before_cutoff"
@@ -311,14 +326,42 @@ export function RegistrationPanel({
                   ) : null}
                 </>
               ) : null}
-              <p id="join-terms">
-                By choosing <strong>{joinLabel}</strong>, I agree to pay{" "}
-                {feeLabel({ ...d, feeMinor: total })} for{" "}
-                {guest ? "two seats" : "one seat"} if I get a place. If it’s
-                full, I join the waitlist for free; if a place opens before the
-                start, I’m moved in automatically and the fee applies.{" "}
-                {cutoffTerms}
-              </p>
+              {split ? (
+                <>
+                  <p>
+                    <strong>
+                      Estimated share if confirmed now:{" "}
+                      {split.prospectivePartyMinor
+                        ? splitMoney(
+                            split.currency,
+                            guest
+                              ? (split.prospectivePartyMinor.two ??
+                                  split.prospectivePartyMinor.one)
+                              : split.prospectivePartyMinor.one,
+                          )
+                        : "Awaiting the organizer’s split"}
+                    </strong>
+                  </p>
+                  <p id="join-terms">
+                    By choosing <strong>{joinLabel}</strong>, I agree to my
+                    party’s final share of{" "}
+                    {splitMoney(split.currency, split.totalMinor)}. It can
+                    change until the organizer finalizes after start, up to the
+                    full total if my party is the only payer left. A guest
+                    counts as another seat. Waiting is free; promotion before
+                    start includes our seats in the split. {cutoffTerms}
+                  </p>
+                </>
+              ) : (
+                <p id="join-terms">
+                  By choosing <strong>{joinLabel}</strong>, I agree to pay{" "}
+                  {feeLabel({ ...d, feeMinor: total })} for{" "}
+                  {guest ? "two seats" : "one seat"} if I get a place. If it’s
+                  full, I join the waitlist for free; if a place opens before
+                  the start, I’m moved in automatically and the fee applies.{" "}
+                  {cutoffTerms}
+                </p>
+              )}
               {!Number.isSafeInteger(total) ? (
                 <Notice>The party fee is too large to store precisely.</Notice>
               ) : null}
@@ -357,6 +400,29 @@ export function RegistrationPanel({
         <ArrowsClockwiseIcon size={18} aria-hidden="true" />
         Refresh
       </button>
+      {view.canManage && split ? (
+        <SplitControls
+          slug={event.slug}
+          onDone={(value) => {
+            setChanged(value);
+            onChange();
+          }}
+          refreshKey={view.roster
+            .map((p) => `${p.id}:${p.fee?.revision}:${p.splitClaim?.revision}`)
+            .join(",")}
+          undoPartyId={undoPartyId}
+          onUndoDone={() => setUndoPartyId(undefined)}
+          partyNames={Object.fromEntries(
+            view.roster
+              .filter((p) => p.id)
+              .map((p) => [
+                p.id!,
+                p.primaryName +
+                  (p.seats === 2 ? ` + ${p.guestName || "guest"}` : ""),
+              ]),
+          )}
+        />
+      ) : null}
       {view.rosterAllowed ? (
         <section className="rp-card roster">
           <h2>{view.canManage ? "Organizer roster" : "Who’s confirmed"}</h2>
@@ -385,8 +451,42 @@ export function RegistrationPanel({
                       labelId={`party-${p.id}`}
                       fee={p.fee}
                       when={when}
-                      onDone={setChanged}
+                      onDone={(value) => {
+                        setChanged(value);
+                        onChange();
+                      }}
+                      onUndoReview={
+                        p.splitUndoRequiresReview
+                          ? () => setUndoPartyId(p.id)
+                          : undefined
+                      }
                     />
+                  ) : null}
+                  {view.canManage && p.id && p.splitClaim && !p.fee ? (
+                    <>
+                      <PendingSplitControls
+                        slug={event.slug}
+                        partyId={p.id}
+                        claim={p.splitClaim}
+                        onDone={(value) => {
+                          setChanged(value);
+                          onChange();
+                        }}
+                        onUndoReview={
+                          p.splitUndoRequiresReview
+                            ? () => setUndoPartyId(p.id)
+                            : undefined
+                        }
+                      />
+                      {p.splitClaim.estimateMinor !== null && split ? (
+                        <span>
+                          {splitMoney(
+                            split.currency,
+                            p.splitClaim.estimateMinor,
+                          )}
+                        </span>
+                      ) : null}
+                    </>
                   ) : null}
                   {view.canManage && p.id
                     ? p.attendance?.map((seat) => (
