@@ -147,7 +147,8 @@ Version conflicts require reloading the session before reconciling changes.
 Organizers/co-hosts may edit before bookings. Published detail edits have a new
 version and durable changed-field signal. P-03 must set `bookings_started_at`
 under its booking transaction's session lock before enabling registration; after
-that all detail changes are locked pending the booked-event edit contract.
+that all detail changes are locked. The accepted post-booking edit rules (PRD
+D-14) replace that lock once P-16 implements them.
 P-06 owns outbound change notifications; no email is sent here.
 
 `pnpm test:api` also checks owner bootstrap, private drafts, invalid

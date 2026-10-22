@@ -2,7 +2,7 @@
 
 Date: 2026-10-22. Task: [WDL-386](https://linear.app/wwonderland/issue/WDL-386). Baseline: `26b1127`.
 
-**Decision status: proposed, awaiting the owner's decision.** The owner asked to proceed without the discovery questions, so every rule below is the builder's recommendation. Nothing here is accepted or implemented. Accepting it does not authorize implementation, merge or deployment; the drafted task at the end needs its own approval.
+**Decision status: accepted, 2026-10-22.** The owner skipped the discovery questions, so the rules started as the builder's recommendation. The owner then replied: “Approved: accept D-14 as written in PR #20 and record it. Also approved: create the drafted P-16 implementation task in Linear.” The rules below are accepted as written; alternatives are kept for context and are not selected. This approves the policy and the creation of the P-16 task. Implementation, merge and deployment keep their own authorization boundaries.
 
 ## Why
 
@@ -16,7 +16,7 @@ A booking is consent to specific terms: when and where, the fee, the free-cancel
 - **Changes to when or where** are allowed. Bookings stay, but everyone who booked under the old terms gets an email and a free way out.
 - **Changes to money or booking rules** are not edits. The organizer cancels (WDL-384) and publishes a new session.
 
-## Proposed rules
+## Accepted rules
 
 | Change after bookings | Allowed? | Seats and queue | Fees | Notification | Consent |
 | --- | --- | --- | --- | --- | --- |
@@ -72,22 +72,22 @@ Setup: capacity 2. Party P1 (primary plus guest, two seats) is confirmed; solo W
 
 ## Effects on other work
 
-- RP-02's boundary is updated when accepted.
+- RP-02 records the accepted rules next to its current boundary; P-16 replaces the lock.
 - [WDL-379](https://linear.app/wwonderland/issue/WDL-379) (P-06) gains exactly one change email: start/end/venue saves. Its reminder rescheduling follows D-05 once implemented here.
 - D-03's separate "post-registration edits" (a participant changing their own party) stay proposed.
 - Series edits (D-02) stay out of scope.
 
-## Decisions for the owner
+## Choices the owner accepted
 
-Accept as written, or change specific rows. The three choices most worth checking:
+Accepted as written on 2026-10-22, including the three choices flagged for review:
 
 1. A change to the **end time alone** counts as a "when" change: email plus free withdrawal.
 2. Affected parties withdraw **free even after the cutoff**.
 3. **Fee, guest and opening changes** require cancelling and republishing.
 
-## Draft implementation task (not created)
+## Implementation task (P-16)
 
-Proposal reference: P-16. Presented for approval; it is not created in Linear without approval.
+The owner approved creating this task on 2026-10-22. Linear holds its status and relationships; the text below is the approved draft.
 
 ### Description
 
@@ -126,7 +126,7 @@ Let organizers/co-hosts edit a booked session under D-14 instead of the blanket 
 
 ### Dependencies
 
-- **Blocked by:** owner acceptance of D-14 (WDL-386).
+- **Blocked by:** WDL-386, until its PR recording D-14 is integrated.
 - **Blocking:** P-06's change email ([WDL-379](https://linear.app/wwonderland/issue/WDL-379)) for start/end/venue updates.
 - **Related:** WDL-384 (cancellation), WDL-383 (payment instructions outside the lock).
 
