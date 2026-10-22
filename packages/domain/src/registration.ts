@@ -27,6 +27,15 @@ export interface ManagedFee extends Fee {
     at: string;
   }>;
 }
+export type AttendanceState = "unrecorded" | "checked_in" | "no_show";
+/** Seat 1 is the primary registrant, seat 2 their guest. */
+export interface SeatAttendance {
+  seat: 1 | 2;
+  state: AttendanceState;
+  revision: number;
+  by: string | null;
+  at: string | null;
+}
 export interface DuesItem {
   partyId: string;
   partyState: OwnParty["state"];
@@ -72,5 +81,7 @@ export interface RegistrationView {
     id?: string;
     state?: string;
     fee?: ManagedFee | null;
+    /** Organizers/co-hosts only; one entry per confirmed seat. */
+    attendance?: SeatAttendance[];
   }>;
 }

@@ -7,7 +7,7 @@ export const registrationRoute = (path: string) =>
   uuid.test(path.split("/")[3] ?? "") &&
   (path.split("/").length === 4 ||
     (path.split("/").length === 5 &&
-      (path.endsWith("/withdraw") || path.endsWith("/payments"))));
+      ["/withdraw", "/payments", "/attendance"].some((a) => path.endsWith(a))));
 // Display-only; editable metadata never grants authority.
 const displayName = (user: User) =>
   String(
@@ -16,6 +16,7 @@ const displayName = (user: User) =>
     .trim()
     .slice(0, 80) || "Participant";
 const paymentActions = ["mark_paid", "mark_unpaid", "waive", "undo_waiver"];
+const attendanceStates = ["unrecorded", "checked_in", "no_show"];
 export async function registrationRequest(
   request: Request,
   client: SupabaseClient,
@@ -24,11 +25,13 @@ export async function registrationRequest(
   const path = new URL(request.url).pathname;
   const slug = path.split("/")[3];
   const withdraw = path.endsWith("/withdraw"),
-    payment = path.endsWith("/payments");
+    payment = path.endsWith("/payments"),
+    attendance = path.endsWith("/attendance"),
+    managing = payment || attendance;
   const db = client.schema("api");
   let name = "read_registration",
     args: Record<string, unknown> = { p_actor_id: user.id, p_slug: slug };
-  if ((withdraw || payment) && request.method !== "POST")
+  if ((withdraw || managing) && request.method !== "POST")
     throw new ApiError(405, "method_not_allowed", "Use the action button.");
   if (payment) {
     const b = await readBody(request);
@@ -53,6 +56,34 @@ export async function registrationRequest(
       p_key: b.operationKey,
       p_party_id: b.partyId,
       p_action: b.action,
+      p_revision: b.revision,
+    };
+  } else if (attendance) {
+    const b = await readBody(request);
+    if (
+      typeof b.operationKey !== "string" ||
+      !uuid.test(b.operationKey) ||
+      typeof b.partyId !== "string" ||
+      !uuid.test(b.partyId) ||
+      ![1, 2].includes(Number(b.seat)) ||
+      !Number.isInteger(b.seat) ||
+      !attendanceStates.includes(String(b.state)) ||
+      !Number.isInteger(b.revision) ||
+      Number(b.revision) < 0
+    )
+      throw new ApiError(
+        422,
+        "invalid_attendance",
+        "Choose a seat and an attendance state.",
+      );
+    name = "record_attendance";
+    args = {
+      ...args,
+      p_actor_name: displayName(user),
+      p_key: b.operationKey,
+      p_party_id: b.partyId,
+      p_seat: b.seat,
+      p_state: b.state,
       p_revision: b.revision,
     };
   } else if (request.method === "POST" && withdraw) {
@@ -106,11 +137,11 @@ export async function registrationRequest(
     );
   const { data, error } = await db.rpc(name, args);
   if (error) {
-    if (error.code === "42501" && payment)
+    if (error.code === "42501" && managing)
       throw new ApiError(
         403,
         "group_access_denied",
-        "Only this session’s organizers can update payments.",
+        `Only this session’s organizers can update ${payment ? "payments" : "attendance"}.`,
       );
     if (error.code === "42501")
       throw new ApiError(
@@ -124,6 +155,15 @@ export async function registrationRequest(
       payment_transition_invalid:
         "That change doesn’t apply to this fee any more. Refresh to see the latest record.",
       fee_not_found: "There is no fee for that registration in this session.",
+      stale_attendance:
+        "This attendance changed since you loaded it. Refresh to see the latest record, then try again.",
+      attendance_unchanged:
+        "Attendance is already recorded that way. Refresh to see the latest record.",
+      attendance_not_eligible:
+        "Only confirmed places in a session that isn’t cancelled can be checked in.",
+      no_show_too_early:
+        "A no-show can be recorded once the session has ended.",
+      seat_not_found: "That place isn’t part of this session.",
       registration_closed:
         "Registration is closed. New joins and waitlist entries stop at the session start.",
       registration_not_open: "Registration has not opened yet.",
@@ -136,11 +176,13 @@ export async function registrationRequest(
     };
     if (conflicts[error.message])
       throw new ApiError(409, error.message, conflicts[error.message]);
-    if (error.code === "23514" && payment)
+    if (error.code === "23514" && managing)
       throw new ApiError(
         422,
-        "invalid_payment",
-        "Choose a fee and a payment action.",
+        payment ? "invalid_payment" : "invalid_attendance",
+        payment
+          ? "Choose a fee and a payment action."
+          : "Choose a seat and an attendance state.",
       );
     if (error.code === "23514")
       throw new ApiError(

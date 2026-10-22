@@ -10,6 +10,7 @@ import { useMutation } from "./use-mutation";
 import { useIsPhone } from "./frame";
 import { ShareButton } from "./share-button";
 import { FeeControls } from "./fee-controls";
+import { SeatAttendanceControls } from "./attendance-controls";
 import {
   buttonClass,
   CheckField,
@@ -50,6 +51,11 @@ export function RegistrationPanel({
   const view = changed ?? result.data?.registration;
   const own = view?.own;
   const statusHeading = useRef<HTMLHeadingElement>(null);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(timer);
+  }, []);
   useEffect(() => {
     if (own?.id) statusHeading.current?.focus();
   }, [own?.id, own?.state, event.state]);
@@ -80,6 +86,11 @@ export function RegistrationPanel({
       hour: "numeric",
       minute: "2-digit",
     }).format(new Date(iso));
+  // Only decides whether to offer no-show; the server checks its own clock.
+  const ended = !!d.endsAt && now >= Date.parse(d.endsAt);
+  const attendance = view.roster.flatMap((p) => p.attendance ?? []);
+  const seatsTotal = attendance.length,
+    checkedIn = attendance.filter((a) => a.state === "checked_in").length;
   const cutoffTerms = d.cutoffAt
     ? `Cancel before ${when(d.cutoffAt)} and no fee is due; after that, the fee stays unless the organizer waives it.`
     : "";
@@ -349,6 +360,12 @@ export function RegistrationPanel({
       {view.rosterAllowed ? (
         <section className="rp-card roster">
           <h2>{view.canManage ? "Organizer roster" : "Who’s confirmed"}</h2>
+          {view.canManage && seatsTotal ? (
+            <p className="rp-help">
+              Checked in: {checkedIn} of {seatsTotal}{" "}
+              {seatsTotal === 1 ? "place" : "places"}
+            </p>
+          ) : null}
           {view.roster.length ? (
             <ul>
               {view.roster.map((p, i) => (
@@ -371,6 +388,24 @@ export function RegistrationPanel({
                       onDone={setChanged}
                     />
                   ) : null}
+                  {view.canManage && p.id
+                    ? p.attendance?.map((seat) => (
+                        <SeatAttendanceControls
+                          key={seat.seat}
+                          slug={event.slug}
+                          partyId={p.id!}
+                          name={
+                            seat.seat === 1
+                              ? p.primaryName
+                              : p.guestName || "Guest"
+                          }
+                          seat={seat}
+                          ended={ended}
+                          when={when}
+                          onDone={setChanged}
+                        />
+                      ))
+                    : null}
                 </li>
               ))}
             </ul>

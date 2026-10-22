@@ -555,3 +555,11 @@
   align-items: center;
   gap: var(--space-3);
 }
+.seat-attendance {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+.seat-attendance strong {
+  color: var(--color-text);
+}
