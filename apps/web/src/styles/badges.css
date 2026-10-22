@@ -163,10 +163,10 @@
   margin-left: 0;
   font-size: var(--text-sm);
 }
-.profile-avatar {
-  width: 88px;
-  height: 88px;
-  padding: 3px;
+/* Initials in the brand ring: the profile head and the menu's Profile chip. */
+.ring-avatar {
+  display: block;
+  flex: none;
   border-radius: var(--radius-full);
   background: conic-gradient(
     from 200deg,
@@ -176,47 +176,48 @@
     var(--palette-neon-300)
   );
 }
-.profile-avatar span {
+.ring-avatar span {
   display: grid;
   place-items: center;
   width: 100%;
   height: 100%;
-  border: 3px solid var(--color-bg);
   border-radius: var(--radius-full);
   background: var(--color-surface);
+  color: var(--color-text);
   font-family: var(--font-heading);
-  font-size: var(--text-2xl);
   font-weight: 800;
 }
-.profile-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  margin: 0;
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
+.ring-avatar--lg {
+  width: 88px;
+  height: 88px;
+  padding: 3px;
 }
-.profile-stats div {
-  display: flex;
-  flex-direction: column-reverse;
-  padding: var(--space-3) 0;
-  text-align: center;
-}
-.profile-stats div + div {
-  border-left: var(--border-width) solid var(--color-border);
-}
-.profile-stats dd {
-  margin: 0;
-  font-family: var(--font-heading);
+.ring-avatar--lg span {
+  border: 3px solid var(--color-bg);
   font-size: var(--text-2xl);
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  line-height: var(--leading-tight);
 }
-.profile-stats dt {
-  color: var(--color-text-muted);
-  font-size: var(--text-xs);
+.ring-avatar--sm {
+  width: 100%;
+  height: 100%;
+  padding: 2px;
 }
+.ring-avatar--sm span {
+  border: 2px solid var(--color-surface);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-tight);
+}
+/* The chip becomes the avatar itself, so the ring sits where the circle was. */
+.fab-avatar.rp-icon-button {
+  padding: 0;
+  overflow: hidden;
+}
+.fab-action:hover .fab-avatar.rp-icon-button {
+  background: transparent;
+}
+.fab-action:hover .fab-avatar .ring-avatar span {
+  background: var(--color-surface-sunken);
+}
+
 .badge-shelf {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
@@ -244,6 +245,25 @@
 .badge-shelf__locked span {
   color: var(--color-text-muted);
   font-weight: var(--weight-medium);
+}
+
+.profile-account {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+.profile-account p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+.profile-account strong {
+  color: var(--color-text);
+  font-size: var(--text-md);
 }
 
 /* Choosing a title */

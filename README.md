@@ -135,8 +135,9 @@ Only published details are shared. Drafts are stored in the database, not offlin
 browser storage. No reservation is created by opening the link.
 
 Times are wall-clock times in the timezone of the organizer's device, saved with
-the session and never shown. Missing/ambiguous daylight-saving times are rejected. Fixed fees support SGD/USD/EUR/GBP (two decimal places), JPY
-(zero) and KWD (three). No money is collected by RallyPoint.
+the session and never shown. Missing/ambiguous daylight-saving times are rejected. Fixed fees support PHP/SGD/USD/EUR/GBP (two decimal places), JPY
+(zero) and KWD (three). A new session starts in the currency of the device's
+location (pesos in Manila, for example); the organizer can change it. No money is collected by RallyPoint.
 
 Failed validation keeps entered fields. If a response is interrupted, keep the
 page open and use **Check result** or **Retry same request**. The exact payload
@@ -304,14 +305,18 @@ must not restore cancelled sessions or unpaid liabilities.
 
 ## Check in
 
-The organizer roster lists each confirmed place separately: the primary
-registrant and, for a party of two, their guest. Each starts **Not recorded**.
-Organizers and co-hosts choose **Check in**, **Clear** or, once the session's end
-time has passed, **Mark no-show**; the server checks the end time with its own
-clock. Nothing becomes a no-show automatically. Waitlisted, withdrawn and
-cancelled places cannot be checked in. Attendance never changes seats, fees or
-payment markers, and participants never see attendance, their own or anyone
-else's. The roster shows how many places are checked in.
+Organizers and co-hosts see the session as **game day** (PRD D-17):
+
+- Three numbers at the top: **here** (checked-in seats out of confirmed seats), **to pay**, and **waiting**.
+- Filters for **Everyone**, **Not here** and **To pay**.
+- One row per party. A round button checks the primary in, or undoes it.
+- Tapping a row opens that party's sheet: every seat, starting **Not recorded**, with **Check in**, **Clear** or, once the end time has passed, **Mark no-show**, plus the payment controls described above. The server checks the end time with its own clock.
+- **Waiting** and **Left** sections list waitlisted parties and parties that withdrew but still have a fee to settle.
+- A cancelled session keeps the plain records list.
+
+Nothing becomes a no-show automatically. Waitlisted, withdrawn and cancelled
+places cannot be checked in. Attendance never changes seats, fees or payment
+markers, and participants never see attendance, their own or anyone else's.
 
 Like payments, each change records who made it and when, and names the revision
 the organizer saw; a stale or simultaneous change is refused rather than
@@ -323,9 +328,15 @@ cancelled refusal, the end-time no-show boundary, stale and simultaneous changes
 request-key replay and that participants receive no attendance data. A synthetic
 fixture moves a booked session's end into the past for the no-show cases.
 
-For a manual check, publish a session, join with a guest, and as organizer check
-in the primary but not the guest. Clear and restore the primary. After the end
-time, mark the guest a no-show. Confirm the participant's page shows no attendance.
+For a manual check:
+
+1. Publish a session and join it with a guest.
+2. As organizer, tap the primary's round button. **here** goes up by one.
+3. Tap it again to undo, then check them in once more.
+4. Open the row and check the guest in from the sheet.
+5. After the end time, mark a seat as a no-show from the sheet.
+6. Try **Not here** and **To pay**.
+7. Confirm the participant's page shows no attendance.
 
 No cloud Supabase project is linked and no Cloudflare/Resend service is provisioned.
 The configuration contains no deploy script. Next production and local OpenNext
@@ -371,7 +382,7 @@ Badges come from records RallyPoint already keeps (PRD D-16):
 
 They're worked out on every read, so correcting a check-in or cancelling the session removes a badge that depended on it. Payments, no-shows and waitlist position are never used. Only the "seen" markers and your chosen title are stored.
 
-A new badge appears once, as a sheet on Home or on a session page. **Done** or **Show as my title** marks it seen. Home shows one progress row toward your closest badge. **Profile** in the floating menu shows your numbers, your shelf and **Choose title**. A title shows as a small pill next to your name on rosters, only while you still have that badge. Nobody else can open your profile.
+A new badge appears once, as a sheet on Home or on a session page. **Done** or **Show as my title** marks it seen. Home shows one progress row toward your closest badge. **Profile** in the floating menu (your initials in a gradient ring) shows your numbers, your shelf and **Choose title**, and ends with your sign-in email and **Sign out**. A title shows as a small pill next to your name on rosters, only while you still have that badge. Nobody else can open your profile.
 
 For a local walkthrough:
 

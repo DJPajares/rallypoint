@@ -65,6 +65,13 @@
   --badge-glow: #7c68ff;
   --badge-glow-shadow: rgb(67 48 201 / 0.3);
   --badge-ring-sky: #4fc3ff;
+  /* Person tints (D-17): the same name keeps the same colour everywhere. */
+  --avatar-1: linear-gradient(135deg, #5ccbff, #2459e6);
+  --avatar-2: linear-gradient(135deg, #ff86b6, #be2470);
+  --avatar-3: linear-gradient(135deg, #ffae52, #e5402a);
+  --avatar-4: linear-gradient(135deg, #4fe0c8, #0e8f8a);
+  --avatar-5: linear-gradient(135deg, #c08bff, #7a2bd6);
+  --avatar-6: linear-gradient(135deg, #ffc93d, #c2620a);
 
   /* 2. Semantic colours (light, dark) */
   --color-bg: light-dark(var(--palette-paper), var(--palette-navy-900));

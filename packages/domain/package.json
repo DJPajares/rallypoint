@@ -10,7 +10,8 @@
     "./registration": "./src/registration.ts",
     "./navigation": "./src/navigation.ts",
     "./fees": "./src/fees.ts",
-    "./badges": "./src/badges.ts"
+    "./badges": "./src/badges.ts",
+    "./game-day": "./src/game-day.ts"
   },
   "scripts": {
     "lint": "oxlint src",

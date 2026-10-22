@@ -2,6 +2,7 @@ import { Temporal } from "@js-temporal/polyfill";
 import type { FeeMode, SplitSummary } from "./fees.ts";
 
 export const currencies = {
+  PHP: 2,
   SGD: 2,
   USD: 2,
   EUR: 2,
@@ -9,6 +10,78 @@ export const currencies = {
   JPY: 0,
   KWD: 3,
 } as const;
+export type Currency = keyof typeof currencies;
+
+// Where the organizer is, read from the device: its time zone first (it
+// follows the phone's location), then the language's region. Never asked.
+const zoneCurrency: Record<string, Currency> = {
+  "Asia/Manila": "PHP",
+  "Asia/Singapore": "SGD",
+  "Asia/Tokyo": "JPY",
+  "Asia/Kuwait": "KWD",
+  "Europe/London": "GBP",
+};
+const usZones = [
+  "New_York",
+  "Chicago",
+  "Denver",
+  "Phoenix",
+  "Los_Angeles",
+  "Anchorage",
+  "Detroit",
+];
+const euroZones = [
+  "Amsterdam",
+  "Athens",
+  "Berlin",
+  "Brussels",
+  "Dublin",
+  "Helsinki",
+  "Lisbon",
+  "Luxembourg",
+  "Madrid",
+  "Paris",
+  "Rome",
+  "Vienna",
+];
+const regionCurrency: Record<string, Currency> = {
+  PH: "PHP",
+  SG: "SGD",
+  US: "USD",
+  GB: "GBP",
+  JP: "JPY",
+  KW: "KWD",
+};
+const euroRegions = [
+  "AT",
+  "BE",
+  "DE",
+  "ES",
+  "FI",
+  "FR",
+  "GR",
+  "IE",
+  "IT",
+  "LU",
+  "NL",
+  "PT",
+];
+export function defaultCurrency(timeZone: string, locale?: string): Currency {
+  const [area, city] = timeZone.split("/");
+  if (zoneCurrency[timeZone]) return zoneCurrency[timeZone];
+  if (area === "America" && usZones.includes(city)) return "USD";
+  if (timeZone === "Pacific/Honolulu") return "USD";
+  if (area === "Europe" && euroZones.includes(city)) return "EUR";
+  let region: string | undefined;
+  try {
+    region = locale ? new Intl.Locale(locale).maximize().region : undefined;
+  } catch {
+    region = undefined;
+  }
+  if (region && regionCurrency[region]) return regionCurrency[region];
+  if (region && euroRegions.includes(region)) return "EUR";
+  return "SGD";
+}
 export interface SessionForm {
   title: string;
   activity: string;
@@ -53,21 +126,27 @@ export interface SharedSession {
   counts: { confirmedSeats: number; waitingParties: number };
   split?: SplitSummary;
 }
-export const blankSession = (): SessionForm => ({
-  title: "",
-  activity: "",
-  startLocal: "",
-  endLocal: "",
-  timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  location: "",
-  instructions: "",
-  capacity: "12",
-  openLocal: "",
-  cutoffLocal: "",
-  fee: "0.00",
-  currency: "SGD",
-  guests: false,
-});
+export const blankSession = (): SessionForm => {
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return {
+    title: "",
+    activity: "",
+    startLocal: "",
+    endLocal: "",
+    timeZone,
+    location: "",
+    instructions: "",
+    capacity: "12",
+    openLocal: "",
+    cutoffLocal: "",
+    fee: "0.00",
+    currency: defaultCurrency(
+      timeZone,
+      typeof navigator === "undefined" ? undefined : navigator.language,
+    ),
+    guests: false,
+  };
+};
 export class InputError extends Error {}
 export function normalizeSession(
   value: unknown,
