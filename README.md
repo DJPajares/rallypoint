@@ -5,8 +5,9 @@
 A mobile-first app for getting a recurring group together. The app
 provides the public shell, managed sessions, creator-owned groups, saved session
 drafts, unlisted publication, verified participant/+1 registration and a strict
-party waitlist, whole-party withdrawal and immediate promotion. Payment controls
-and attendance remain with subsequent tasks.
+party waitlist, whole-party withdrawal and immediate promotion, and manual
+paid/unpaid markers and fee waivers. Payment instructions and attendance remain
+with subsequent tasks.
 
 ## Run locally
 
@@ -181,7 +182,7 @@ and removal actor/time retained. At or after cutoff the original obligation
 remains until an explicit organizer waiver, even when someone fills the vacancy.
 A replacement owes its own published fee independently. Manual paid declarations
 are preserved on either side of cutoff; any refund is handled externally.
-Payment correction/waiver controls belong to P-05 and are not enabled here.
+Organizers mark payments and waive fees as described below.
 
 Withdrawal releases seats and reconciles the strict whole-party queue in the same
 transaction. A two-seat head waits until both seats are free; later solos cannot
@@ -206,6 +207,34 @@ party should confirm. Withdraw the second: the party of two confirms once with
 its two-seat fee, and the solo remains first in line. Repeat with a cutoff in the
 past and inspect the departing parties' retained fees. Refresh as each actor;
 public and other participant views must not expose financial records.
+
+## Track payments
+
+Organizers and co-hosts see each party's fee in the session's roster as
+**Unpaid**, **Paid**, **Waived** or **Removed**, with the last change and who made
+it. **Mark paid** and **Mark unpaid** record a manual declaration after the
+organizer checks their own payment account; RallyPoint never collects or verifies
+money. **Waive fee** ends an unpaid obligation, such as a fee retained after a
+late withdrawal; **Undo waiver** corrects a mistaken waiver. A paid fee cannot be
+waived (mark it unpaid first), and a waived or removed fee cannot be marked paid,
+so a payment record is never rewritten into a waiver or refund. None of these
+change seats or the queue.
+
+Every change records its actor and time. Each write names the fee revision the
+organizer saw; if someone else changed the fee first, the request is refused and
+the page asks for a refresh instead of overwriting the newer record. Participants
+see only their own fee on the session page and under **Dues**, which lists their
+unpaid fees first and settled ones below.
+
+`pnpm test:api` checks organizer/co-host-only access (including a revoked
+co-host), the paid/unpaid/waive/undo transitions, retained late-withdrawal
+waivers, stale and simultaneous corrections, request-key replay and Dues privacy.
+
+For a manual check, publish a session with the cutoff in the past. Join as one
+participant with a guest, join and withdraw as another. As organizer, mark the
+first paid and waive the second; then, from a second browser, mark the first
+unpaid and retry **Mark unpaid** in the first browser. It must be refused. Open
+**Dues** as each participant and confirm each sees only their own fee.
 
 No cloud Supabase project is linked and no Cloudflare/Resend service is provisioned.
 The configuration contains no deploy script. Next production and local OpenNext
@@ -242,7 +271,8 @@ for P-02. General membership and invitation policies remain separate.
 Session publishing reuses this shell, Auth/data boundary and migration history.
 Registration adds party/queue records, separate initial fee obligations and durable
 registration signals. Withdrawal adds auditable liability removal and preserves manual paid declarations.
-Payment controls and outbound delivery remain later work.
+Payment tracking adds revisioned paid/unpaid markers, waivers and a per-fee
+change history. Payment instructions and outbound delivery remain later work.
 
 ## Project destinations
 

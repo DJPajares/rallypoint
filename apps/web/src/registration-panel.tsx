@@ -9,6 +9,7 @@ import { useApi } from "./use-api";
 import { useMutation } from "./use-mutation";
 import { useIsPhone } from "./frame";
 import { ShareButton } from "./share-button";
+import { FeeControls } from "./fee-controls";
 import {
   buttonClass,
   CheckField,
@@ -188,20 +189,23 @@ export function RegistrationPanel({
               <strong>
                 {own.fee.liabilityState === "removed_before_cutoff"
                   ? "Fee removed: "
-                  : own.fee.markedPaid
-                    ? "Marked paid by the organizer: "
-                    : "Amount due: "}
+                  : own.fee.liabilityState === "waived"
+                    ? "Fee waived by the organizer: "
+                    : own.fee.markedPaid
+                      ? "Marked paid by the organizer: "
+                      : "Amount due: "}
                 {feeLabel({
-                  ...d,
                   currency: own.fee.currency,
                   feeMinor: own.fee.totalMinor,
                 })}
               </strong>{" "}
               {own.fee.liabilityState === "removed_before_cutoff"
                 ? " · You withdrew before the cutoff, so nothing is due."
-                : own.state === "withdrawn"
-                  ? " · The fee stays unless the organizer waives it."
-                  : ""}
+                : own.fee.liabilityState === "waived"
+                  ? " · Nothing is due."
+                  : own.state === "withdrawn" && !own.fee.markedPaid
+                    ? " · The fee stays unless the organizer waives it."
+                    : ""}
             </p>
           ) : null}
           {own.state === "confirmed" || own.state === "waitlisted" ? (
@@ -349,7 +353,7 @@ export function RegistrationPanel({
             <ul>
               {view.roster.map((p, i) => (
                 <li key={p.id ?? i}>
-                  <div>
+                  <div id={p.id ? `party-${p.id}` : undefined}>
                     <strong>{p.primaryName}</strong>
                     {p.seats === 2 ? ` + ${p.guestName || "one guest"}` : ""}
                   </div>
@@ -357,19 +361,15 @@ export function RegistrationPanel({
                     {p.seats} {p.seats === 1 ? "seat" : "seats"}
                     {p.state ? ` · ${p.state}` : ""}
                   </span>
-                  {view.canManage && p.fee ? (
-                    <span>
-                      {p.fee.liabilityState === "removed_before_cutoff"
-                        ? "Fee removed: "
-                        : p.fee.markedPaid
-                          ? "Marked paid: "
-                          : "Amount due: "}
-                      {feeLabel({
-                        ...d,
-                        currency: p.fee.currency,
-                        feeMinor: p.fee.totalMinor,
-                      })}
-                    </span>
+                  {view.canManage && p.id && p.fee ? (
+                    <FeeControls
+                      slug={event.slug}
+                      partyId={p.id}
+                      labelId={`party-${p.id}`}
+                      fee={p.fee}
+                      when={when}
+                      onDone={setChanged}
+                    />
                   ) : null}
                 </li>
               ))}
