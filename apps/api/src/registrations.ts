@@ -6,7 +6,7 @@ import type { ApiEnv } from "./identity";
 import { displayName, notAvailable, requireUser } from "./identity";
 
 type Action =
-  "read" | "join" | "withdraw" | "payment" | "attendance" | "release";
+  "read" | "join" | "withdraw" | "payment" | "attendance" | "release" | "note";
 const conflicts: Record<string, string> = {
   split_undo_requires_review: "Review a new split before restoring this share.",
   split_not_finalized:
@@ -34,6 +34,9 @@ const conflicts: Record<string, string> = {
   release_closed: "Spots can’t be given away once the session starts.",
   release_not_eligible:
     "Only spots booked before the cutoff and still unpaid can go to the waitlist. Refresh to see the latest record.",
+  note_not_allowed:
+    "You can only say you’ve paid for your own booking in a session paid to the organizer.",
+  note_already_paid: "The organizer has already marked this paid.",
   withdrawal_closed:
     "Self-service withdrawal is closed at the session start or when the session ends or is cancelled. Refresh your record.",
   stale_terms:
@@ -45,6 +48,10 @@ const invalid = {
   payment: ["invalid_payment", "Choose a fee and a payment action."],
   attendance: ["invalid_attendance", "Choose a seat and an attendance state."],
   release: ["invalid_release", "Choose a spot to give to the waitlist."],
+  note: [
+    "invalid_payment_note",
+    "Use a payment reference of up to 60 characters.",
+  ],
 } as const;
 const managingWords = {
   payment: "update payments",
@@ -82,8 +89,8 @@ async function call(
       );
     if (conflicts[error.message])
       throw new ApiError(409, error.message, conflicts[error.message]);
-    if (error.code === "23514" && managing) {
-      const [code, message] = invalid[managing];
+    if (error.code === "23514" && (managing || action === "note")) {
+      const [code, message] = invalid[managing ?? "note"];
       throw new ApiError(422, code, message);
     }
     if (error.code === "23514")
@@ -126,6 +133,16 @@ const release = z.object({
   operationKey: key,
   partyId: key,
   revision: z.number().int().min(1),
+});
+const paymentNote = z.object({
+  operationKey: key,
+  partyId: key,
+  action: z.enum(["mark", "undo"]),
+  reference: z
+    .string()
+    .trim()
+    .max(60)
+    .transform((reference) => reference || null),
 });
 const attendance = z.object({
   operationKey: key,
@@ -190,6 +207,16 @@ export const registrations = new Hono<ApiEnv>()
     });
   })
   .all(`${base}/release`, requireUser, () => notAvailable(action))
+  .post(`${base}/payment-note`, requireUser, async (c) => {
+    const b = parse(paymentNote, await readBody(c.req.raw), ...invalid.note);
+    return call(c, "note", "update_payment_note", {
+      p_key: b.operationKey,
+      p_party_id: b.partyId,
+      p_action: b.action,
+      p_reference: b.reference,
+    });
+  })
+  .all(`${base}/payment-note`, requireUser, () => notAvailable(action))
   .post(`${base}/attendance`, requireUser, async (c) => {
     const b = parse(
       attendance,
