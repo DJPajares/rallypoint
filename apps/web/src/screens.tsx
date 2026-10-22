@@ -384,7 +384,7 @@ export function SignIn() {
   const { config, client, session, loading, error: authError } = useAuth();
   const params = useSearchParams();
   const next = safeReturnPath(params.get("next"));
-  const [email, setEmail] = useState("organizer@rallypoint.test");
+  const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -418,7 +418,10 @@ export function SignIn() {
         ? await client.auth.verifyOtp({ email, token: code, type: "email" })
         : await client.auth.signInWithOtp({
             email,
-            options: { shouldCreateUser: false },
+            options: {
+              shouldCreateUser: false,
+              emailRedirectTo: `${window.location.origin}/auth/callback`,
+            },
           });
       if (error) throw error;
       if (!sent) setSent(true);
@@ -426,7 +429,7 @@ export function SignIn() {
       setError(
         sent
           ? "That code could not be verified. Check it and try again."
-          : "A code could not be created. Check the local services and try again.",
+          : "A code could not be sent. Check your email address and try again.",
       );
     } finally {
       setBusy(false);
@@ -458,29 +461,39 @@ export function SignIn() {
           </Notice>
         ) : (
           <>
-            <button
-              className={buttonClass({ variant: "accent", wide: true })}
-              onClick={() => void google()}
-              disabled={busy || !config.auth?.google}
-            >
-              Continue with Google
-              <ArrowRightIcon size={20} aria-hidden="true" />
-            </button>
-            {!config.auth?.google ? (
+            {config.auth?.google || !config.auth?.email ? (
+              <button
+                className={buttonClass({ variant: "accent", wide: true })}
+                onClick={() => void google()}
+                disabled={busy || !config.auth?.google}
+              >
+                Continue with Google
+                <ArrowRightIcon size={20} aria-hidden="true" />
+              </button>
+            ) : null}
+            {!config.auth?.google && !config.auth?.email ? (
               <p className="rp-help">
                 Google sign-in has not been connected in this environment.
               </p>
             ) : null}
-            {config.auth?.localEmail ? (
+            {config.auth?.localEmail || config.auth?.email ? (
               <form
                 onSubmit={(event) => void submit(event)}
                 className="local-form"
               >
-                <Divider>Local development</Divider>
-                <p className="rp-help">
-                  Use a synthetic account. Your code stays in the local mail
-                  inbox.
-                </p>
+                {config.auth?.localEmail ? (
+                  <>
+                    <Divider>Local development</Divider>
+                    <p className="rp-help">
+                      Use a synthetic account. Your code stays in the local mail
+                      inbox.
+                    </p>
+                  </>
+                ) : (
+                  <p className="rp-help">
+                    Use your existing account’s email address.
+                  </p>
+                )}
                 <Field id="email" label="Email address">
                   <input
                     id="email"
@@ -500,23 +513,29 @@ export function SignIn() {
                         id="code"
                         inputMode="numeric"
                         autoComplete="one-time-code"
-                        pattern="[0-9]{6}"
-                        maxLength={6}
+                        pattern={`[0-9]{${config.auth?.emailCodeLength ?? 6}}`}
+                        maxLength={config.auth?.emailCodeLength ?? 6}
                         value={code}
                         onChange={(event) => setCode(event.target.value)}
                         required
                       />
                     </Field>
                     <p role="status" className="rp-help">
-                      Open the{" "}
-                      <a
-                        href="http://127.0.0.1:54324"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        local mail inbox
-                      </a>{" "}
-                      for your code.
+                      {config.auth?.localEmail ? (
+                        <>
+                          Open the{" "}
+                          <a
+                            href="http://127.0.0.1:54324"
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            local mail inbox
+                          </a>{" "}
+                          for your code.
+                        </>
+                      ) : (
+                        "Check your email for the eight-digit code."
+                      )}
                     </p>
                   </>
                 ) : null}
@@ -528,7 +547,9 @@ export function SignIn() {
                     ? "Please wait…"
                     : sent
                       ? "Verify and continue"
-                      : "Send local code"}
+                      : config.auth?.localEmail
+                        ? "Send local code"
+                        : "Send code"}
                   <ArrowRightIcon size={18} aria-hidden="true" />
                 </button>
                 {sent ? (

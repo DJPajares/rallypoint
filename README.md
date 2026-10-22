@@ -2,6 +2,8 @@
 
 **Fill the spots, not the chat.**
 
+Phone test: [RallyPoint](https://rallypoint.wndrhive.com). Vercel project: `rallypoint`; the existing Cloudflare deployment remains available.
+
 A mobile-first app for getting a recurring group together. The app
 provides the public shell, managed sessions, creator-owned groups, saved session
 drafts, unlisted publication, verified participant/+1 registration and a strict
@@ -338,10 +340,10 @@ For a manual check:
 6. Try **Not here** and **To pay**.
 7. Confirm the participant's page shows no attendance.
 
-No cloud Supabase project is linked and no Cloudflare/Resend service is provisioned.
-The configuration contains no deploy script. Next production and local OpenNext
-build/preview are separate checks; neither provisions a cloud resource. The
-adapter uses no R2/ISR cache in this app. PWA manifest and
+Local development is not linked to the shared cloud Supabase project. Phone-test
+hosting is configured separately on Vercel and Cloudflare; see [deployment setup](docs/deployment/staging.md).
+Next production and local OpenNext build/preview are separate checks; neither
+provisions a cloud resource. The adapter uses no R2/ISR cache in this app. PWA manifest and
 192/512-pixel icons are present. Chromium installability diagnostics pass in a
 normal local browser profile; actual device installation and safe shell caching
 remain part of later PWA verification. There is no offline mutation queue or identity-data cache.
@@ -419,8 +421,9 @@ React/TypeScript/Vite/npm, Cloudflare Workers, Supabase Postgres/Auth,
 Google OAuth and Resend. The [P-01 decision brief](https://linear.app/wwonderland/document/p-01-technical-decision-recommended-stack-and-session-loop-contract-eba7e99b792c)
 contains the original research and proposed future contracts. On 2026-10-22,
 the owner requested Next.js, Turborepo and pnpm, replacing the original frontend
-and package-manager choice under D-11. Cloudflare remains the hosting target
-through OpenNext; Supabase and accepted product policies remain in place. The remaining D-01
+and package-manager choice under D-11. The owner added Vercel hosting on
+2026-10-23, retaining Cloudflare through OpenNext alongside it; Supabase and
+accepted product policies remain in place. The remaining D-01
 membership and D-03/D-04 policies retain their own gates; the accepted D-05 delivery choices are recorded in the email decision brief below. On 2026-10-22
 the owner accepted creator-as-owner bootstrap and the pre-booking edit boundary
 for P-02. General membership and invitation policies remain separate.
@@ -455,3 +458,8 @@ records the owner's accepted Trove sender reuse, recipient/timing rules,
 scheduler, retry/quota ceilings and failure statuses (approved 2026-10-22).
 P-06 owns implementation; P-12 owns live sender/key/shared-quota/runtime verification.
 Delivery is not implemented or enabled. Trove's shared SMTP/Auth configuration is unchanged.
+
+
+## Phone staging
+
+The owner selected shared wProject with RallyPoint-specific schemas and verified email codes for staging on 2026-10-23. The current test address is [rallypoint.wndrhive.com](https://rallypoint.wndrhive.com), hosted in the Vercel project `rallypoint`. The original Cloudflare Worker `rallypoint-staging` remains running. See [staging deployment and recovery](docs/deployment/staging.md) for the exact boundaries, clean-build commands and runtime configuration. Local development stays isolated.

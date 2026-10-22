@@ -327,3 +327,12 @@ The [earlier repository PRD](https://github.com/DJPajares/rallypoint/blob/0e270f
 
 The prior six Linear tasks WDL-368–WDL-373 are archived history. The owner explicitly authorized publication of the reviewed P-01–P-08 batch and this GitHub PR on 2026-10-21; task publication does not approve the remaining policy/technology gates or authorize implementation. Earlier provider/layout research remains available through the immutable [previous README](https://github.com/DJPajares/rallypoint/blob/0e270f5cb1b0cb3e90a1ddebda45795dabc41714/README.md); its numbers and service assumptions must be rechecked before use. No earlier proposed stack became accepted through this documentation update.
 
+
+
+### Accepted phone-test environment — 2026-10-23
+
+The owner requested deployment for phone testing and selected the existing wProject Supabase project in wndrhive, with RallyPoint-specific schemas and authentication if possible. Use `rallypoint` / `rallypoint_api` and a private `rallypoint-payment-qr` bucket. Supabase Auth is project-wide and therefore shared; application records and roles stay separate. Preserve other applications' schemas, users, provider settings, SMTP/templates and site URL. Append only the RallyPoint staging callback. The owner explicitly selected verified email codes for staging; this is a testing exception to the Google-first live identity setup, not a production identity-policy change. No new organization/project, project pause, paid upgrade or spending is approved. See [staging setup](docs/deployment/staging.md).
+
+### Accepted Vercel hosting and custom domain — 2026-10-23
+
+The owner requested a Vercel deployment alongside Cloudflare and then renamed the existing Vercel project to `rallypoint`, using `https://rallypoint.wndrhive.com` as the primary test address. Preserve the existing Cloudflare Worker `rallypoint-staging` and its URL. Both hosts use the same wProject staging namespaces, bucket and project-wide Auth. Add only the exact new-domain Auth callback while preserving all prior redirects and the shared Trove Site URL. The owner manages Vercel credential entry through the dashboard. This deployment addition and naming change do not launch commercial production, authorize a plan upgrade, rename shared infrastructure, implement notifications or change D-05's accepted scheduler. See [deployment setup](docs/deployment/staging.md).

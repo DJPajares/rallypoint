@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import type { SupabaseClient, User } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
 import { createMiddleware } from "hono/factory";
 import type { AppEnv } from "./env";
 import { ApiError } from "./http";
@@ -10,7 +10,7 @@ export interface ApiEnv {
   Variables: {
     user: User;
     /** Server-key client for the `api` schema; never reaches a browser. */
-    db: SupabaseClient;
+    db: ReturnType<typeof client>;
   };
 }
 
@@ -46,8 +46,9 @@ export function connection(env: AppEnv) {
     secret: env.SUPABASE_SECRET_KEY,
   };
 }
-export const client = (url: string, key: string) =>
+export const client = (url: string, key: string, schema = "api") =>
   createClient(url, key, {
+    db: { schema },
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -93,7 +94,10 @@ export const requireUser = createMiddleware<ApiEnv>(async (c, next) => {
       "Verify your email before continuing.",
     );
   c.set("user", data.user);
-  c.set("db", client(conn.url, conn.secret));
+  c.set(
+    "db",
+    client(conn.url, conn.secret, c.env.SUPABASE_API_SCHEMA ?? "api"),
+  );
   await next();
 });
 
