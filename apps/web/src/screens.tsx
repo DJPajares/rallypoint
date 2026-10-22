@@ -37,6 +37,8 @@ import {
 } from "@rallypoint/ui";
 import { DetailPage } from "./ui";
 import { GroupSessions } from "./session-pages";
+import { EarnedBadgeSheet, NextBadge } from "./badges";
+import type { BadgesView } from "@rallypoint/domain/badges";
 function Redirect({ href }: { href: string; replace?: boolean }) {
   const router = useRouter();
   useEffect(() => {
@@ -145,6 +147,7 @@ function GroupCard({ group }: { group: GroupSummary }) {
 export function HomeDashboard() {
   const identity = useApi<Identity>("/api/me");
   const workspace = useApi<{ groups: GroupSummary[] }>("/api/workspace");
+  const badges = useApi<BadgesView>("/api/me/badges");
   const { openCreate } = useFrame();
   const groups = workspace.data?.groups ?? [];
   const canCreate = groups.some((group) => group.role !== "member");
@@ -188,6 +191,8 @@ export function HomeDashboard() {
           </Link>
         )}
       </div>
+      <NextBadge view={badges.data} />
+      <EarnedBadgeSheet view={badges.data} />
       <div className="section-head">
         <h2>Your groups</h2>
         {groups.length > 3 ? (

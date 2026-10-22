@@ -17,6 +17,7 @@ test("native page deep links render without server-side browser globals", async 
     "/home",
     "/sessions",
     "/dues",
+    "/profile",
     "/workspace",
     "/groups/new",
     "/groups/11111111-1111-4111-8111-111111111111",
