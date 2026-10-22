@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-const base = process.env.RALLYPOINT_TEST_URL ?? "http://127.0.0.1:5173";
+const base = process.env.RALLYPOINT_TEST_URL ?? "http://127.0.0.1:3000";
 assert.ok(["127.0.0.1", "localhost"].includes(new URL(base).hostname));
 test("public home is usable HTML before client JavaScript runs", async () => {
   const response = await fetch(base);
