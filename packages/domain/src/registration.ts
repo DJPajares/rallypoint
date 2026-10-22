@@ -128,6 +128,8 @@ export interface RegistrationView {
     splitUndoRequiresReview?: boolean;
     /** Organizers/co-hosts only; one entry per confirmed seat. */
     attendance?: SeatAttendance[];
+    /** The badge this person chose to show, while it is still earned. */
+    title?: RosterTitle | null;
   }>;
 }
 import type {
@@ -137,3 +139,4 @@ import type {
   OwnSplitClaim,
   SplitSummary,
 } from "./fees.ts";
+import type { RosterTitle } from "./badges.ts";
