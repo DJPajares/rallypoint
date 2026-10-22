@@ -2,19 +2,21 @@
 
 Date: 2026-10-23. Baseline: `0ac42f7`. No tracker task: this is a direct owner request in chat ("do a deep research of the app https://reclub.co/ … adopt what works … improve them especially the weaker areas"). The owner skipped the brainstorming questions, so **every recommendation here is Claude's proposal, not an accepted decision**. Accepted decisions keep their authority in [PRD.md](../../PRD.md).
 
+**Update, 2026-10-23:** the owner walked through DQ-1 to DQ-5 and accepted them, with changes, as [D-18 and D-19](../../PRD.md). Each decision below now ends with its outcome. The owner also set that RallyPoint is designed for international use: recommendations name no country-specific payment service. Reclub evidence still mentions the services its hosts use.
+
 This expands the research summary in the [D-15/D-16 record](../superpowers/specs/2026-10-22-reclub-competitive-analysis-design.md). That record stays the authority for the design direction and for badges and titles; this document does not reopen them.
 
 ## Summary
 
 Reclub is the app Philippine pickleball groups already use for open play. People stay for three things: **the players are already there**, **it's a free toolkit for a whole club**, and **its game-day tools** (round robins, court assignment, DUPR). Its weak spots are exactly where RallyPoint is built to be strong. You need the app to join. Payment rules live in free text, often next to the host's personal GCash number. The waitlist mixes "full" with "waiting for the host". And chat, push notifications and sign-in are unreliable.
 
-RallyPoint shouldn't try to beat Reclub on its network or its social features. The opening is narrower and stronger: **an organizer's own sessions, run from the group chat they already have.** Someone joins from a Messenger link without downloading anything, sees one clear price in pesos, keeps the organizer's payment details private, gets moved up the waitlist automatically, and can always trust the status on the page.
+RallyPoint shouldn't try to beat Reclub on its network or its social features. The opening is narrower and stronger: **an organizer's own sessions, run from the group chat they already have.** Someone joins from a Messenger link without downloading anything, sees one clear price in their currency, keeps the organizer's payment details private, gets moved up the waitlist automatically, and can always trust the status on the page.
 
 Recommendations, in order:
 
 1. **Finish the share loop.** Rich link previews, a copy-as-text roster and a QR code (RP-16), then add-to-calendar (RP-12). Today the app can only copy or share the bare link.
 2. **Build repeating sessions next** (RP-04, D-02 already includes "every N weeks"). Sessions that create and announce themselves are one of the main reasons clubs run on Reclub.
-3. **Decide "pay first to lock your slot"** (DQ-1 below). Recommended: no race to pay. Instead, give organizers a pay-by time and a one-tap "release unpaid spot" that hands the spot to the waitlist the normal way.
+3. **Let each host choose how payment works** (DQ-1, decided as D-18). The pilot ships "Not tracked here" and "Pay the organizer", with a one-tap release of unpaid spots after the cutoff. "Pay in RallyPoint" with holds follows right after the pilot.
 4. **Keep rules out of long descriptions.** The fee, cutoff, payment details and guest allowance are already structured fields (D-13). Keep the notes short and say so where organizers write them.
 5. **Make open-play court rotation the first Phase 2 bet.** It's Reclub's strongest game-day feature and fits RallyPoint's "show up" step.
 6. **Keep leaving out** the discovery feed, chat, leaderboards, ads and paid tiers for organizer tools.
@@ -68,8 +70,8 @@ Workarounds are the strongest evidence of what organizers need. Each one points 
 | Workaround seen | The job behind it | RallyPoint today | Proposal |
 | --- | --- | --- | --- |
 | "First to upload receipt = first confirmed"; "waitlisted until paid" | Make sure the people who play are the people who pay | Payment never grants a spot (RP-11). Confirmation creates the fee; it's kept after the cutoff unless waived (D-04) | Decide DQ-1 |
-| "Unpaid players will be removed" | Free the spot of someone who hasn't paid | An organizer can cancel a registration, but there's no pay-by time and the fee treatment of that removal isn't specified | Part of DQ-1 |
-| Personal GCash number in the public description | Tell booked players where to pay | Payment details and the QR are shown only to booked players (RP-10, built in WDL-383) | Lead with it: "Your GCash stays private" |
+| "Unpaid players will be removed" | Free the spot of someone who hasn't paid | Organizers can't remove a registration yet: the database has a `removed` state that nothing uses | Part of DQ-1 |
+| Personal GCash number in the public description | Tell booked players where to pay | Payment details and the QR are shown only to booked players (RP-10, built in WDL-383) | Lead with it: "Your payment details stay private" |
 | Renaming the meet "NEW PAYMENT DETAILS" | Change where to pay after people booked | Payment details can be edited after booking (WDL-383) but nobody is told | DQ-5 |
 | "Slots are transferable to waitlisted players" | Hand a spot on when you can't come | Withdraw and the next party is promoted automatically (RP-08) | Say it where people withdraw: "The next person on the waitlist gets your spot." Handing a spot to a chosen friend stays unsupported because the queue is strict (D-03) |
 | "Late payments can be used for a future session" | Credit instead of refund | Not supported; refunds and credits happen outside RallyPoint (D-04) | Leave |
@@ -83,11 +85,11 @@ Workarounds are the strongest evidence of what organizers need. Each one points 
 
 | Job | Reclub | RallyPoint built | RallyPoint planned |
 | --- | --- | --- | --- |
-| Create a session | In-app form with many settings; rules often typed into notes | Short form with no timezone or visibility questions; fees in pesos | R4 form with more defaults (D-17) |
+| Create a session | In-app form with many settings; rules often typed into notes | Short form with no timezone or visibility questions; fees in the session's currency | R4 form with more defaults (D-17) |
 | Share | App link; web page is read-only | Copy or share the link | Rich preview, text roster, QR (RP-16) |
 | Join | Install, sign in (Facebook among options), request to join | Open link, Google sign-in, one tap | — |
 | Waitlist | Can mean full, unpaid or awaiting approval; manual or auto | Strict order, parties stay together, automatic promotion, honest position (D-03) | — |
-| Fee | One amount; currency can display wrong | Free, fixed or split; minor-unit exact; pesos | — |
+| Fee | One amount; currency can display wrong | Free, fixed or split; minor-unit exact; per-session currency | — |
 | Payment | Host details in profile; receipts for Supporters only; checked by hand | Private instructions and QR; organizer marks paid; fee kept after the cutoff | DQ-1, DQ-2 |
 | Changes after booking | Edit freely; tell people in chat | Locked after booking for now | D-14 rules (P-16): change email and free withdrawal |
 | Cancel a session | Cancel, recover via support | Cancel keeps registrations and paid history (WDL-384) | — |
@@ -107,9 +109,9 @@ Workarounds are the strongest evidence of what organizers need. Each one points 
 No new scope. These are the lines to use with pilot organizers and to check in the pilot:
 
 - **No app to download.** Join from the link in your group chat.
-- **Your GCash stays private.** Only people with a spot see where to pay.
+- **Your payment details stay private.** Only people with a spot see where to pay.
 - **The waitlist fills itself.** Someone withdraws and the next person is in, with nobody approving anything.
-- **One price, in pesos, said once.** The fee and cutoff appear where you join and withdraw.
+- **One price, in your currency, said once.** The fee and cutoff appear where you join and withdraw.
 - **The page tells the truth.** Your status is always on the page, even if an email is late.
 
 Pilot check: send a session link into a real group chat. Count taps from the link to a confirmed spot for someone who has never used RallyPoint, and compare that with the group's current Reclub path. This is the PRD's "Clear, quick participation" measure.
@@ -134,15 +136,33 @@ Each of these changes an accepted rule or adds scope, so none should be built wi
 | A. Keep RP-11 as is | Payment never affects the spot; the fee stays after the cutoff | Simplest and already built, but it doesn't solve organizers' unpaid-player problem |
 | **B. Pay-by time and release (recommended)** | The organizer can set an optional pay-by time. After it, confirmed spots still marked unpaid are listed for the organizer, who can release any of them with one tap and a confirmation. Releasing cancels that registration, removes its unpaid fee, tells the person, and promotes the waitlist the normal way. Nothing happens automatically | Keeps payment separate from queue order, with no race and no limbo. Gives organizers the control they now improvise. Risk: someone who paid but wasn't marked yet gets released, so release only from Unpaid, and tell the person |
 | C. Confirm only after payment | A spot stays pending until the organizer marks paid (Reclub style) | Recreates "waitlisted even though not full". Conflicts with automatic promotion and immediate confirmation (D-03), and people can't tell whether they're in |
-| D. First to pay wins | Whoever's payment is marked first gets the spot | Favors whoever is fastest on GCash, forces refunds for people who paid but lost, and asks RallyPoint to judge payments it can't verify |
+| D. First to pay wins | Whoever's payment is marked first gets the spot | Favors whoever pays fastest, forces refunds for people who paid but lost, and asks RallyPoint to judge payments it can't verify |
+
+**Outcome (D-18):** the owner widened the question. Each host picks how payment works for a session:
+
+| Mode | Spot depends on payment? | Who records paid | When |
+| --- | --- | --- | --- |
+| Not tracked here (never labelled "Free") | No | Nobody; the group settles any cost its own way | Pilot |
+| Pay the organizer | Only through option B, tied to the cutoff | The organizer, by hand | Pilot |
+| Pay in RallyPoint | Yes: confirmed when the payment succeeds | The payment provider | Right after the pilot |
+
+Pay in RallyPoint keeps the waitlist with holds: 15 minutes during checkout, and 2 hours for the next waiting party when a spot opens (30 minutes within the last 2 hours, never past start). The provider is international, chosen at build time and checked for each launch country. Automatic refunds for payments that land after a hold ends, refunds on withdrawal, provider fees and organizer payouts are still open for that increment.
 
 **DQ-2 · "I've sent payment" from the player.** A player taps "I've sent it" and can add a short reference number. Organizers see it as a separate hint next to their own Paid marker. It's never proof and never changes the spot. Reclub's paywalled receipts show the demand for this. **Recommended:** yes, after DQ-1, text only. RP-10 rules out receipt uploads for the MVP, and images add storage and privacy work.
 
+**Outcome (D-18):** accepted as recommended for "Pay the organizer" sessions. The player can undo it until marked paid, only they and the organizers see it, and releasing someone who sent a note asks once more.
+
 **DQ-3 · Organizer-added walk-in spot.** A named spot with no account that counts against capacity, can be checked in, owes the fee, and gets no emails. It conflicts with RP-05 (reserving needs a verified sign-in). **Recommended:** wait for pilot evidence. Joining from the link removes most of Reclub's reason for reserves.
+
+**Outcome (D-19):** accepted as recommended.
 
 **DQ-4 · Join approval and skill limits.** **Recommended:** no for the MVP. Approval breaks strict queue order and automatic promotion, and it causes the "waitlisted but not full" confusion seen in Reclub. Private sessions with organizer-granted access (RP-16) already cover closed groups.
 
+**Outcome (D-19):** accepted as recommended.
+
 **DQ-5 · Tell booked players when payment details change.** One short email to confirmed and waiting primaries when the organizer edits the payment details after booking. It doesn't include the details themselves, only a link back to the session. **Recommended:** yes. It replaces the "NEW PAYMENT DETAILS" rename hack. It needs a yes because it adds a message type to D-05's delivery budget.
+
+**Outcome (D-18):** accepted as recommended.
 
 ### 4. First Phase 2 bet: open-play court rotation
 
@@ -174,7 +194,7 @@ Round robins and court assignment are why pickleball clubs stay on Reclub. Rally
 
 ## Questions for the pilot
 
-1. How do organizers handle a confirmed player who hasn't paid by game day? (Shapes DQ-1.)
+1. How often do organizers use the release of unpaid spots, and do players use "I've sent it"? (Tests D-18.)
 2. How many players don't have, or won't use, a Google account?
 3. How many taps and minutes does it take from a group-chat link to a confirmed spot, compared with the group's current tool?
 4. How are courts rotated today, and would organizers use a rotation helper?
