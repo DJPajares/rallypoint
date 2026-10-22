@@ -45,7 +45,7 @@ async function seed() {
   });
   let existing;
   for (let attempt = 0; attempt < 30; attempt++) {
-    const { data, error } = await admin.auth.admin.listUsers();
+    const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 });
     if (!error) {
       existing = data;
       break;

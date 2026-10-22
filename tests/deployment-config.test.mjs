@@ -1,0 +1,168 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { createServer } from "node:http";
+import { once } from "node:events";
+import { registerHooks, stripTypeScriptTypes } from "node:module";
+import { readFileSync } from "node:fs";
+
+// Exercise the real portable API without a Next server or live credentials.
+registerHooks({
+  resolve(specifier, context, next) {
+    try {
+      return next(specifier, context);
+    } catch (error) {
+      if (specifier.startsWith(".") && !/\.[a-z]+$/.test(specifier))
+        return next(specifier + ".ts", context);
+      throw error;
+    }
+  },
+  load(url, context, next) {
+    if (url.endsWith(".ts") && url.startsWith("file:"))
+      return {
+        format: "module",
+        shortCircuit: true,
+        source: stripTypeScriptTypes(readFileSync(new URL(url), "utf8"), {
+          mode: "transform",
+        }),
+      };
+    return next(url, context);
+  },
+});
+const { default: app } = await import("../apps/api/src/index.ts");
+
+test("authenticated workspace RPC uses the deployment schema and keeps local default", async () => {
+  let expectedSchema = "rallypoint_api";
+  const requests = [];
+  const upstream = createServer(async (req, res) => {
+    res.setHeader("content-type", "application/json");
+    if (req.url === "/auth/v1/user") {
+      res.end(
+        JSON.stringify({
+          id: "11111111-1111-4111-8111-111111111111",
+          email: "synthetic@example.test",
+          email_confirmed_at: "2026-10-23T00:00:00Z",
+          user_metadata: {},
+          is_anonymous: false,
+        }),
+      );
+      return;
+    }
+    if (
+      req.method === "POST" &&
+      [
+        "/rest/v1/rpc/list_my_groups",
+        "/rest/v1/rpc/read_shared_session",
+        "/rest/v1/rpc/read_payment_qr",
+      ].includes(req.url)
+    ) {
+      let body = "";
+      for await (const part of req) body += part;
+      requests.push({
+        schema: req.headers["content-profile"],
+        body: JSON.parse(body),
+      });
+      if (req.headers["content-profile"] !== expectedSchema) {
+        res.statusCode = 406;
+        res.end(
+          JSON.stringify({
+            code: "PGRST106",
+            message: "Unexpected application schema",
+          }),
+        );
+        return;
+      }
+      res.end(
+        req.url.endsWith("read_payment_qr")
+          ? JSON.stringify({ path: "probe.png", type: "image/png" })
+          : req.url.endsWith("read_shared_session")
+            ? "null"
+            : "[]",
+      );
+      return;
+    }
+    if (req.url === "/storage/v1/object/rallypoint-payment-qr/probe.png") {
+      res.setHeader("content-type", "image/png");
+      res.end(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+      return;
+    }
+    res.statusCode = 501;
+    res.end("{}");
+  });
+  upstream.listen(0, "127.0.0.1");
+  await once(upstream, "listening");
+  try {
+    const env = {
+      SUPABASE_URL: `http://127.0.0.1:${upstream.address().port}`,
+      SUPABASE_PUBLISHABLE_KEY: "synthetic-publishable",
+      SUPABASE_SECRET_KEY: "synthetic-server",
+      SUPABASE_API_SCHEMA: "rallypoint_api",
+      PAYMENT_QR_BUCKET: "rallypoint-payment-qr",
+    };
+    const request = () =>
+      new Request("https://staging.example.test/api/workspace", {
+        headers: { authorization: "Bearer synthetic-token" },
+      });
+    const hosted = await app.fetch(request(), env);
+    assert.equal(hosted.status, 200, await hosted.clone().text());
+    assert.deepEqual(await hosted.json(), { groups: [] });
+    const shared = await app.fetch(
+      new Request(
+        "https://staging.example.test/api/shared/11111111-1111-4111-8111-111111111111",
+      ),
+      env,
+    );
+    assert.equal(shared.status, 404, await shared.clone().text());
+    const image = await app.fetch(
+      new Request(
+        "https://staging.example.test/api/registrations/11111111-1111-4111-8111-111111111111/payment-qr",
+        { headers: { authorization: "Bearer synthetic-token" } },
+      ),
+      env,
+    );
+    assert.equal(image.status, 200, await image.clone().text());
+    assert.equal(image.headers.get("content-type"), "image/png");
+    assert.equal((await image.arrayBuffer()).byteLength, 8);
+    expectedSchema = "api";
+    delete env.SUPABASE_API_SCHEMA;
+    const local = await app.fetch(request(), env);
+    assert.equal(local.status, 200, await local.clone().text());
+    assert.deepEqual(
+      requests.map((r) => r.schema),
+      ["rallypoint_api", "rallypoint_api", "rallypoint_api", "api"],
+    );
+    assert.ok(
+      requests
+        .filter((r) => r.body.p_actor_id)
+        .every(
+          (r) => r.body.p_actor_id === "11111111-1111-4111-8111-111111111111",
+        ),
+    );
+  } finally {
+    await new Promise((resolve) => upstream.close(resolve));
+  }
+});
+
+test("staging email sign-in is explicit and never enables local-only authentication", async () => {
+  const env = {
+    SUPABASE_URL: "https://synthetic.supabase.co",
+    SUPABASE_PUBLISHABLE_KEY: "synthetic-public",
+    SUPABASE_SECRET_KEY: "synthetic-secret",
+    LOCAL_AUTH_ENABLED: "true",
+    EMAIL_AUTH_ENABLED: "true",
+    EMAIL_OTP_LENGTH: "8",
+  };
+  const read = async (value) =>
+    (
+      await app.fetch(
+        new Request("https://staging.example.test/api/config"),
+        value,
+      )
+    ).json();
+  const enabled = await read(env);
+  assert.equal(enabled.auth.email, true);
+  assert.equal(enabled.auth.emailCodeLength, 8);
+  assert.equal(enabled.auth.localEmail, false);
+  assert.ok(!JSON.stringify(enabled).includes("synthetic-secret"));
+  delete env.EMAIL_AUTH_ENABLED;
+  assert.equal((await read(env)).auth.email, false);
+});

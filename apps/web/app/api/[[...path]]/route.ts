@@ -10,7 +10,11 @@ function environment(): AppEnv {
       SUPABASE_URL: process.env.SUPABASE_URL,
       SUPABASE_PUBLISHABLE_KEY: process.env.SUPABASE_PUBLISHABLE_KEY,
       SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
+      SUPABASE_API_SCHEMA: process.env.SUPABASE_API_SCHEMA,
+      PAYMENT_QR_BUCKET: process.env.PAYMENT_QR_BUCKET,
       LOCAL_AUTH_ENABLED: process.env.LOCAL_AUTH_ENABLED,
+      EMAIL_AUTH_ENABLED: process.env.EMAIL_AUTH_ENABLED,
+      EMAIL_OTP_LENGTH: process.env.EMAIL_OTP_LENGTH,
       GOOGLE_AUTH_ENABLED: process.env.GOOGLE_AUTH_ENABLED,
     };
   try {

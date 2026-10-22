@@ -444,3 +444,8 @@ records the owner's accepted Trove sender reuse, recipient/timing rules,
 scheduler, retry/quota ceilings and failure statuses (approved 2026-10-22).
 P-06 owns implementation; P-12 owns live sender/key/shared-quota/runtime verification.
 Delivery is not implemented or enabled. Trove's shared SMTP/Auth configuration is unchanged.
+
+
+## Phone staging
+
+The owner selected shared wProject with RallyPoint-specific schemas and verified email codes for staging on 2026-10-23. See [staging deployment and recovery](docs/deployment/staging.md) for the exact boundaries, clean-build commands and runtime configuration. This supersedes earlier statements above that no cloud project/deployment is configured; local development stays isolated.

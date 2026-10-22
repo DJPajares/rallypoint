@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "rallypoint-staging",
+  "account_id": "b9505be067db4a127cf88a24f3c83de1",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-19",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "vars": {
+    "LOCAL_AUTH_ENABLED": "false",
+    "EMAIL_AUTH_ENABLED": "true",
+    "EMAIL_OTP_LENGTH": "8",
+    "GOOGLE_AUTH_ENABLED": "false",
+    "SUPABASE_API_SCHEMA": "rallypoint_api",
+    "PAYMENT_QR_BUCKET": "rallypoint-payment-qr",
+  },
+  "observability": { "enabled": false },
+}

@@ -49,9 +49,10 @@ async function rpc<T>(
     "Only this session’s organizers can change payment instructions.",
   ),
 ) {
-  const { data, error } = await c.var.db
-    .schema("api")
-    .rpc(name, { p_actor_id: c.var.user.id, ...args });
+  const { data, error } = await c.var.db.rpc(name, {
+    p_actor_id: c.var.user.id,
+    ...args,
+  });
   if (error) {
     if (error.code === "42501") throw denied;
     if (conflicts[error.message])
@@ -82,7 +83,7 @@ async function cleanUp(
   keep: string | null,
   remove: Array<string | null | undefined>,
 ) {
-  const files = c.var.db.storage.from(bucket);
+  const files = c.var.db.storage.from(c.env.PAYMENT_QR_BUCKET ?? bucket);
   try {
     const paths = remove.filter((p): p is string => !!p && p !== keep);
     if (paths.length) await files.remove(paths);
@@ -204,7 +205,7 @@ export const payments = new Hono<ApiEnv>()
     const current = await rpc<Result>(c, "read_payment_instructions", {
       p_session_id: session,
     });
-    const replay = await c.var.db.schema("api").rpc("read_operation", {
+    const replay = await c.var.db.rpc("read_operation", {
       p_actor_id: c.var.user.id,
       p_key: q.operationKey,
     });
@@ -228,7 +229,7 @@ export const payments = new Hono<ApiEnv>()
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
     const path = `${session}/${crypto.randomUUID()}`;
-    const files = c.var.db.storage.from(bucket);
+    const files = c.var.db.storage.from(c.env.PAYMENT_QR_BUCKET ?? bucket);
     const stored = await files.upload(path, image.bytes, {
       contentType: image.type,
       upsert: false,
@@ -283,7 +284,7 @@ export const payments = new Hono<ApiEnv>()
       );
       if (!image) throw missing;
       const { data, error } = await c.var.db.storage
-        .from(bucket)
+        .from(c.env.PAYMENT_QR_BUCKET ?? bucket)
         .download(image.path);
       if (error || !data) throw missing;
       return new Response(data.stream(), {

@@ -34,6 +34,8 @@ app.get("/config", (c) => {
         url: conn.url,
         publishableKey: conn.key,
         google: c.env.GOOGLE_AUTH_ENABLED === "true",
+        email: c.env.EMAIL_AUTH_ENABLED === "true",
+        emailCodeLength: c.env.EMAIL_OTP_LENGTH === "8" ? 8 : 6,
         localEmail:
           c.env.LOCAL_AUTH_ENABLED === "true" &&
           loopback.includes(new URL(c.req.url).hostname) &&
@@ -57,9 +59,9 @@ app.get("/me", requireUser, (c) => {
   });
 });
 app.get("/workspace", requireUser, async (c) => {
-  const { data: groups, error } = await c.var.db
-    .schema("api")
-    .rpc("list_my_groups", { p_actor_id: c.var.user.id });
+  const { data: groups, error } = await c.var.db.rpc("list_my_groups", {
+    p_actor_id: c.var.user.id,
+  });
   if (error)
     throw new ApiError(
       503,
@@ -69,7 +71,7 @@ app.get("/workspace", requireUser, async (c) => {
   return json({ groups });
 });
 app.get("/dues", requireUser, async (c) => {
-  const db = c.var.db.schema("api");
+  const db = c.var.db;
   const { data: dues, error } = await db.rpc("list_my_dues", {
     p_actor_id: c.var.user.id,
   });
@@ -95,9 +97,10 @@ app.get("/groups/:id{[0-9a-f-]+}/setup", requireUser, async (c) => {
   const id = c.req.param("id");
   if (!uuid.test(id))
     throw new ApiError(404, "not_found", "That page could not be found.");
-  const { data: group, error } = await c.var.db
-    .schema("api")
-    .rpc("read_group_setup", { p_actor_id: c.var.user.id, p_group_id: id });
+  const { data: group, error } = await c.var.db.rpc("read_group_setup", {
+    p_actor_id: c.var.user.id,
+    p_group_id: id,
+  });
   if (error?.code === "42501")
     throw new ApiError(
       403,

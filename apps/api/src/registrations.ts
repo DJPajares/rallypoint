@@ -44,7 +44,7 @@ async function call(
   name: string,
   args: Record<string, unknown> = {},
 ) {
-  const { data, error } = await c.var.db.schema("api").rpc(name, {
+  const { data, error } = await c.var.db.rpc(name, {
     p_actor_id: c.var.user.id,
     p_slug: c.req.param("slug"),
     ...args,
