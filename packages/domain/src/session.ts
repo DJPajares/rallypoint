@@ -82,6 +82,7 @@ export function defaultCurrency(timeZone: string, locale?: string): Currency {
   if (region && euroRegions.includes(region)) return "EUR";
   return "SGD";
 }
+export type PaymentMode = "untracked" | "organizer";
 export interface SessionForm {
   title: string;
   activity: string;
@@ -97,6 +98,8 @@ export interface SessionForm {
   currency: string;
   guests: boolean;
   feeMode?: FeeMode;
+  paymentMode?: PaymentMode;
+  releaseUnpaid?: boolean;
 }
 export interface SessionDetails extends SessionForm {
   startsAt?: string;
@@ -145,6 +148,8 @@ export const blankSession = (): SessionForm => {
       typeof navigator === "undefined" ? undefined : navigator.language,
     ),
     guests: false,
+    paymentMode: "untracked",
+    releaseUnpaid: false,
   };
 };
 export class InputError extends Error {}
@@ -183,6 +188,15 @@ export function normalizeSession(
       throw new InputError("Choose a fee per seat or a total to split.");
     form.feeMode = raw.feeMode;
   }
+  if (raw.paymentMode !== undefined) {
+    if (raw.paymentMode !== "untracked" && raw.paymentMode !== "organizer")
+      throw new InputError("Choose Not tracked here or Pay the organizer.");
+  }
+  form.paymentMode =
+    (raw.paymentMode as PaymentMode | undefined) ?? "organizer";
+  if (raw.releaseUnpaid !== undefined && typeof raw.releaseUnpaid !== "boolean")
+    throw new InputError("Choose whether unpaid spots can be released.");
+  form.releaseUnpaid = raw.releaseUnpaid === true;
   if (!publish) return form;
   if (!form.title || !form.activity || !form.location)
     throw new InputError(
@@ -195,16 +209,29 @@ export function normalizeSession(
   const precision = currencies[form.currency as keyof typeof currencies];
   if (precision === undefined)
     throw new InputError("Choose a supported currency.");
-  const feePattern = new RegExp(`^\\d+(?:\\.\\d{1,${precision || 1}})?$`);
-  if (!feePattern.test(form.fee) || (precision === 0 && form.fee.includes(".")))
-    throw new InputError(
-      `Use at most ${precision} decimal places for ${form.currency}.`,
-    );
-  const [whole, fraction = ""] = form.fee.split(".");
-  const feeMinor = Number(whole + fraction.padEnd(precision, "0"));
-  if (!Number.isSafeInteger(feeMinor))
-    throw new InputError("The fee is too large to store precisely.");
-  if (feeMinor === 0 && form.feeMode === "split") form.feeMode = "fixed";
+  const untracked = form.paymentMode === "untracked";
+  if (untracked) delete form.feeMode;
+  let feeMinor = 0;
+  if (!untracked) {
+    const feePattern = new RegExp(`^\\d+(?:\\.\\d{1,${precision || 1}})?$`);
+    if (
+      !feePattern.test(form.fee) ||
+      (precision === 0 && form.fee.includes("."))
+    )
+      throw new InputError(
+        `Use at most ${precision} decimal places for ${form.currency}.`,
+      );
+    const [whole, fraction = ""] = form.fee.split(".");
+    feeMinor = Number(whole + fraction.padEnd(precision, "0"));
+    if (!Number.isSafeInteger(feeMinor))
+      throw new InputError("The fee is too large to store precisely.");
+    if (feeMinor === 0 && form.feeMode === "split") form.feeMode = "fixed";
+  }
+  if (
+    form.releaseUnpaid &&
+    (untracked || form.feeMode === "split" || feeMinor === 0)
+  )
+    throw new InputError("Releasing unpaid spots needs a fixed fee per seat.");
   if (!form.timeZone || /^[+-]/.test(form.timeZone))
     throw new InputError("Use a named IANA timezone.");
   const instant = (local: string, label: string) => {
@@ -240,7 +267,11 @@ export function normalizeSession(
     endsAt: end.toString(),
     opensAt: open.toString(),
     cutoffAt: cutoff.toString(),
-    ...(form.feeMode === "split" ? { totalMinor: feeMinor } : { feeMinor }),
+    ...(untracked
+      ? {}
+      : form.feeMode === "split"
+        ? { totalMinor: feeMinor }
+        : { feeMinor }),
   };
 }
 export function feeLabel(d: Pick<SessionDetails, "currency" | "feeMinor">) {

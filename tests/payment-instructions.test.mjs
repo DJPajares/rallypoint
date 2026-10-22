@@ -196,7 +196,9 @@ test("only current organizers write and only booked people read", async (t) => {
   const shared = await (
     await f.get(null, `/api/shared/${f.session.slug}`)
   ).text();
-  assert.ok(!shared.includes("PayNow") && !shared.includes("payment"));
+  assert.ok(
+    !shared.includes("PayNow") && !shared.includes("paymentInstructions"),
+  );
 
   await ok(
     await f.post(confirmed, `/api/registrations/${f.session.slug}/withdraw`, {

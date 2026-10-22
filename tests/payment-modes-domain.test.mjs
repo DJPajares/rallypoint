@@ -1,0 +1,93 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import {
+  blankSession,
+  InputError,
+  normalizeSession,
+} from "../packages/domain/src/session.ts";
+
+const session = (fee) => ({
+  title: "Mode fixture",
+  activity: "Pickleball",
+  location: "Synthetic court",
+  startLocal: "2027-05-09T10:00",
+  endLocal: "2027-05-09T12:00",
+  timeZone: "Asia/Manila",
+  openLocal: "2027-05-01T09:00",
+  cutoffLocal: "2027-05-08T10:00",
+  capacity: "12",
+  instructions: "",
+  fee,
+  currency: "PHP",
+  guests: false,
+});
+
+test("a missing paymentMode stays Pay the organizer", () => {
+  const details = normalizeSession(session("200.00"), true);
+  assert.equal(details.paymentMode, "organizer");
+  assert.equal(details.releaseUnpaid, false);
+  assert.equal(details.feeMinor, 20000);
+});
+
+test("Not tracked here keeps no fee", () => {
+  const details = normalizeSession(
+    { ...session("200.00"), paymentMode: "untracked", feeMode: "split" },
+    true,
+  );
+  assert.equal(details.paymentMode, "untracked");
+  assert.equal(details.feeMode, undefined);
+  assert.equal(details.feeMinor, undefined);
+  assert.equal(details.totalMinor, undefined);
+  assert.equal(details.releaseUnpaid, false);
+});
+
+test("release needs a fixed fee above zero", () => {
+  for (const extra of [
+    { fee: "0.00" },
+    { feeMode: "split" },
+    { paymentMode: "untracked" },
+  ]) {
+    assert.throws(
+      () =>
+        normalizeSession(
+          { ...session("200.00"), ...extra, releaseUnpaid: true },
+          true,
+        ),
+      InputError,
+    );
+  }
+  const details = normalizeSession(
+    { ...session("200.00"), feeMode: "fixed", releaseUnpaid: true },
+    true,
+  );
+  assert.equal(details.releaseUnpaid, true);
+});
+
+test("unknown payment modes are refused", () => {
+  assert.throws(
+    () =>
+      normalizeSession({ ...session("200.00"), paymentMode: "in_app" }, true),
+    InputError,
+  );
+});
+
+test("a non-boolean releaseUnpaid is refused", () => {
+  assert.throws(
+    () =>
+      normalizeSession({ ...session("200.00"), releaseUnpaid: "yes" }, false),
+    InputError,
+  );
+});
+
+test("drafts keep the mode and the release switch", () => {
+  const draft = normalizeSession(
+    { ...session("200.00"), paymentMode: "untracked" },
+    false,
+  );
+  assert.equal(draft.paymentMode, "untracked");
+  assert.equal(draft.releaseUnpaid, false);
+});
+
+test("new sessions start as Not tracked here", () => {
+  assert.equal(blankSession().paymentMode, "untracked");
+});

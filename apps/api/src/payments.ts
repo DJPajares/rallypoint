@@ -28,6 +28,8 @@ const conflicts: Record<string, string> = {
     "Add written payment instructions first, so people can still pay if the image doesn’t load.",
   session_closed:
     "This session is cancelled, so its payment instructions can’t be changed.",
+  payment_not_tracked:
+    "This session doesn’t track payment, so it has no payment instructions.",
   idempotency_conflict:
     "This request key was already used for different details.",
 };
