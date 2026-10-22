@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
+    "./activities": "./src/activities.ts",
     "./contracts": "./src/contracts.ts",
     "./session": "./src/session.ts",
     "./registration": "./src/registration.ts",

@@ -7,6 +7,7 @@ import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
 import { useMutation } from "./use-mutation";
 import { RegistrationPanel } from "./registration-panel";
+import { ActivityPicker } from "./activity-picker";
 import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import { ClockCountdownIcon } from "@phosphor-icons/react/dist/csr/ClockCountdown";
 import { CoinsIcon } from "@phosphor-icons/react/dist/csr/Coins";
@@ -354,20 +355,17 @@ function Editor({
       >
         <fieldset disabled={mutation.busy || mutation.uncertain || locked}>
           <legend>Session details</legend>
-          <div className="form-grid">
-            <Field id="title" label="Session title">
-              {input("title", "text", {
-                maxLength: 120,
-                placeholder: "Sunday morning badminton",
-              })}
-            </Field>
-            <Field id="activity" label="Activity">
-              {input("activity", "text", {
-                maxLength: 80,
-                placeholder: "Badminton, pottery, a walk…",
-              })}
-            </Field>
-          </div>
+          <Field id="title" label="Session title">
+            {input("title", "text", {
+              maxLength: 120,
+              placeholder: "Sunday morning badminton",
+            })}
+          </Field>
+          <ActivityPicker
+            value={form.activity}
+            onChange={(activity) => setForm({ ...form, activity })}
+            disabled={disabledFields}
+          />
           <div className="form-grid">
             <Field id="startLocal" label="Starts">
               <DateTimeField

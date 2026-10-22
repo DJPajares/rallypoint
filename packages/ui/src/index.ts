@@ -36,3 +36,5 @@ export {
   splitLocalDateTime,
 } from "./datetime";
 export { Sheet } from "./components/sheet";
+export { ChoiceTiles } from "./components/choice-tiles";
+export type { Tile } from "./components/choice-tiles";
