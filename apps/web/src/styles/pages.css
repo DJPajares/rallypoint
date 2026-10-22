@@ -150,13 +150,6 @@
   grid-column: 1 / -1;
   margin: 0;
 }
-.role-confirmation {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  color: var(--color-success);
-  font-weight: var(--weight-semibold);
-}
 
 /* Group sessions */
 .session-list {

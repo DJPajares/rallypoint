@@ -12,6 +12,7 @@ simple, with one place to change each decision.
 | `src/base.css`         | Element defaults (body, headings, form controls, focus)          |
 | `src/components.css`   | The `rp-` component classes                                      |
 | `src/components/*.tsx` | React components that render those classes                       |
+| `src/fields.css`       | Styles for the form controls and their popovers                  |
 
 The app imports `@rallypoint/ui/styles.css` once in its root layout and the
 components from `@rallypoint/ui`.
@@ -48,19 +49,33 @@ Three layers, used top to bottom:
 
 ## Components
 
-| Component                                            | Use                                                          |
-| ---------------------------------------------------- | ------------------------------------------------------------ |
-| `Button`, `buttonClass()`                            | Actions. Use `buttonClass()` on links that look like buttons |
-| `IconButton`, `iconButtonClass()`                    | Round icon-only chips                                        |
-| `Card`, `cardClass()`, `Badge`, `IconTile`, `Avatar` | Surfaces and labels                                          |
-| `Kicker`, `Lede`, `Help`                             | Text roles around titles and fields                          |
-| `Pending`, `Notice`, `StatusBanner`, `EmptyState`    | Feedback                                                     |
-| `Ticket`, `TicketTime`, `TicketMeta`, `SpotsMeter`   | Session pieces                                               |
-| `Field`, `CheckField`, `Divider`                     | Forms                                                        |
-| `Sheet`                                              | A modal bottom sheet (native `<dialog>`)                     |
+| Component                                            | Use                                                                                             |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `Button`, `buttonClass()`                            | Actions. Use `buttonClass()` on links that look like buttons                                    |
+| `IconButton`, `iconButtonClass()`                    | Round icon-only chips                                                                           |
+| `Card`, `cardClass()`, `Badge`, `IconTile`, `Avatar` | Surfaces and labels                                                                             |
+| `Kicker`, `Lede`, `Help`                             | Text roles around titles and fields                                                             |
+| `Pending`, `Notice`, `StatusBanner`, `EmptyState`    | Feedback                                                                                        |
+| `Ticket`, `TicketTime`, `TicketMeta`, `SpotsMeter`   | Session pieces                                                                                  |
+| `Field`, `Divider`                                   | Labels, help text and section breaks for forms                                                  |
+| `DateTimeField`                                      | Date and time picker. A calendar plus 15-minute slots in a popover, or a bottom sheet on phones |
+| `SelectField`                                        | A short list of fixed choices, such as currencies                                               |
+| `NumberStepper`                                      | A whole number with − and + buttons                                                             |
+| `AffixInput`                                         | A text input with a fixed prefix, such as a currency code                                       |
+| `SwitchField`, `CheckField`                          | An on/off setting, and a checkbox row                                                           |
+| `Sheet`                                              | A modal bottom sheet (native `<dialog>`)                                                        |
 
 Run the app in development and open `/design` to see every token and component
 in both themes. Production builds return 404 for that page.
+
+## Form controls
+
+The form controls are built on [Base UI](https://base-ui.com) (unstyled,
+accessible popover, select, number field, switch and checkbox) and
+[react-day-picker](https://daypicker.dev) for the calendar grid. Both are styled
+only through `fields.css` and the tokens, so they follow the theme. Date values
+stay `"YYYY-MM-DDTHH:mm"` wall-clock strings, the same format a
+`datetime-local` input produces.
 
 ## Rules
 

@@ -12,19 +12,21 @@ import { ClockCountdownIcon } from "@phosphor-icons/react/dist/csr/ClockCountdow
 import { CoinsIcon } from "@phosphor-icons/react/dist/csr/Coins";
 import { CopyIcon } from "@phosphor-icons/react/dist/csr/Copy";
 import { DoorOpenIcon } from "@phosphor-icons/react/dist/csr/DoorOpen";
-import { GlobeHemisphereWestIcon } from "@phosphor-icons/react/dist/csr/GlobeHemisphereWest";
-import { MapPinIcon } from "@phosphor-icons/react/dist/csr/MapPin";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { UserPlusIcon } from "@phosphor-icons/react/dist/csr/UserPlus";
 import { fromInstant, fromLocal } from "./dates";
 import { ShareButton } from "./share-button";
 import {
+  AffixInput,
   buttonClass,
-  CheckField,
+  DateTimeField,
   Field,
   Notice,
+  NumberStepper,
   Pending,
+  SelectField,
   SpotsMeter,
+  SwitchField,
   Ticket,
 } from "@rallypoint/ui";
 import { DetailPage, StickyActions } from "./ui";
@@ -45,6 +47,10 @@ const subscribeOrigin = () => () => {};
 const clientOrigin = () => window.location.origin;
 const serverOrigin = () => "";
 
+const currencyOptions = Object.keys(currencies).map((code) => ({
+  value: code,
+  label: code,
+}));
 type Result = {
   session?: SessionRecord;
   group?: GroupSummary;
@@ -59,11 +65,7 @@ export function CreateGroup() {
   return (
     <DetailPage back="/workspace" backLabel="Your groups" className="form-page">
       <div className="page-head">
-        <span className="rp-kicker">A place for your people</span>
         <h1>Start a group.</h1>
-        <p className="rp-lede">
-          You’ll be its owner. You can start publishing sessions right away.
-        </p>
       </div>
       <form
         className="rp-card"
@@ -73,11 +75,7 @@ export function CreateGroup() {
         }}
       >
         <fieldset disabled={mutation.busy || mutation.uncertain}>
-          <Field
-            id="group-name"
-            label="Group name"
-            help="Event registration won’t automatically add people as members."
-          >
+          <Field id="group-name" label="Group name">
             <input
               id="group-name"
               value={name}
@@ -85,7 +83,6 @@ export function CreateGroup() {
               maxLength={100}
               required
               autoComplete="organization"
-              aria-describedby="group-name-help"
             />
           </Field>
           <StickyActions>
@@ -131,7 +128,7 @@ export function GroupSessions({ group }: { group: GroupSummary }) {
                   {
                     {
                       draft: "Draft",
-                      published: "Unlisted",
+                      published: "Live",
                       cancelled: "Cancelled",
                       completed: "Completed",
                     }[s.state]
@@ -140,8 +137,7 @@ export function GroupSessions({ group }: { group: GroupSummary }) {
                 <h3>{s.details.title || "Untitled session"}</h3>
                 <p className="rp-ticket__meta rp-nums">
                   {fromLocal(s.details.startLocal)?.time ??
-                    "Date to be decided"}{" "}
-                  · {s.details.timeZone}
+                    "Date to be decided"}
                 </p>
                 <Link className={buttonClass()} href={`/sessions/${s.id}/edit`}>
                   {s.state === "draft" ? "Continue draft" : "Manage session"}
@@ -216,10 +212,10 @@ function Editor({
   const [form, setForm] = useState<SessionForm>(
       initial?.details ?? blankSession,
     ),
+    // A new session reopens here after its first save, so a loaded draft
+    // confirms it is saved rather than going quiet.
     [notice, setNotice] = useState(
-      initial?.state === "draft"
-        ? "Saved draft loaded. Your details are stored with your group."
-        : "",
+      initial?.state === "draft" ? "Draft saved." : "",
     ),
     [error, setError] = useState<string | null>(null);
   const [copy, setCopy] = useState("");
@@ -233,8 +229,8 @@ function Editor({
     setRecord(result.session);
     setNotice(
       result.session.state === "published"
-        ? "Session published. Anyone with the link can view these details."
-        : "Draft saved. Only your group’s organizers can see it.",
+        ? "Saved. Share the link when you’re ready."
+        : "Draft saved.",
     );
     if (!record) router.replace(`/sessions/${result.session.id}/edit`);
   });
@@ -276,6 +272,9 @@ function Editor({
   const terminal =
     record?.state === "cancelled" || record?.state === "completed";
   const locked = !!record?.bookingsStarted || terminal;
+  // Custom controls aren't all native form elements, so the fieldset's
+  // disabled state is passed to them as well.
+  const disabledFields = mutation.busy || mutation.uncertain || locked;
   const url =
     record && record.state !== "draft" ? `${origin}/s/${record.slug}` : null;
   return (
@@ -285,7 +284,6 @@ function Editor({
       className="form-page"
     >
       <div className="page-head">
-        <span className="rp-kicker">Make a little time together</span>
         <h1 ref={header} tabIndex={-1}>
           {terminal
             ? "This session is closed."
@@ -293,25 +291,18 @@ function Editor({
               ? "Your session, ready to share."
               : "Plan the next one."}
         </h1>
-        <p className="rp-lede">
-          The essentials first. A shared link when you’re ready.
-        </p>
       </div>
       {terminal ? (
-        <Notice>
-          This session is {record?.state}. Detail changes are closed.
+        <Notice tone="warning">
+          This session has{" "}
+          {record?.state === "cancelled" ? "been cancelled" : "ended"}, so it
+          can’t be edited.
         </Notice>
       ) : null}
       {url ? (
         <div className="rp-card share-panel">
           <div>
-            <span className="rp-badge">
-              Unlisted · version {record?.version}
-            </span>
-            <p>
-              Anyone with this link can view the session. It isn’t private
-              access control.
-            </p>
+            <p>Anyone with the link can see this session.</p>
             <a className="share-url" href={url}>
               {url}
             </a>
@@ -350,9 +341,8 @@ function Editor({
         </div>
       ) : null}
       {record?.bookingsStarted ? (
-        <Notice>
-          People have booked this session. Detail changes are locked while the
-          booked-event edit policy is defined.
+        <Notice tone="warning">
+          People have joined, so the details can’t be changed.
         </Notice>
       ) : null}
       <form
@@ -380,27 +370,24 @@ function Editor({
           </div>
           <div className="form-grid">
             <Field id="startLocal" label="Starts">
-              {input("startLocal", "datetime-local")}
+              <DateTimeField
+                id="startLocal"
+                title="Starts"
+                value={form.startLocal}
+                onChange={(next) => setForm({ ...form, startLocal: next })}
+                disabled={disabledFields}
+              />
             </Field>
             <Field id="endLocal" label="Ends">
-              {input("endLocal", "datetime-local")}
+              <DateTimeField
+                id="endLocal"
+                title="Ends"
+                value={form.endLocal}
+                onChange={(next) => setForm({ ...form, endLocal: next })}
+                disabled={disabledFields}
+              />
             </Field>
           </div>
-          <Field
-            id="timeZone"
-            label="Timezone"
-            help="All four times use this timezone. Repeated or missing daylight-saving times need a different time."
-          >
-            {input("timeZone", "text", {
-              list: "timezones",
-              "aria-describedby": "timeZone-help",
-            })}
-            <datalist id="timezones">
-              {Intl.supportedValuesOf("timeZone").map((z) => (
-                <option key={z} value={z} />
-              ))}
-            </datalist>
-          </Field>
           <Field id="location" label="Location">
             {input("location", "text", {
               maxLength: 300,
@@ -410,7 +397,7 @@ function Editor({
           <Field
             id="instructions"
             label="Instructions (optional)"
-            help="These details appear on the shared page. Keep contact and private payment information out."
+            help="Anyone with the link can read this."
           >
             <textarea
               id="instructions"
@@ -425,41 +412,61 @@ function Editor({
           </Field>
           <div className="form-grid">
             <Field id="capacity" label="Capacity, in seats">
-              {input("capacity", "text", { inputMode: "numeric" })}
+              <NumberStepper
+                id="capacity"
+                value={form.capacity}
+                onChange={(next) => setForm({ ...form, capacity: next })}
+                min={1}
+                disabled={disabledFields}
+              />
             </Field>
             <Field id="currency" label="Currency">
-              <select
+              <SelectField
                 id="currency"
                 value={form.currency}
-                onChange={(e) => setForm({ ...form, currency: e.target.value })}
-              >
-                {Object.keys(currencies).map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
+                onChange={(next) => setForm({ ...form, currency: next })}
+                options={currencyOptions}
+                disabled={disabledFields}
+              />
             </Field>
             <Field id="fee" label="Fixed fee per seat">
-              {input("fee", "text", { inputMode: "decimal" })}
+              <AffixInput
+                id="fee"
+                prefix={form.currency}
+                inputMode="decimal"
+                value={form.fee}
+                onChange={(e) => setForm({ ...form, fee: e.target.value })}
+              />
             </Field>
           </div>
           <div className="form-grid">
             <Field id="openLocal" label="Registration opens">
-              {input("openLocal", "datetime-local")}
+              <DateTimeField
+                id="openLocal"
+                title="Registration opens"
+                value={form.openLocal}
+                onChange={(next) => setForm({ ...form, openLocal: next })}
+                disabled={disabledFields}
+              />
             </Field>
             <Field id="cutoffLocal" label="Cancellation fee cutoff">
-              {input("cutoffLocal", "datetime-local")}
+              <DateTimeField
+                id="cutoffLocal"
+                title="Cancellation fee cutoff"
+                value={form.cutoffLocal}
+                onChange={(next) => setForm({ ...form, cutoffLocal: next })}
+                disabled={disabledFields}
+              />
             </Field>
           </div>
-          <CheckField
+          <SwitchField
             checked={form.guests}
-            onChange={(e) => setForm({ ...form, guests: e.target.checked })}
+            onCheckedChange={(guests) => setForm({ ...form, guests })}
+            disabled={disabledFields}
+            description="Two seats that join, wait and withdraw together."
           >
-            Allow each participant to bring one guest (two seats together)
-          </CheckField>
-          <p className="rp-help">
-            Unlisted is the initial visibility. Fees are tracked manually;
-            RallyPoint doesn’t collect payments.
-          </p>
+            Allow each participant to bring one guest
+          </SwitchField>
           <StickyActions>
             {record?.state !== "published" ? (
               <button
@@ -527,14 +534,18 @@ export function SharedSessionPage() {
     );
   if (!result.data) return null;
   const shared = result.data.session;
-  const { details: d, groupName, version, counts } = shared;
+  const { details: d, groupName, counts } = shared;
   const capacity = Number(d.capacity);
+  // Times read in the session's own local time, never with a zone label (D-13).
   const time = (value: string | undefined) =>
     value
       ? new Intl.DateTimeFormat("en", {
           timeZone: d.timeZone,
-          dateStyle: "full",
-          timeStyle: "short",
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
         }).format(new Date(value))
       : "To be decided";
   const start = fromInstant(d.startsAt, d.timeZone);
@@ -543,18 +554,16 @@ export function SharedSessionPage() {
     <DetailPage back={back} backLabel="Home" className="shared-session">
       <div className="session-layout">
         <div className="session-head">
-          <span className="rp-kicker">{groupName} · Unlisted session</span>
+          <span className="rp-kicker">{groupName}</span>
           <h1 ref={heading} tabIndex={-1}>
             {d.title}
           </h1>
-          <p className="rp-lede">
-            {d.activity} · {d.capacity} {capacity === 1 ? "seat" : "seats"} ·{" "}
-            {feeLabel(d)} per seat
-          </p>
+          <p className="rp-lede">{d.activity}</p>
           {shared.state !== "published" ? (
-            <Notice>
-              This session is {shared.state}. Existing registrations are shown
-              for reference; new joins are closed.
+            <Notice tone="warning">
+              {shared.state === "cancelled"
+                ? "This session was cancelled."
+                : "This session has finished."}
             </Notice>
           ) : null}
           <Ticket date={start}>
@@ -563,22 +572,17 @@ export function SharedSessionPage() {
                 ? `${start.time} – ${end?.time ?? "?"}`
                 : "Time to be decided"}
             </div>
-            <div className="rp-ticket__meta">{d.timeZone} · session time</div>
+            <div className="rp-ticket__meta">{d.location}</div>
           </Ticket>
         </div>
         <aside className="session-side" aria-label="Places and registration">
           <div className="rp-card availability" role="status">
             <SpotsMeter capacity={capacity} taken={counts.confirmedSeats} />
-            <p className="rp-help">
-              {counts.confirmedSeats} / {d.capacity}{" "}
-              {capacity === 1 ? "seat" : "seats"} confirmed ·{" "}
-              {capacity - counts.confirmedSeats} open · {counts.waitingParties}{" "}
-              {counts.waitingParties === 1 ? "party" : "parties"} waiting
-            </p>
             {counts.waitingParties > 0 ? (
               <p className="rp-help">
-                Waiting parties go first. An open seat can remain unused when
-                the first party needs two.
+                {counts.waitingParties}{" "}
+                {counts.waitingParties === 1 ? "party is" : "parties are"}{" "}
+                waiting and will get the next places, in order.
               </p>
             ) : null}
             {!session ? (
@@ -586,7 +590,7 @@ export function SharedSessionPage() {
                 className={buttonClass({ variant: "link" })}
                 onClick={result.retry}
               >
-                Refresh availability
+                Refresh
               </button>
             ) : null}
           </div>
@@ -605,16 +609,13 @@ export function SharedSessionPage() {
                     ? "Registration is closed."
                     : "Registration opens soon."}
               </h2>
-              <p>
-                Sign in to check your place, join, or waitlist your party. A
-                reservation does not grant group membership.
-              </p>
+              <p>Sign in to join or check your place.</p>
               <StickyActions>
                 <Link
                   className={buttonClass({ variant: "primary" })}
                   href={`/sign-in?next=${encodeURIComponent(`/s/${slug}`)}`}
                 >
-                  Sign in and return here
+                  Sign in to join
                 </Link>
                 <ShareButton title={d.title} />
               </StickyActions>
@@ -625,64 +626,36 @@ export function SharedSessionPage() {
           <dl className="facts">
             <div>
               <dt>
-                <MapPinIcon size={20} aria-hidden="true" />
-                Meet here
-              </dt>
-              <dd>{d.location}</dd>
-            </div>
-            <div>
-              <dt>
-                <ClockCountdownIcon size={20} aria-hidden="true" />
-                Starts
-              </dt>
-              <dd>{time(d.startsAt)}</dd>
-            </div>
-            <div>
-              <dt>
-                <ClockCountdownIcon size={20} aria-hidden="true" />
-                Ends
-              </dt>
-              <dd>{time(d.endsAt)}</dd>
-            </div>
-            <div>
-              <dt>
-                <GlobeHemisphereWestIcon size={20} aria-hidden="true" />
-                Timezone
-              </dt>
-              <dd>{d.timeZone}</dd>
-            </div>
-            <div>
-              <dt>
                 <CoinsIcon size={20} aria-hidden="true" />
                 Fee
               </dt>
-              <dd>{feeLabel(d)} per seat · paid to the organizer</dd>
-            </div>
-            <div>
-              <dt>
-                <DoorOpenIcon size={20} aria-hidden="true" />
-                Registration opens
-              </dt>
-              <dd>{time(d.opensAt)}</dd>
+              <dd>{feeLabel(d)} per seat, paid to the organizer</dd>
             </div>
             <div>
               <dt>
                 <ClockCountdownIcon size={20} aria-hidden="true" />
-                Cancellation fee cutoff
+                Free cancellation until
               </dt>
               <dd>{time(d.cutoffAt)}</dd>
             </div>
-            <div>
-              <dt>
-                <UserPlusIcon size={20} aria-hidden="true" />
-                Guests
-              </dt>
-              <dd>
-                {d.guests
-                  ? "One guest per participant; the party stays together."
-                  : "Individual places only."}
-              </dd>
-            </div>
+            {shared.registrationWindow === "not_open" ? (
+              <div>
+                <dt>
+                  <DoorOpenIcon size={20} aria-hidden="true" />
+                  Registration opens
+                </dt>
+                <dd>{time(d.opensAt)}</dd>
+              </div>
+            ) : null}
+            {d.guests ? (
+              <div>
+                <dt>
+                  <UserPlusIcon size={20} aria-hidden="true" />
+                  Guests
+                </dt>
+                <dd>You can bring one guest.</dd>
+              </div>
+            ) : null}
           </dl>
           {d.instructions ? (
             <div className="rp-card session-instructions">
@@ -690,15 +663,6 @@ export function SharedSessionPage() {
               <p>{d.instructions}</p>
             </div>
           ) : null}
-          <p className="rp-help">
-            Before the cutoff, withdrawing removes an unpaid fee obligation. At
-            or after it, the obligation remains unless the organizer waives it.
-            Any refund is handled outside RallyPoint.
-          </p>
-          <p className="quiet-note">
-            Session details · version {version}. Anyone with this link can view
-            this page.
-          </p>
         </div>
       </div>
     </DetailPage>

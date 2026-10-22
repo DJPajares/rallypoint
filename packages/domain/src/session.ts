@@ -125,7 +125,7 @@ export function normalizeSession(
         .toInstant();
     } catch {
       throw new InputError(
-        `Check ${label} and the timezone. Choose an unambiguous local time; daylight-saving gaps and repeated times are rejected.`,
+        `Check the ${label} time. Pick a time that happens once on that day; clock changes can skip or repeat an hour.`,
       );
     }
   };

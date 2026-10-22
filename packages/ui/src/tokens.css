@@ -91,6 +91,8 @@
   --color-on-action: light-dark(var(--palette-ink), var(--palette-navy-900));
   --color-link: light-dark(var(--palette-navy-500), var(--palette-neon-300));
   --color-focus: light-dark(var(--palette-navy-500), var(--palette-neon-300));
+  /* The soft halo around a focused field. */
+  --color-focus-ring: color-mix(in srgb, var(--color-focus) 22%, transparent);
   --color-scrim: light-dark(rgb(10 16 36 / 0.45), rgb(0 0 0 / 0.6));
   --color-success: light-dark(
     var(--palette-green-700),
@@ -182,6 +184,11 @@
   --glass-filter: saturate(1.4) blur(14px);
   --glass-opacity: 94%;
 
+  /* Focus halo around a field, and the ring that marks today in a calendar. */
+  --shadow-focus: 0 0 0 var(--focus-width) var(--color-focus-ring);
+  --shadow-ring-accent: inset 0 0 0 var(--border-width-strong)
+    var(--color-accent);
+
   /* Motion */
   --duration-fast: 150ms;
   --duration-base: 200ms;
@@ -198,6 +205,11 @@
   --size-stub: 68px;
   --size-dot: 14px;
   --size-check: 22px;
+  --size-control-sm: 36px;
+  --size-day: 40px;
+  --size-switch-width: 44px;
+  --size-switch-height: 26px;
+  --size-popover-list: 296px;
   --size-brand-mark: 34px;
   --size-tab: 56px;
   --size-indicator-width: 24px;
@@ -220,6 +232,7 @@
   --layer-sticky: 25;
   --layer-bar: 30;
   --layer-float: 40;
+  --layer-popover: 50;
   --layer-skip: 100;
 }
 /* An explicit choice from the theme switch overrides the system preference. */

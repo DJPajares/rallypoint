@@ -1,9 +1,9 @@
-import type { InputHTMLAttributes, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { cx } from "../cx";
 /**
- * A label above its control, with optional help below. The help gets the id
- * `${id}-help`; point the control's aria-describedby at it so screen readers
- * announce the help with the field.
+ * A label above its control, with optional help below. The label gets the id
+ * `${id}-label` and the help `${id}-help`; point the control's
+ * aria-describedby at the help so screen readers announce it with the field.
  */
 export function Field({
   id,
@@ -20,7 +20,9 @@ export function Field({
 }) {
   return (
     <div className={cx("rp-field", className)}>
-      <label htmlFor={id}>{label}</label>
+      <label id={`${id}-label`} htmlFor={id}>
+        {label}
+      </label>
       {children}
       {help ? (
         <p id={`${id}-help`} className="rp-help">
@@ -28,21 +30,6 @@ export function Field({
         </p>
       ) : null}
     </div>
-  );
-}
-/** A checkbox with its label beside it; the whole row is the target. */
-export function CheckField({
-  children,
-  ...props
-}: { children: ReactNode } & Omit<
-  InputHTMLAttributes<HTMLInputElement>,
-  "type"
->) {
-  return (
-    <label className="rp-check">
-      <input type="checkbox" {...props} />
-      <span>{children}</span>
-    </label>
   );
 }
 export function Divider({ children }: { children: ReactNode }) {

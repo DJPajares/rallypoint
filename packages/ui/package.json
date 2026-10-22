@@ -15,7 +15,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@phosphor-icons/react": "2.1.10"
+    "@base-ui/react": "1.8.0",
+    "@phosphor-icons/react": "2.1.10",
+    "react-day-picker": "10.0.2"
   },
   "peerDependencies": {
     "react": "19.3.1"
