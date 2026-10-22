@@ -1,6 +1,10 @@
 import type { InputHTMLAttributes, ReactNode } from "react";
 import { cx } from "../cx";
-/** A label above its control, with optional help below. */
+/**
+ * A label above its control, with optional help below. The help gets the id
+ * `${id}-help`; point the control's aria-describedby at it so screen readers
+ * announce the help with the field.
+ */
 export function Field({
   id,
   label,
@@ -18,7 +22,11 @@ export function Field({
     <div className={cx("rp-field", className)}>
       <label htmlFor={id}>{label}</label>
       {children}
-      {help ? <p className="rp-help">{help}</p> : null}
+      {help ? (
+        <p id={`${id}-help`} className="rp-help">
+          {help}
+        </p>
+      ) : null}
     </div>
   );
 }

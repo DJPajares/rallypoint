@@ -231,9 +231,6 @@
 .signin-card > .rp-button {
   margin-top: var(--space-4);
 }
-.local-form label {
-  margin-top: var(--space-3);
-}
 .local-form .rp-button--primary {
   margin-top: var(--space-4);
 }

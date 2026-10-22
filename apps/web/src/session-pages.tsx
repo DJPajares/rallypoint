@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "./auth-context";
@@ -20,6 +20,8 @@ import { fromInstant, fromLocal } from "./dates";
 import { ShareButton } from "./share-button";
 import {
   buttonClass,
+  CheckField,
+  Field,
   Notice,
   Pending,
   SpotsMeter,
@@ -71,18 +73,21 @@ export function CreateGroup() {
         }}
       >
         <fieldset disabled={mutation.busy || mutation.uncertain}>
-          <label htmlFor="group-name">Group name</label>
-          <input
+          <Field
             id="group-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={100}
-            required
-            autoComplete="organization"
-          />
-          <p className="rp-help">
-            Event registration won’t automatically add people as members.
-          </p>
+            label="Group name"
+            help="Event registration won’t automatically add people as members."
+          >
+            <input
+              id="group-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={100}
+              required
+              autoComplete="organization"
+              aria-describedby="group-name-help"
+            />
+          </Field>
           <StickyActions>
             <button className={buttonClass({ variant: "primary" })}>
               {mutation.busy ? "Creating…" : "Create group"}
@@ -192,22 +197,6 @@ export function NewSession() {
     </DetailPage>
   ) : (
     <Editor groupId={id!} />
-  );
-}
-function Field({
-  name,
-  label,
-  children,
-}: {
-  name: string;
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="rp-field">
-      <label htmlFor={name}>{label}</label>
-      {children}
-    </div>
   );
 }
 function Editor({
@@ -376,13 +365,13 @@ function Editor({
         <fieldset disabled={mutation.busy || mutation.uncertain || locked}>
           <legend>Session details</legend>
           <div className="form-grid">
-            <Field name="title" label="Session title">
+            <Field id="title" label="Session title">
               {input("title", "text", {
                 maxLength: 120,
                 placeholder: "Sunday morning badminton",
               })}
             </Field>
-            <Field name="activity" label="Activity">
+            <Field id="activity" label="Activity">
               {input("activity", "text", {
                 maxLength: 80,
                 placeholder: "Badminton, pottery, a walk…",
@@ -390,32 +379,39 @@ function Editor({
             </Field>
           </div>
           <div className="form-grid">
-            <Field name="startLocal" label="Starts">
+            <Field id="startLocal" label="Starts">
               {input("startLocal", "datetime-local")}
             </Field>
-            <Field name="endLocal" label="Ends">
+            <Field id="endLocal" label="Ends">
               {input("endLocal", "datetime-local")}
             </Field>
           </div>
-          <Field name="timeZone" label="Timezone">
-            {input("timeZone", "text", { list: "timezones" })}
+          <Field
+            id="timeZone"
+            label="Timezone"
+            help="All four times use this timezone. Repeated or missing daylight-saving times need a different time."
+          >
+            {input("timeZone", "text", {
+              list: "timezones",
+              "aria-describedby": "timeZone-help",
+            })}
             <datalist id="timezones">
               {Intl.supportedValuesOf("timeZone").map((z) => (
                 <option key={z} value={z} />
               ))}
             </datalist>
-            <p className="rp-help">
-              All four times use this timezone. Repeated or missing
-              daylight-saving times need a different time.
-            </p>
           </Field>
-          <Field name="location" label="Location">
+          <Field id="location" label="Location">
             {input("location", "text", {
               maxLength: 300,
               placeholder: "Venue and meeting point",
             })}
           </Field>
-          <Field name="instructions" label="Instructions (optional)">
+          <Field
+            id="instructions"
+            label="Instructions (optional)"
+            help="These details appear on the shared page. Keep contact and private payment information out."
+          >
             <textarea
               id="instructions"
               rows={3}
@@ -424,17 +420,14 @@ function Editor({
               onChange={(e) =>
                 setForm({ ...form, instructions: e.target.value })
               }
+              aria-describedby="instructions-help"
             />
-            <p className="rp-help">
-              These details appear on the shared page. Keep contact and private
-              payment information out.
-            </p>
           </Field>
           <div className="form-grid">
-            <Field name="capacity" label="Capacity, in seats">
+            <Field id="capacity" label="Capacity, in seats">
               {input("capacity", "text", { inputMode: "numeric" })}
             </Field>
-            <Field name="currency" label="Currency">
+            <Field id="currency" label="Currency">
               <select
                 id="currency"
                 value={form.currency}
@@ -445,26 +438,24 @@ function Editor({
                 ))}
               </select>
             </Field>
-            <Field name="fee" label="Fixed fee per seat">
+            <Field id="fee" label="Fixed fee per seat">
               {input("fee", "text", { inputMode: "decimal" })}
             </Field>
           </div>
           <div className="form-grid">
-            <Field name="openLocal" label="Registration opens">
+            <Field id="openLocal" label="Registration opens">
               {input("openLocal", "datetime-local")}
             </Field>
-            <Field name="cutoffLocal" label="Cancellation fee cutoff">
+            <Field id="cutoffLocal" label="Cancellation fee cutoff">
               {input("cutoffLocal", "datetime-local")}
             </Field>
           </div>
-          <label className="rp-check">
-            <input
-              type="checkbox"
-              checked={form.guests}
-              onChange={(e) => setForm({ ...form, guests: e.target.checked })}
-            />
+          <CheckField
+            checked={form.guests}
+            onChange={(e) => setForm({ ...form, guests: e.target.checked })}
+          >
             Allow each participant to bring one guest (two seats together)
-          </label>
+          </CheckField>
           <p className="rp-help">
             Unlisted is the initial visibility. Fees are tracked manually;
             RallyPoint doesn’t collect payments.

@@ -20,7 +20,9 @@ import type { GroupSummary, Identity } from "@rallypoint/domain/contracts";
 import { useCreateTarget, useFrame } from "./frame";
 import {
   buttonClass,
+  Divider,
   EmptyState,
+  Field,
   Notice,
   Pending,
   SpotsMeter,
@@ -344,37 +346,37 @@ export function SignIn() {
                 onSubmit={(event) => void submit(event)}
                 className="local-form"
               >
-                <div className="rp-divider">
-                  <span>Local development</span>
-                </div>
+                <Divider>Local development</Divider>
                 <p className="rp-help">
                   Use a synthetic account. Your code stays in the local mail
                   inbox.
                 </p>
-                <label htmlFor="email">Email address</label>
-                <input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  disabled={sent || busy}
-                  required
-                />
+                <Field id="email" label="Email address">
+                  <input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    disabled={sent || busy}
+                    required
+                  />
+                </Field>
                 {sent ? (
                   <>
-                    <label htmlFor="code">One-time code</label>
-                    <input
-                      ref={input}
-                      id="code"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      pattern="[0-9]{6}"
-                      maxLength={6}
-                      value={code}
-                      onChange={(event) => setCode(event.target.value)}
-                      required
-                    />
+                    <Field id="code" label="One-time code">
+                      <input
+                        ref={input}
+                        id="code"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        pattern="[0-9]{6}"
+                        maxLength={6}
+                        value={code}
+                        onChange={(event) => setCode(event.target.value)}
+                        required
+                      />
+                    </Field>
                     <p role="status" className="rp-help">
                       Open the{" "}
                       <a

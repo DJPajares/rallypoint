@@ -11,6 +11,8 @@ import { useIsPhone } from "./frame";
 import { ShareButton } from "./share-button";
 import {
   buttonClass,
+  CheckField,
+  Field,
   Notice,
   Pending,
   Sheet,
@@ -283,24 +285,22 @@ export function RegistrationPanel({
               <legend>Make room for a good time.</legend>
               {d.guests && Number(d.capacity) >= 2 ? (
                 <>
-                  <label className="rp-check">
-                    <input
-                      type="checkbox"
-                      checked={guest}
-                      onChange={(e) => setGuest(e.target.checked)}
-                    />
+                  <CheckField
+                    checked={guest}
+                    onChange={(e) => setGuest(e.target.checked)}
+                  >
                     Bring one guest (two seats together)
-                  </label>
+                  </CheckField>
                   {guest ? (
-                    <label className="rp-field">
-                      Guest name (optional)
+                    <Field id="guest-name" label="Guest name (optional)">
                       <input
+                        id="guest-name"
                         value={guestName}
                         onChange={(e) => setGuestName(e.target.value)}
                         maxLength={80}
                         autoComplete="off"
                       />
-                    </label>
+                    </Field>
                   ) : null}
                 </>
               ) : null}
