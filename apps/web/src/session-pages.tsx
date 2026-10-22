@@ -19,13 +19,13 @@ import { UserPlusIcon } from "@phosphor-icons/react/dist/csr/UserPlus";
 import { fromInstant, fromLocal } from "./dates";
 import { ShareButton } from "./share-button";
 import {
-  DetailPage,
+  buttonClass,
   Notice,
   Pending,
   SpotsMeter,
-  StickyActions,
   Ticket,
-} from "./ui";
+} from "@rallypoint/ui";
+import { DetailPage, StickyActions } from "./ui";
 import {
   blankSession,
   currencies,
@@ -57,14 +57,14 @@ export function CreateGroup() {
   return (
     <DetailPage back="/workspace" backLabel="Your groups" className="form-page">
       <div className="page-head">
-        <span className="page-kicker">A place for your people</span>
+        <span className="rp-kicker">A place for your people</span>
         <h1>Start a group.</h1>
-        <p className="lede">
+        <p className="rp-lede">
           You’ll be its owner. You can start publishing sessions right away.
         </p>
       </div>
       <form
-        className="card form-card"
+        className="rp-card"
         onSubmit={(e) => {
           e.preventDefault();
           mutation.run("/api/groups", { name });
@@ -80,11 +80,11 @@ export function CreateGroup() {
             required
             autoComplete="organization"
           />
-          <p className="field-help">
+          <p className="rp-help">
             Event registration won’t automatically add people as members.
           </p>
           <StickyActions>
-            <button className="button primary">
+            <button className={buttonClass({ variant: "primary" })}>
               {mutation.busy ? "Creating…" : "Create group"}
             </button>
           </StickyActions>
@@ -105,7 +105,7 @@ export function GroupSessions({ group }: { group: GroupSummary }) {
         <h2>Sessions</h2>
         <StickyActions>
           <Link
-            className="button primary"
+            className={buttonClass({ variant: "primary" })}
             href={`/groups/${group.id}/sessions/new`}
           >
             <PlusIcon size={18} weight="bold" aria-hidden="true" />
@@ -122,7 +122,7 @@ export function GroupSessions({ group }: { group: GroupSummary }) {
           {result.data.sessions.map((s) => (
             <article key={s.id} className="session-row">
               <Ticket date={fromLocal(s.details.startLocal)}>
-                <span className="pill">
+                <span className="rp-badge">
                   {
                     {
                       draft: "Draft",
@@ -133,15 +133,12 @@ export function GroupSessions({ group }: { group: GroupSummary }) {
                   }
                 </span>
                 <h3>{s.details.title || "Untitled session"}</h3>
-                <p className="ticket-zone nums">
+                <p className="rp-ticket__meta rp-nums">
                   {fromLocal(s.details.startLocal)?.time ??
                     "Date to be decided"}{" "}
                   · {s.details.timeZone}
                 </p>
-                <Link
-                  className="button secondary"
-                  href={`/sessions/${s.id}/edit`}
-                >
+                <Link className={buttonClass()} href={`/sessions/${s.id}/edit`}>
                   {s.state === "draft" ? "Continue draft" : "Manage session"}
                 </Link>
               </Ticket>
@@ -149,7 +146,7 @@ export function GroupSessions({ group }: { group: GroupSummary }) {
           ))}
         </div>
       ) : (
-        <div className="card empty-inline">
+        <div className="rp-card empty-inline">
           <h3>Your next get-together starts here.</h3>
           <p>Save a draft, then publish when the details are ready.</p>
         </div>
@@ -207,7 +204,7 @@ function Field({
   children: ReactNode;
 }) {
   return (
-    <div className="session-field">
+    <div className="rp-field">
       <label htmlFor={name}>{label}</label>
       {children}
     </div>
@@ -299,7 +296,7 @@ function Editor({
       className="form-page"
     >
       <div className="page-head">
-        <span className="page-kicker">Make a little time together</span>
+        <span className="rp-kicker">Make a little time together</span>
         <h1 ref={header} tabIndex={-1}>
           {terminal
             ? "This session is closed."
@@ -307,7 +304,7 @@ function Editor({
               ? "Your session, ready to share."
               : "Plan the next one."}
         </h1>
-        <p className="lede">
+        <p className="rp-lede">
           The essentials first. A shared link when you’re ready.
         </p>
       </div>
@@ -317,9 +314,11 @@ function Editor({
         </Notice>
       ) : null}
       {url ? (
-        <div className="card share-panel">
+        <div className="rp-card share-panel">
           <div>
-            <span className="pill">Unlisted · version {record?.version}</span>
+            <span className="rp-badge">
+              Unlisted · version {record?.version}
+            </span>
             <p>
               Anyone with this link can view the session. It isn’t private
               access control.
@@ -330,7 +329,7 @@ function Editor({
           </div>
           <div className="share-actions">
             <button
-              className="button primary"
+              className={buttonClass({ variant: "primary" })}
               onClick={() => {
                 if (!navigator.clipboard) {
                   setCopy(
@@ -351,12 +350,12 @@ function Editor({
               <CopyIcon size={18} aria-hidden="true" />
               Copy link
             </button>
-            <Link className="button secondary" href={`/s/${record!.slug}`}>
+            <Link className={buttonClass()} href={`/s/${record!.slug}`}>
               <ArrowSquareOutIcon size={18} aria-hidden="true" />
               Open shared page
             </Link>
           </div>
-          <p role="status" className="field-help">
+          <p role="status" className="rp-help">
             {copy}
           </p>
         </div>
@@ -369,7 +368,7 @@ function Editor({
       ) : null}
       <form
         noValidate
-        className="card form-card"
+        className="rp-card"
         onSubmit={(e) =>
           submit(e, record?.state === "published" ? "update" : "publish")
         }
@@ -405,7 +404,7 @@ function Editor({
                 <option key={z} value={z} />
               ))}
             </datalist>
-            <p className="field-help">
+            <p className="rp-help">
               All four times use this timezone. Repeated or missing
               daylight-saving times need a different time.
             </p>
@@ -426,7 +425,7 @@ function Editor({
                 setForm({ ...form, instructions: e.target.value })
               }
             />
-            <p className="field-help">
+            <p className="rp-help">
               These details appear on the shared page. Keep contact and private
               payment information out.
             </p>
@@ -458,7 +457,7 @@ function Editor({
               {input("cutoffLocal", "datetime-local")}
             </Field>
           </div>
-          <label className="checkbox-field">
+          <label className="rp-check">
             <input
               type="checkbox"
               checked={form.guests}
@@ -466,7 +465,7 @@ function Editor({
             />
             Allow each participant to bring one guest (two seats together)
           </label>
-          <p className="field-help">
+          <p className="rp-help">
             Unlisted is the initial visibility. Fees are tracked manually;
             RallyPoint doesn’t collect payments.
           </p>
@@ -474,13 +473,13 @@ function Editor({
             {record?.state !== "published" ? (
               <button
                 type="button"
-                className="button secondary"
+                className={buttonClass()}
                 onClick={(e) => submit(e, "draft")}
               >
                 Save draft
               </button>
             ) : null}
-            <button className="button primary">
+            <button className={buttonClass({ variant: "primary" })}>
               {mutation.busy
                 ? "Saving…"
                 : record?.state === "published"
@@ -553,11 +552,11 @@ export function SharedSessionPage() {
     <DetailPage back={back} backLabel="Home" className="shared-session">
       <div className="session-layout">
         <div className="session-head">
-          <span className="page-kicker">{groupName} · Unlisted session</span>
+          <span className="rp-kicker">{groupName} · Unlisted session</span>
           <h1 ref={heading} tabIndex={-1}>
             {d.title}
           </h1>
-          <p className="lede">
+          <p className="rp-lede">
             {d.activity} · {d.capacity} {capacity === 1 ? "seat" : "seats"} ·{" "}
             {feeLabel(d)} per seat
           </p>
@@ -568,31 +567,34 @@ export function SharedSessionPage() {
             </Notice>
           ) : null}
           <Ticket date={start}>
-            <div className="ticket-time">
+            <div className="rp-ticket__time">
               {start
                 ? `${start.time} – ${end?.time ?? "?"}`
                 : "Time to be decided"}
             </div>
-            <div className="ticket-zone">{d.timeZone} · session time</div>
+            <div className="rp-ticket__meta">{d.timeZone} · session time</div>
           </Ticket>
         </div>
         <aside className="session-side" aria-label="Places and registration">
-          <div className="card availability" role="status">
+          <div className="rp-card availability" role="status">
             <SpotsMeter capacity={capacity} taken={counts.confirmedSeats} />
-            <p className="field-help">
+            <p className="rp-help">
               {counts.confirmedSeats} / {d.capacity}{" "}
               {capacity === 1 ? "seat" : "seats"} confirmed ·{" "}
               {capacity - counts.confirmedSeats} open · {counts.waitingParties}{" "}
               {counts.waitingParties === 1 ? "party" : "parties"} waiting
             </p>
             {counts.waitingParties > 0 ? (
-              <p className="field-help">
+              <p className="rp-help">
                 Waiting parties go first. An open seat can remain unused when
                 the first party needs two.
               </p>
             ) : null}
             {!session ? (
-              <button className="text-button" onClick={result.retry}>
+              <button
+                className={buttonClass({ variant: "link" })}
+                onClick={result.retry}
+              >
                 Refresh availability
               </button>
             ) : null}
@@ -604,7 +606,7 @@ export function SharedSessionPage() {
               onChange={result.retry}
             />
           ) : (
-            <div className="card registration-note">
+            <div className="rp-card registration-note">
               <h2>
                 {shared.registrationWindow === "open"
                   ? "Come along."
@@ -618,7 +620,7 @@ export function SharedSessionPage() {
               </p>
               <StickyActions>
                 <Link
-                  className="button primary"
+                  className={buttonClass({ variant: "primary" })}
                   href={`/sign-in?next=${encodeURIComponent(`/s/${slug}`)}`}
                 >
                   Sign in and return here
@@ -692,12 +694,12 @@ export function SharedSessionPage() {
             </div>
           </dl>
           {d.instructions ? (
-            <div className="card session-instructions">
+            <div className="rp-card session-instructions">
               <h2>Good to know</h2>
               <p>{d.instructions}</p>
             </div>
           ) : null}
-          <p className="field-help">
+          <p className="rp-help">
             Before the cutoff, withdrawing removes an unpaid fee obligation. At
             or after it, the obligation remains unless the organizer waives it.
             Any refund is handled outside RallyPoint.

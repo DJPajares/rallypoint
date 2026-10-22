@@ -15,7 +15,7 @@ import { FloatingMenu } from "./floating-menu";
 import { FrameContext, useStoredSessionHint } from "./frame";
 import { destinations, isActive } from "./navigation";
 import type { Destination } from "./navigation";
-import { Sheet } from "./ui";
+import { buttonClass, Sheet } from "@rallypoint/ui";
 const icons: Record<Destination["key"], Icon> = {
   home: HouseIcon,
   sessions: CalendarDotsIcon,
@@ -65,7 +65,10 @@ function CreateButton({
   onPick: () => void;
   variant: "top" | "bottom";
 }) {
-  const className = variant === "top" ? "create-top" : "create-bottom";
+  const className =
+    variant === "top"
+      ? `${buttonClass({ variant: "primary", size: "sm" })} create-top`
+      : "create-bottom";
   const content =
     variant === "top" ? (
       <>

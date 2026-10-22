@@ -5,7 +5,7 @@ import { PlusCircleIcon } from "@phosphor-icons/react/dist/csr/PlusCircle";
 import { UsersThreeIcon } from "@phosphor-icons/react/dist/csr/UsersThree";
 import type { GroupSummary } from "@rallypoint/domain/contracts";
 import { useApi } from "./use-api";
-import { Notice, Pending } from "./ui";
+import { buttonClass, Notice, Pending } from "@rallypoint/ui";
 /** Sessions belong to a group, so creating one starts with choosing where. */
 export function CreatePicker({ onNavigate }: { onNavigate: () => void }) {
   const workspace = useApi<{ groups: GroupSummary[] }>("/api/workspace");
@@ -19,7 +19,7 @@ export function CreatePicker({ onNavigate }: { onNavigate: () => void }) {
         <Notice retry={workspace.retry}>{workspace.error}</Notice>
       ) : groups.length ? (
         <>
-          <p className="field-help">Choose the group this session is for.</p>
+          <p className="rp-help">Choose the group this session is for.</p>
           <ul className="picker-list">
             {groups.map((group) => (
               <li key={group.id}>
@@ -28,7 +28,7 @@ export function CreatePicker({ onNavigate }: { onNavigate: () => void }) {
                   href={`/groups/${group.id}/sessions/new`}
                   onClick={onNavigate}
                 >
-                  <span className="icon-tile" aria-hidden="true">
+                  <span className="rp-icon-tile" aria-hidden="true">
                     <UsersThreeIcon size={22} />
                   </span>
                   <span>
@@ -42,13 +42,13 @@ export function CreatePicker({ onNavigate }: { onNavigate: () => void }) {
           </ul>
         </>
       ) : (
-        <p className="field-help">
+        <p className="rp-help">
           You can create sessions in groups you own or help organize. Start a
           group to plan your first one.
         </p>
       )}
       <Link
-        className="button secondary wide"
+        className={buttonClass({ wide: true })}
         href="/groups/new"
         onClick={onNavigate}
       >

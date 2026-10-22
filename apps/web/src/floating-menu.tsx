@@ -14,7 +14,13 @@ import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { useAuth } from "./auth-context";
 import { useScrollingDown } from "./frame";
 import { nextTheme, setThemePreference, useThemePreference } from "./theme";
-import { EmptyState, Notice, Sheet } from "./ui";
+import {
+  buttonClass,
+  EmptyState,
+  iconButtonClass,
+  Notice,
+  Sheet,
+} from "@rallypoint/ui";
 const themeIcon = {
   system: <CircleHalfIcon size={20} aria-hidden="true" />,
   light: <SunIcon size={20} aria-hidden="true" />,
@@ -98,7 +104,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
           onClick={() => openSheet("updates")}
         >
           <span>Updates</span>
-          <span className="chip-button" aria-hidden="true">
+          <span className={iconButtonClass()} aria-hidden="true">
             <BellIcon size={20} />
           </span>
         </button>,
@@ -110,7 +116,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
           onClick={() => setThemePreference(nextTheme[theme])}
         >
           <span>Theme: {themeName[theme]}</span>
-          <span className="chip-button" aria-hidden="true">
+          <span className={iconButtonClass()} aria-hidden="true">
             {themeIcon[theme]}
           </span>
         </button>,
@@ -121,7 +127,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
           onClick={() => openSheet("account")}
         >
           <span>Account</span>
-          <span className="chip-button" aria-hidden="true">
+          <span className={iconButtonClass()} aria-hidden="true">
             <UserCircleIcon size={20} />
           </span>
         </button>,
@@ -135,7 +141,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
           onClick={() => setThemePreference(nextTheme[theme])}
         >
           <span>Theme: {themeName[theme]}</span>
-          <span className="chip-button" aria-hidden="true">
+          <span className={iconButtonClass()} aria-hidden="true">
             {themeIcon[theme]}
           </span>
         </button>,
@@ -146,7 +152,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
           onClick={collapse}
         >
           <span>Sign in</span>
-          <span className="chip-button" aria-hidden="true">
+          <span className={iconButtonClass()} aria-hidden="true">
             <SignInIcon size={20} />
           </span>
         </Link>,
@@ -167,7 +173,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
         <button
           ref={trigger}
           type="button"
-          className="chip-button fab-trigger"
+          className={`${iconButtonClass()} fab-trigger`}
           aria-expanded={expanded}
           aria-controls="quick-actions"
           aria-label={expanded ? "Close menu" : "Open menu"}
@@ -220,7 +226,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
         title="Account"
       >
         <div className="account-sheet">
-          <span className="avatar" aria-hidden="true">
+          <span className="rp-avatar" aria-hidden="true">
             {(session?.user.email ?? "?").slice(0, 1).toUpperCase()}
           </span>
           <p>
@@ -232,7 +238,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
         {signOutError ? <Notice>{signOutError}</Notice> : null}
         <button
           type="button"
-          className="button secondary wide"
+          className={buttonClass({ wide: true })}
           onClick={() => void signOut()}
           disabled={leaving}
         >

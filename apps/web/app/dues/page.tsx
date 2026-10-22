@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Pending } from "@/ui";
+import { Pending } from "@rallypoint/ui";
 import { DuesPage, RequireAuth } from "@/screens";
 export default function Page() {
   return (
