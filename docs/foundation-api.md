@@ -177,6 +177,72 @@ GET `/api/dues` returns `{ dues }`: the verified actor's own fee obligations acr
 sessions (at most 200), unpaid first, each with its session's slug, title, start,
 time zone and state. It never contains another party's data.
 
+### Split cost claims
+
+Session details optionally select `feeMode: "split"`; `fee` is the entered total,
+normalized to `totalMinor` instead of a fixed `feeMinor`. Omitted mode retains
+the legacy fixed contract and payload. Booked material edits remain locked.
+Confirmation or promotion creates a pending claim, with no payable fee. Shared
+session/registration projections add aggregate `split` estimates; own party
+reads add `splitClaim` (`eligible`, `waived`, `estimateMinor`), while managers
+also receive its write `revision`. No other participant's claim/history is exposed.
+
+Pending claims use the existing payment route for `waive`/`undo_waiver`, against
+the claim revision. Paid/unpaid actions refuse with `409 split_not_finalized`.
+Before-cutoff withdrawal permanently removes eligibility, even if waived;
+undo never revives that eligibility. Late withdrawal retains its seats in the
+split unless explicitly waived; replacing or rejoining creates another claim.
+Waiting parties have no claim. Queue, attendance and fixed-fee contracts remain
+independent.
+
+GET `/api/splits/:slug` and POST `/api/splits/:slug/preview` are current-manager
+operations. The preview accepts `{intent:"finalize"}` and returns exact seat and
+party allocations with an opaque `basis` concurrency token. POST
+`/api/splits/:slug/finalize` accepts `{operationKey,basis}`. Apply checks current
+roles, the trusted financial basis and server time after lock waits; it is allowed
+at or after start for published/completed sessions. A stale preview, cancelled
+session, early request or second finalization is refused atomically.
+
+Finalization persists an immutable run and per-seat allocations, creates exact
+party fees, and returns `{operationKey,committedRunId,registration,split}`. Receipt
+recovery preserves the committed run identity even if current projections later
+change. Guest party totals sum their exact seat allocations; split `unitMinor`
+is null and `totalMinor` is explicit. Zero shares cannot be marked paid. Empty
+paying headcounts record unallocated cost and no participant bill. Financial
+snapshots are independent of check-in/no-show status.
+
+GET `/api/dues` retains `dues` and adds own `splitClaims`: claim-only records with
+their session, aggregate split and own pending/waived/removed state. They have no
+fee and never duplicate a party already in `dues`; both lists are bounded to 200.
+After finalization, estimates become null and aggregate headcount is the frozen
+run basis. Only managers receive full split/history/actor data; participants
+receive their own amounts and safe generated `own.splitHistory` entries
+(`previousMinor`, `currentMinor`, `at`, `kind`). These exclude manager reasons,
+actor identifiers and other parties’ details.
+
+POST `/api/splits/:slug/preview` also accepts
+`{intent:"correct",totalMinor,undoWaiverPartyId?}`. It returns exact proposed
+amounts, prior amounts, paid states and `blockedPaidPartyIds`. POST
+`/api/splits/:slug/correct` accepts
+`{operationKey,basis,totalMinor,reason,undoWaiverPartyId?}` with a nonempty reason
+of at most 300 characters. A correction can keep or lower the current effective
+total; it cannot change currency, invent eligibility or change a paid amount.
+A stale financial basis returns `409 stale_split`; affected paid allocations
+return `409 split_paid_allocation`; increases return `409 split_total_increase`.
+Each successful correction creates an immutable run, exact seat allocations,
+changed fee revisions and attributable before/after history. Unchanged paid fees
+keep their amount, marker and earlier payment basis. No money is moved.
+
+A finalized waiver changes liability and the matching claim, leaving everyone
+else’s amount fixed. Uncovered cost uses only current-run allocations. Ordinary
+undo restores an amount only if that party still belongs to the current run.
+Otherwise `409 split_undo_requires_review` requires a correction naming the
+originally eligible waived claim. This includes pre-finalization waivers and
+waivers excluded by a later redistribution. Early-withdrawn and waiting parties
+cannot be introduced. Reviewed undo and repricing commit together; payment and
+attendance history remain separate. Manager history includes reasons and all
+previous/current allocation changes, including excluded parties.
+
 ### Attendance (P-07 contract)
 
 POST `/api/registrations/:slug/attendance` accepts

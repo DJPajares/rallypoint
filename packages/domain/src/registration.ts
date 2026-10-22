@@ -4,7 +4,9 @@ export interface Counts {
 }
 export interface Fee {
   currency: string;
-  unitMinor: number;
+  unitMinor: number | null;
+  mode?: FeeMode;
+  splitRunId?: string;
   chargedSeats: number;
   totalMinor: number;
   liabilityState: "due" | "removed_before_cutoff" | "waived";
@@ -18,11 +20,16 @@ export interface ManagedFee extends Fee {
   revision: number;
   history: Array<{
     action:
+      | "split_corrected"
       | "marked_paid"
       | "marked_unpaid"
       | "waived"
       | "waiver_undone"
       | "removed_before_cutoff";
+    previousMinor?: number | null;
+    currentMinor?: number | null;
+    currency?: string;
+    splitRunId?: string | null;
     by: string;
     at: string;
   }>;
@@ -49,6 +56,14 @@ export interface DuesItem {
     timeZone: string;
   };
 }
+export interface SplitClaimDuesItem {
+  partyId: string;
+  partyState: OwnParty["state"];
+  seats: number;
+  session: DuesItem["session"];
+  split: SplitSummary;
+  splitClaim: OwnSplitClaim;
+}
 /** One plain word for a fee's standing, shared by every view. */
 export const feeStanding = (fee: Fee) =>
   fee.liabilityState === "removed_before_cutoff"
@@ -57,7 +72,9 @@ export const feeStanding = (fee: Fee) =>
       ? "Waived"
       : fee.markedPaid
         ? "Paid"
-        : "Unpaid";
+        : fee.totalMinor === 0
+          ? "Nothing due"
+          : "Unpaid";
 export interface OwnParty {
   id: string;
   state: "confirmed" | "waitlisted" | "withdrawn" | "removed";
@@ -68,12 +85,15 @@ export interface OwnParty {
   consentVersion: number;
   withdrawnAt: string | null;
   fee: Fee | null;
+  splitClaim?: OwnSplitClaim;
+  splitHistory?: OwnSplitChange[];
 }
 export interface RegistrationView {
   own: OwnParty | null;
   canManage: boolean;
   rosterAllowed: boolean;
   counts: Counts;
+  split?: SplitSummary;
   roster: Array<{
     primaryName: string;
     guestName: string;
@@ -81,7 +101,16 @@ export interface RegistrationView {
     id?: string;
     state?: string;
     fee?: ManagedFee | null;
+    splitClaim?: ManagedSplitClaim;
+    splitUndoRequiresReview?: boolean;
     /** Organizers/co-hosts only; one entry per confirmed seat. */
     attendance?: SeatAttendance[];
   }>;
 }
+import type {
+  FeeMode,
+  ManagedSplitClaim,
+  OwnSplitChange,
+  OwnSplitClaim,
+  SplitSummary,
+} from "./fees.ts";

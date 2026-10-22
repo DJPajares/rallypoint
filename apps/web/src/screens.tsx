@@ -17,7 +17,11 @@ import { safeReturnPath, useAuth } from "./auth-context";
 import { useApi } from "./use-api";
 import type { GroupSummary, Identity } from "@rallypoint/domain/contracts";
 import { feeStanding } from "@rallypoint/domain/registration";
-import type { DuesItem } from "@rallypoint/domain/registration";
+import { SplitFee } from "./split-fee";
+import type {
+  DuesItem,
+  SplitClaimDuesItem,
+} from "@rallypoint/domain/registration";
 import { feeLabel } from "@rallypoint/domain/session";
 import { useCreateTarget, useFrame } from "./frame";
 import {
@@ -267,12 +271,42 @@ function DuesRow({ item }: { item: DuesItem }) {
     </li>
   );
 }
+function SplitDuesRow({ item }: { item: SplitClaimDuesItem }) {
+  return (
+    <li className="rp-card dues-item">
+      <div>
+        <Link href={`/s/${item.session.slug}`}>
+          <strong>{item.session.title}</strong>
+        </Link>
+        <span>
+          {item.seats === 2 ? "You and your guest" : "Your party"}
+          {item.partyState === "withdrawn" ? " · You withdrew" : ""}
+        </span>
+      </div>
+      <SplitFee summary={item.split} claim={item.splitClaim} />
+    </li>
+  );
+}
 /** The signed-in person's own fees. Organizers record payments per session. */
 export function DuesPage() {
-  const result = useApi<{ dues: DuesItem[] }>("/api/dues");
+  const result = useApi<{
+    dues: DuesItem[];
+    splitClaims: SplitClaimDuesItem[];
+  }>("/api/dues");
+  const claims = result.data?.splitClaims ?? [];
+  const estimated = claims.filter(
+    (c) =>
+      c.split.phase === "estimating" &&
+      c.splitClaim.eligible &&
+      !c.splitClaim.waived,
+  );
+  const settledClaims = claims.filter((c) => !estimated.includes(c));
   const dues = result.data?.dues ?? [];
   const owing = dues.filter(
-    (d) => d.fee.liabilityState === "due" && !d.fee.markedPaid,
+    (d) =>
+      d.fee.liabilityState === "due" &&
+      !d.fee.markedPaid &&
+      d.fee.totalMinor > 0,
   );
   const settled = dues.filter((d) => !owing.includes(d));
   return (
@@ -284,7 +318,7 @@ export function DuesPage() {
         <Pending>Loading your dues…</Pending>
       ) : result.error ? (
         <Notice retry={result.retry}>{result.error}</Notice>
-      ) : !dues.length ? (
+      ) : !dues.length && !claims.length ? (
         <EmptyState
           icon={<ReceiptIcon size={34} />}
           title="Nothing to pay"
@@ -313,12 +347,25 @@ export function DuesPage() {
               <p className="rp-help">Nothing to pay right now.</p>
             )}
           </section>
-          {settled.length ? (
+          {estimated.length ? (
+            <section className="dues-section" aria-labelledby="dues-estimated">
+              <h2 id="dues-estimated">Estimated</h2>
+              <ul className="dues-list">
+                {estimated.map((c) => (
+                  <SplitDuesRow key={c.partyId} item={c} />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+          {settled.length || settledClaims.length ? (
             <section className="dues-section" aria-labelledby="dues-settled">
               <h2 id="dues-settled">Settled</h2>
               <ul className="dues-list">
                 {settled.map((d) => (
                   <DuesRow key={d.partyId} item={d} />
+                ))}
+                {settledClaims.map((c) => (
+                  <SplitDuesRow key={c.partyId} item={c} />
                 ))}
               </ul>
             </section>

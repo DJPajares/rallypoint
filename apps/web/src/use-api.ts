@@ -3,11 +3,11 @@ import { useEffect, useState } from "react";
 import { useAuth } from "./auth-context";
 // publicRead is only for identity-free projections: it preserves public data
 // during refresh without interrupting an unresolved private mutation below it.
-export function useApi<T>(path: string, publicRead = false) {
+export function useApi<T>(path: string, publicRead = false, refreshKey = "") {
   const { session } = useAuth();
   const token = publicRead ? "" : (session?.access_token ?? "");
   const [attempt, setAttempt] = useState(0);
-  const key = path + token + attempt;
+  const key = JSON.stringify([path, token, attempt, refreshKey]);
   const [state, setState] = useState<{
     key: string;
     path: string;

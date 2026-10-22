@@ -9,6 +9,7 @@ import type {
 } from "@rallypoint/domain/registration";
 import { useMutation } from "./use-mutation";
 const changeWords: Record<ManagedFee["history"][number]["action"], string> = {
+  split_corrected: "Amount corrected",
   marked_paid: "Marked paid",
   marked_unpaid: "Marked unpaid",
   waived: "Waived",
@@ -27,6 +28,7 @@ export function FeeControls({
   fee,
   when,
   onDone,
+  onUndoReview,
 }: {
   slug: string;
   partyId: string;
@@ -35,6 +37,7 @@ export function FeeControls({
   fee: ManagedFee;
   when: (iso: string) => string;
   onDone: (view: RegistrationView) => void;
+  onUndoReview?: () => void;
 }) {
   const mutation = useMutation<{ registration: RegistrationView }>((value) =>
     onDone(value.registration),
@@ -42,13 +45,20 @@ export function FeeControls({
   const last = fee.history[0];
   const actions: Array<[PaymentAction, string]> =
     fee.liabilityState === "waived"
-      ? [["undo_waiver", "Undo waiver"]]
+      ? [
+          [
+            "undo_waiver",
+            onUndoReview ? "Review restored share" : "Undo waiver",
+          ],
+        ]
       : fee.liabilityState !== "due"
         ? []
         : fee.markedPaid
           ? [["mark_unpaid", "Mark unpaid"]]
           : [
-              ["mark_paid", "Mark paid"],
+              ...(fee.totalMinor > 0
+                ? [["mark_paid", "Mark paid"] as [PaymentAction, string]]
+                : []),
               ["waive", "Waive fee"],
             ];
   return (
@@ -72,11 +82,13 @@ export function FeeControls({
               aria-describedby={labelId}
               disabled={mutation.busy || mutation.uncertain}
               onClick={() =>
-                mutation.run(`/api/registrations/${slug}/payments`, {
-                  partyId,
-                  action,
-                  revision: fee.revision,
-                })
+                action === "undo_waiver" && onUndoReview
+                  ? onUndoReview()
+                  : mutation.run(`/api/registrations/${slug}/payments`, {
+                      partyId,
+                      action,
+                      revision: fee.revision,
+                    })
               }
             >
               {label}

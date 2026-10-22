@@ -269,6 +269,32 @@ adapter uses no R2/ISR cache in this app. PWA manifest and
 normal local browser profile; actual device installation and safe shell caching
 remain part of later PWA verification. There is no offline mutation queue or identity-data cache.
 
+## Total session costs
+
+Choose **Total to split** in session pricing and enter the full cost. Confirmed
+seats and unwaived late cancellations share that total, including guests and
+replacement seats. Estimates change with the paying headcount; waiting is free.
+The organizer finalizes exact amounts once the session starts. Dues separates
+estimated shares from amounts to pay; a zero share says **Nothing due**.
+
+For a local walkthrough, publish a synthetic split session, join with a guest
+and a solo participant, and inspect the estimates and join consent. Before
+finalization, waive/undo a contingent share from the roster; no payment control
+is available. After start, review the exact party amounts and finalize. Mark a
+positive amount paid, then try lowering the total: the affected paid allocation
+blocks confirmation. Explicitly mark it unpaid after resolving the payment,
+review the correction with a reason, and confirm. Check own history and Dues.
+Ordinary waivers leave other bills fixed. Restoring a share omitted from the
+current split requires a reviewed correction. Corrections can keep or lower
+the effective total; they preserve past amounts and never process refunds.
+
+Use isolated synthetic fixtures for time-boundary and interruption checks,
+never reset shared data or change real-session clocks. The API suites exercise
+post-lock server time, retries, stale previews, privacy and exact rounding.
+Interrupted writes keep **Check result** and **Retry same request** until the
+outcome is confirmed. See the [split contract](docs/foundation-api.md#split-cost-claims)
+and [accepted design](docs/superpowers/specs/2026-10-22-split-session-cost-design.md).
+
 ## Where to work next
 
 - `apps/web/`: native Next routes, app shell, Auth and identity-scoped request state.
