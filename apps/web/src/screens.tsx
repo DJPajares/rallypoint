@@ -9,13 +9,23 @@ import {
   useSearchParams,
 } from "next/navigation";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/csr/ArrowRight";
-import { CalendarBlankIcon } from "@phosphor-icons/react/dist/csr/CalendarBlank";
+import { CalendarDotsIcon } from "@phosphor-icons/react/dist/csr/CalendarDots";
 import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
+import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
+import { ReceiptIcon } from "@phosphor-icons/react/dist/csr/Receipt";
 import { UsersThreeIcon } from "@phosphor-icons/react/dist/csr/UsersThree";
 import { safeReturnPath, useAuth } from "./auth-context";
 import { useApi } from "./use-api";
 import type { GroupSummary, Identity } from "@rallypoint/domain/contracts";
-import { Pending, Notice } from "./ui";
+import { useCreateTarget, useFrame } from "./frame";
+import {
+  DetailPage,
+  EmptyState,
+  Notice,
+  Pending,
+  SpotsMeter,
+  Ticket,
+} from "./ui";
 import { GroupSessions } from "./session-pages";
 function Redirect({ href }: { href: string; replace?: boolean }) {
   const router = useRouter();
@@ -24,65 +34,64 @@ function Redirect({ href }: { href: string; replace?: boolean }) {
   }, [router, href]);
   return <Pending>Opening your page…</Pending>;
 }
-export function Home() {
+const roleName = (role: GroupSummary["role"]) =>
+  role === "cohost" ? "Co-host" : role[0].toUpperCase() + role.slice(1);
+/** The public front door. Signed-in visitors continue to their own Home. */
+export function Landing() {
   const { session } = useAuth();
+  const router = useRouter();
+  useEffect(() => {
+    if (session) router.replace("/home");
+  }, [session, router]);
   return (
-    <div>
-      <div className="page-kicker">
-        <span className="kicker-line" />A little less organising.
-      </div>
-      <section className="welcome-grid">
-        <div className="welcome-copy">
+    <div className="landing">
+      <section className="landing-hero">
+        <div className="landing-copy">
+          <span className="page-kicker">A little less organising.</span>
           <h1>
             Good company.
             <br />
             <span>Great sessions.</span>
           </h1>
           <p className="lede">
-            Bring your people together, then get back to the good part.
+            Bring your people together, then get back to the good part. One
+            shared link shows who’s in, what it costs and when to cancel by.
           </p>
-          <Link
-            className="button primary"
-            href={session ? "/workspace" : "/sign-in"}
-          >
-            {session ? "Open your groups" : "Find your people"}
-            <ArrowRightIcon size={20} />
+          <Link className="button primary" href="/sign-in">
+            Find your people
+            <ArrowRightIcon size={20} aria-hidden="true" />
           </Link>
           <p className="quiet-note">Sign in once. Keep your group close.</p>
         </div>
-        <div className="gathering-art" aria-hidden="true">
-          <div className="court">
-            <span className="court-circle" />
-            <span className="court-line" />
-            <span className="player p1" />
-            <span className="player p2" />
-            <span className="player p3" />
-            <span className="player p4" />
-          </div>
-          <span className="art-caption">A place for everyone.</span>
-          <div className="art-corner">
-            <UsersThreeIcon size={28} weight="duotone" />
+        <div className="landing-art" aria-hidden="true">
+          <div className="landing-card">
+            <span className="page-kicker">Thursday Pickleball Crew</span>
+            <p className="landing-card-title">Thursday night doubles</p>
+            <Ticket
+              date={{ weekday: "Thu", day: "24", month: "Oct", time: "" }}
+            >
+              <div className="ticket-time">7:00 – 9:00 pm</div>
+              <div className="ticket-zone">Riverside Courts · court 3</div>
+            </Ticket>
+            <div className="card">
+              <SpotsMeter capacity={12} taken={10} />
+            </div>
+            <span className="landing-join">Join · 2 spots left</span>
           </div>
         </div>
       </section>
-      <section>
-        <div className="section-heading">
-          <h2>Start with your group.</h2>
-          <p>The people make the plan.</p>
-        </div>
-        <div className="empty-inline">
-          <span className="icon-tile">
-            <CalendarBlankIcon size={30} />
-          </span>
-          <div>
-            <h3>A shared space for your next get-together</h3>
-            <p>
-              Sign in, start a group and publish the details. One shared link
-              keeps everyone on the same page.
-            </p>
+      <section className="landing-steps">
+        {[
+          ["Create", "Publish the time, place, seats and fee."],
+          ["Share", "Drop one link in the group chat."],
+          ["Show up", "Everyone knows if they’re in or waiting."],
+        ].map(([title, body], index) => (
+          <div key={title} className="card landing-step">
+            <span className="step-number nums">{index + 1}</span>
+            <h2>{title}</h2>
+            <p>{body}</p>
           </div>
-          <span className="pill">Getting started</span>
-        </div>
+        ))}
       </section>
     </div>
   );
@@ -101,6 +110,135 @@ export function RequireAuth({ children }: { children: ReactNode }) {
       href={`/sign-in?next=${encodeURIComponent(pathname + search)}`}
       replace
     />
+  );
+}
+function GroupCard({ group }: { group: GroupSummary }) {
+  return (
+    <article className="card group-card">
+      <span className="icon-tile" aria-hidden="true">
+        <UsersThreeIcon size={24} />
+      </span>
+      <div className="group-card-text">
+        <span className="pill">{roleName(group.role)}</span>
+        <h2>{group.name}</h2>
+      </div>
+      {group.role !== "member" ? (
+        <Link href={`/groups/${group.id}`} className="button secondary">
+          Open group
+          <ArrowRightIcon size={18} aria-hidden="true" />
+        </Link>
+      ) : (
+        <p className="field-help">
+          Organizers share session links with members.
+        </p>
+      )}
+    </article>
+  );
+}
+export function HomeDashboard() {
+  const identity = useApi<Identity>("/api/me");
+  const workspace = useApi<{ groups: GroupSummary[] }>("/api/workspace");
+  const { openCreate } = useFrame();
+  const groups = workspace.data?.groups ?? [];
+  const canCreate = groups.some((group) => group.role !== "member");
+  return (
+    <section className="page home-page">
+      <div className="page-head">
+        <span className="page-kicker">Good to see you</span>
+        <h1>
+          {identity.data
+            ? `Hi, ${identity.data.displayName.split(" ")[0]}.`
+            : "Welcome back."}
+        </h1>
+      </div>
+      {identity.error ? (
+        <Notice retry={identity.retry}>{identity.error}</Notice>
+      ) : null}
+      <div className="card plan-card">
+        <div>
+          <h2>Plan the next one</h2>
+          <p>
+            {canCreate
+              ? "Pick a group, set the time and seats, then share one link."
+              : "Start a group to publish your first session."}
+          </p>
+        </div>
+        {canCreate ? (
+          <button type="button" className="button primary" onClick={openCreate}>
+            <PlusIcon size={20} weight="bold" aria-hidden="true" />
+            New session
+          </button>
+        ) : (
+          <Link className="button primary" href="/groups/new">
+            <PlusIcon size={20} weight="bold" aria-hidden="true" />
+            Start a group
+          </Link>
+        )}
+      </div>
+      <div className="section-head">
+        <h2>Your groups</h2>
+        {groups.length > 3 ? (
+          <Link className="text-button" href="/workspace">
+            See all {groups.length}
+          </Link>
+        ) : null}
+      </div>
+      {workspace.loading ? (
+        <Pending>Finding your groups…</Pending>
+      ) : workspace.error ? (
+        <Notice retry={workspace.retry}>{workspace.error}</Notice>
+      ) : groups.length ? (
+        <div className="group-grid">
+          {groups.slice(0, 3).map((group) => (
+            <GroupCard key={group.id} group={group} />
+          ))}
+        </div>
+      ) : (
+        <p className="field-help">
+          No groups yet. When an organizer adds you to a group, you’ll find it
+          here.
+        </p>
+      )}
+    </section>
+  );
+}
+export function SessionsPage() {
+  return (
+    <section className="page">
+      <div className="page-head">
+        <h1>Sessions</h1>
+      </div>
+      <EmptyState
+        icon={<CalendarDotsIcon size={34} />}
+        title="Your sessions, all in one place"
+        action={
+          <Link className="button secondary" href="/workspace">
+            Go to your groups
+          </Link>
+        }
+      >
+        Sessions you’ve joined or host across every group will gather here in a
+        later release. For now, find them in each group or open a shared link.
+      </EmptyState>
+    </section>
+  );
+}
+export function DuesPage() {
+  return (
+    <section className="page">
+      <div className="page-head">
+        <h1>Dues</h1>
+      </div>
+      <EmptyState
+        icon={<ReceiptIcon size={34} />}
+        title="Dues are on the way"
+        action={null}
+      >
+        What you owe, and who has paid in groups you organize, will show up here
+        in a later release. A session’s own page lists your amount due today.
+        RallyPoint never collects payments.
+      </EmptyState>
+    </section>
   );
 }
 export function SignIn() {
@@ -167,18 +305,10 @@ export function SignIn() {
         <p className="lede">
           Sign in to find your groups and pick up where you left off.
         </p>
-        <div className="signin-stamp">
-          <UsersThreeIcon size={32} />
-          <span>
-            Less back-and-forth.
-            <br />
-            <strong>More showing up.</strong>
-          </span>
-        </div>
       </div>
-      <div className="signin-card">
+      <div className="card signin-card">
         <h2>Welcome to RallyPoint</h2>
-        <p>Good to have you here.</p>
+        <p className="field-help">Good to have you here.</p>
         {loading ? (
           <Pending />
         ) : authError ? (
@@ -196,7 +326,7 @@ export function SignIn() {
               disabled={busy || !config.auth?.google}
             >
               Continue with Google
-              <ArrowRightIcon size={20} />
+              <ArrowRightIcon size={20} aria-hidden="true" />
             </button>
             {!config.auth?.google ? (
               <p className="field-help">
@@ -252,13 +382,13 @@ export function SignIn() {
                     </p>
                   </>
                 ) : null}
-                <button className="button primary" disabled={busy}>
+                <button className="button primary wide" disabled={busy}>
                   {busy
                     ? "Please wait…"
                     : sent
                       ? "Verify and continue"
                       : "Send local code"}
-                  <ArrowRightIcon size={18} />
+                  <ArrowRightIcon size={18} aria-hidden="true" />
                 </button>
                 {sent ? (
                   <button
@@ -278,7 +408,7 @@ export function SignIn() {
           </>
         )}
         {error ? <Notice>{error}</Notice> : null}
-        <p className="signin-footnote">
+        <p className="field-help signin-footnote">
           Just looking around? <Link href="/">Back to home</Link>
         </p>
       </div>
@@ -299,65 +429,42 @@ export function AuthCallback() {
   return <Redirect href={next} replace />;
 }
 export function Workspace() {
-  const identity = useApi<Identity>("/api/me");
   const workspace = useApi<{ groups: GroupSummary[] }>("/api/workspace");
   return (
-    <section className="workspace-page">
-      <span className="page-kicker">Your corner of RallyPoint</span>
-      <h1>Your groups</h1>
-      <Link className="button primary" href="/groups/new">
-        Start a group ↗
-      </Link>
-      <p className="lede">
-        {identity.data
-          ? `Good to see you, ${identity.data.displayName}.`
-          : "A good plan starts with your people."}
-      </p>
-      {identity.error ? (
-        <Notice retry={identity.retry}>{identity.error}</Notice>
-      ) : null}
+    <section className="page">
+      <div className="page-head-row">
+        <div>
+          <span className="page-kicker">Your corner of RallyPoint</span>
+          <h1>Your groups</h1>
+        </div>
+        <Link className="button secondary" href="/groups/new">
+          <PlusIcon size={18} weight="bold" aria-hidden="true" />
+          Start a group
+        </Link>
+      </div>
       {workspace.loading ? (
         <Pending>Finding your groups…</Pending>
       ) : workspace.error ? (
         <Notice retry={workspace.retry}>{workspace.error}</Notice>
       ) : workspace.data?.groups.length ? (
-        <div className="group-list">
+        <div className="group-grid">
           {workspace.data.groups.map((group) => (
-            <article key={group.id} className="group-row">
-              <span className="icon-tile">
-                <UsersThreeIcon size={30} />
-              </span>
-              <div>
-                <span className="role-label">
-                  {group.role === "cohost" ? "Co-host" : group.role}
-                </span>
-                <h2>{group.name}</h2>
-                <p>Ready for your next get-together.</p>
-              </div>
-              {group.role !== "member" ? (
-                <Link href={`/groups/${group.id}`} className="button secondary">
-                  Open group
-                  <ArrowRightIcon size={18} />
-                </Link>
-              ) : (
-                <span className="pill">Member</span>
-              )}
-            </article>
+            <GroupCard key={group.id} group={group} />
           ))}
         </div>
       ) : (
-        <div className="empty-state">
-          <UsersThreeIcon size={48} weight="light" />
-          <h2>No groups yet</h2>
-          <p>
-            When an organizer adds you to a group, you’ll find it here. Joining
-            a session does not automatically make you a group member.
-          </p>
-          <Link href="/" className="text-button">
-            Back to home
-            <ArrowRightIcon size={18} />
-          </Link>
-        </div>
+        <EmptyState
+          icon={<UsersThreeIcon size={34} />}
+          title="No groups yet"
+          action={
+            <Link href="/groups/new" className="button primary">
+              Start a group
+            </Link>
+          }
+        >
+          When an organizer adds you to a group, you’ll find it here. Joining a
+          session does not automatically make you a group member.
+        </EmptyState>
       )}
     </section>
   );
@@ -365,6 +472,7 @@ export function Workspace() {
 export function GroupSetup() {
   const { id } = useParams<{ id: string }>();
   const result = useApi<{ group: GroupSummary }>(`/api/groups/${id}/setup`);
+  useCreateTarget(result.data ? `/groups/${id}/sessions/new` : null);
   useEffect(() => {
     if (!result.loading) {
       const title = document.querySelector<HTMLElement>("main h1");
@@ -376,10 +484,7 @@ export function GroupSetup() {
     }
   }, [result.loading, result.data, result.error]);
   return (
-    <section className="workspace-page">
-      <Link className="back-link" href="/workspace">
-        ← Your groups
-      </Link>
+    <DetailPage back="/workspace" backLabel="Your groups">
       {result.loading ? (
         <Pending>Opening your group…</Pending>
       ) : result.error ? (
@@ -389,28 +494,34 @@ export function GroupSetup() {
         </>
       ) : result.data ? (
         <>
-          <span className="page-kicker">Your group space</span>
-          <h1>{result.data.group.name}</h1>
-          <p className="role-confirmation">
-            <CheckIcon size={18} />
-            You have {result.data.group.role} access.
-          </p>
+          <div className="page-head">
+            <span className="page-kicker">Your group space</span>
+            <h1>{result.data.group.name}</h1>
+            <p className="role-confirmation">
+              <CheckIcon size={18} aria-hidden="true" />
+              You have {result.data.group.role} access.
+            </p>
+          </div>
           <GroupSessions group={result.data.group} />
         </>
       ) : null}
-    </section>
+    </DetailPage>
   );
 }
 export function NotFound() {
   return (
-    <section className="empty-state not-found">
-      <span className="page-kicker">A little off court</span>
-      <h1>That page isn’t here.</h1>
-      <p>The link may be incomplete or the page may have moved.</p>
-      <Link className="button primary" href="/">
-        Back to home
-        <ArrowRightIcon size={18} />
-      </Link>
+    <section className="page">
+      <div className="empty-state">
+        <span className="empty-icon nums" aria-hidden="true">
+          404
+        </span>
+        <h1>That page isn’t here.</h1>
+        <p>The link may be incomplete or the page may have moved.</p>
+        <Link className="button primary" href="/">
+          Back to home
+          <ArrowRightIcon size={18} aria-hidden="true" />
+        </Link>
+      </div>
     </section>
   );
 }

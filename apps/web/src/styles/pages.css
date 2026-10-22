@@ -1,0 +1,383 @@
+/* Page layouts. */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 32px 0 14px;
+}
+.section-head h2 {
+  margin: 0;
+}
+
+/* Landing */
+.landing-hero {
+  display: grid;
+  gap: 32px;
+  align-items: center;
+}
+.landing-copy h1 {
+  font-size: clamp(42px, 9vw, 76px);
+  line-height: 0.98;
+  margin-bottom: 16px;
+}
+.landing-copy h1 span {
+  color: var(--muted);
+}
+.landing-copy .button {
+  margin-top: 8px;
+}
+.landing-art {
+  display: flex;
+  justify-content: center;
+}
+.landing-card {
+  width: min(360px, 100%);
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-float);
+  transform: rotate(-1.5deg);
+}
+.landing-card .page-kicker {
+  margin: 0;
+}
+.landing-card-title {
+  margin: -4px 0 0;
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.landing-card .card {
+  padding: 14px;
+}
+.landing-join {
+  display: block;
+  padding: 12px;
+  border-radius: var(--pill);
+  background: var(--neon);
+  color: var(--on-neon);
+  text-align: center;
+  font-weight: 700;
+}
+.landing-steps {
+  display: grid;
+  gap: 12px;
+  margin-top: 48px;
+}
+.landing-step h2 {
+  margin: 8px 0 4px;
+  font-size: 22px;
+}
+.landing-step p {
+  margin: 0;
+  color: var(--muted);
+}
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--stub);
+  color: var(--on-stub);
+  font-weight: 700;
+}
+
+/* Home and groups */
+.plan-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: var(--stub);
+  border-color: transparent;
+  color: var(--on-stub);
+  padding: 22px;
+}
+.plan-card h2 {
+  margin-bottom: 4px;
+}
+.plan-card p {
+  margin: 0;
+  opacity: 0.85;
+}
+.group-grid {
+  display: grid;
+  gap: 12px;
+}
+.group-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 12px 14px;
+}
+.group-card-text h2 {
+  margin: 6px 0 0;
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+.group-card > .button,
+.group-card > .field-help {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.role-confirmation {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ok);
+  font-weight: 600;
+}
+
+/* Group sessions */
+.session-list {
+  display: grid;
+  gap: 12px;
+}
+.session-row .ticket-body h3 {
+  margin: 8px 0 2px;
+  overflow-wrap: anywhere;
+}
+.session-row .ticket-body p {
+  margin: 0 0 12px;
+}
+.empty-inline p {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* Forms */
+.form-page {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.form-card {
+  padding: 20px;
+}
+.share-panel {
+  margin-bottom: 16px;
+  display: grid;
+  gap: 12px;
+}
+.share-panel p {
+  margin: 8px 0 4px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.share-url {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+.share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Sign in */
+.signin-page {
+  display: grid;
+  gap: 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.signin-card h2 {
+  margin-bottom: 0;
+}
+.signin-card .button.google {
+  margin-top: 16px;
+}
+.local-form label {
+  margin-top: 14px;
+}
+.local-form .button {
+  margin-top: 16px;
+}
+.signin-footnote {
+  margin-top: 20px;
+}
+
+/* Shared session */
+.session-layout {
+  display: grid;
+  gap: 20px;
+  grid-template-areas:
+    "head"
+    "side"
+    "details";
+}
+.session-head {
+  grid-area: head;
+}
+.session-head .lede {
+  margin-bottom: 16px;
+}
+.session-side {
+  grid-area: side;
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+.session-details {
+  grid-area: details;
+  min-width: 0;
+}
+.availability p {
+  margin: 10px 0 0;
+}
+.availability .text-button {
+  margin-top: 4px;
+}
+.facts {
+  margin: 0 0 20px;
+  display: grid;
+  gap: 2px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.facts > div {
+  padding: 12px 16px;
+  background: var(--card);
+}
+.facts dt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.facts dd {
+  margin: 2px 0 0 28px;
+  overflow-wrap: anywhere;
+}
+.session-instructions {
+  margin-bottom: 16px;
+}
+.session-instructions p {
+  white-space: pre-line;
+  margin: 0;
+}
+.registration-panel {
+  display: grid;
+  gap: 12px;
+}
+.own-status {
+  display: grid;
+  gap: 10px;
+}
+.own-status > p,
+.registration-panel > .field-help {
+  margin: 0;
+  font-size: 14px;
+}
+.own-status .pill {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  color: inherit;
+  margin-bottom: 6px;
+}
+.action-area,
+.registration-note {
+  display: grid;
+  gap: 10px;
+}
+.action-area p,
+.sheet p {
+  font-size: 14px;
+}
+.action-area .button,
+.sheet .button.primary,
+.sheet form .button {
+  width: 100%;
+}
+.registration-note h2 {
+  margin: 0;
+}
+.registration-note p {
+  margin: 0;
+  color: var(--muted);
+}
+.registration-note .sticky-actions {
+  margin-top: 4px;
+}
+.roster h2 {
+  font-size: 20px;
+}
+.roster ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.roster li {
+  display: grid;
+  gap: 2px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+.roster li span {
+  color: var(--muted);
+}
+
+@media (min-width: 768px) {
+  .landing-steps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .group-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .signin-page {
+    grid-template-columns: 1fr minmax(320px, 420px);
+    align-items: center;
+    min-height: 60dvh;
+  }
+  .form-card {
+    padding: 28px;
+  }
+  .session-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+    grid-template-areas:
+      "head side"
+      "details side";
+    column-gap: 32px;
+    align-items: start;
+  }
+  .session-side {
+    position: sticky;
+    top: calc(var(--topbar) + 24px);
+  }
+}
+@media (min-width: 1200px) {
+  .landing-hero {
+    grid-template-columns: 1.2fr 1fr;
+    min-height: 56dvh;
+  }
+  .group-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .session-layout {
+    grid-template-columns: minmax(0, 1fr) 380px;
+    column-gap: 48px;
+  }
+}
+@media (max-width: 767px) {
+  .plan-card .button {
+    width: 100%;
+  }
+  .page-head-row .button {
+    width: 100%;
+  }
+  /* Phones carry the session's primary action in the sticky bar instead. */
+  .registration-note .sticky-actions > .button {
+    flex: 1;
+  }
+}

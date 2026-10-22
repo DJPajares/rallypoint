@@ -4,11 +4,11 @@
   "short_name": "RallyPoint",
   "lang": "en",
   "description": "Fill the spots, not the chat.",
-  "start_url": "/",
+  "start_url": "/home",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f8f9f5",
-  "theme_color": "#234dc4",
+  "background_color": "#f5f7f2",
+  "theme_color": "#13235b",
   "icons": [
     {
       "src": "/icons/icon-192.png",

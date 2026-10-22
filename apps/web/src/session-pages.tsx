@@ -7,7 +7,25 @@ import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
 import { useMutation } from "./use-mutation";
 import { RegistrationPanel } from "./registration-panel";
-import { Notice, Pending } from "./ui";
+import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
+import { ClockCountdownIcon } from "@phosphor-icons/react/dist/csr/ClockCountdown";
+import { CoinsIcon } from "@phosphor-icons/react/dist/csr/Coins";
+import { CopyIcon } from "@phosphor-icons/react/dist/csr/Copy";
+import { DoorOpenIcon } from "@phosphor-icons/react/dist/csr/DoorOpen";
+import { GlobeHemisphereWestIcon } from "@phosphor-icons/react/dist/csr/GlobeHemisphereWest";
+import { MapPinIcon } from "@phosphor-icons/react/dist/csr/MapPin";
+import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
+import { UserPlusIcon } from "@phosphor-icons/react/dist/csr/UserPlus";
+import { fromInstant, fromLocal } from "./dates";
+import { ShareButton } from "./share-button";
+import {
+  DetailPage,
+  Notice,
+  Pending,
+  SpotsMeter,
+  StickyActions,
+  Ticket,
+} from "./ui";
 import {
   blankSession,
   currencies,
@@ -37,16 +55,16 @@ export function CreateGroup() {
     router.push(`/groups/${result.group?.id ?? result.groupId}`),
   );
   return (
-    <section className="workspace-page editor-page">
-      <Link className="back-link" href="/workspace">
-        ← Your groups
-      </Link>
-      <span className="page-kicker">A place for your people</span>
-      <h1>Start a group.</h1>
-      <p className="lede">
-        You’ll be its owner. You can start publishing sessions right away.
-      </p>
+    <DetailPage back="/workspace" backLabel="Your groups" className="form-page">
+      <div className="page-head">
+        <span className="page-kicker">A place for your people</span>
+        <h1>Start a group.</h1>
+        <p className="lede">
+          You’ll be its owner. You can start publishing sessions right away.
+        </p>
+      </div>
       <form
+        className="card form-card"
         onSubmit={(e) => {
           e.preventDefault();
           mutation.run("/api/groups", { name });
@@ -65,14 +83,16 @@ export function CreateGroup() {
           <p className="field-help">
             Event registration won’t automatically add people as members.
           </p>
-          <button className="button primary">
-            {mutation.busy ? "Creating…" : "Create group"}
-          </button>
+          <StickyActions>
+            <button className="button primary">
+              {mutation.busy ? "Creating…" : "Create group"}
+            </button>
+          </StickyActions>
         </fieldset>
         {mutation.error ? <Notice>{mutation.error}</Notice> : null}
         {mutation.recovery}
       </form>
-    </section>
+    </DetailPage>
   );
 }
 export function GroupSessions({ group }: { group: GroupSummary }) {
@@ -81,14 +101,17 @@ export function GroupSessions({ group }: { group: GroupSummary }) {
   );
   return (
     <section className="session-list-section">
-      <div className="section-heading">
+      <div className="section-head">
         <h2>Sessions</h2>
-        <Link
-          className="button primary"
-          href={`/groups/${group.id}/sessions/new`}
-        >
-          Create session ↗
-        </Link>
+        <StickyActions>
+          <Link
+            className="button primary"
+            href={`/groups/${group.id}/sessions/new`}
+          >
+            <PlusIcon size={18} weight="bold" aria-hidden="true" />
+            Create session
+          </Link>
+        </StickyActions>
       </div>
       {result.loading ? (
         <Pending>Finding your sessions…</Pending>
@@ -98,7 +121,7 @@ export function GroupSessions({ group }: { group: GroupSummary }) {
         <div className="session-list">
           {result.data.sessions.map((s) => (
             <article key={s.id} className="session-row">
-              <div>
+              <Ticket date={fromLocal(s.details.startLocal)}>
                 <span className="pill">
                   {
                     {
@@ -110,23 +133,23 @@ export function GroupSessions({ group }: { group: GroupSummary }) {
                   }
                 </span>
                 <h3>{s.details.title || "Untitled session"}</h3>
-                <p>
-                  {s.details.startLocal?.replace("T", " · ") ||
+                <p className="ticket-zone nums">
+                  {fromLocal(s.details.startLocal)?.time ??
                     "Date to be decided"}{" "}
                   · {s.details.timeZone}
                 </p>
-              </div>
-              <Link
-                className="button secondary"
-                href={`/sessions/${s.id}/edit`}
-              >
-                {s.state === "draft" ? "Continue draft" : "Manage session"}
-              </Link>
+                <Link
+                  className="button secondary"
+                  href={`/sessions/${s.id}/edit`}
+                >
+                  {s.state === "draft" ? "Continue draft" : "Manage session"}
+                </Link>
+              </Ticket>
             </article>
           ))}
         </div>
       ) : (
-        <div className="empty-state">
+        <div className="card empty-inline">
           <h3>Your next get-together starts here.</h3>
           <p>Save a draft, then publish when the details are ready.</p>
         </div>
@@ -140,8 +163,18 @@ export function SessionEditor() {
 }
 function SessionLoader({ id }: { id: string }) {
   const result = useApi<{ session: SessionRecord }>(`/api/sessions/${id}`);
-  if (result.loading) return <Pending>Opening the session…</Pending>;
-  if (result.error) return <Notice retry={result.retry}>{result.error}</Notice>;
+  if (result.loading)
+    return (
+      <DetailPage back="/workspace" backLabel="Your groups">
+        <Pending>Opening the session…</Pending>
+      </DetailPage>
+    );
+  if (result.error)
+    return (
+      <DetailPage back="/workspace" backLabel="Your groups">
+        <Notice retry={result.retry}>{result.error}</Notice>
+      </DetailPage>
+    );
   return result.data ? (
     <Editor
       key={`${id}:${result.data.session.version}`}
@@ -153,9 +186,13 @@ export function NewSession() {
   const { id } = useParams<{ id: string }>();
   const group = useApi<{ group: GroupSummary }>(`/api/groups/${id}/setup`);
   return group.loading ? (
-    <Pending>Opening your group…</Pending>
+    <DetailPage back={`/groups/${id}`} backLabel="Group sessions">
+      <Pending>Opening your group…</Pending>
+    </DetailPage>
   ) : group.error ? (
-    <Notice retry={group.retry}>{group.error}</Notice>
+    <DetailPage back={`/groups/${id}`} backLabel="Group sessions">
+      <Notice retry={group.retry}>{group.error}</Notice>
+    </DetailPage>
   ) : (
     <Editor groupId={id!} />
   );
@@ -256,64 +293,72 @@ function Editor({
   const url =
     record && record.state !== "draft" ? `${origin}/s/${record.slug}` : null;
   return (
-    <section className="workspace-page editor-page">
-      <Link
-        className="back-link"
-        href={`/groups/${record?.groupId ?? groupId}`}
-      >
-        ← Group sessions
-      </Link>
-      <span className="page-kicker">Make a little time together</span>
-      <h1 ref={header} tabIndex={-1}>
-        {terminal
-          ? "This session is closed."
-          : record?.state === "published"
-            ? "Your session, ready to share."
-            : "Plan the next one."}
-      </h1>
-      <p className="lede">
-        The essentials first. A shared link when you’re ready.
-      </p>
+    <DetailPage
+      back={`/groups/${record?.groupId ?? groupId}`}
+      backLabel="Group sessions"
+      className="form-page"
+    >
+      <div className="page-head">
+        <span className="page-kicker">Make a little time together</span>
+        <h1 ref={header} tabIndex={-1}>
+          {terminal
+            ? "This session is closed."
+            : record?.state === "published"
+              ? "Your session, ready to share."
+              : "Plan the next one."}
+        </h1>
+        <p className="lede">
+          The essentials first. A shared link when you’re ready.
+        </p>
+      </div>
       {terminal ? (
         <Notice>
           This session is {record?.state}. Detail changes are closed.
         </Notice>
       ) : null}
       {url ? (
-        <div className="share-panel">
+        <div className="card share-panel">
           <div>
             <span className="pill">Unlisted · version {record?.version}</span>
             <p>
               Anyone with this link can view the session. It isn’t private
               access control.
             </p>
-            <a href={url}>{url}</a>
+            <a className="share-url" href={url}>
+              {url}
+            </a>
           </div>
-          <button
-            className="button primary"
-            onClick={() => {
-              if (!navigator.clipboard) {
-                setCopy(
-                  "Copy wasn’t available. Select the link above to copy it manually.",
-                );
-                return;
-              }
-              void navigator.clipboard
-                .writeText(url)
-                .then(() => setCopy("Link copied."))
-                .catch(() =>
+          <div className="share-actions">
+            <button
+              className="button primary"
+              onClick={() => {
+                if (!navigator.clipboard) {
                   setCopy(
                     "Copy wasn’t available. Select the link above to copy it manually.",
-                  ),
-                );
-            }}
-          >
-            Copy link
-          </button>
-          <Link className="text-button" href={`/s/${record!.slug}`}>
-            Open shared page ↗
-          </Link>
-          <p role="status">{copy}</p>
+                  );
+                  return;
+                }
+                void navigator.clipboard
+                  .writeText(url)
+                  .then(() => setCopy("Link copied."))
+                  .catch(() =>
+                    setCopy(
+                      "Copy wasn’t available. Select the link above to copy it manually.",
+                    ),
+                  );
+              }}
+            >
+              <CopyIcon size={18} aria-hidden="true" />
+              Copy link
+            </button>
+            <Link className="button secondary" href={`/s/${record!.slug}`}>
+              <ArrowSquareOutIcon size={18} aria-hidden="true" />
+              Open shared page
+            </Link>
+          </div>
+          <p role="status" className="field-help">
+            {copy}
+          </p>
         </div>
       ) : null}
       {record?.bookingsStarted ? (
@@ -324,6 +369,7 @@ function Editor({
       ) : null}
       <form
         noValidate
+        className="card form-card"
         onSubmit={(e) =>
           submit(e, record?.state === "published" ? "update" : "publish")
         }
@@ -424,7 +470,7 @@ function Editor({
             Unlisted is the initial visibility. Fees are tracked manually;
             RallyPoint doesn’t collect payments.
           </p>
-          <div className="form-actions">
+          <StickyActions>
             {record?.state !== "published" ? (
               <button
                 type="button"
@@ -439,9 +485,9 @@ function Editor({
                 ? "Saving…"
                 : record?.state === "published"
                   ? "Save changes"
-                  : "Publish session ↗"}
+                  : "Publish session"}
             </button>
-          </div>
+          </StickyActions>
         </fieldset>
         {error || mutation.error ? (
           <Notice>{error ?? mutation.error}</Notice>
@@ -453,7 +499,7 @@ function Editor({
           </p>
         ) : null}
       </form>
-    </section>
+    </DetailPage>
   );
 }
 export function SharedSessionPage() {
@@ -474,17 +520,25 @@ export function SharedSessionPage() {
       }
     }
   }, [result.data, slug]);
-  if (result.loading) return <Pending>Opening the session…</Pending>;
+  const back = session ? "/home" : "/";
+  if (result.loading)
+    return (
+      <DetailPage back={back} backLabel="Home">
+        <Pending>Opening the session…</Pending>
+      </DetailPage>
+    );
   if (result.error)
     return (
-      <section className="workspace-page">
+      <DetailPage back={back} backLabel="Home">
         <h1>Session unavailable</h1>
         <Notice retry={result.retry}>{result.error}</Notice>
         <Link href="/">Back to home</Link>
-      </section>
+      </DetailPage>
     );
   if (!result.data) return null;
-  const { details: d, groupName, version } = result.data.session;
+  const shared = result.data.session;
+  const { details: d, groupName, version, counts } = shared;
+  const capacity = Number(d.capacity);
   const time = (value: string | undefined) =>
     value
       ? new Intl.DateTimeFormat("en", {
@@ -493,112 +547,167 @@ export function SharedSessionPage() {
           timeStyle: "short",
         }).format(new Date(value))
       : "To be decided";
+  const start = fromInstant(d.startsAt, d.timeZone);
+  const end = fromInstant(d.endsAt, d.timeZone);
   return (
-    <section className="workspace-page shared-session">
-      <span className="page-kicker">{groupName} · Unlisted session</span>
-      <h1 ref={heading} tabIndex={-1}>
-        {d.title}
-      </h1>
-      <p className="lede">
-        {d.activity} · {d.capacity}{" "}
-        {Number(d.capacity) === 1 ? "seat" : "seats"} · {feeLabel(d)} per seat
-      </p>
-      {result.data.session.state !== "published" ? (
-        <Notice>
-          This session is {result.data.session.state}. Existing registrations
-          are shown for reference; new joins are closed.
-        </Notice>
-      ) : null}
-      <div className="availability" role="status">
-        <strong>
-          {result.data.session.counts.confirmedSeats} / {d.capacity}{" "}
-          {Number(d.capacity) === 1 ? "seat" : "seats"}
-          confirmed
-        </strong>
-        <span>
-          {Number(d.capacity) - result.data.session.counts.confirmedSeats} open
-          · {result.data.session.counts.waitingParties}{" "}
-          {result.data.session.counts.waitingParties === 1
-            ? "party"
-            : "parties"}{" "}
-          waiting
-        </span>
-        {result.data.session.counts.waitingParties > 0 ? (
-          <p>
-            Waiting parties go first. An open seat can remain unused when the
-            first party needs two.
+    <DetailPage back={back} backLabel="Home" className="shared-session">
+      <div className="session-layout">
+        <div className="session-head">
+          <span className="page-kicker">{groupName} · Unlisted session</span>
+          <h1 ref={heading} tabIndex={-1}>
+            {d.title}
+          </h1>
+          <p className="lede">
+            {d.activity} · {d.capacity} {capacity === 1 ? "seat" : "seats"} ·{" "}
+            {feeLabel(d)} per seat
           </p>
-        ) : null}
-        {!session ? (
-          <button className="text-button" onClick={result.retry}>
-            Refresh availability
-          </button>
-        ) : null}
-      </div>
-      <div className="session-info">
-        <dl>
-          <dt>Starts</dt>
-          <dd>{time(d.startsAt)}</dd>
-          <dt>Ends</dt>
-          <dd>{time(d.endsAt)}</dd>
-          <dt>Timezone</dt>
-          <dd>{d.timeZone}</dd>
-          <dt>Meet here</dt>
-          <dd>{d.location}</dd>
-          <dt>Registration opens</dt>
-          <dd>{time(d.opensAt)}</dd>
-          <dt>Cancellation fee cutoff</dt>
-          <dd>{time(d.cutoffAt)}</dd>
-          <dt>Guests</dt>
-          <dd>
-            {d.guests
-              ? "One guest per participant; the party stays together."
-              : "Individual places only."}
-          </dd>
-        </dl>
-        {d.instructions ? (
-          <div className="session-instructions">
-            <h2>Good to know</h2>
-            <p>{d.instructions}</p>
-          </div>
-        ) : null}
-      </div>
-      {session ? (
-        <RegistrationPanel
-          key={session.user.id + slug}
-          event={result.data.session}
-          onChange={result.retry}
-        />
-      ) : (
-        <div className="registration-note">
-          <h2>
-            {result.data.session.registrationWindow === "open"
-              ? "Come along."
-              : result.data.session.registrationWindow === "closed"
-                ? "Registration is closed."
-                : "Registration opens soon."}
-          </h2>
-          <p>
-            Sign in to check your place, join, or waitlist your party. A
-            reservation does not grant group membership.
-          </p>
-          <Link
-            className="button secondary"
-            href={`/sign-in?next=${encodeURIComponent(`/s/${slug}`)}`}
-          >
-            Sign in and return here
-          </Link>
+          {shared.state !== "published" ? (
+            <Notice>
+              This session is {shared.state}. Existing registrations are shown
+              for reference; new joins are closed.
+            </Notice>
+          ) : null}
+          <Ticket date={start}>
+            <div className="ticket-time">
+              {start
+                ? `${start.time} – ${end?.time ?? "?"}`
+                : "Time to be decided"}
+            </div>
+            <div className="ticket-zone">{d.timeZone} · session time</div>
+          </Ticket>
         </div>
-      )}
-      <p className="field-help">
-        Before the cutoff, withdrawing removes an unpaid fee obligation. At or
-        after it, the obligation remains unless the organizer waives it. Any
-        refund is handled outside RallyPoint.
-      </p>
-      <p className="quiet-note">
-        Session details · version {version}. Anyone with this link can view this
-        page.
-      </p>
-    </section>
+        <aside className="session-side" aria-label="Places and registration">
+          <div className="card availability" role="status">
+            <SpotsMeter capacity={capacity} taken={counts.confirmedSeats} />
+            <p className="field-help">
+              {counts.confirmedSeats} / {d.capacity}{" "}
+              {capacity === 1 ? "seat" : "seats"} confirmed ·{" "}
+              {capacity - counts.confirmedSeats} open · {counts.waitingParties}{" "}
+              {counts.waitingParties === 1 ? "party" : "parties"} waiting
+            </p>
+            {counts.waitingParties > 0 ? (
+              <p className="field-help">
+                Waiting parties go first. An open seat can remain unused when
+                the first party needs two.
+              </p>
+            ) : null}
+            {!session ? (
+              <button className="text-button" onClick={result.retry}>
+                Refresh availability
+              </button>
+            ) : null}
+          </div>
+          {session ? (
+            <RegistrationPanel
+              key={session.user.id + slug}
+              event={shared}
+              onChange={result.retry}
+            />
+          ) : (
+            <div className="card registration-note">
+              <h2>
+                {shared.registrationWindow === "open"
+                  ? "Come along."
+                  : shared.registrationWindow === "closed"
+                    ? "Registration is closed."
+                    : "Registration opens soon."}
+              </h2>
+              <p>
+                Sign in to check your place, join, or waitlist your party. A
+                reservation does not grant group membership.
+              </p>
+              <StickyActions>
+                <Link
+                  className="button primary"
+                  href={`/sign-in?next=${encodeURIComponent(`/s/${slug}`)}`}
+                >
+                  Sign in and return here
+                </Link>
+                <ShareButton title={d.title} />
+              </StickyActions>
+            </div>
+          )}
+        </aside>
+        <div className="session-details">
+          <dl className="facts">
+            <div>
+              <dt>
+                <MapPinIcon size={20} aria-hidden="true" />
+                Meet here
+              </dt>
+              <dd>{d.location}</dd>
+            </div>
+            <div>
+              <dt>
+                <ClockCountdownIcon size={20} aria-hidden="true" />
+                Starts
+              </dt>
+              <dd>{time(d.startsAt)}</dd>
+            </div>
+            <div>
+              <dt>
+                <ClockCountdownIcon size={20} aria-hidden="true" />
+                Ends
+              </dt>
+              <dd>{time(d.endsAt)}</dd>
+            </div>
+            <div>
+              <dt>
+                <GlobeHemisphereWestIcon size={20} aria-hidden="true" />
+                Timezone
+              </dt>
+              <dd>{d.timeZone}</dd>
+            </div>
+            <div>
+              <dt>
+                <CoinsIcon size={20} aria-hidden="true" />
+                Fee
+              </dt>
+              <dd>{feeLabel(d)} per seat · paid to the organizer</dd>
+            </div>
+            <div>
+              <dt>
+                <DoorOpenIcon size={20} aria-hidden="true" />
+                Registration opens
+              </dt>
+              <dd>{time(d.opensAt)}</dd>
+            </div>
+            <div>
+              <dt>
+                <ClockCountdownIcon size={20} aria-hidden="true" />
+                Cancellation fee cutoff
+              </dt>
+              <dd>{time(d.cutoffAt)}</dd>
+            </div>
+            <div>
+              <dt>
+                <UserPlusIcon size={20} aria-hidden="true" />
+                Guests
+              </dt>
+              <dd>
+                {d.guests
+                  ? "One guest per participant; the party stays together."
+                  : "Individual places only."}
+              </dd>
+            </div>
+          </dl>
+          {d.instructions ? (
+            <div className="card session-instructions">
+              <h2>Good to know</h2>
+              <p>{d.instructions}</p>
+            </div>
+          ) : null}
+          <p className="field-help">
+            Before the cutoff, withdrawing removes an unpaid fee obligation. At
+            or after it, the obligation remains unless the organizer waives it.
+            Any refund is handled outside RallyPoint.
+          </p>
+          <p className="quiet-note">
+            Session details · version {version}. Anyone with this link can view
+            this page.
+          </p>
+        </div>
+      </div>
+    </DetailPage>
   );
 }
