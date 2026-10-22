@@ -20,7 +20,14 @@ import type {
   RosterTitle,
 } from "@rallypoint/domain/badges";
 import type { Identity } from "@rallypoint/domain/contracts";
-import { buttonClass, cx, Notice, Pending, Sheet } from "@rallypoint/ui";
+import {
+  buttonClass,
+  cx,
+  Notice,
+  Pending,
+  Sheet,
+  StatRow,
+} from "@rallypoint/ui";
 import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
 import { useSignOut } from "./sign-out";
@@ -430,20 +437,16 @@ export function ProfilePage() {
         <Notice retry={badges.retry}>{badges.error}</Notice>
       ) : view ? (
         <>
-          <dl className="profile-stats">
-            <div>
-              <dt>played</dt>
-              <dd>{view.stats.played}</dd>
-            </div>
-            <div>
-              <dt>hosted</dt>
-              <dd>{view.stats.hosted}</dd>
-            </div>
-            <div>
-              <dt>{view.stats.groups === 1 ? "group" : "groups"}</dt>
-              <dd>{view.stats.groups}</dd>
-            </div>
-          </dl>
+          <StatRow
+            items={[
+              { label: "played", value: view.stats.played },
+              { label: "hosted", value: view.stats.hosted },
+              {
+                label: view.stats.groups === 1 ? "group" : "groups",
+                value: view.stats.groups,
+              },
+            ]}
+          />
           <div className="section-head">
             <h2>Badges</h2>
             {earned.length ? (
