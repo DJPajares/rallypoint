@@ -4,38 +4,28 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BellIcon } from "@phosphor-icons/react/dist/csr/Bell";
 import { ListIcon } from "@phosphor-icons/react/dist/csr/List";
-import { MedalIcon } from "@phosphor-icons/react/dist/csr/Medal";
 import { MoonIcon } from "@phosphor-icons/react/dist/csr/Moon";
 import { SignInIcon } from "@phosphor-icons/react/dist/csr/SignIn";
-import { SignOutIcon } from "@phosphor-icons/react/dist/csr/SignOut";
 import { SunIcon } from "@phosphor-icons/react/dist/csr/Sun";
-import { UserCircleIcon } from "@phosphor-icons/react/dist/csr/UserCircle";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { useAuth } from "./auth-context";
+import { RingAvatar } from "./badges";
 import { useScrollingDown } from "./frame";
 import { toggleAppearance, useAppearance } from "./theme";
-import {
-  buttonClass,
-  EmptyState,
-  iconButtonClass,
-  Notice,
-  Sheet,
-} from "@rallypoint/ui";
+import { EmptyState, iconButtonClass, Sheet } from "@rallypoint/ui";
 /**
  * The everyday controls, floating in the upper right at every size — the same
  * trigger RallyPoint shares with Trove. The burger unfolds downwards and turns
  * into an X in the same place, so the way out is where the way in was.
  */
 export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
-  const { session, client } = useAuth();
+  const { session } = useAuth();
   const pathname = usePathname();
   // Remembering where it was opened closes it on navigation without an effect:
   // a new route simply no longer matches.
   const [openAt, setOpenAt] = useState<string | null>(null);
   const expanded = openAt === pathname;
-  const [sheet, setSheet] = useState<"updates" | "account" | null>(null);
-  const [leaving, setLeaving] = useState(false);
-  const [signOutError, setSignOutError] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<"updates" | null>(null);
   const appearance = useAppearance();
   const trigger = useRef<HTMLButtonElement>(null);
   const wrapper = useRef<HTMLDivElement>(null);
@@ -68,26 +58,12 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
     return () =>
       document.removeEventListener("pointerdown", onPointerDown, true);
   }, [expanded]);
-  function openSheet(name: "updates" | "account") {
+  function openSheet(name: "updates") {
     // The sheet is a sibling of the stack, so folding the stack away does not
     // take the dialog down with it; the dialog returns focus to the trigger.
     trigger.current?.focus();
     setOpenAt(null);
     setSheet(name);
-  }
-  async function signOut() {
-    setLeaving(true);
-    setSignOutError(null);
-    const result = await client?.auth.signOut({ scope: "local" });
-    if (result?.error) {
-      setSignOutError("Sign-out did not finish. Please try again.");
-      setLeaving(false);
-      return;
-    }
-    sessionStorage.removeItem("rallypoint.returnTo");
-    // Clear protected App Router trees as well as the managed Auth session.
-    // A soft redirect can race the signed-out guard on the current private page.
-    window.location.replace("/");
   }
   // Names the theme it switches to; the menu folds away like every other item.
   const themeAction = (
@@ -119,6 +95,8 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
             <BellIcon size={20} />
           </span>
         </button>,
+        themeAction,
+        // Profile and account are one place: your badges, then sign-in details.
         <Link
           key="profile"
           className="fab-action"
@@ -126,22 +104,20 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
           onClick={collapse}
         >
           <span>Profile</span>
-          <span className={iconButtonClass()} aria-hidden="true">
-            <MedalIcon size={20} />
+          <span
+            className={`${iconButtonClass()} fab-avatar`}
+            aria-hidden="true"
+          >
+            <RingAvatar
+              name={String(
+                session?.user.user_metadata.full_name ??
+                  session?.user.email ??
+                  "",
+              )}
+              size="sm"
+            />
           </span>
         </Link>,
-        themeAction,
-        <button
-          key="account"
-          type="button"
-          className="fab-action"
-          onClick={() => openSheet("account")}
-        >
-          <span>Account</span>
-          <span className={iconButtonClass()} aria-hidden="true">
-            <UserCircleIcon size={20} />
-          </span>
-        </button>,
       ]
     : [
         themeAction,
@@ -219,32 +195,6 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
           Changes to your sessions will collect here in a later release. Until
           then, a session’s own page always shows its latest status.
         </EmptyState>
-      </Sheet>
-      <Sheet
-        open={sheet === "account"}
-        onClose={() => setSheet(null)}
-        title="Account"
-      >
-        <div className="account-sheet">
-          <span className="rp-avatar" aria-hidden="true">
-            {(session?.user.email ?? "?").slice(0, 1).toUpperCase()}
-          </span>
-          <p>
-            Signed in as
-            <br />
-            <strong>{session?.user.email ?? "your account"}</strong>
-          </p>
-        </div>
-        {signOutError ? <Notice>{signOutError}</Notice> : null}
-        <button
-          type="button"
-          className={buttonClass({ wide: true })}
-          onClick={() => void signOut()}
-          disabled={leaving}
-        >
-          <SignOutIcon size={20} aria-hidden="true" />
-          {leaving ? "Signing out…" : "Sign out"}
-        </button>
       </Sheet>
     </>
   );

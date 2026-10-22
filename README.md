@@ -371,7 +371,7 @@ Badges come from records RallyPoint already keeps (PRD D-16):
 
 They're worked out on every read, so correcting a check-in or cancelling the session removes a badge that depended on it. Payments, no-shows and waitlist position are never used. Only the "seen" markers and your chosen title are stored.
 
-A new badge appears once, as a sheet on Home or on a session page. **Done** or **Show as my title** marks it seen. Home shows one progress row toward your closest badge. **Profile** in the floating menu shows your numbers, your shelf and **Choose title**. A title shows as a small pill next to your name on rosters, only while you still have that badge. Nobody else can open your profile.
+A new badge appears once, as a sheet on Home or on a session page. **Done** or **Show as my title** marks it seen. Home shows one progress row toward your closest badge. **Profile** in the floating menu (your initials in a gradient ring) shows your numbers, your shelf and **Choose title**, and ends with your sign-in email and **Sign out**. A title shows as a small pill next to your name on rosters, only while you still have that badge. Nobody else can open your profile.
 
 For a local walkthrough:
 

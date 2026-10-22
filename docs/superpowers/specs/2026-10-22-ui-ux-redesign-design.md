@@ -43,7 +43,9 @@ the cross-app identity.
   labelled "New session" pill; FAB in the right rail.
 - **FAB contents (signed in), top to bottom:** Updates (empty "coming soon",
   same treatment as Dues), Appearance (light / dark / system), Account (name,
-  email, Sign out). Each chip has a visible label beside it on open. **Signed
+  email, Sign out). _Superseded 2026-10-23 by the owner: Account is merged into
+  one Profile entry showing your initials; name, email and Sign out live on
+  `/profile`._ Each chip has a visible label beside it on open. **Signed
   out:** Appearance, Sign in.
   Behaviour (from Trove): Escape and outside-tap close it; focus returns to the
   trigger only when focus was inside; route change closes it; stagger-in

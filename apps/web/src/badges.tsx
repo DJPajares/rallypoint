@@ -3,6 +3,7 @@ import { useId, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import Link from "next/link";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { SignOutIcon } from "@phosphor-icons/react/dist/csr/SignOut";
 import {
   badgeCatalog,
   badgeDefinition,
@@ -22,6 +23,7 @@ import type { Identity } from "@rallypoint/domain/contracts";
 import { buttonClass, cx, Notice, Pending, Sheet } from "@rallypoint/ui";
 import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
+import { useSignOut } from "./sign-out";
 
 // Medallions are drawn, not loaded: one gradient disc, a thin inner ring, a
 // glint and a single glyph (PRD D-15). Locked ones are a dashed outline.
@@ -365,7 +367,24 @@ const initials = (name: string) =>
     .map((part) => part[0]!.toUpperCase())
     .join("") || "?";
 
+/** Initials inside the brand's gradient ring: the profile head and its menu entry. */
+export function RingAvatar({
+  name,
+  size,
+}: {
+  name: string;
+  size: "sm" | "lg";
+}) {
+  return (
+    <span className={`ring-avatar ring-avatar--${size}`} aria-hidden="true">
+      <span>{initials(name)}</span>
+    </span>
+  );
+}
+
 export function ProfilePage() {
+  const { session } = useAuth();
+  const account = useSignOut();
   const identity = useApi<Identity>("/api/me");
   const badges = useApi<BadgesView>("/api/me/badges");
   const write = useBadgeWrites();
@@ -398,9 +417,7 @@ export function ProfilePage() {
   return (
     <section className="page profile-page">
       <div className="profile-head">
-        <span className="profile-avatar" aria-hidden="true">
-          <span>{initials(name)}</span>
-        </span>
+        <RingAvatar name={name} size="lg" />
         <h1>{name || "Your profile"}</h1>
         {view?.title ? <TitlePill title={view.title} /> : null}
       </div>
@@ -512,6 +529,26 @@ export function ProfilePage() {
           </Sheet>
         </>
       ) : null}
+      <div className="section-head">
+        <h2>Account</h2>
+      </div>
+      <div className="profile-account">
+        <p>
+          Signed in as
+          <br />
+          <strong>{session?.user.email ?? "your account"}</strong>
+        </p>
+        {account.error ? <Notice>{account.error}</Notice> : null}
+        <button
+          type="button"
+          className={buttonClass({ wide: true })}
+          onClick={() => void account.signOut()}
+          disabled={account.leaving}
+        >
+          <SignOutIcon size={20} aria-hidden="true" />
+          {account.leaving ? "Signing out…" : "Sign out"}
+        </button>
+      </div>
     </section>
   );
 }
