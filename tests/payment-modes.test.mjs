@@ -155,3 +155,156 @@ test("Not tracked here sessions carry no money records", async () => {
     await admin.auth.admin.deleteUser(player.id);
   }
 });
+
+// A 1x1 image with a real PNG signature, so the QR upload's content checks pass.
+const png = Uint8Array.from(
+  atob(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+  ),
+  (c) => c.charCodeAt(0),
+);
+
+test("instructions saved before switching to Not tracked here stay stored but are never shown", async () => {
+  const organizer = await login("organizer@rallypoint.test");
+  const email = `modes-${crypto.randomUUID().slice(0, 8)}@rallypoint.test`;
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password: fixturePassword,
+    email_confirm: true,
+    user_metadata: { full_name: "Synthetic Player" },
+  });
+  assert.ok(!error && data.user);
+  const player = await login(email);
+  let sessionId;
+  const registration = async (actor, slug) =>
+    (await (await request(`/api/registrations/${slug}`, actor)).json())
+      .registration;
+  const qr = (actor, slug) =>
+    request(`/api/registrations/${slug}/payment-qr`, actor);
+  try {
+    const published = await request(
+      `/api/groups/${firstGroup}/sessions`,
+      organizer,
+      {
+        operationKey: crypto.randomUUID(),
+        groupId: firstGroup,
+        intent: "publish",
+        details: { ...details(), paymentMode: "organizer" },
+      },
+    );
+    assert.equal(published.status, 200, await published.clone().text());
+    let s = (await published.json()).session;
+    sessionId = s.id;
+    const path = `/api/sessions/${s.id}/payment-instructions`;
+    const saved = await request(path, organizer, {
+      operationKey: crypto.randomUUID(),
+      revision: 0,
+      action: "save",
+      text: "Pay the organizer at the door",
+    });
+    assert.equal(saved.status, 200, await saved.clone().text());
+    const uploaded = await fetch(
+      `${base}${path}/qr?operationKey=${crypto.randomUUID()}&revision=1`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${organizer.token}`,
+          "Content-Type": "image/png",
+        },
+        body: png,
+      },
+    );
+    assert.equal(uploaded.status, 200, await uploaded.clone().text());
+    const edit = async (mode) => {
+      const r = await request(`/api/sessions/${s.id}`, organizer, {
+        operationKey: crypto.randomUUID(),
+        groupId: firstGroup,
+        intent: "update",
+        version: s.version,
+        details: {
+          ...details(),
+          paymentMode: mode,
+          ...(mode === "untracked" ? { fee: "0.00" } : {}),
+        },
+      });
+      assert.equal(r.status, 200, await r.clone().text());
+      s = (await r.json()).session;
+      assert.equal(s.details.paymentMode, mode);
+    };
+
+    // Entitled while tracked: the organizer sees the text and the image.
+    const tracked = await registration(organizer, s.slug);
+    assert.equal(
+      tracked.paymentInstructions.text,
+      "Pay the organizer at the door",
+    );
+    assert.equal(tracked.paymentInstructions.hasImage, true);
+    assert.equal((await qr(organizer, s.slug)).status, 200);
+
+    // Switched before anyone books: nothing is readable, nothing is deleted.
+    await edit("untracked");
+    assert.equal(
+      "paymentInstructions" in (await registration(organizer, s.slug)),
+      false,
+    );
+    const hidden = await qr(organizer, s.slug);
+    assert.equal(hidden.status, 403);
+    assert.equal(
+      (await hidden.json()).error.code,
+      "payment_instructions_unavailable",
+    );
+    assert.equal(
+      sql(
+        `select count(*) from app.payment_instructions where session_id='${s.id}' and body is not null and image_path is not null;`,
+      ),
+      "1",
+    );
+
+    // Switching back shows the same instructions again.
+    await edit("organizer");
+    const back = await registration(organizer, s.slug);
+    assert.equal(
+      back.paymentInstructions.text,
+      "Pay the organizer at the door",
+    );
+    assert.equal((await qr(organizer, s.slug)).status, 200);
+
+    // A booked player of an untracked session gets neither the text nor the image.
+    await edit("untracked");
+    const joined = await request(`/api/registrations/${s.slug}`, player, {
+      operationKey: crypto.randomUUID(),
+      version: s.version,
+      seats: 1,
+      guestName: "",
+      consent: true,
+    });
+    assert.equal(joined.status, 200, await joined.clone().text());
+    const own = (await joined.json()).registration;
+    assert.equal(own.own.state, "confirmed");
+    assert.equal("paymentInstructions" in own, false);
+    const view = await registration(player, s.slug);
+    assert.equal(
+      JSON.stringify(view).includes("Pay the organizer at the door"),
+      false,
+    );
+    assert.equal("paymentInstructions" in view, false);
+    assert.equal((await qr(player, s.slug)).status, 403);
+    assert.equal(
+      "paymentInstructions" in (await registration(organizer, s.slug)),
+      false,
+    );
+  } finally {
+    if (sessionId) {
+      const qrBucket = admin.storage.from("payment-qr");
+      const { data: stored } = await qrBucket.list(sessionId);
+      if (stored?.length)
+        await qrBucket.remove(stored.map((o) => `${sessionId}/${o.name}`));
+      const ids = `'${sessionId}'`;
+      const parties = `select id from app.parties where session_id=${ids}`;
+      sql(
+        `begin;delete from app.operation_receipts where resource_id in(${parties}) or resource_id=${ids};delete from app.registration_events where party_id in(${parties});delete from app.parties where session_id=${ids};delete from app.session_changes where session_id=${ids};delete from app.sessions where id=${ids};commit;`,
+      );
+    }
+    await admin.auth.admin.deleteUser(player.id);
+  }
+});
