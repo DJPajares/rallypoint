@@ -3,7 +3,14 @@ import { buttonClass } from "@rallypoint/ui";
 import { useState } from "react";
 import { ShareNetworkIcon } from "@phosphor-icons/react/dist/csr/ShareNetwork";
 /** Native share sheet where the device has one; otherwise copy the link. */
-export function ShareButton({ title }: { title: string }) {
+export function ShareButton({
+  title,
+  primary = false,
+}: {
+  title: string;
+  /** The page's one neon action, for organizers whose main job is sharing. */
+  primary?: boolean;
+}) {
   const [status, setStatus] = useState("");
   async function share() {
     const url = window.location.href;
@@ -29,7 +36,7 @@ export function ShareButton({ title }: { title: string }) {
     <>
       <button
         type="button"
-        className={buttonClass()}
+        className={buttonClass({ variant: primary ? "primary" : "secondary" })}
         onClick={() => void share()}
       >
         <ShareNetworkIcon size={18} aria-hidden="true" />

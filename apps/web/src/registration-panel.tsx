@@ -11,10 +11,9 @@ import { useIsPhone } from "./frame";
 import { ShareButton } from "./share-button";
 import { SplitFee } from "./split-fee";
 import { splitMoney } from "@rallypoint/domain/fees";
-import { SplitControls, PendingSplitControls } from "./split-controls";
-import { FeeControls } from "./fee-controls";
+import { SplitControls } from "./split-controls";
 import { HowToPay } from "./payment-instructions";
-import { SeatAttendanceControls } from "./attendance-controls";
+import { GameDay } from "./game-day";
 import {
   buttonClass,
   CheckField,
@@ -95,9 +94,6 @@ export function RegistrationPanel({
     }).format(new Date(iso));
   // Only decides whether to offer no-show; the server checks its own clock.
   const ended = !!d.endsAt && now >= Date.parse(d.endsAt);
-  const attendance = view.roster.flatMap((p) => p.attendance ?? []);
-  const seatsTotal = attendance.length,
-    checkedIn = attendance.filter((a) => a.state === "checked_in").length;
   const split = view.split ?? event.split;
   const cutoffTerms = d.cutoffAt
     ? `Cancel before ${when(d.cutoffAt)} and no fee is due; after that, your ${split ? "share" : "fee"} stays unless the organizer waives it.`
@@ -147,13 +143,16 @@ export function RegistrationPanel({
         <StickyActions>
           <button
             type="button"
-            className={buttonClass({ variant: tone })}
+            className={buttonClass({
+              // Organizers share first; joining is something they may also do.
+              variant: view?.canManage ? "secondary" : tone,
+            })}
             aria-haspopup="dialog"
             onClick={() => setSheetOpen(true)}
           >
             {mutation.uncertain ? "Check your request" : triggerLabel}
           </button>
-          <ShareButton title={d.title} />
+          <ShareButton title={d.title} primary={view?.canManage} />
         </StickyActions>
         <Sheet
           open={sheetOpen}
@@ -436,21 +435,26 @@ export function RegistrationPanel({
           )}
         />
       ) : null}
-      {view.rosterAllowed ? (
+      {view.canManage && event.state !== "cancelled" ? (
+        <GameDay
+          slug={event.slug}
+          view={view}
+          ended={ended}
+          when={when}
+          splitCurrency={split?.currency}
+          onDone={(value) => {
+            setChanged(value);
+            onChange();
+          }}
+          onUndoReview={setUndoPartyId}
+        />
+      ) : view.rosterAllowed ? (
         <section className="rp-card roster">
           <h2>
             {event.state === "cancelled"
               ? "Registration records"
-              : view.canManage
-                ? "Organizer roster"
-                : "Who’s confirmed"}
+              : "Who’s confirmed"}
           </h2>
-          {view.canManage && seatsTotal ? (
-            <p className="rp-help">
-              Checked in: {checkedIn} of {seatsTotal}{" "}
-              {seatsTotal === 1 ? "place" : "places"}
-            </p>
-          ) : null}
           {view.roster.length ? (
             <ul>
               {view.roster.map((p, i) => (
@@ -473,75 +477,6 @@ export function RegistrationPanel({
                       })}
                     </p>
                   ) : null}
-                  {event.state !== "cancelled" &&
-                  view.canManage &&
-                  p.id &&
-                  p.fee ? (
-                    <FeeControls
-                      slug={event.slug}
-                      partyId={p.id}
-                      labelId={`party-${p.id}`}
-                      fee={p.fee}
-                      when={when}
-                      onDone={(value) => {
-                        setChanged(value);
-                        onChange();
-                      }}
-                      onUndoReview={
-                        p.splitUndoRequiresReview
-                          ? () => setUndoPartyId(p.id)
-                          : undefined
-                      }
-                    />
-                  ) : null}
-                  {event.state !== "cancelled" &&
-                  view.canManage &&
-                  p.id &&
-                  p.splitClaim &&
-                  !p.fee ? (
-                    <>
-                      <PendingSplitControls
-                        slug={event.slug}
-                        partyId={p.id}
-                        claim={p.splitClaim}
-                        onDone={(value) => {
-                          setChanged(value);
-                          onChange();
-                        }}
-                        onUndoReview={
-                          p.splitUndoRequiresReview
-                            ? () => setUndoPartyId(p.id)
-                            : undefined
-                        }
-                      />
-                      {p.splitClaim.estimateMinor !== null && split ? (
-                        <span>
-                          {splitMoney(
-                            split.currency,
-                            p.splitClaim.estimateMinor,
-                          )}
-                        </span>
-                      ) : null}
-                    </>
-                  ) : null}
-                  {event.state !== "cancelled" && view.canManage && p.id
-                    ? p.attendance?.map((seat) => (
-                        <SeatAttendanceControls
-                          key={seat.seat}
-                          slug={event.slug}
-                          partyId={p.id!}
-                          name={
-                            seat.seat === 1
-                              ? p.primaryName
-                              : p.guestName || "Guest"
-                          }
-                          seat={seat}
-                          ended={ended}
-                          when={when}
-                          onDone={setChanged}
-                        />
-                      ))
-                    : null}
                 </li>
               ))}
             </ul>
