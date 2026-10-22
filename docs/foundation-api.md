@@ -193,7 +193,30 @@ Before-cutoff withdrawal permanently removes eligibility, even if waived;
 undo never revives that eligibility. Late withdrawal retains its seats in the
 split unless explicitly waived; replacing or rejoining creates another claim.
 Waiting parties have no claim. Queue, attendance and fixed-fee contracts remain
-independent. Amount finalization and reviewed corrections follow separately.
+independent.
+
+GET `/api/splits/:slug` and POST `/api/splits/:slug/preview` are current-manager
+operations. The preview accepts `{intent:"finalize"}` and returns exact seat and
+party allocations with an opaque `basis` concurrency token. POST
+`/api/splits/:slug/finalize` accepts `{operationKey,basis}`. Apply checks current
+roles, the trusted financial basis and server time after lock waits; it is allowed
+at or after start for published/completed sessions. A stale preview, cancelled
+session, early request or second finalization is refused atomically.
+
+Finalization persists an immutable run and per-seat allocations, creates exact
+party fees, and returns `{operationKey,committedRunId,registration,split}`. Receipt
+recovery preserves the committed run identity even if current projections later
+change. Guest party totals sum their exact seat allocations; split `unitMinor`
+is null and `totalMinor` is explicit. Zero shares cannot be marked paid. Empty
+paying headcounts record unallocated cost and no participant bill. Financial
+snapshots are independent of check-in/no-show status.
+
+GET `/api/dues` retains `dues` and adds own `splitClaims`: claim-only records with
+their session, aggregate split and own pending/waived/removed state. They have no
+fee and never duplicate a party already in `dues`; both lists are bounded to 200.
+After finalization, estimates become null and aggregate headcount is the frozen
+run basis. Only managers receive full split/history/actor data; participants
+receive their own amounts. Reviewed pricing corrections are the next increment.
 
 ### Attendance (P-07 contract)
 

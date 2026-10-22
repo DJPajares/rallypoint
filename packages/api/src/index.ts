@@ -4,6 +4,7 @@ import type { AppEnv } from "./env";
 import { ApiError, discardRejectedBody, json } from "./http";
 import { sessionRoute, sessionRequest } from "./sessions";
 import { registrationRoute, registrationRequest } from "./registrations";
+import { splitRoute, splitRequest } from "./splits";
 function connection(env: AppEnv) {
   if (
     !env.SUPABASE_URL ||
@@ -52,7 +53,8 @@ export default {
   async fetch(request: Request, env: AppEnv): Promise<Response> {
     const path = new URL(request.url).pathname;
     try {
-      const featureRoute = sessionRoute(path) || registrationRoute(path);
+      const featureRoute =
+        sessionRoute(path) || registrationRoute(path) || splitRoute(path);
       if (request.method !== "GET" && !featureRoute)
         throw new ApiError(
           405,
@@ -124,6 +126,8 @@ export default {
           client(c.url, c.secret),
           user,
         );
+      if (splitRoute(path))
+        return await splitRequest(request, client(c.url, c.secret), user);
       if (featureRoute)
         return await sessionRequest(request, client(c.url, c.secret), user.id);
       if (path === "/api/me")
@@ -159,7 +163,17 @@ export default {
             "service_unavailable",
             "Your dues could not be loaded. Please try again.",
           );
-        return json({ dues });
+        const { data: splitClaims, error: claimError } = await db.rpc(
+          "list_my_split_claims",
+          { p_actor_id: user.id },
+        );
+        if (claimError)
+          throw new ApiError(
+            503,
+            "service_unavailable",
+            "Your estimates could not be loaded. Please try again.",
+          );
+        return json({ dues, splitClaims });
       }
       const id = path.split("/")[3];
       if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(id))

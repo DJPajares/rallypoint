@@ -51,6 +51,14 @@ export interface DuesItem {
     timeZone: string;
   };
 }
+export interface SplitClaimDuesItem {
+  partyId: string;
+  partyState: OwnParty["state"];
+  seats: number;
+  session: DuesItem["session"];
+  split: SplitSummary;
+  splitClaim: OwnSplitClaim;
+}
 /** One plain word for a fee's standing, shared by every view. */
 export const feeStanding = (fee: Fee) =>
   fee.liabilityState === "removed_before_cutoff"

@@ -72,6 +72,11 @@ export async function splitFixture(
       const id = session.id;
       // New dependent objects are discovered by name, so RED tests can clean up
       // before their migration exists; SQL identifiers here are fixed constants.
+      if (sql("select to_regclass('app.split_runs') is not null;") === "t") {
+        sql(
+          `begin;delete from app.operation_receipts where resource_id in(select id from app.split_runs where session_id='${id}');update app.sessions set current_split_run_id=null where id='${id}';delete from app.fee_changes where party_id in(select id from app.parties where session_id='${id}');delete from app.fee_obligations where party_id in(select id from app.parties where session_id='${id}');delete from app.split_allocations where run_id in(select id from app.split_runs where session_id='${id}');delete from app.split_runs where session_id='${id}';commit;`,
+        );
+      }
       const statements = [
         [
           "split_claim_changes",
@@ -172,8 +177,12 @@ export async function splitFixture(
       });
     });
     proc.stderr.resume();
+    const change =
+      offset === null
+        ? ""
+        : `alter table app.sessions disable trigger protect_booked_session;update app.sessions set details=jsonb_set(details,'{startsAt}',to_jsonb((clock_timestamp()+interval '${Number(offset)} milliseconds')::text)) where id='${session.id}';alter table app.sessions enable trigger protect_booked_session;`;
     proc.stdin.end(
-      `begin;select id from app.groups where id='${firstGroup}' for update;select id from app.sessions where id='${session.id}' for update;alter table app.sessions disable trigger protect_booked_session;update app.sessions set details=jsonb_set(details,'{startsAt}',to_jsonb((clock_timestamp()+interval '${Number(offset)} milliseconds')::text)) where id='${session.id}';alter table app.sessions enable trigger protect_booked_session;\\echo SPLIT_LOCKED\nselect pg_sleep(${Number(hold) / 1000});commit;`,
+      `begin;select id from app.groups where id='${firstGroup}' for update;select id from app.sessions where id='${session.id}' for update;${change}\n\\echo SPLIT_LOCKED\nselect pg_sleep(${Number(hold) / 1000});commit;`,
     );
     await ready;
     return { finished };
