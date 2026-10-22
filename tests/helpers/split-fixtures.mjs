@@ -7,7 +7,7 @@ import {
   firstGroup,
 } from "../../scripts/local-env.mjs";
 const env = localEnv();
-const base = process.env.RALLYPOINT_TEST_URL ?? "http://127.0.0.1:5173";
+const base = process.env.RALLYPOINT_TEST_URL ?? "http://127.0.0.1:3000";
 assert.ok(["127.0.0.1", "localhost"].includes(new URL(base).hostname));
 const args = [
   "exec",

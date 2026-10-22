@@ -22,7 +22,7 @@ pnpm db:start
 pnpm dev
 ```
 
-Open [the app](http://127.0.0.1:5173) and
+Open [the app](http://127.0.0.1:3000) and
 [the local mail inbox](http://127.0.0.1:54324).
 
 `db:start` starts only the local RallyPoint Postgres/Auth/REST/mail services,
@@ -31,7 +31,12 @@ applies pending local migrations, writes local credentials to ignored `apps/web/
 without logging them, and seeds
 four synthetic Auth identities and two groups. The Docker network binds published
 ports to loopback. Existing unrelated containers and Supabase projects are not used.
-Next.js uses port 5173 on loopback. Free that port before starting the app.
+Next.js uses port 3000 on loopback. Free that port before starting the app.
+
+If you set up before the app moved from port 5173 to 3000, restart the local
+services once so sign-in accepts the new address (your data is kept):
+`pnpm db:stop && pnpm db:start`. Supabase Auth reads its allowed addresses only
+when it starts.
 
 In the local sign-in form, request a code for one of these fixtures and read the
 message in the local inbox. No message is sent outside the local mail sink.
@@ -51,19 +56,19 @@ email provider is enabled only to exercise existing synthetic identities.
 
 | Command                 | Purpose                                                                          |
 | ----------------------- | -------------------------------------------------------------------------------- |
-| `pnpm dev`              | Turbo runs Next.js development at 127.0.0.1:5173                                 |
+| `pnpm dev`              | Turbo runs Next.js development at 127.0.0.1:3000                                 |
 | `pnpm check`            | Workspace lint/type checks and Next production build                             |
 | `pnpm build`            | Build the Next.js app through Turbo                                              |
-| `pnpm start`            | Serve the built Next.js app on Node at port 5173                                 |
+| `pnpm start`            | Serve the built Next.js app on Node at port 3000                                 |
 | `pnpm build:cloudflare` | Build the local OpenNext Cloudflare Worker artifact                              |
-| `pnpm preview`          | Serve that artifact locally on Workers at port 5173                              |
+| `pnpm preview`          | Serve that artifact locally on Workers at port 3000                              |
 | `pnpm db:lint`          | Check local SQL/function typing                                                  |
 | `pnpm test:api`         | Real local Auth/API and page/navigation regression tests; app/DB must be running |
 | `pnpm db:start`         | Start/reuse local services, apply pending migrations and refresh synthetic setup |
 | `pnpm db:reset`         | Recreate only the local synthetic DB and seed identities/roles                   |
 | `pnpm db:stop`          | Stop the local containers while preserving data                                  |
 
-Choose one server at a time on port 5173. Run `pnpm build` before `pnpm start`,
+Choose one server at a time on port 3000. Run `pnpm build` before `pnpm start`,
 or `pnpm build:cloudflare` before `pnpm preview`. To test another loopback port,
 set `RALLYPOINT_TEST_URL` when running the suite. No command deploys the app. If this checkout previously ran Vite, remove its
 obsolete generated `.wrangler/deploy/config.json` before the first OpenNext
