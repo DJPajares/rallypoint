@@ -361,6 +361,12 @@
 .rp-field {
   margin-bottom: var(--space-4);
 }
+/* Names a group of controls (radios, tiles) where a <label for> can't. */
+.rp-field__label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
 .rp-check {
   display: flex;
   align-items: flex-start;
