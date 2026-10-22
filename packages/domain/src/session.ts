@@ -153,7 +153,7 @@ export function normalizeSession(
     feeMinor,
   };
 }
-export function feeLabel(d: SessionDetails) {
+export function feeLabel(d: Pick<SessionDetails, "currency" | "feeMinor">) {
   const precision = currencies[d.currency as keyof typeof currencies] ?? 2;
   const minor = BigInt(d.feeMinor ?? 0),
     scale = BigInt(10 ** precision);

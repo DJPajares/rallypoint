@@ -86,7 +86,7 @@ export default {
       }
       if (
         !featureRoute &&
-        !["/api/me", "/api/workspace"].includes(path) &&
+        !["/api/me", "/api/workspace", "/api/dues"].includes(path) &&
         !/^\/api\/groups\/[0-9a-f-]+\/setup$/.test(path)
       ) {
         throw new ApiError(404, "not_found", "That page could not be found.");
@@ -148,6 +148,18 @@ export default {
             "Your groups could not be loaded. Please try again.",
           );
         return json({ groups });
+      }
+      if (path === "/api/dues") {
+        const { data: dues, error: dbError } = await db.rpc("list_my_dues", {
+          p_actor_id: user.id,
+        });
+        if (dbError)
+          throw new ApiError(
+            503,
+            "service_unavailable",
+            "Your dues could not be loaded. Please try again.",
+          );
+        return json({ dues });
       }
       const id = path.split("/")[3];
       if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(id))

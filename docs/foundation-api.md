@@ -154,3 +154,25 @@ waiver operations, their history/conflict handling and UI. No waiver or payment
 mutation endpoint is supplied here. Withdrawal records `parties.withdrawn_at` and
 one durable `registration_events(kind='withdrawn')`; promotion keeps its existing
 unique signal. No email provider participates in either transaction.
+
+### Payment markers and waivers (P-05a contract)
+
+POST `/api/registrations/:slug/payments` accepts
+`{ operationKey, partyId, action, revision }`, where `action` is `mark_paid`,
+`mark_unpaid`, `waive` or `undo_waiver`. Only a current owner/organizer/co-host of
+the session's group may call it (`403 group_access_denied` otherwise, checked under
+the group lock on every call and replay). It returns `{ registration, operationKey }`
+with the manager roster.
+
+`liabilityState` gains `waived`. Allowed transitions: unpaid `due` → paid or
+`waived`; paid → unpaid; `waived` → `due`. A paid, waived or removed fee refuses the
+other actions with `409 payment_transition_invalid`. `revision` must equal the fee's
+current revision or the call fails with `409 stale_payment`; every recorded change
+increments it, including a before-cutoff withdrawal removal. Each change writes one
+`app.fee_changes` row with the action, actor, actor display name and time. Manager
+roster fees include `revision` and `history` (newest first); participant fees never
+do. Seats, party state and the queue are not read or written.
+
+GET `/api/dues` returns `{ dues }`: the verified actor's own fee obligations across
+sessions (at most 200), unpaid first, each with its session's slug, title, start,
+time zone and state. It never contains another party's data.

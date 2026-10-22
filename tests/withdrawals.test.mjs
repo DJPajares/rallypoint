@@ -579,7 +579,7 @@ test("whole-party withdrawal and promotion contract", async (t) => {
     if (events.length) {
       const ids = events.map((id) => `'${id}'`).join(",");
       sql(
-        `begin;delete from app.operation_receipts where resource_id in(select id from app.parties where session_id in(${ids})) or resource_id in(${ids});delete from app.registration_events where party_id in(select id from app.parties where session_id in(${ids}));delete from app.fee_obligations where party_id in(select id from app.parties where session_id in(${ids}));delete from app.parties where session_id in(${ids});delete from app.session_changes where session_id in(${ids});delete from app.sessions where id in(${ids});commit;`,
+        `begin;delete from app.operation_receipts where resource_id in(select id from app.parties where session_id in(${ids})) or resource_id in(${ids});delete from app.fee_changes where party_id in(select id from app.parties where session_id in(${ids}));delete from app.registration_events where party_id in(select id from app.parties where session_id in(${ids}));delete from app.fee_obligations where party_id in(select id from app.parties where session_id in(${ids}));delete from app.parties where session_id in(${ids});delete from app.session_changes where session_id in(${ids});delete from app.sessions where id in(${ids});commit;`,
       );
     }
     for (const a of actors) await admin.auth.admin.deleteUser(a.id);

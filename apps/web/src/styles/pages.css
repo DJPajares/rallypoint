@@ -387,6 +387,57 @@
 .roster li span {
   color: var(--color-text-muted);
 }
+.fee-controls {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+.fee-controls strong {
+  color: var(--color-text);
+}
+.fee-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.dues-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dues-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+.dues-item > div {
+  display: grid;
+  gap: var(--space-0);
+}
+.dues-item > div:first-child {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.dues-item span {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+.dues-amount {
+  justify-items: end;
+  font-variant-numeric: tabular-nums;
+}
+.dues-section {
+  display: grid;
+  gap: var(--space-3);
+}
+.dues-section h2 {
+  margin: 0;
+  font-size: var(--text-xl);
+}
 
 @media (min-width: 768px) {
   .landing-steps {

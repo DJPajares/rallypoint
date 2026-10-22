@@ -16,8 +16,12 @@ import { UsersThreeIcon } from "@phosphor-icons/react/dist/csr/UsersThree";
 import { safeReturnPath, useAuth } from "./auth-context";
 import { useApi } from "./use-api";
 import type { GroupSummary, Identity } from "@rallypoint/domain/contracts";
+import { feeStanding } from "@rallypoint/domain/registration";
+import type { DuesItem } from "@rallypoint/domain/registration";
+import { feeLabel } from "@rallypoint/domain/session";
 import { useCreateTarget, useFrame } from "./frame";
 import {
+  Badge,
   buttonClass,
   Divider,
   EmptyState,
@@ -228,21 +232,99 @@ export function SessionsPage() {
     </section>
   );
 }
+function DuesRow({ item }: { item: DuesItem }) {
+  // Times read in the session's own local time, never with a zone label (D-13).
+  const date = new Intl.DateTimeFormat("en", {
+    timeZone: item.session.timeZone,
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(item.session.startsAt));
+  return (
+    <li className="rp-card dues-item">
+      <div>
+        <Link href={`/s/${item.session.slug}`}>
+          <strong>{item.session.title}</strong>
+        </Link>
+        <span>
+          {date}
+          {item.session.state === "cancelled" ? " · Cancelled" : ""}
+          {item.partyState === "withdrawn" ? " · You withdrew" : ""}
+          {item.seats === 2 ? " · You and your guest" : ""}
+        </span>
+      </div>
+      <div className="dues-amount">
+        <strong>
+          {feeLabel({
+            currency: item.fee.currency,
+            feeMinor: item.fee.totalMinor,
+          })}
+        </strong>
+        <Badge>{feeStanding(item.fee)}</Badge>
+      </div>
+    </li>
+  );
+}
+/** The signed-in person's own fees. Organizers record payments per session. */
 export function DuesPage() {
+  const result = useApi<{ dues: DuesItem[] }>("/api/dues");
+  const dues = result.data?.dues ?? [];
+  const owing = dues.filter(
+    (d) => d.fee.liabilityState === "due" && !d.fee.markedPaid,
+  );
+  const settled = dues.filter((d) => !owing.includes(d));
   return (
     <section className="page">
       <div className="page-head">
         <h1>Dues</h1>
       </div>
-      <EmptyState
-        icon={<ReceiptIcon size={34} />}
-        title="Dues are on the way"
-        action={null}
-      >
-        What you owe, and who has paid in groups you organize, will show up here
-        in a later release. A session’s own page lists your amount due today.
-        RallyPoint never collects payments.
-      </EmptyState>
+      {result.loading ? (
+        <Pending>Loading your dues…</Pending>
+      ) : result.error ? (
+        <Notice retry={result.retry}>{result.error}</Notice>
+      ) : !dues.length ? (
+        <EmptyState
+          icon={<ReceiptIcon size={34} />}
+          title="Nothing to pay"
+          action={null}
+        >
+          Fees for sessions you join show up here. RallyPoint never collects
+          payments.
+        </EmptyState>
+      ) : (
+        <>
+          <section className="dues-section" aria-labelledby="dues-owing">
+            <h2 id="dues-owing">To pay</h2>
+            {owing.length ? (
+              <>
+                <p className="rp-help">
+                  Pay the organizer directly. They mark it paid here; RallyPoint
+                  never collects payments.
+                </p>
+                <ul className="dues-list">
+                  {owing.map((d) => (
+                    <DuesRow key={d.partyId} item={d} />
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p className="rp-help">Nothing to pay right now.</p>
+            )}
+          </section>
+          {settled.length ? (
+            <section className="dues-section" aria-labelledby="dues-settled">
+              <h2 id="dues-settled">Settled</h2>
+              <ul className="dues-list">
+                {settled.map((d) => (
+                  <DuesRow key={d.partyId} item={d} />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </>
+      )}
     </section>
   );
 }
