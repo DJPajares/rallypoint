@@ -6,8 +6,8 @@ A mobile-first app for getting a recurring group together. The app
 provides the public shell, managed sessions, creator-owned groups, saved session
 drafts, unlisted publication, verified participant/+1 registration and a strict
 party waitlist, whole-party withdrawal and immediate promotion, and manual
-paid/unpaid markers, fee waivers and per-seat check-in. Payment instructions,
-session cancellation and email remain with subsequent tasks.
+paid/unpaid markers, fee waivers and per-seat check-in. Payment instructions
+and email remain with subsequent tasks. Session cancellation preserves registration and paid history while ending unpaid liability.
 
 ## Run locally
 
@@ -244,6 +244,30 @@ participant with a guest, join and withdraw as another. As organizer, mark the
 first paid and waive the second; then, from a second browser, mark the first
 unpaid and retry **Mark unpaid** in the first browser. It must be refused. Open
 **Dues** as each participant and confirm each sees only their own fee.
+
+## Cancel a session
+
+In **Manage session**, choose **Cancel session** and confirm once. Current
+organizers/co-hosts can cancel a draft or published session. Cancellation is
+terminal: joining, waitlisting, promotion, self-service withdrawal and session
+editing stop. Registrations stay as historical records. Unpaid fees, including
+retained late-withdrawal fees and pending split claims, stop being due; each
+removal records the cancelling actor/time. Paid records remain unchanged. Arrange
+any refund outside RallyPoint; the app never says a refund happened.
+
+Previously published links show **Cancelled**. Cancelled drafts remain private.
+A private durable cancellation signal is saved in the same transaction for P-06;
+this action sends no email. Interrupted requests use **Check result** or
+**Retry same request** without a second cancellation. Current roles are rechecked
+on replay and recovery.
+
+`tests/cancellations.test.mjs` exercises role/replay denial, fee and party
+preservation, split claims/allocations, join races, signal deduplication, rollback
+and draft privacy using local synthetic Auth/Postgres. Apply the migration with
+`pnpm db:start`. For disposable local data, `pnpm db:reset` recreates the test DB;
+a real cancellation has no undo. Before any eventual production migration, take
+a verified backup and use a forward repair for defects; reverting the application
+must not restore cancelled sessions or unpaid liabilities.
 
 ## Check in
 

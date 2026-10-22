@@ -9,7 +9,8 @@ export interface Fee {
   splitRunId?: string;
   chargedSeats: number;
   totalMinor: number;
-  liabilityState: "due" | "removed_before_cutoff" | "waived";
+  liabilityState:
+    "due" | "removed_before_cutoff" | "removed_session_cancelled" | "waived";
   removedAt: string | null;
   markedPaid: boolean;
 }
@@ -25,7 +26,8 @@ export interface ManagedFee extends Fee {
       | "marked_unpaid"
       | "waived"
       | "waiver_undone"
-      | "removed_before_cutoff";
+      | "removed_before_cutoff"
+      | "removed_session_cancelled";
     previousMinor?: number | null;
     currentMinor?: number | null;
     currency?: string;
@@ -66,7 +68,8 @@ export interface SplitClaimDuesItem {
 }
 /** One plain word for a fee's standing, shared by every view. */
 export const feeStanding = (fee: Fee) =>
-  fee.liabilityState === "removed_before_cutoff"
+  fee.liabilityState === "removed_before_cutoff" ||
+  fee.liabilityState === "removed_session_cancelled"
     ? "Removed"
     : fee.liabilityState === "waived"
       ? "Waived"

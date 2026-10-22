@@ -27,6 +27,7 @@ import { StickyActions } from "./ui";
 import type { Tone } from "@rallypoint/ui";
 import { feeLabel } from "@rallypoint/domain/session";
 import type { SharedSession } from "@rallypoint/domain/session";
+import { feeStanding } from "@rallypoint/domain/registration";
 import type { RegistrationView } from "@rallypoint/domain/registration";
 export function RegistrationPanel({
   event,
@@ -194,7 +195,7 @@ export function RegistrationPanel({
                 : ""} · {own.seats} {own.seats === 1 ? "seat" : "seats"}
             </p>
           </StatusBanner>
-          {own.state === "waitlisted" ? (
+          {event.state === "published" && own.state === "waitlisted" ? (
             <p>
               Waiting is free. If places open before the start, your party moves
               in automatically and{" "}
@@ -209,11 +210,13 @@ export function RegistrationPanel({
               claim={own.splitClaim}
               fee={own.fee}
               history={own.splitHistory}
+              cancelled={event.state === "cancelled"}
             />
           ) : own.fee ? (
             <p>
               <strong>
-                {own.fee.liabilityState === "removed_before_cutoff"
+                {own.fee.liabilityState === "removed_before_cutoff" ||
+                own.fee.liabilityState === "removed_session_cancelled"
                   ? "Fee removed: "
                   : own.fee.liabilityState === "waived"
                     ? "Fee waived by the organizer: "
@@ -225,13 +228,15 @@ export function RegistrationPanel({
                   feeMinor: own.fee.totalMinor,
                 })}
               </strong>{" "}
-              {own.fee.liabilityState === "removed_before_cutoff"
-                ? " · You withdrew before the cutoff, so nothing is due."
-                : own.fee.liabilityState === "waived"
-                  ? " · Nothing is due."
-                  : own.state === "withdrawn" && !own.fee.markedPaid
-                    ? " · The fee stays unless the organizer waives it."
-                    : ""}
+              {own.fee.liabilityState === "removed_session_cancelled"
+                ? " · This session was cancelled, so nothing is due."
+                : own.fee.liabilityState === "removed_before_cutoff"
+                  ? " · You withdrew before the cutoff, so nothing is due."
+                  : own.fee.liabilityState === "waived"
+                    ? " · Nothing is due."
+                    : own.state === "withdrawn" && !own.fee.markedPaid
+                      ? " · The fee stays unless the organizer waives it."
+                      : ""}
             </p>
           ) : null}
           {own.state === "confirmed" || own.state === "waitlisted" ? (
@@ -400,7 +405,7 @@ export function RegistrationPanel({
         <ArrowsClockwiseIcon size={18} aria-hidden="true" />
         Refresh
       </button>
-      {view.canManage && split ? (
+      {event.state !== "cancelled" && view.canManage && split ? (
         <SplitControls
           slug={event.slug}
           onDone={(value) => {
@@ -425,7 +430,13 @@ export function RegistrationPanel({
       ) : null}
       {view.rosterAllowed ? (
         <section className="rp-card roster">
-          <h2>{view.canManage ? "Organizer roster" : "Who’s confirmed"}</h2>
+          <h2>
+            {event.state === "cancelled"
+              ? "Registration records"
+              : view.canManage
+                ? "Organizer roster"
+                : "Who’s confirmed"}
+          </h2>
           {view.canManage && seatsTotal ? (
             <p className="rp-help">
               Checked in: {checkedIn} of {seatsTotal}{" "}
@@ -444,7 +455,19 @@ export function RegistrationPanel({
                     {p.seats} {p.seats === 1 ? "seat" : "seats"}
                     {p.state ? ` · ${p.state}` : ""}
                   </span>
-                  {view.canManage && p.id && p.fee ? (
+                  {event.state === "cancelled" && view.canManage && p.fee ? (
+                    <p>
+                      {feeStanding(p.fee)} ·{" "}
+                      {feeLabel({
+                        currency: p.fee.currency,
+                        feeMinor: p.fee.totalMinor,
+                      })}
+                    </p>
+                  ) : null}
+                  {event.state !== "cancelled" &&
+                  view.canManage &&
+                  p.id &&
+                  p.fee ? (
                     <FeeControls
                       slug={event.slug}
                       partyId={p.id}
@@ -462,7 +485,11 @@ export function RegistrationPanel({
                       }
                     />
                   ) : null}
-                  {view.canManage && p.id && p.splitClaim && !p.fee ? (
+                  {event.state !== "cancelled" &&
+                  view.canManage &&
+                  p.id &&
+                  p.splitClaim &&
+                  !p.fee ? (
                     <>
                       <PendingSplitControls
                         slug={event.slug}
@@ -488,7 +515,7 @@ export function RegistrationPanel({
                       ) : null}
                     </>
                   ) : null}
-                  {view.canManage && p.id
+                  {event.state !== "cancelled" && view.canManage && p.id
                     ? p.attendance?.map((seat) => (
                         <SeatAttendanceControls
                           key={seat.seat}

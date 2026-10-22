@@ -7,6 +7,7 @@ import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
 import { useMutation } from "./use-mutation";
 import { SplitFee } from "./split-fee";
+import { CancelSession, CancelledRoster } from "./cancellation-controls";
 import { RegistrationPanel } from "./registration-panel";
 import { ActivityPicker } from "./activity-picker";
 import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
@@ -221,11 +222,12 @@ function Editor({
     ),
     [error, setError] = useState<string | null>(null);
   const [copy, setCopy] = useState("");
+  const [cancelling, setCancelling] = useState(false);
   const header = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     header.current?.focus();
-    document.title = `${initial?.details.title || "Create session"} · RallyPoint`;
-  }, [initial]);
+    document.title = `${record?.state === "cancelled" ? "Cancelled" : record?.details.title || "Create session"} · RallyPoint`;
+  }, [initial, record?.state, record?.details.title]);
   const mutation = useMutation<Result>((result) => {
     if (!result.session) return;
     setRecord(result.session);
@@ -276,9 +278,15 @@ function Editor({
   const locked = !!record?.bookingsStarted || terminal;
   // Custom controls aren't all native form elements, so the fieldset's
   // disabled state is passed to them as well.
-  const disabledFields = mutation.busy || mutation.uncertain || locked;
+  const disabledFields =
+    mutation.busy || mutation.uncertain || cancelling || locked;
   const url =
-    record && record.state !== "draft" ? `${origin}/s/${record.slug}` : null;
+    record &&
+    (record.state === "published" ||
+      record.state === "completed" ||
+      (record.state === "cancelled" && record.cancelledFrom === "published"))
+      ? `${origin}/s/${record.slug}`
+      : null;
   return (
     <DetailPage
       back={`/groups/${record?.groupId ?? groupId}`}
@@ -288,7 +296,9 @@ function Editor({
       <div className="page-head">
         <h1 ref={header} tabIndex={-1}>
           {terminal
-            ? "This session is closed."
+            ? record?.state === "cancelled"
+              ? "Cancelled"
+              : "This session is closed."
             : record?.state === "published"
               ? "Your session, ready to share."
               : "Plan the next one."}
@@ -342,7 +352,7 @@ function Editor({
           </p>
         </div>
       ) : null}
-      {record?.bookingsStarted ? (
+      {record?.bookingsStarted && !terminal ? (
         <Notice tone="warning">
           People have joined, so the details can’t be changed.
         </Notice>
@@ -354,7 +364,9 @@ function Editor({
           submit(e, record?.state === "published" ? "update" : "publish")
         }
       >
-        <fieldset disabled={mutation.busy || mutation.uncertain || locked}>
+        <fieldset
+          disabled={mutation.busy || mutation.uncertain || cancelling || locked}
+        >
           <legend>Session details</legend>
           <Field id="title" label="Session title">
             {input("title", "text", {
@@ -487,24 +499,26 @@ function Editor({
           >
             Allow each participant to bring one guest
           </SwitchField>
-          <StickyActions>
-            {record?.state !== "published" ? (
-              <button
-                type="button"
-                className={buttonClass()}
-                onClick={(e) => submit(e, "draft")}
-              >
-                Save draft
+          {!terminal ? (
+            <StickyActions>
+              {record?.state !== "published" ? (
+                <button
+                  type="button"
+                  className={buttonClass()}
+                  onClick={(e) => submit(e, "draft")}
+                >
+                  Save draft
+                </button>
+              ) : null}
+              <button className={buttonClass({ variant: "primary" })}>
+                {mutation.busy
+                  ? "Saving…"
+                  : record?.state === "published"
+                    ? "Save changes"
+                    : "Publish session"}
               </button>
-            ) : null}
-            <button className={buttonClass({ variant: "primary" })}>
-              {mutation.busy
-                ? "Saving…"
-                : record?.state === "published"
-                  ? "Save changes"
-                  : "Publish session"}
-            </button>
-          </StickyActions>
+            </StickyActions>
+          ) : null}
         </fieldset>
         {error || mutation.error ? (
           <Notice>{error ?? mutation.error}</Notice>
@@ -516,6 +530,31 @@ function Editor({
           </p>
         ) : null}
       </form>
+      {record && !terminal ? (
+        <CancelSession
+          record={record}
+          saving={mutation.busy || mutation.uncertain}
+          onPending={setCancelling}
+          onDone={(value) => {
+            setRecord(value);
+            setNotice("");
+            setError(null);
+            setCancelling(false);
+            requestAnimationFrame(() => header.current?.focus());
+          }}
+        />
+      ) : null}
+      {record?.state === "cancelled" ? (
+        <>
+          <p>
+            Unpaid fees are no longer due. Paid records stay; arrange any refund
+            outside RallyPoint.
+          </p>
+          {record.bookingsStarted ? (
+            <CancelledRoster slug={record.slug} />
+          ) : null}
+        </>
+      ) : null}
     </DetailPage>
   );
 }
@@ -582,7 +621,7 @@ export function SharedSessionPage() {
           {shared.state !== "published" ? (
             <Notice tone="warning">
               {shared.state === "cancelled"
-                ? "This session was cancelled."
+                ? "Cancelled — this session will not take place."
                 : "This session has finished."}
             </Notice>
           ) : null}
@@ -597,8 +636,15 @@ export function SharedSessionPage() {
         </div>
         <aside className="session-side" aria-label="Places and registration">
           <div className="rp-card availability" role="status">
-            <SpotsMeter capacity={capacity} taken={counts.confirmedSeats} />
-            {counts.waitingParties > 0 ? (
+            {shared.state === "cancelled" ? (
+              <p>
+                Previously registered: {counts.confirmedSeats}{" "}
+                {counts.confirmedSeats === 1 ? "seat" : "seats"}.
+              </p>
+            ) : (
+              <SpotsMeter capacity={capacity} taken={counts.confirmedSeats} />
+            )}
+            {shared.state === "published" && counts.waitingParties > 0 ? (
               <p className="rp-help">
                 {counts.waitingParties}{" "}
                 {counts.waitingParties === 1 ? "party is" : "parties are"}{" "}
@@ -629,13 +675,19 @@ export function SharedSessionPage() {
                     ? "Registration is closed."
                     : "Registration opens soon."}
               </h2>
-              <p>Sign in to join or check your place.</p>
+              <p>
+                {shared.state === "cancelled"
+                  ? "Sign in to view your registration record."
+                  : "Sign in to join or check your place."}
+              </p>
               <StickyActions>
                 <Link
                   className={buttonClass({ variant: "primary" })}
                   href={`/sign-in?next=${encodeURIComponent(`/s/${slug}`)}`}
                 >
-                  Sign in to join
+                  {shared.state === "cancelled"
+                    ? "View your record"
+                    : "Sign in to join"}
                 </Link>
                 <ShareButton title={d.title} />
               </StickyActions>
@@ -647,23 +699,35 @@ export function SharedSessionPage() {
             <div>
               <dt>
                 <CoinsIcon size={20} aria-hidden="true" />
-                Fee
+                {shared.state === "cancelled" ? "Original fee" : "Fee"}
               </dt>
               <dd>
                 {shared.split ? (
-                  <SplitFee summary={shared.split} />
+                  shared.state === "cancelled" ? (
+                    <>
+                      {feeLabel({
+                        currency: shared.split.currency,
+                        feeMinor: shared.split.totalMinor,
+                      })}{" "}
+                      session total
+                    </>
+                  ) : (
+                    <SplitFee summary={shared.split} />
+                  )
                 ) : (
                   <>{feeLabel(d)} per seat, paid to the organizer</>
                 )}
               </dd>
             </div>
-            <div>
-              <dt>
-                <ClockCountdownIcon size={20} aria-hidden="true" />
-                Free cancellation until
-              </dt>
-              <dd>{time(d.cutoffAt)}</dd>
-            </div>
+            {shared.state !== "cancelled" ? (
+              <div>
+                <dt>
+                  <ClockCountdownIcon size={20} aria-hidden="true" />
+                  Free cancellation until
+                </dt>
+                <dd>{time(d.cutoffAt)}</dd>
+              </div>
+            ) : null}
             {shared.registrationWindow === "not_open" ? (
               <div>
                 <dt>
@@ -673,7 +737,7 @@ export function SharedSessionPage() {
                 <dd>{time(d.opensAt)}</dd>
               </div>
             ) : null}
-            {d.guests ? (
+            {shared.state !== "cancelled" && d.guests ? (
               <div>
                 <dt>
                   <UserPlusIcon size={20} aria-hidden="true" />

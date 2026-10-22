@@ -42,6 +42,7 @@ on 2026-10-22. Every mutation requires a UUID `operationKey` in its JSON body.
 | POST `/api/groups`              | `name, operationKey`; actual owner group                   | Verified creator                                         |
 | GET `/api/groups/:id/sessions`  | Current drafts/published sessions                          | Current group manager                                    |
 | POST `/api/groups/:id/sessions` | `groupId, intent: draft or publish, details, operationKey` | Current group manager                                    |
+| POST `/api/sessions/:id/cancel` | `operationKey`; `{ session, operationKey }` in cancelled state | Current group manager |
 | GET `/api/sessions/:id`         | Management projection/version                              | Current group manager                                    |
 | POST `/api/sessions/:id`        | Same fields plus expected `version`; draft/publish/update  | Current group manager                                    |
 | GET `/api/shared/:slug`         | Shareable details, counts and lifecycle                    | Public                                                   |
@@ -78,6 +79,31 @@ invitation UI and membership entry remain outside this increment.
 Session errors add 413 oversized body, 415 non-JSON input, 422 invalid fields and
 409 idempotency/version/booked-event conflict. Failed validation never partially
 publishes. Unlisted links are shareable, not private access control.
+
+## Session cancellation
+
+`POST /api/sessions/:id/cancel` consumes a UUID `operationKey`. Identity and
+current owner/organizer/co-host role are required, including on replay/recovery.
+It returns `{session, operationKey}` and uses the existing operation lookup.
+The transaction locks group then session, sets `cancelled`, increments its version,
+removes every due unpaid fee with actor/time/revision history, ends unpaid split
+claims and writes one private `app.session_cancellations` row per session. Party
+states, paid rows and immutable split allocations remain historical records.
+The signal captures the prior draft/published state for visibility and later
+notification selection. No outbound delivery or refund is performed.
+
+Same-key replay and fresh-key repeats preserve the single transition. Reusing a
+key for another session/action returns `409 idempotency_conflict`. Completed
+sessions return `409 session_closed`; new saves to cancelled/completed sessions
+also return `session_closed`. Committed earlier operations retain result recovery.
+A failed transition rolls back state, fees, signal and receipt together. New joins,
+waitlist entries, withdrawals and promotions share the session lock and cannot
+bypass cancellation. Financial corrections cannot recreate unpaid debt afterward.
+
+Published cancelled links keep the public projection and a closed registration
+window. A cancelled draft still returns `404 not_found` publicly. Cancellations,
+rosters, actor data and fee records are never added to the public share response.
+All responses remain `no-store`; direct browser roles have no RPC/table grants.
 
 ## Registration contract
 

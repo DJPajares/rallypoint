@@ -53,6 +53,7 @@ export async function splitFixture(
   t,
   {
     total = "120.00",
+    feeMode = "split",
     seats = [],
     capacity = Math.max(
       1,
@@ -130,7 +131,7 @@ export async function splitFixture(
         capacity: String(capacity),
         currency,
         fee: total,
-        feeMode: "split",
+        feeMode,
         guests: true,
       },
     },

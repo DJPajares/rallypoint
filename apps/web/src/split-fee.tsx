@@ -12,11 +12,13 @@ export function SplitFee({
   claim,
   fee,
   history = [],
+  cancelled = false,
 }: {
   summary: SplitSummary;
   claim?: OwnSplitClaim;
   fee?: Fee | null;
   history?: OwnSplitChange[];
+  cancelled?: boolean;
 }) {
   const money = (n: number) => splitMoney(summary.currency, n);
   const status = fee
@@ -45,7 +47,8 @@ export function SplitFee({
               : ""}
         </strong>
       </p>
-      {summary.phase === "estimating" &&
+      {!cancelled &&
+      summary.phase === "estimating" &&
       (!claim || (claim.eligible && !claim.waived)) ? (
         <p className="rp-help">
           {summary.payingSeats === 0 ? "No split yet. " : ""}
@@ -58,7 +61,7 @@ export function SplitFee({
       {claim?.waived || (claim && !claim.eligible) ? (
         <p className="rp-help">Nothing is due for this party.</p>
       ) : null}
-      {!claim && summary.estimatedSeatRange ? (
+      {!cancelled && !claim && summary.estimatedSeatRange ? (
         <p className="rp-help">
           Current estimate per seat:{" "}
           {money(summary.estimatedSeatRange.minMinor)}
@@ -69,7 +72,7 @@ export function SplitFee({
           .
         </p>
       ) : null}
-      {!claim && summary.phase !== "estimating" ? (
+      {!cancelled && !claim && summary.phase !== "estimating" ? (
         <p className="rp-help">
           {money(summary.totalMinor)} total · {summary.payingSeats} paying
           seats.{" "}
