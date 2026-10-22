@@ -306,7 +306,9 @@ main {
   main {
     /* The menu chip (and the back chip on detail pages) share this first row. */
     padding-top: calc(var(--safe-top) + 72px);
-    padding-bottom: calc(var(--bottombar) + var(--safe-bottom) + 40px);
+    padding-bottom: calc(
+      var(--bottombar) + var(--safe-bottom) + var(--create) / 2 + 12px
+    );
   }
   .app:not([data-signed-in]) main {
     padding-top: 12px;
@@ -330,22 +332,84 @@ main {
     right: 0;
     bottom: 0;
     height: calc(var(--bottombar) + var(--safe-bottom));
-    padding: 0 max(8px, var(--safe-left)) var(--safe-bottom)
-      max(8px, var(--safe-right));
-    background: color-mix(in srgb, var(--card) 94%, transparent);
+  }
+  /* Cuts the concave dip into the bar's top edge so the create button floats
+     clear of it, and draws the hairline that follows it. Same geometry as
+     Trove's bar, so the two apps share one silhouette.
+
+     Four mask layers unioned by the default composite: a fixed-size tile
+     carrying the curve, then three plain fills for the flat remainder. The
+     tile is pinned in pixels so the curve cannot stretch with the viewport;
+     the fills overlap it by 1px so a fractional width leaves no seam.
+
+     The curve is a circle concentric with the button: radius 40px is the
+     button's 32px plus an 8px gap. The button's midline sits on the bar's top
+     edge, so the circle is centred on the edge too, and 12px fillets blend it
+     into the flat edge. The edge tile is the same silhouette grown by 1px
+     (radius 39, fillet 13) on a layer 1px higher, so the hairline stays even
+     all the way round. Recompute both tiles if --create changes. */
+  .nav-notch-surface,
+  .nav-notch-edge {
+    position: absolute;
+    inset: 0;
+    --notch-tile: 160px;
+    --notch-band: 64px;
+    -webkit-mask-image:
+      var(--notch-shape), linear-gradient(black, black),
+      linear-gradient(black, black), linear-gradient(black, black);
+    mask-image:
+      var(--notch-shape), linear-gradient(black, black),
+      linear-gradient(black, black), linear-gradient(black, black);
+    -webkit-mask-position:
+      50% 0,
+      0 0,
+      100% 0,
+      0 100%;
+    mask-position:
+      50% 0,
+      0 0,
+      100% 0,
+      0 100%;
+    -webkit-mask-size:
+      var(--notch-tile) var(--notch-band),
+      calc(50% - var(--notch-tile) / 2 + 1px) var(--notch-band),
+      calc(50% - var(--notch-tile) / 2 + 1px) var(--notch-band),
+      100% calc(100% - var(--notch-band) + 1px);
+    mask-size:
+      var(--notch-tile) var(--notch-band),
+      calc(50% - var(--notch-tile) / 2 + 1px) var(--notch-band),
+      calc(50% - var(--notch-tile) / 2 + 1px) var(--notch-band),
+      100% calc(100% - var(--notch-band) + 1px);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+  .nav-notch-edge {
+    top: -1px;
+    background: var(--line-strong);
+    --notch-shape: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 64'><path fill='black' d='M0 0H29.404A13 13 0 0 1 42.053 10A39 39 0 0 0 117.947 10A13 13 0 0 1 130.596 0H160V64H0Z'/></svg>");
+  }
+  .nav-notch-surface {
+    background: color-mix(in srgb, var(--paper) 94%, transparent);
     backdrop-filter: saturate(1.4) blur(14px);
     -webkit-backdrop-filter: saturate(1.4) blur(14px);
-    border-top: 1px solid var(--line);
+    --notch-shape: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 64'><path fill='black' d='M0 0H29.404A12 12 0 0 1 41.08 9.2308A40 40 0 0 0 118.92 9.2308A12 12 0 0 1 130.596 0H160V64H0Z'/></svg>");
+  }
+  .bottombar nav {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    max-width: 576px;
+    margin: 0 auto;
+    padding: 8px max(8px, var(--safe-left), var(--safe-right))
+      var(--safe-bottom);
   }
   .bottombar ul {
     list-style: none;
-    margin: 0 auto;
+    margin: 0;
     padding: 0;
-    max-width: 520px;
-    height: var(--bottombar);
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    align-items: center;
+    gap: 4px;
   }
   /* Column three belongs to the create button. */
   .bottombar li.after-create:nth-child(3) {
@@ -357,46 +421,66 @@ main {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 4px;
     min-height: 56px;
+    padding: 6px 4px;
     border-radius: var(--radius-sm);
     color: var(--muted);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 500;
     text-decoration: none;
+    transition: color var(--standard) var(--ease);
   }
   .bottombar a[aria-current="page"] {
-    color: var(--ink);
-    font-weight: 700;
+    color: var(--accent);
+    font-weight: 600;
   }
-  .bottombar a[aria-current="page"]::before {
-    content: "";
+  /* A shape as well as a colour marks the current tab. It sits flush on the
+     bar's top edge and stays narrower than the icon, so on a 320px screen it
+     never overhangs the notch's curve. */
+  .nav-indicator {
     position: absolute;
-    top: 2px;
-    width: 28px;
-    height: 4px;
-    border-radius: 4px;
+    top: -8px;
+    left: 50%;
+    width: 24px;
+    height: 3px;
+    margin-left: -12px;
+    border-radius: 0 0 3px 3px;
     background: var(--accent);
   }
+  /* Exactly half the button rides above the bar, so its midline lands on the
+     bar's top edge, concentric with the notch. A contact shadow plus a wide
+     ambient one lifts it off the bar; a single shadow reads as a sticker. */
   .create-bottom {
     position: absolute;
+    z-index: 2;
     left: 50%;
-    top: calc(var(--create) / -2.6);
+    top: calc(var(--create) / -2);
     transform: translateX(-50%);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: var(--create);
     height: var(--create);
+    border: 0;
     border-radius: 50%;
-    border: 4px solid var(--paper);
     background: var(--neon);
     color: var(--on-neon);
-    box-shadow: var(--shadow-float);
-    transition: transform var(--fast) var(--ease);
+    box-shadow: var(--create-shadow);
+    transition:
+      background-color var(--standard) var(--ease),
+      box-shadow var(--standard) var(--ease),
+      transform var(--standard) var(--ease);
+  }
+  .create-bottom:hover {
+    background: var(--neon-hover);
+    box-shadow: var(--create-shadow-hover);
   }
   .create-bottom:active {
-    transform: translateX(-50%) scale(0.94);
+    transform: translateX(-50%) translateY(1px);
+  }
+  .create-bottom:focus-visible {
+    outline-offset: 4px;
   }
   /* Detail pages own the bottom of the screen. */
   .app[data-detail] .bottombar {
