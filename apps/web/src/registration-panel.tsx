@@ -13,6 +13,7 @@ import { SplitFee } from "./split-fee";
 import { splitMoney } from "@rallypoint/domain/fees";
 import { SplitControls, PendingSplitControls } from "./split-controls";
 import { FeeControls } from "./fee-controls";
+import { HowToPay } from "./payment-instructions";
 import { SeatAttendanceControls } from "./attendance-controls";
 import {
   buttonClass,
@@ -238,6 +239,12 @@ export function RegistrationPanel({
                       ? " · The fee stays unless the organizer waives it."
                       : ""}
             </p>
+          ) : null}
+          {view.paymentInstructions ? (
+            <HowToPay
+              slug={event.slug}
+              instructions={view.paymentInstructions}
+            />
           ) : null}
           {own.state === "confirmed" || own.state === "waitlisted" ? (
             event.registrationWindow !== "closed" ? (

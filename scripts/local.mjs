@@ -116,14 +116,14 @@ try {
       );
     }
     console.log(
-      "Starting isolated local Postgres, Auth, REST API and mail sink…",
+      "Starting isolated local Postgres, Auth, REST API, private file storage and mail sink…",
     );
     cli(
       "start",
       "--network-id",
       "rallypoint-local",
       "--exclude",
-      "realtime,storage-api,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor",
+      "realtime,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor",
     );
     cli("migration", "up", "--local");
     configure();

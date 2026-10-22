@@ -165,6 +165,8 @@ Show organizer-supplied payment QR codes or plain payment instructions at the ap
 
 **Acceptance:** an entitled participant can read the instructions when the QR image is unavailable; unauthorized/public preview reads do not reveal protected payee details; removing or correcting an instruction does not alter registrations or payment markers. Display wording accurately says payment occurs outside RallyPoint.
 
+**Implemented for review, 2026-10-22 (WDL-383), visibility pending owner confirmation:** organizers/co-hosts and the session's own confirmed or waitlisted registrants see the instructions and image; withdrawn parties, link visitors, unrelated accounts, cancelled sessions and share responses do not. Builder's storage call: instructions are a separate revisioned record outside the booked-locked details, and one private QR image (PNG/JPEG/WebP, 1 MB) is served only after a fresh entitlement check. Open question for review: whether a withdrawn participant who still owes a retained late-cancellation fee should also see the instructions.
+
 ### RP-11 — Manual paid/unpaid tracking
 
 **Accepted:** organizers/co-hosts manage payment status; participants see only their own fee/payment status and cannot manage another participant's finances. Authorized organizers/co-hosts mark a registration's allocation paid or unpaid and can correct an error. Preserve who changed the marker and when. A participant sees their own status; another attendee's finances are not public roster information. Payment status does not grant a spot or trigger waitlist precedence.

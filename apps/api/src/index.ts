@@ -3,6 +3,7 @@ import type { AppEnv } from "./env";
 import { ApiError, discardRejectedBody, errorJson, json, uuid } from "./http";
 import type { ApiEnv } from "./identity";
 import { connection, requireUser } from "./identity";
+import { payments } from "./payments";
 import { registrations } from "./registrations";
 import { sessions } from "./sessions";
 import { splits } from "./splits";
@@ -114,6 +115,7 @@ app.get("/groups/:id{[0-9a-f-]+}/setup", requireUser, async (c) => {
 app.route("/", sessions);
 app.route("/", registrations);
 app.route("/", splits);
+app.route("/", payments);
 
 // Unknown reads are missing pages; any other unknown method is refused.
 app.notFound(async (c) => {

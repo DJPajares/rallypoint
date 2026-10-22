@@ -6,8 +6,8 @@ A mobile-first app for getting a recurring group together. The app
 provides the public shell, managed sessions, creator-owned groups, saved session
 drafts, unlisted publication, verified participant/+1 registration and a strict
 party waitlist, whole-party withdrawal and immediate promotion, and manual
-paid/unpaid markers, fee waivers and per-seat check-in. Payment instructions
-and email remain with subsequent tasks. Session cancellation preserves registration and paid history while ending unpaid liability.
+paid/unpaid markers, fee waivers, per-seat check-in and organizer payment
+instructions with an optional QR image. Email remains with subsequent tasks. Session cancellation preserves registration and paid history while ending unpaid liability.
 
 ## Run locally
 
@@ -25,7 +25,7 @@ pnpm dev
 Open [the app](http://127.0.0.1:3000) and
 [the local mail inbox](http://127.0.0.1:54324).
 
-`db:start` starts only the local RallyPoint Postgres/Auth/REST/mail services,
+`db:start` starts only the local RallyPoint Postgres/Auth/REST/Storage/mail services,
 applies pending local migrations, writes local credentials to ignored `apps/web/.env.local` and
 `apps/web/.dev.vars`
 without logging them, and seeds
@@ -245,6 +245,38 @@ first paid and waive the second; then, from a second browser, mark the first
 unpaid and retry **Mark unpaid** in the first browser. It must be refused. Open
 **Dues** as each participant and confirm each sees only their own fee.
 
+## Payment instructions
+
+In **Manage session**, use **Payment instructions** to say how people pay you,
+for example a PayNow number and reference, and optionally add one QR image
+(PNG, JPEG or WebP, up to 1 MB). You can save, correct or remove them at any
+time, including after people book. They are kept apart from the locked session
+details and never change seats, fees or paid markers.
+
+Only organizers/co-hosts and people with a confirmed or waitlisted place see
+them, under **How to pay** on the session page. Link visitors, other accounts,
+people who withdrew and cancelled sessions don't. If the image is missing or
+doesn't load, the written instructions remain. The page says payment happens
+outside RallyPoint; nothing here collects or confirms money.
+
+The image is stored in a private local Storage bucket and is only served
+through the app after a fresh access check. If you set up before this change,
+restart once so Storage starts and the migration creates the bucket:
+`pnpm db:stop && pnpm db:start`.
+
+`tests/payment-instructions.test.mjs` checks organizer/co-host-only writes
+(including a revoked co-host), reads for confirmed, waitlisted, withdrawn,
+unrelated and visitor identities, share-response privacy, unsafe and oversized
+uploads, stale revisions, same-key replays leaving one stored image,
+cancellation and unchanged seats/fees/paid markers.
+
+For a manual check, publish a session and join it from a second account. As
+organizer, save instructions and add a PNG QR; confirm the details stay locked.
+As the participant, see both, then block the image request (or remove the
+stored file) and confirm the text remains. Open the link signed out and as
+another account; neither shows payment details. Try an SVG and a file over
+1 MB; both are refused.
+
 ## Cancel a session
 
 In **Manage session**, choose **Cancel session** and confirm once. Current
@@ -357,7 +389,8 @@ Registration adds party/queue records, separate initial fee obligations and dura
 registration signals. Withdrawal adds auditable liability removal and preserves manual paid declarations.
 Payment tracking adds revisioned paid/unpaid markers, waivers and a per-fee
 change history. Attendance adds revisioned per-seat records with their own change
-history. Payment instructions and outbound delivery remain later work.
+history. Payment instructions add a separate revisioned record and a private
+QR image read only through the API. Outbound delivery remains later work.
 
 ## Project destinations
 
