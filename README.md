@@ -32,12 +32,12 @@ The development server uses port 5173 strictly, so an occupied port is an error.
 In the local sign-in form, request a code for one of these fixtures and read the
 message in the local inbox. No message is sent outside the local mail sink.
 
-| Synthetic account | Expected view |
-| --- | --- |
+| Synthetic account         | Expected view                                    |
+| ------------------------- | ------------------------------------------------ |
 | organizer@rallypoint.test | Sunday Social Club; organizer group view allowed |
-| member@rallypoint.test | Sunday Social Club; organizer group view denied |
-| outsider@rallypoint.test | Eastside Rallies; Sunday Social Club denied |
-| newcomer@rallypoint.test | Empty group list |
+| member@rallypoint.test    | Sunday Social Club; organizer group view denied  |
+| outsider@rallypoint.test  | Eastside Rallies; Sunday Social Club denied      |
+| newcomer@rallypoint.test  | Empty group list                                 |
 
 The fixed password in `scripts/local-env.mjs` is for these local-only test users.
 Never reuse it for a real account. Global public signup is disabled; the local
@@ -45,15 +45,15 @@ email provider is enabled only to exercise existing synthetic identities.
 
 ## Commands
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | React/Vite plus the actual local Workers runtime |
-| `npm run check` | Lint, client/Worker TypeScript checks and production build |
-| `npm run preview` | Serve built output in the local Workers runtime |
-| `npm run db:lint` | Check local SQL/function typing |
-| `npm run test:api` | Live local Auth/API permission checks; requires the app and DB running |
+| Command            | Purpose                                                                        |
+| ------------------ | ------------------------------------------------------------------------------ |
+| `npm run dev`      | React/Vite plus the actual local Workers runtime                               |
+| `npm run check`    | Lint, client/Worker TypeScript checks and production build                     |
+| `npm run preview`  | Serve built output in the local Workers runtime                                |
+| `npm run db:lint`  | Check local SQL/function typing                                                |
+| `npm run test:api` | Live local Auth/API permission checks; requires the app and DB running         |
 | `npm run db:reset` | Recreate only the local synthetic DB from migrations and seed identities/roles |
-| `npm run db:stop` | Stop the local RallyPoint containers, preserving their data |
+| `npm run db:stop`  | Stop the local RallyPoint containers, preserving their data                    |
 
 After reset, sign out of old browser sessions and sign in again: recreated fixture
 users have new IDs. Reset is a development recovery procedure, not a production
@@ -133,18 +133,47 @@ No payment marker or transfer verification is implied.
 New joins and waiting entries close exactly at start; opening/start are checked
 using the server clock after lock waits. Existing registrations remain visible.
 Interrupted requests reuse the existing result-check/same-request recovery flow;
-there is no offline queue. Withdrawal and guest changes are not available yet.
+there is no offline queue. Guest changes remain outside this increment.
 
-P-04 must use the same group-then-session locks and `app.fill_waitlist` helper when
-releasing seats. The helper confirms the whole head party only when it fits, once,
-creates its fee and durable registration signal, and stops at start. Current tests
-release seats with explicit synthetic SQL fixtures; this does not implement a
-participant withdrawal flow or its cancellation-fee behavior.
+## Withdraw and fill vacancies
 
-`npm run test:api` now includes real simultaneous last-seat requests, duplicate
-joining, guest/consent denial, strict party ordering, single promotion/fee creation,
-privacy projections, no automatic membership, terminal-event denial, and opening/
-start lock-wait boundaries. Temporary synthetic test identities are cleaned up.
+Use **Withdraw my place**, **Withdraw both seats**, or **Withdraw from waitlist**
+on your own registration. The primary withdraws the whole party; an organizer
+cannot use this self-service operation for another participant. Before submitting,
+the page shows the cutoff in the event timezone and the fee implications. The
+server checks its own clock after lock waits. Withdrawal closes exactly at start;
+existing records stay visible.
+
+Before cutoff an unpaid obligation stops being due, with its original allocation
+and removal actor/time retained. At or after cutoff the original obligation
+remains until an explicit organizer waiver, even when someone fills the vacancy.
+A replacement owes its own published fee independently. Manual paid declarations
+are preserved on either side of cutoff; any refund is handled externally.
+Payment correction/waiver controls belong to P-05 and are not enabled here.
+
+Withdrawal releases seats and reconciles the strict whole-party queue in the same
+transaction. A two-seat head waits until both seats are free; later solos cannot
+bypass it. Removing a waiting head also reconciles the remaining queue. Promotion
+creates one fee and one durable signal before start. Email delivery is independent
+and belongs to P-06. If a response is interrupted, keep the page open and use
+**Check result** or **Retry same request** before taking another action.
+
+`npm run test:api` checks simultaneous last-seat joins, duplicate joining and
+withdrawal, guest/consent denial, strict ordering, withdrawal/promotion/new-join
+races, fee preservation, privacy, no automatic membership, terminal-event denial,
+and opening/cutoff/start lock waits. Independent HTTP clients use real local Auth
+and Postgres. Synthetic SQL fixtures temporarily change an event deadline under a
+held group/session lock; public requests must wait and then use server time.
+The exact-cutoff financial transition is also exercised with explicit internal
+instants immediately before, equal to and after cutoff; public callers cannot
+supply that clock. Temporary synthetic identities and sessions are cleaned up.
+
+For a manual check, publish a two-seat event and fill it with two solo parties.
+Waitlist a party of two, then a solo. Withdraw one confirmed solo: neither waiting
+party should confirm. Withdraw the second: the party of two confirms once with
+its two-seat fee, and the solo remains first in line. Repeat with a cutoff in the
+past and inspect the departing parties' retained fees. Refresh as each actor;
+public and other participant views must not expose financial records.
 
 No cloud Supabase project is linked and no Cloudflare/Resend service is provisioned.
 The configuration intentionally contains no deploy script. PWA manifest and
@@ -174,7 +203,8 @@ for P-02. General membership and invitation policies remain separate.
 
 Session publishing reuses this shell, Auth/data boundary and migration history.
 Registration adds party/queue records, separate initial fee obligations and durable
-registration signals. Manual payment records and outbound delivery remain later work.
+registration signals. Withdrawal adds auditable liability removal and preserves manual paid declarations.
+Payment controls and outbound delivery remain later work.
 
 ## Project destinations
 

@@ -3,7 +3,9 @@
 The browser authenticates with Supabase Auth. The Worker verifies the access
 token with `getUser`, requires a verified managed email, and derives the actor
 from that response. Editable metadata is display-only. All responses use
-`Cache-Control: no-store`.
+`Cache-Control: no-store`. Rejected unread bodies are discarded without parsing,
+bounded to 16 KiB and one second, so small authorization/method errors remain
+visible through the local proxy.
 
 | GET path | Result | Access |
 | --- | --- | --- |
@@ -83,8 +85,9 @@ publishes. Unlisted links are shareable, not private access control.
 Registration returns own party/state/seat count/current waiting-party position and
 own fee, plus `canManage`, `rosterAllowed`, permitted roster and counts. Waiting
 parties have no obligation. Confirmed fixed fees use seat count × integer unit
-minor amount, rejecting totals beyond safe integer precision. There is no payment
-status or claim of a verified transfer. Confirmed participants get display names,
+minor amount, rejecting totals beyond safe integer precision. Manual paid
+declarations are distinct from liability and never verify a transfer. Confirmed
+participants get display names,
 guest labels and seat counts only; managers get the wider state/obligation view.
 Other verified nonparticipants/waiting participants get no roster.
 
@@ -95,12 +98,35 @@ different-key retries with an existing active party return that party without
 changing its seats or consuming another fee. Replays/result lookups return current
 state, including after closure/removal, never restore an earlier confirmation.
 
+### Withdrawal (P-04 contract)
+
+POST `/api/registrations/:slug/withdraw` accepts `{ operationKey, partyId }`.
+Only the verified primary can withdraw their own whole party. The target ID
+prevents an old request from withdrawing a later registration. There is no
+guest-only withdrawal or organizer removal action in this increment.
+
+The operation locks actor/key, group, then session, just like joining. It checks
+server time after lock waits: withdrawal is allowed only in published sessions
+strictly before start. The current party state determines the result if a
+waitlist promotion wins a race. A successful response/result lookup returns
+`{ operationKey, registration }` with the actual current record. Same-key replay
+and repeat withdrawal do not release seats or promote twice. Replays of an
+already successful action remain readable after start; new actions then close.
+
+Seat release, withdrawal signal and strict-order reconciliation commit together.
+Email delivery is separate. Before cutoff an unpaid obligation is removed from
+the amount due while its original allocation remains auditable; at/after cutoff
+it remains. Paid declarations remain manual records and withdrawal never claims
+an external refund. The owner accepted independent fixed fees on 2026-10-22:
+a promoted replacement
+owes its own published allocation; filling the vacancy never automatically
+waives the departing party's retained obligation.
+
 The queue has a monotonic party sequence. Allocation never splits a party or
 bypasses the first waiting party. `app.fill_waitlist` acquires the same locks and
 confirms whole heads before start, creating each obligation and durable
-`app.registration_events` signal once. P-04 must reconcile in its seat-release
-transaction; no public withdrawal or guest-edit operation is introduced here.
-Signals are not sent emails. P-06 owns actual delivery.
+`app.registration_events` signal once. Withdrawal reconciles within its
+seat-release transaction. Guest edits remain out of scope. Signals are not sent emails. P-06 owns actual delivery.
 
 The accepted D-03 start deadline is recorded in the PRD. Errors include 422 missing
 consent/disabled guest/impossible party and 409 stale terms/not-open/closed/key
@@ -112,3 +138,19 @@ redirect configuration is still required. Local email-code sign-in exercises
 managed sessions only: request and Auth URLs must both be loopback and the local
 flag must be enabled. It does not establish live Google integration. No Resend
 delivery, offline writes or hosted deployment is implemented here.
+
+P-04 extends each private fee projection with `liabilityState` (`due` or
+`removed_before_cutoff`), `removedAt` and `markedPaid`. The original exact
+`totalMinor` remains unchanged. `app.release_withdrawal_fee` records the removal
+actor/time only when the authoritative withdrawal instant is strictly before
+cutoff and the allocation is not marked paid. Tests pass explicit instants to
+this internal financial transition for the exact-cutoff case; public calls
+always supply server time after the session lock. Browser roles cannot call it.
+
+For the P-05 handoff, `app.fee_obligations` also holds a separate manual paid flag
+and marker actor/time. P-04 cannot write those marker columns; synthetic fixtures
+verify their preservation. P-05 owns protected paid/unpaid correction and explicit
+waiver operations, their history/conflict handling and UI. No waiver or payment
+mutation endpoint is supplied here. Withdrawal records `parties.withdrawn_at` and
+one durable `registration_events(kind='withdrawn')`; promotion keeps its existing
+unique signal. No email provider participates in either transaction.

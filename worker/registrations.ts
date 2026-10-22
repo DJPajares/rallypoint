@@ -3,19 +3,39 @@ import { ApiError, json } from "./http";
 import { readBody } from "./sessions";
 const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 export const registrationRoute = (path: string) =>
-  path.startsWith("/api/registrations/") &&
+  /^\/api\/registrations\//.test(path) &&
   uuid.test(path.split("/")[3] ?? "") &&
-  path.split("/").length === 4;
+  (path.split("/").length === 4 ||
+    (path.split("/").length === 5 && path.endsWith("/withdraw")));
 export async function registrationRequest(
   request: Request,
   client: SupabaseClient,
   user: User,
 ) {
-  const slug = new URL(request.url).pathname.split("/")[3];
+  const path = new URL(request.url).pathname;
+  const slug = path.split("/")[3];
+  const withdraw = path.endsWith("/withdraw");
   const db = client.schema("api");
   let name = "read_registration",
     args: Record<string, unknown> = { p_actor_id: user.id, p_slug: slug };
-  if (request.method === "POST") {
+  if (withdraw && request.method !== "POST")
+    throw new ApiError(405, "method_not_allowed", "Use the withdrawal action.");
+  if (request.method === "POST" && withdraw) {
+    const b = await readBody(request);
+    if (
+      typeof b.operationKey !== "string" ||
+      !uuid.test(b.operationKey) ||
+      typeof b.partyId !== "string" ||
+      !uuid.test(b.partyId)
+    )
+      throw new ApiError(
+        422,
+        "invalid_withdrawal",
+        "Choose your whole registration to withdraw.",
+      );
+    name = "withdraw_party";
+    args = { ...args, p_key: b.operationKey, p_party_id: b.partyId };
+  } else if (request.method === "POST") {
     const b = await readBody(request);
     if (
       typeof b.operationKey !== "string" ||
@@ -68,10 +88,12 @@ export async function registrationRequest(
       registration_closed:
         "Registration is closed. New joins and waitlist entries stop at the session start.",
       registration_not_open: "Registration has not opened yet.",
+      withdrawal_closed:
+        "Self-service withdrawal is closed at the session start or when the session ends or is cancelled. Refresh your record.",
       stale_terms:
         "The session details changed. Refresh and review the current terms before joining.",
       idempotency_conflict:
-        "This request key was already used for different joining details.",
+        "This request key was already used for different details.",
     };
     if (conflicts[error.message])
       throw new ApiError(409, error.message, conflicts[error.message]);
@@ -90,7 +112,7 @@ export async function registrationRequest(
     throw new ApiError(
       503,
       "service_unavailable",
-      "Your place could not be confirmed. Check the result or retry the same request.",
+      "The action could not be confirmed. Check the result or retry the same request.",
     );
   }
   return json(request.method === "GET" ? { registration: data } : data);
