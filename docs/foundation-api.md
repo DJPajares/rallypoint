@@ -216,7 +216,32 @@ their session, aggregate split and own pending/waived/removed state. They have n
 fee and never duplicate a party already in `dues`; both lists are bounded to 200.
 After finalization, estimates become null and aggregate headcount is the frozen
 run basis. Only managers receive full split/history/actor data; participants
-receive their own amounts. Reviewed pricing corrections are the next increment.
+receive their own amounts and safe generated `own.splitHistory` entries
+(`previousMinor`, `currentMinor`, `at`, `kind`). These exclude manager reasons,
+actor identifiers and other parties’ details.
+
+POST `/api/splits/:slug/preview` also accepts
+`{intent:"correct",totalMinor,undoWaiverPartyId?}`. It returns exact proposed
+amounts, prior amounts, paid states and `blockedPaidPartyIds`. POST
+`/api/splits/:slug/correct` accepts
+`{operationKey,basis,totalMinor,reason,undoWaiverPartyId?}` with a nonempty reason
+of at most 300 characters. A correction can keep or lower the current effective
+total; it cannot change currency, invent eligibility or change a paid amount.
+A stale financial basis returns `409 stale_split`; affected paid allocations
+return `409 split_paid_allocation`; increases return `409 split_total_increase`.
+Each successful correction creates an immutable run, exact seat allocations,
+changed fee revisions and attributable before/after history. Unchanged paid fees
+keep their amount, marker and earlier payment basis. No money is moved.
+
+A finalized waiver changes liability and the matching claim, leaving everyone
+else’s amount fixed. Uncovered cost uses only current-run allocations. Ordinary
+undo restores an amount only if that party still belongs to the current run.
+Otherwise `409 split_undo_requires_review` requires a correction naming the
+originally eligible waived claim. This includes pre-finalization waivers and
+waivers excluded by a later redistribution. Early-withdrawn and waiting parties
+cannot be introduced. Reviewed undo and repricing commit together; payment and
+attendance history remain separate. Manager history includes reasons and all
+previous/current allocation changes, including excluded parties.
 
 ### Attendance (P-07 contract)
 

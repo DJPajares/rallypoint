@@ -30,6 +30,19 @@ export async function splitRequest(
     if (action === "preview") {
       if (b.intent !== "finalize" && b.intent !== "correct")
         throw new ApiError(422, "invalid_split", "Choose the split to review.");
+      if (
+        b.intent === "correct" &&
+        (!Number.isSafeInteger(b.totalMinor) ||
+          Number(b.totalMinor) < 0 ||
+          (b.undoWaiverPartyId !== undefined &&
+            (typeof b.undoWaiverPartyId !== "string" ||
+              !uuid.test(b.undoWaiverPartyId))))
+      )
+        throw new ApiError(
+          422,
+          "invalid_split",
+          "Enter a valid corrected cost.",
+        );
       name = "preview_split";
       args.p_input =
         b.intent === "finalize"

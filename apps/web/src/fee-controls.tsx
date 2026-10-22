@@ -9,6 +9,7 @@ import type {
 } from "@rallypoint/domain/registration";
 import { useMutation } from "./use-mutation";
 const changeWords: Record<ManagedFee["history"][number]["action"], string> = {
+  split_corrected: "Amount corrected",
   marked_paid: "Marked paid",
   marked_unpaid: "Marked unpaid",
   waived: "Waived",

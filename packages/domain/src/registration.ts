@@ -20,11 +20,16 @@ export interface ManagedFee extends Fee {
   revision: number;
   history: Array<{
     action:
+      | "split_corrected"
       | "marked_paid"
       | "marked_unpaid"
       | "waived"
       | "waiver_undone"
       | "removed_before_cutoff";
+    previousMinor?: number | null;
+    currentMinor?: number | null;
+    currency?: string;
+    splitRunId?: string | null;
     by: string;
     at: string;
   }>;
