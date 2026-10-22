@@ -9,7 +9,8 @@
     "./session": "./src/session.ts",
     "./registration": "./src/registration.ts",
     "./navigation": "./src/navigation.ts",
-    "./fees": "./src/fees.ts"
+    "./fees": "./src/fees.ts",
+    "./badges": "./src/badges.ts"
   },
   "scripts": {
     "lint": "oxlint src",

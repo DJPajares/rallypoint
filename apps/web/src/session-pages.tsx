@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
+import { EarnedBadgeCheck } from "./badges";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
@@ -615,6 +616,7 @@ export function SharedSessionPage() {
   const end = fromInstant(d.endsAt, d.timeZone);
   return (
     <DetailPage back={back} backLabel="Home" className="shared-session">
+      <EarnedBadgeCheck />
       <div className="session-layout">
         <div className="session-head">
           <span className="rp-kicker">{groupName}</span>

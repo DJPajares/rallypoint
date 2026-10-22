@@ -7,6 +7,7 @@ import { Providers } from "./providers";
 import "@rallypoint/ui/styles.css";
 import "@/styles/frame.css";
 import "@/styles/pages.css";
+import "@/styles/badges.css";
 const display = Bricolage_Grotesque({
   subsets: ["latin"],
   variable: "--font-display-family",

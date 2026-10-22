@@ -58,6 +58,13 @@
   --brand-navy: var(--palette-navy-700);
   --brand-neon: var(--palette-neon-400);
   --brand-on-navy: var(--palette-white);
+  /* Badges (D-15/D-16): medallion ink and shine, the earned glow, the profile ring. */
+  --badge-ink-dark: var(--palette-ink);
+  --badge-ink-light: var(--palette-white);
+  --badge-shine: var(--palette-white);
+  --badge-glow: #7c68ff;
+  --badge-glow-shadow: rgb(67 48 201 / 0.3);
+  --badge-ring-sky: #4fc3ff;
 
   /* 2. Semantic colours (light, dark) */
   --color-bg: light-dark(var(--palette-paper), var(--palette-navy-900));

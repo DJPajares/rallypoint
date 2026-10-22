@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BellIcon } from "@phosphor-icons/react/dist/csr/Bell";
 import { ListIcon } from "@phosphor-icons/react/dist/csr/List";
+import { MedalIcon } from "@phosphor-icons/react/dist/csr/Medal";
 import { MoonIcon } from "@phosphor-icons/react/dist/csr/Moon";
 import { SignInIcon } from "@phosphor-icons/react/dist/csr/SignIn";
 import { SignOutIcon } from "@phosphor-icons/react/dist/csr/SignOut";
@@ -118,6 +119,17 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
             <BellIcon size={20} />
           </span>
         </button>,
+        <Link
+          key="profile"
+          className="fab-action"
+          href="/profile"
+          onClick={collapse}
+        >
+          <span>Profile</span>
+          <span className={iconButtonClass()} aria-hidden="true">
+            <MedalIcon size={20} />
+          </span>
+        </Link>,
         themeAction,
         <button
           key="account"
