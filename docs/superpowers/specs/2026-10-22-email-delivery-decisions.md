@@ -2,17 +2,17 @@
 
 Date: 2026-10-22. Task: [WDL-385](https://linear.app/wwonderland/issue/WDL-385). Baseline: `0708533bf750fefdee8e6e48c30b7156f35974c0`.
 
-**Decision status:** the owner requested “use my current trove setup for this” when asked which sender domain to use. Reusing Trove's email service/domain is accepted. The remaining recommendations below await the owner's decision. This is a decision brief, not delivery implementation or live setup authorization.
+**Decision status: accepted, 2026-10-22.** The owner first requested “use my current trove setup for this” for the sender, then replied “Approved” to the remaining proposed defaults and draft PR #18. The recipient/timing, scheduler, send/retry ceilings, overflow and failure-visibility policies below are accepted. Alternatives are retained for context and are not selected. This approves the decision brief; implementation selection, live setup, spending, merge and deployment retain their own authorization boundaries.
 
 ## Reuse the existing sender
 
 Trove's [tracked email rollout guide](https://github.com/DJPajares/trove/blob/256855034afcc6d41b06bb3ba0143a6051e2c46a/docs/auth/email-auth-rollout.md) records Resend on `auth.wndrhive.com`, with `wndrhive <no-reply@auth.wndrhive.com>` configured as shared Supabase Auth SMTP. No Resend credential is stored in Trove's application configuration. This establishes documented configuration, not live domain-verification, account-plan or deliverability evidence.
 
-Recommend `RallyPoint <no-reply@auth.wndrhive.com>` for session notifications, using the same Resend account/domain via its HTTPS email API. P-12 should configure a separate sending-only credential restricted to that domain, in supported server secret storage. Do not copy or expose Trove's SMTP credential, change its shared Auth templates/settings, or move RallyPoint's database/Auth into Trove's project. Keep open/click tracking disabled. There is no new domain, mailbox or provider purchase in this decision.
+Use `RallyPoint <no-reply@auth.wndrhive.com>` for session notifications, using the same Resend account/domain via its HTTPS email API. P-12 should configure a separate sending-only credential restricted to that domain, in supported server secret storage. Do not copy or expose Trove's SMTP credential, change its shared Auth templates/settings, or move RallyPoint's database/Auth into Trove's project. Keep open/click tracking disabled. There is no new domain, mailbox or provider purchase in this decision.
 
 A separate credential improves attribution/revocation but creates no separate sending quota or reputation. Alternatives: reuse the SMTP credential (unnecessary coupling), or verify a new notification subdomain (additional setup the owner did not request). [Resend domain requirements](https://resend.com/docs/dashboard/domains/introduction), [key isolation/restriction](https://resend.com/docs/dashboard/api-keys/introduction).
 
-## Recipients and timing — proposed
+## Recipients and timing — accepted
 
 | Update | Recipient rule |
 | --- | --- |
@@ -30,13 +30,13 @@ Before every provider attempt, recheck current identity/destination, access, ses
 
 Subjects/preheaders are generic. Bodies identify the person's own status and link back to the session; exclude other participants, contacts, attendance, payment details and any private-event preview details. Guests need no email address. Alternative reminder audiences (waitlist, all members, guests or hosts) add noise/disclosure without a confirmed place; do not include them.
 
-## Scheduler — proposed
+## Scheduler — accepted
 
-Recommend one Cloudflare Cron Trigger every minute on the existing deployment, using OpenNext's documented custom Worker: delegate `fetch` to the generated handler and add `scheduled` for a bounded outbox drain. The scheduled path calls the shared server delivery adapter directly, not a public HTTP endpoint or a Next-rendered page. Postgres persists and leases work; a trigger is only a wake-up and never the record of delivery. Duplicate/overlapping sweeps must be harmless.
+Use one Cloudflare Cron Trigger every minute on the existing deployment, using OpenNext's documented custom Worker: delegate `fetch` to the generated handler and add `scheduled` for a bounded outbox drain. The scheduled path calls the shared server delivery adapter directly, not a public HTTP endpoint or a Next-rendered page. Postgres persists and leases work; a trigger is only a wake-up and never the record of delivery. Duplicate/overlapping sweeps must be harmless.
 
 | Option | Assessment |
 | --- | --- |
-| Cloudflare Cron + custom OpenNext Worker | Recommended: same deployment and server secrets; documented adapter extension, no extra service. |
+| Cloudflare Cron + custom OpenNext Worker | Selected: same deployment and server secrets; documented adapter extension, no extra service. |
 | Supabase `pg_cron` + `pg_net`/function | Viable alternative, but adds database network scheduling and secret/runtime management; inactive database pauses still affect it. |
 | `pg_cron` calling an app endpoint | Adds a scheduler credential, an HTTP entry point and another failure boundary for the same work. |
 
@@ -44,7 +44,7 @@ Current repo: Next `16.4.2`, OpenNext `1.20.13`, Wrangler `4.151.3`; Wrangler cu
 
 Cloudflare currently lists 100,000 free daily requests, five Cron Triggers/account and **10 ms CPU per free scheduled invocation**. A minute sweep is 1,440 invocations/day (calculated); it shares account capacity with the app. Five small jobs is an initial maximum, not proof of fitting the CPU budget. P-06 must test the handler locally; P-12 must measure the actual runtime and lower the batch if needed. No automatic paid-plan fallback. [Worker limits](https://developers.cloudflare.com/workers/platform/limits/).
 
-## Limits and retry policy — proposed
+## Limits and retry policy — accepted
 
 | Control | Initial RallyPoint limit |
 | --- | --- |
@@ -56,13 +56,13 @@ Cloudflare currently lists 100,000 free daily requests, five Cron Triggers/accou
 | Request timeout | 10 seconds; timeout is an unknown submission outcome, not proof of non-delivery. |
 | Expiry | Reminder: due + 15 minutes. Join/promotion: earlier of session start or enqueue + 23 hours. Cancellation: enqueue + 23 hours. Never retry at/after expiry. |
 
-These are proposed product operating ceilings, not provider guarantees or an accepted overall pilot size. Resend currently lists Free at 100/day and 3,000/month, counting recipients and received mail, with a default team-wide 10 requests/second limit. Trove and other keys/domains share the team pool. RallyPoint's caps leave nominal headroom but **cannot reserve capacity for Trove** or prove combined usage fits. Before enabling live sends, P-12 must check the actual account/plan, other applications' usage and acceptable combined budget; keep delivery disabled if shared headroom is not accepted. No plan upgrade or overage authorization follows from this brief. [Resend account limits](https://resend.com/docs/knowledge-base/account-quotas-and-limits), [pricing](https://resend.com/pricing).
+These are accepted product operating ceilings, not provider guarantees or an accepted overall pilot size. Resend currently lists Free at 100/day and 3,000/month, counting recipients and received mail, with a default team-wide 10 requests/second limit. Trove and other keys/domains share the team pool. RallyPoint's caps leave nominal headroom but **cannot reserve capacity for Trove** or prove combined usage fits. Before enabling live sends, P-12 must check the actual account/plan, other applications' usage and acceptable combined budget; keep delivery disabled if shared headroom is not accepted. No plan upgrade or overage authorization follows from this brief. [Resend account limits](https://resend.com/docs/knowledge-base/account-quotas-and-limits), [pricing](https://resend.com/pricing).
 
 Durable jobs deduplicate by logical update/account, with a stable provider idempotency key and immutable attempted payload. Retry only transient transport/5xx, rate-limit, or concurrent-idempotent conflicts. Permanent validation/auth/domain/payload-conflict failures stop and surface; do not generate a new key to escape a conflict. Daily/monthly quota errors open a sender circuit until the relevant reset/owner action, still bounded by each job's expiry. Budget deferrals for already-admitted jobs do not busy-loop or extend their original enqueue-based expiry. Bulk/queue-ceiling suppression happens before provider attempts and is terminal; it creates no held job outside the 500 active-job ceiling and no later catch-up. Preserve safe terminal evidence on the durable source signal/session summary rather than creating a hidden pending backlog. Missing or unparsable retry hints use the bounded backoff above. Resend's idempotency retention is 24 hours; the 23-hour outer bound leaves margin. Beyond that window, an ambiguous job stays unconfirmed and is not resent automatically. [Idempotency](https://resend.com/docs/dashboard/emails/idempotency-keys), [error contract](https://resend.com/docs/api-reference/errors).
 
-Prefer one recipient per `POST /emails`, no CC/BCC or provider-side scheduling. That keeps per-person outcomes and eligibility checks explicit. The public API discovery brief confirmed Bearer auth, `Idempotency-Key`, JSON `from/to/subject/text/html`, and a 200 response with provider `id`; it explicitly does not provide application quota enforcement. [Send Email](https://resend.com/docs/api-reference/emails/send-email).
+Use one recipient per `POST /emails`, no CC/BCC or provider-side scheduling. That keeps per-person outcomes and eligibility checks explicit. The public API discovery brief confirmed Bearer auth, `Idempotency-Key`, JSON `from/to/subject/text/html`, and a 200 response with provider `id`; it explicitly does not provide application quota enforcement. [Send Email](https://resend.com/docs/api-reference/emails/send-email).
 
-## Failure visibility — proposed
+## Failure visibility — accepted
 
 Organizers/co-hosts see status only for their own sessions, using participant display names rather than contact addresses:
 
@@ -77,8 +77,8 @@ Do not add a Resend webhook or full-access read key in the first increment: it c
 
 ## Implementation handoff and validation boundary
 
-P-06 remains blocked by this decision until the owner accepts the recipient, ceiling/retry, scheduler and visibility proposals. After acceptance, refresh its brief with the chosen rules and link this record; local delivery implementation may then be selected as its own task. P-12 owns live domain/key verification, shared quota acceptance, runtime CPU evidence and authorized test recipients. Do not remove that live-setup gate. D-08/D-09 pilot and retention decisions retain their own boundaries.
+The owner accepted the recipient, ceiling/retry, scheduler and visibility policies on 2026-10-22. P-06's brief is refreshed to these choices. The D-05 policy question is resolved; PR #18 remains subject to the repository's human review/integration workflow, and P-06 may be selected as its own implementation task after that dependency is integrated. P-12 owns live domain/key verification, shared quota acceptance, runtime CPU evidence and authorized test recipients. Do not remove that live-setup gate. D-08/D-09 pilot and retention decisions retain their own boundaries.
 
 P-06 should extend the existing transactional registration, promotion and cancellation signals into durable jobs; never call Resend inside seat/fee transactions. Verify duplicate processing, quota contention across workers, crash after provider acceptance, timeouts, permanent failures, expiry, stale access/state, reminder boundaries, cancellation fan-out and queue overflow against a service stand-in. A notification failure cannot undo a valid party, promotion, cancellation or fee result. Test the scheduled handler in the actual local Worker runtime. P-12 reports live evidence separately.
 
-**Observed in this task:** current source/configuration and Trove's pinned rollout guide read; official documentation and public API discovery reviewed; recommendations checked for conflicts with RP-12/D-05/D-10. Independent document review found ambiguous overflow handling and loss of prior submission ambiguity; both are now explicit above. No product code, migrations, provider settings or secret values changed; no email sent and no runtime delivery/CPU test claimed. This internal decision change needs no product release note.
+**Observed in this task:** current source/configuration and Trove's pinned rollout guide read; official documentation and public API discovery reviewed; decisions checked for conflicts with RP-12/D-05/D-10. Independent document review found ambiguous overflow handling and loss of prior submission ambiguity; both are now explicit above. No product code, migrations, provider settings or secret values changed; no email sent and no runtime delivery/CPU test claimed. After the owner's approval, the decision status and downstream P-06 brief were updated; local documentation link/placeholder checks and `git diff --check` passed. This internal decision change needs no product release note.
