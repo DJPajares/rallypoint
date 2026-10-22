@@ -73,7 +73,7 @@ function CreateButton({
         <span className="create-label">New session</span>
       </>
     ) : (
-      <PlusIcon size={28} weight="bold" aria-hidden="true" />
+      <PlusIcon size={28} aria-hidden="true" />
     );
   // Inside a group the button goes straight to that group's form; elsewhere it
   // asks which group first. Same place, same icon, either way.
@@ -161,6 +161,13 @@ export function Shell({ children }: { children: ReactNode }) {
         </main>
         {signedIn ? (
           <div className="bottombar">
+            {/* The bar only sizes and positions. Its surface is a separate
+                masked layer, because the mask that carves the notch would
+                otherwise carve the create button away with it. The hairline is
+                its own layer cut to the same silhouette 1px larger, because a
+                border-top can only draw the flat part. */}
+            <span className="nav-notch-edge" aria-hidden="true" />
+            <span className="nav-notch-surface" aria-hidden="true" />
             <nav aria-label="Main">
               <ul>
                 {destinations.map(({ key, href, label }, index) => {
@@ -172,9 +179,12 @@ export function Shell({ children }: { children: ReactNode }) {
                         href={href}
                         aria-current={active ? "page" : undefined}
                       >
+                        {active ? (
+                          <span className="nav-indicator" aria-hidden="true" />
+                        ) : null}
                         <Icon
                           size={24}
-                          weight={active ? "fill" : "regular"}
+                          weight={active ? "bold" : "regular"}
                           aria-hidden="true"
                         />
                         <span>{label}</span>

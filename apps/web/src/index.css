@@ -35,9 +35,15 @@
   --gutter: 16px;
   --content: 1200px;
   --topbar: 64px;
-  --bottombar: 68px;
+  --bottombar: 76px;
   --fab: 44px;
-  --create: 58px;
+  --create: 64px;
+  --create-shadow:
+    0 2px 4px rgb(0 0 0 / 0.14), 0 8px 16px rgb(0 0 0 / 0.16),
+    0 16px 32px rgb(0 0 0 / 0.12);
+  --create-shadow-hover:
+    0 1px 2px rgb(0 0 0 / 0.14), 0 4px 10px rgb(0 0 0 / 0.16),
+    0 10px 20px rgb(0 0 0 / 0.1);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
