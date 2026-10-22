@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BellIcon } from "@phosphor-icons/react/dist/csr/Bell";
-import { CircleHalfIcon } from "@phosphor-icons/react/dist/csr/CircleHalf";
 import { ListIcon } from "@phosphor-icons/react/dist/csr/List";
 import { MoonIcon } from "@phosphor-icons/react/dist/csr/Moon";
 import { SignInIcon } from "@phosphor-icons/react/dist/csr/SignIn";
@@ -13,7 +12,7 @@ import { UserCircleIcon } from "@phosphor-icons/react/dist/csr/UserCircle";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { useAuth } from "./auth-context";
 import { useScrollingDown } from "./frame";
-import { nextTheme, setThemePreference, useThemePreference } from "./theme";
+import { toggleAppearance, useAppearance } from "./theme";
 import {
   buttonClass,
   EmptyState,
@@ -21,12 +20,6 @@ import {
   Notice,
   Sheet,
 } from "@rallypoint/ui";
-const themeIcon = {
-  system: <CircleHalfIcon size={20} aria-hidden="true" />,
-  light: <SunIcon size={20} aria-hidden="true" />,
-  dark: <MoonIcon size={20} aria-hidden="true" />,
-};
-const themeName = { system: "System", light: "Light", dark: "Dark" };
 /**
  * The everyday controls, floating in the upper right at every size — the same
  * trigger RallyPoint shares with Trove. The burger unfolds downwards and turns
@@ -42,7 +35,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
   const [sheet, setSheet] = useState<"updates" | "account" | null>(null);
   const [leaving, setLeaving] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
-  const theme = useThemePreference();
+  const appearance = useAppearance();
   const trigger = useRef<HTMLButtonElement>(null);
   const wrapper = useRef<HTMLDivElement>(null);
   const [scrollingDown, reveal] = useScrollingDown();
@@ -95,6 +88,23 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
     // A soft redirect can race the signed-out guard on the current private page.
     window.location.replace("/");
   }
+  // Names the theme it switches to; the menu folds away like every other item.
+  const themeAction = (
+    <button
+      key="theme"
+      type="button"
+      className="fab-action"
+      onClick={() => {
+        toggleAppearance(appearance);
+        collapseAndRestoreFocus();
+      }}
+    >
+      <span>{appearance === "dark" ? "Light mode" : "Dark mode"}</span>
+      <span className={iconButtonClass()} aria-hidden="true">
+        {appearance === "dark" ? <SunIcon size={20} /> : <MoonIcon size={20} />}
+      </span>
+    </button>
+  );
   const actions = signedIn
     ? [
         <button
@@ -108,18 +118,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
             <BellIcon size={20} />
           </span>
         </button>,
-        <button
-          key="theme"
-          type="button"
-          className="fab-action"
-          aria-label={`Theme: ${themeName[theme]}. Switch to ${themeName[nextTheme[theme]]}`}
-          onClick={() => setThemePreference(nextTheme[theme])}
-        >
-          <span>Theme: {themeName[theme]}</span>
-          <span className={iconButtonClass()} aria-hidden="true">
-            {themeIcon[theme]}
-          </span>
-        </button>,
+        themeAction,
         <button
           key="account"
           type="button"
@@ -133,18 +132,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
         </button>,
       ]
     : [
-        <button
-          key="theme"
-          type="button"
-          className="fab-action"
-          aria-label={`Theme: ${themeName[theme]}. Switch to ${themeName[nextTheme[theme]]}`}
-          onClick={() => setThemePreference(nextTheme[theme])}
-        >
-          <span>Theme: {themeName[theme]}</span>
-          <span className={iconButtonClass()} aria-hidden="true">
-            {themeIcon[theme]}
-          </span>
-        </button>,
+        themeAction,
         <Link
           key="sign-in"
           className="fab-action"
