@@ -5,7 +5,8 @@ import { ApiError, json, parse, readBody, uuid, uuidParam } from "./http";
 import type { ApiEnv } from "./identity";
 import { displayName, notAvailable, requireUser } from "./identity";
 
-type Action = "read" | "join" | "withdraw" | "payment" | "attendance";
+type Action =
+  "read" | "join" | "withdraw" | "payment" | "attendance" | "release";
 const conflicts: Record<string, string> = {
   split_undo_requires_review: "Review a new split before restoring this share.",
   split_not_finalized:
@@ -26,6 +27,13 @@ const conflicts: Record<string, string> = {
   registration_closed:
     "Registration is closed. New joins and waitlist entries stop at the session start.",
   registration_not_open: "Registration has not opened yet.",
+  release_not_enabled:
+    "This session doesn’t give unpaid spots to the waitlist.",
+  release_too_early:
+    "Unpaid spots can go to the waitlist once the cutoff passes.",
+  release_closed: "Spots can’t be given away once the session starts.",
+  release_not_eligible:
+    "Only spots booked before the cutoff and still unpaid can go to the waitlist. Refresh to see the latest record.",
   withdrawal_closed:
     "Self-service withdrawal is closed at the session start or when the session ends or is cancelled. Refresh your record.",
   stale_terms:
@@ -36,6 +44,12 @@ const conflicts: Record<string, string> = {
 const invalid = {
   payment: ["invalid_payment", "Choose a fee and a payment action."],
   attendance: ["invalid_attendance", "Choose a seat and an attendance state."],
+  release: ["invalid_release", "Choose a spot to give to the waitlist."],
+} as const;
+const managingWords = {
+  payment: "update payments",
+  attendance: "update attendance",
+  release: "release spots",
 } as const;
 
 async function call(
@@ -51,12 +65,14 @@ async function call(
   });
   if (error) {
     const managing =
-      action === "payment" || action === "attendance" ? action : null;
+      action === "payment" || action === "attendance" || action === "release"
+        ? action
+        : null;
     if (error.code === "42501" && managing)
       throw new ApiError(
         403,
         "group_access_denied",
-        `Only this session’s organizers can update ${action === "payment" ? "payments" : "attendance"}.`,
+        `Only this session’s organizers can ${managingWords[managing]}.`,
       );
     if (error.code === "42501")
       throw new ApiError(
@@ -104,6 +120,11 @@ const payment = z.object({
   operationKey: key,
   partyId: key,
   action: z.enum(["mark_paid", "mark_unpaid", "waive", "undo_waiver"]),
+  revision: z.number().int().min(1),
+});
+const release = z.object({
+  operationKey: key,
+  partyId: key,
   revision: z.number().int().min(1),
 });
 const attendance = z.object({
@@ -159,6 +180,16 @@ export const registrations = new Hono<ApiEnv>()
     });
   })
   .all(`${base}/payments`, requireUser, () => notAvailable(action))
+  .post(`${base}/release`, requireUser, async (c) => {
+    const b = parse(release, await readBody(c.req.raw), ...invalid.release);
+    return call(c, "release", "release_unpaid_party", {
+      p_actor_name: displayName(c.var.user, "Participant"),
+      p_key: b.operationKey,
+      p_party_id: b.partyId,
+      p_revision: b.revision,
+    });
+  })
+  .all(`${base}/release`, requireUser, () => notAvailable(action))
   .post(`${base}/attendance`, requireUser, async (c) => {
     const b = parse(
       attendance,

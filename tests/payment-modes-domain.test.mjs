@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { feeStanding } from "../packages/domain/src/registration.ts";
 import {
   blankSession,
   InputError,
@@ -90,4 +91,22 @@ test("drafts keep the mode and the release switch", () => {
 
 test("new sessions start as Not tracked here", () => {
   assert.equal(blankSession().paymentMode, "untracked");
+});
+
+test("feeStanding says Released for a released fee", () => {
+  const fee = {
+    currency: "PHP",
+    unitMinor: 20000,
+    chargedSeats: 1,
+    totalMinor: 20000,
+    liabilityState: "released_unpaid",
+    removedAt: "2027-05-08T10:00:00Z",
+    markedPaid: false,
+  };
+  assert.equal(feeStanding(fee), "Released");
+  assert.equal(feeStanding({ ...fee, liabilityState: "due" }), "Unpaid");
+  assert.equal(
+    feeStanding({ ...fee, liabilityState: "removed_before_cutoff" }),
+    "Removed",
+  );
 });

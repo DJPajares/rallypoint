@@ -10,7 +10,11 @@ export interface Fee {
   chargedSeats: number;
   totalMinor: number;
   liabilityState:
-    "due" | "removed_before_cutoff" | "removed_session_cancelled" | "waived";
+    | "due"
+    | "removed_before_cutoff"
+    | "removed_session_cancelled"
+    | "released_unpaid"
+    | "waived";
   removedAt: string | null;
   markedPaid: boolean;
 }
@@ -27,7 +31,8 @@ export interface ManagedFee extends Fee {
       | "waived"
       | "waiver_undone"
       | "removed_before_cutoff"
-      | "removed_session_cancelled";
+      | "removed_session_cancelled"
+      | "released_unpaid";
     previousMinor?: number | null;
     currentMinor?: number | null;
     currency?: string;
@@ -71,13 +76,15 @@ export const feeStanding = (fee: Fee) =>
   fee.liabilityState === "removed_before_cutoff" ||
   fee.liabilityState === "removed_session_cancelled"
     ? "Removed"
-    : fee.liabilityState === "waived"
-      ? "Waived"
-      : fee.markedPaid
-        ? "Paid"
-        : fee.totalMinor === 0
-          ? "Nothing due"
-          : "Unpaid";
+    : fee.liabilityState === "released_unpaid"
+      ? "Released"
+      : fee.liabilityState === "waived"
+        ? "Waived"
+        : fee.markedPaid
+          ? "Paid"
+          : fee.totalMinor === 0
+            ? "Nothing due"
+            : "Unpaid";
 export interface OwnParty {
   id: string;
   state: "confirmed" | "waitlisted" | "withdrawn" | "removed";
@@ -130,6 +137,8 @@ export interface RegistrationView {
     attendance?: SeatAttendance[];
     /** The badge this person chose to show, while it is still earned. */
     title?: RosterTitle | null;
+    /** Organizers/co-hosts only; whether this party could be released right now. */
+    releasable?: boolean;
   }>;
 }
 import type {

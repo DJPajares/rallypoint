@@ -16,6 +16,7 @@ const changeWords: Record<ManagedFee["history"][number]["action"], string> = {
   waiver_undone: "Waiver undone",
   removed_before_cutoff: "Removed before the cutoff",
   removed_session_cancelled: "Removed on session cancellation",
+  released_unpaid: "Spot given to the waitlist",
 };
 /**
  * One roster party's fee for organizers/co-hosts: its standing in words, the
