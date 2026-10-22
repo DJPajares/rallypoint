@@ -361,6 +361,35 @@ Interrupted writes keep **Check result** and **Retry same request** until the
 outcome is confirmed. See the [split contract](docs/foundation-api.md#split-cost-claims)
 and [accepted design](docs/superpowers/specs/2026-10-22-split-session-cost-design.md).
 
+## Badges and titles
+
+Badges come from records RallyPoint already keeps (PRD D-16):
+
+- Playing: your first session, five sessions with one group, 10/25/50/100 sessions, and moving up from the waitlist and showing up.
+- People: a guest you brought showing up, and playing alongside 10/25/50 different people.
+- Hosting: running check-in at a session, ten sessions, a session where every seat was taken, and owning a group.
+
+They're worked out on every read, so correcting a check-in or cancelling the session removes a badge that depended on it. Payments, no-shows and waitlist position are never used. Only the "seen" markers and your chosen title are stored.
+
+A new badge appears once, as a sheet on Home or on a session page. **Done** or **Show as my title** marks it seen. Home shows one progress row toward your closest badge. **Profile** in the floating menu shows your numbers, your shelf and **Choose title**. A title shows as a small pill next to your name on rosters, only while you still have that badge. Nobody else can open your profile.
+
+For a local walkthrough:
+
+1. As the organizer fixture, publish a session.
+2. Join it as `member@rallypoint.test` with a guest, and as `outsider@rallypoint.test`.
+3. Check everyone in.
+4. Sign in as the member. Home shows the new badge once. Choose a title, then open the session to see the pill on the roster.
+5. Mark the member's seat unrecorded again. The badge and the pill disappear.
+
+`tests/badges.test.mjs` covers these rules, refused titles, forged seen markers, no-shows, waiting and cancelled sessions. `tests/badges-domain.test.mjs` covers the catalog wording and ordering. See the [design brief](docs/superpowers/specs/2026-10-22-reclub-competitive-analysis-design.md).
+
+The migration `20261022170000_badges.sql` adds two small tables (`app.badge_views`, `app.user_titles`), read-only badge functions and an index. It also replaces `app.registration_view_before_split` with the same roster plus `title`. To recover:
+
+1. Drop the new functions and tables.
+2. Re-create `app.registration_view_before_split` from `20261022090743_split_cost_claims.sql`.
+
+Nothing else changes, and no existing record is rewritten.
+
 ## Where to work next
 
 - `apps/web/`: native Next routes, app shell, Auth and identity-scoped request state.

@@ -186,14 +186,14 @@ export function Medallion({
             cy="50"
             r="38.5"
             fill="none"
-            stroke="#fff"
+            stroke="var(--badge-shine)"
             strokeOpacity=".38"
             strokeWidth="1.6"
           />
           <path
             d="M17 44 A34 34 0 0 1 56 15"
             fill="none"
-            stroke="#fff"
+            stroke="var(--badge-shine)"
             strokeOpacity=".4"
             strokeWidth="5"
             strokeLinecap="round"
@@ -205,8 +205,8 @@ export function Medallion({
           color: locked
             ? "inherit"
             : definition.darkGlyph
-              ? "#0e1a3d"
-              : "#ffffff",
+              ? "var(--badge-ink-dark)"
+              : "var(--badge-ink-light)",
         }}
       >
         <Glyph badge={definition} />
