@@ -2,19 +2,19 @@ import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Bricolage_Grotesque, Inter } from "next/font/google";
+import { themeColor } from "@rallypoint/ui";
 import { Providers } from "./providers";
-import "@/index.css";
-import "@/styles/components.css";
+import "@rallypoint/ui/styles.css";
 import "@/styles/frame.css";
 import "@/styles/pages.css";
 const display = Bricolage_Grotesque({
   subsets: ["latin"],
-  variable: "--font-display",
+  variable: "--font-display-family",
   display: "swap",
 });
 const body = Inter({
   subsets: ["latin"],
-  variable: "--font-body",
+  variable: "--font-ui-family",
   display: "swap",
 });
 // Runs before paint so a saved light/dark choice never flashes the other theme.
@@ -35,8 +35,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f5f7f2" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a1024" },
+    { media: "(prefers-color-scheme: light)", color: themeColor.light },
+    { media: "(prefers-color-scheme: dark)", color: themeColor.dark },
   ],
 };
 export default function Layout({ children }: { children: ReactNode }) {

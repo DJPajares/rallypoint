@@ -1,4 +1,5 @@
 "use client";
+import { buttonClass } from "@rallypoint/ui";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./auth-context";
 export function useMutation<T>(done: (result: T) => void) {
@@ -85,7 +86,7 @@ export function useMutation<T>(done: (result: T) => void) {
         <button
           type="button"
           disabled={busy}
-          className="button secondary"
+          className={buttonClass()}
           onClick={() => void send(job.path, job.body, true)}
         >
           Check result
@@ -93,7 +94,7 @@ export function useMutation<T>(done: (result: T) => void) {
         <button
           type="button"
           disabled={busy}
-          className="text-button"
+          className={buttonClass({ variant: "link" })}
           onClick={() => void send(job.path, job.body)}
         >
           Retry same request

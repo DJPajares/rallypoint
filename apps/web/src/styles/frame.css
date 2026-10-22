@@ -1,20 +1,22 @@
-/* App frame: top bar (tablet/desktop), bottom bar (phone), floating menu. */
+/* App frame: top bar (tablet/desktop), bottom bar (phone), floating menu.
+   Every value is a token from @rallypoint/ui; the notch geometry below is the
+   one exception, because it is tied to the SVG paths it describes. */
 .app {
   min-height: 100dvh;
 }
 .skip-link {
   position: fixed;
-  top: calc(12px + var(--safe-top));
-  left: calc(12px + var(--safe-left));
-  z-index: 100;
-  padding: 10px 16px;
-  border-radius: var(--pill);
-  background: var(--accent);
-  color: var(--on-accent);
-  font-weight: 600;
+  top: calc(var(--space-3) + var(--safe-top));
+  left: calc(var(--space-3) + var(--safe-left));
+  z-index: var(--layer-skip);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: var(--weight-semibold);
   text-decoration: none;
-  transform: translateY(calc(-100% - 24px - var(--safe-top)));
-  transition: transform var(--standard) var(--ease);
+  transform: translateY(calc(-100% - var(--space-6) - var(--safe-top)));
+  transition: transform var(--duration-base) var(--ease-standard);
 }
 .skip-link:focus {
   transform: none;
@@ -24,165 +26,130 @@
 .topbar {
   position: sticky;
   top: 0;
-  z-index: 30;
+  z-index: var(--layer-bar);
   padding-top: var(--safe-top);
-  background: color-mix(in srgb, var(--paper) 88%, transparent);
-  backdrop-filter: saturate(1.4) blur(14px);
-  -webkit-backdrop-filter: saturate(1.4) blur(14px);
-  border-bottom: 1px solid var(--line);
+  background: color-mix(
+    in srgb,
+    var(--color-bg) var(--glass-opacity),
+    transparent
+  );
+  backdrop-filter: var(--glass-filter);
+  -webkit-backdrop-filter: var(--glass-filter);
+  border-bottom: var(--border-width) solid var(--color-border);
 }
 .topbar-inner {
-  max-width: var(--content);
+  max-width: var(--layout-max);
+  height: var(--layout-topbar);
   margin: 0 auto;
-  height: var(--topbar);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   /* The floating menu sits in this bar's right rail; keep clear of it. */
-  padding: 0 calc(var(--gutter) + var(--fab) + 12px) 0 var(--gutter);
+  padding: 0 calc(var(--layout-gutter) + var(--size-touch) + var(--space-3)) 0
+    var(--layout-gutter);
 }
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-2);
   margin-right: auto;
-  color: var(--ink);
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
   text-decoration: none;
-  font-family: var(--font-head);
-  font-weight: 700;
-  font-size: 20px;
-  letter-spacing: -0.03em;
 }
 .brand-mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: #13235b;
-  color: #fff;
-  font-size: 24px;
+  width: var(--size-brand-mark);
+  height: var(--size-brand-mark);
+  padding-bottom: var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--brand-navy);
+  color: var(--brand-on-navy);
+  font-size: var(--text-2xl);
   line-height: 1;
-  padding-bottom: 3px;
 }
 .brand-mark span {
-  color: #c6f432;
+  color: var(--brand-neon);
 }
 .topnav {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-0);
 }
 .topnav a {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  padding: 0 12px;
-  border-radius: var(--pill);
-  color: var(--muted);
-  font-size: 14px;
-  font-weight: 500;
+  gap: var(--space-2);
+  min-height: var(--size-touch);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
   text-decoration: none;
   transition:
-    color var(--fast) var(--ease),
-    background-color var(--fast) var(--ease);
+    color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
 }
 .topnav a:hover {
-  color: var(--ink);
-  background: var(--sunken);
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
 }
 .topnav a[aria-current="page"] {
-  color: var(--ink);
+  color: var(--color-text);
 }
+/* The underline sits on the bar's bottom edge. */
 .topnav a[aria-current="page"]::after {
   content: "";
   position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: -10px;
-  height: 3px;
-  border-radius: 3px;
-  background: var(--accent);
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: calc((var(--layout-topbar) - var(--size-touch)) / -2);
+  height: var(--size-indicator-height);
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+  background: var(--color-accent);
 }
 .create-top {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 44px;
-  min-width: 44px;
-  margin-left: 8px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: var(--pill);
-  background: var(--neon);
-  color: var(--on-neon);
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background-color var(--fast) var(--ease);
-}
-.create-top:hover {
-  background: var(--neon-hover);
+  margin-left: var(--space-2);
 }
 
 /* Main */
 main {
-  max-width: var(--content);
+  max-width: var(--layout-max);
   margin: 0 auto;
-  padding: 32px var(--gutter) 72px;
-  padding-left: max(var(--gutter), var(--safe-left));
-  padding-right: max(var(--gutter), var(--safe-right));
+  padding: var(--space-8) max(var(--layout-gutter), var(--safe-right))
+    var(--space-16) max(var(--layout-gutter), var(--safe-left));
 }
 
 /* Floating menu */
 .fab {
   position: fixed;
-  z-index: 40;
-  top: calc(var(--safe-top) + (var(--topbar) - var(--fab)) / 2);
-  right: max(var(--gutter), var(--safe-right));
+  z-index: var(--layer-float);
+  top: calc(var(--safe-top) + (var(--layout-topbar) - var(--size-touch)) / 2);
+  right: max(var(--layout-gutter), var(--safe-right));
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 10px;
+  gap: var(--space-2);
   transition:
-    transform var(--standard) var(--ease),
-    opacity var(--standard) var(--ease);
+    transform var(--duration-base) var(--ease-standard),
+    opacity var(--duration-base) var(--ease-standard);
 }
 @media (min-width: 1232px) {
   /* Align with the content column instead of the viewport edge. */
   .fab {
-    right: calc((100vw - var(--content)) / 2 + var(--gutter));
+    right: calc((100vw - var(--layout-max)) / 2 + var(--layout-gutter));
   }
-}
-.chip-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: var(--fab);
-  height: var(--fab);
-  padding: 0;
-  border-radius: 50%;
-  border: 1px solid var(--line);
-  background: var(--card);
-  color: var(--ink);
-  box-shadow: var(--shadow);
-}
-.fab-trigger {
-  transition:
-    box-shadow var(--fast) var(--ease),
-    background-color var(--fast) var(--ease);
-}
-.fab-trigger:hover {
-  background: var(--sunken);
 }
 .fab-icon {
   display: inline-flex;
-  animation: fab-spin var(--standard) var(--ease);
+  animation: fab-spin var(--duration-base) var(--ease-standard);
 }
 @keyframes fab-spin {
   from {
@@ -194,81 +161,82 @@ main {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 10px;
+  gap: var(--space-2);
 }
 .fab-item {
-  animation: fab-in var(--standard) var(--ease) both;
+  animation: fab-in var(--duration-base) var(--ease-standard) both;
 }
 @keyframes fab-in {
   from {
     opacity: 0;
-    transform: translateY(-8px) scale(0.88);
+    transform: translateY(calc(var(--space-2) * -1)) scale(0.88);
   }
 }
 .fab-action {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-2);
   padding: 0;
   border: 0;
   background: none;
-  color: var(--ink);
-  font-size: 14px;
-  font-weight: 600;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
   text-decoration: none;
 }
 .fab-action > span:first-child {
-  padding: 6px 12px;
-  border-radius: var(--pill);
-  background: var(--card);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow);
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
+/* The whole row is the button; the ring goes on its round chip. */
 .fab-action:focus-visible {
   outline: none;
 }
-.fab-action:focus-visible .chip-button {
-  outline: 3px solid var(--focus);
-  outline-offset: 3px;
+.fab-action:focus-visible .rp-icon-button {
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: var(--focus-offset);
 }
-.fab-action:hover .chip-button {
-  background: var(--sunken);
+.fab-action:hover .rp-icon-button {
+  background: var(--color-surface-sunken);
 }
 
-/* Bottom bar (phones only) */
+/* Bottom bar: phones only */
 .bottombar {
   display: none;
 }
 .back-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 20px;
-  color: var(--muted);
-  font-size: 14px;
-  font-weight: 600;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
   text-decoration: none;
 }
 .back-chip:hover {
-  color: var(--ink);
+  color: var(--color-text);
 }
 .sticky-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  margin-top: 20px;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
 }
 
-/* Tablet: compact bar, icon-over-nothing; labels stay but tighter. */
+/* Tablet: a compact bar; the create button keeps only its icon. */
 @media (min-width: 768px) and (max-width: 1199px) {
   .topnav a {
-    padding: 0 10px;
-    font-size: 13px;
+    padding: 0 var(--space-2);
+    font-size: var(--text-xs);
   }
   .create-top {
+    width: var(--size-touch);
     padding: 0;
-    width: 44px;
   }
   .create-top .create-label {
     position: absolute;
@@ -279,7 +247,7 @@ main {
     white-space: nowrap;
   }
   main {
-    padding-top: 28px;
+    padding-top: var(--space-6);
   }
 }
 @media (min-width: 1200px) {
@@ -287,7 +255,8 @@ main {
     display: none;
   }
   main {
-    padding: 44px var(--gutter) 88px;
+    padding-top: var(--space-10);
+    padding-bottom: var(--space-16);
   }
 }
 
@@ -305,33 +274,34 @@ main {
   }
   main {
     /* The menu chip (and the back chip on detail pages) share this first row. */
-    padding-top: calc(var(--safe-top) + 72px);
+    padding-top: calc(var(--safe-top) + var(--size-touch) + var(--space-6));
     padding-bottom: calc(
-      var(--bottombar) + var(--safe-bottom) + var(--create) / 2 + 12px
+      var(--layout-bottombar) + var(--safe-bottom) + var(--size-create) / 2 +
+        var(--space-3)
     );
   }
   .app:not([data-signed-in]) main {
-    padding-top: 12px;
+    padding-top: var(--space-3);
   }
   .fab {
-    top: calc(var(--safe-top) + 12px);
+    top: calc(var(--safe-top) + var(--space-3));
   }
   .app:not([data-signed-in]) .fab {
-    top: calc(var(--safe-top) + (var(--topbar) - var(--fab)) / 2);
+    top: calc(var(--safe-top) + (var(--layout-topbar) - var(--size-touch)) / 2);
   }
   .fab[data-hidden] {
     opacity: 0;
     pointer-events: none;
-    transform: translateY(calc(-100% - 12px - var(--safe-top)));
+    transform: translateY(calc(-100% - var(--space-3) - var(--safe-top)));
   }
   .bottombar {
     display: block;
     position: fixed;
-    z-index: 30;
+    z-index: var(--layer-bar);
     left: 0;
     right: 0;
     bottom: 0;
-    height: calc(var(--bottombar) + var(--safe-bottom));
+    height: calc(var(--layout-bottombar) + var(--safe-bottom));
   }
   /* Cuts the concave dip into the bar's top edge so the create button floats
      clear of it, and draws the hairline that follows it. Same geometry as
@@ -347,7 +317,7 @@ main {
      edge, so the circle is centred on the edge too, and 12px fillets blend it
      into the flat edge. The edge tile is the same silhouette grown by 1px
      (radius 39, fillet 13) on a layer 1px higher, so the hairline stays even
-     all the way round. Recompute both tiles if --create changes. */
+     all the way round. Recompute both tiles if --size-create changes. */
   .nav-notch-surface,
   .nav-notch-edge {
     position: absolute;
@@ -384,32 +354,37 @@ main {
     mask-repeat: no-repeat;
   }
   .nav-notch-edge {
-    top: -1px;
-    background: var(--line-strong);
+    top: calc(var(--border-width) * -1);
+    background: var(--color-border-strong);
     --notch-shape: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 64'><path fill='black' d='M0 0H29.404A13 13 0 0 1 42.053 10A39 39 0 0 0 117.947 10A13 13 0 0 1 130.596 0H160V64H0Z'/></svg>");
   }
   .nav-notch-surface {
-    background: color-mix(in srgb, var(--paper) 94%, transparent);
-    backdrop-filter: saturate(1.4) blur(14px);
-    -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    background: color-mix(
+      in srgb,
+      var(--color-bg) var(--glass-opacity),
+      transparent
+    );
+    backdrop-filter: var(--glass-filter);
+    -webkit-backdrop-filter: var(--glass-filter);
     --notch-shape: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 64'><path fill='black' d='M0 0H29.404A12 12 0 0 1 41.08 9.2308A40 40 0 0 0 118.92 9.2308A12 12 0 0 1 130.596 0H160V64H0Z'/></svg>");
   }
   .bottombar nav {
     position: relative;
     z-index: 1;
     height: 100%;
-    max-width: 576px;
+    max-width: var(--layout-bar-max);
     margin: 0 auto;
-    padding: 8px max(8px, var(--safe-left), var(--safe-right))
+    padding: var(--space-2)
+      max(var(--space-2), var(--safe-left), var(--safe-right))
       var(--safe-bottom);
   }
   .bottombar ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 4px;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
   /* Column three belongs to the create button. */
   .bottombar li.after-create:nth-child(3) {
@@ -421,88 +396,89 @@ main {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    min-height: 56px;
-    padding: 6px 4px;
+    gap: var(--space-1);
+    min-height: var(--size-tab);
+    padding: var(--space-1);
     border-radius: var(--radius-sm);
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 500;
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
     text-decoration: none;
-    transition: color var(--standard) var(--ease);
+    transition: color var(--duration-base) var(--ease-standard);
   }
   .bottombar a[aria-current="page"] {
-    color: var(--accent);
-    font-weight: 600;
+    color: var(--color-accent);
+    font-weight: var(--weight-semibold);
   }
   /* A shape as well as a colour marks the current tab. It sits flush on the
      bar's top edge and stays narrower than the icon, so on a 320px screen it
      never overhangs the notch's curve. */
   .nav-indicator {
     position: absolute;
-    top: -8px;
+    top: calc(var(--space-2) * -1);
     left: 50%;
-    width: 24px;
-    height: 3px;
-    margin-left: -12px;
-    border-radius: 0 0 3px 3px;
-    background: var(--accent);
+    width: var(--size-indicator-width);
+    height: var(--size-indicator-height);
+    margin-left: calc(var(--size-indicator-width) / -2);
+    border-radius: 0 0 var(--radius-xs) var(--radius-xs);
+    background: var(--color-accent);
   }
   /* Exactly half the button rides above the bar, so its midline lands on the
-     bar's top edge, concentric with the notch. A contact shadow plus a wide
-     ambient one lifts it off the bar; a single shadow reads as a sticker. */
+     bar's top edge, concentric with the notch. */
   .create-bottom {
     position: absolute;
     z-index: 2;
     left: 50%;
-    top: calc(var(--create) / -2);
+    top: calc(var(--size-create) / -2);
     transform: translateX(-50%);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: var(--create);
-    height: var(--create);
+    width: var(--size-create);
+    height: var(--size-create);
     border: 0;
-    border-radius: 50%;
-    background: var(--neon);
-    color: var(--on-neon);
-    box-shadow: var(--create-shadow);
+    border-radius: var(--radius-full);
+    background: var(--color-action);
+    color: var(--color-on-action);
+    box-shadow: var(--shadow-lift);
     transition:
-      background-color var(--standard) var(--ease),
-      box-shadow var(--standard) var(--ease),
-      transform var(--standard) var(--ease);
+      background-color var(--duration-base) var(--ease-standard),
+      box-shadow var(--duration-base) var(--ease-standard),
+      transform var(--duration-base) var(--ease-standard);
   }
   .create-bottom:hover {
-    background: var(--neon-hover);
-    box-shadow: var(--create-shadow-hover);
+    background: var(--color-action-hover);
+    box-shadow: var(--shadow-lift-hover);
   }
   .create-bottom:active {
-    transform: translateX(-50%) translateY(1px);
+    transform: translateX(-50%) translateY(var(--border-width));
   }
   .create-bottom:focus-visible {
-    outline-offset: 4px;
+    outline-offset: var(--space-1);
   }
   /* Detail pages own the bottom of the screen. */
   .app[data-detail] .bottombar {
     display: none;
   }
   .app[data-detail] main {
-    padding-bottom: calc(var(--safe-bottom) + 120px);
+    padding-bottom: calc(
+      var(--safe-bottom) + var(--space-16) + var(--space-12)
+    );
   }
   .back-chip {
     position: fixed;
-    z-index: 40;
-    top: calc(var(--safe-top) + 12px);
-    left: max(var(--gutter), var(--safe-left));
-    width: var(--fab);
-    height: var(--fab);
+    z-index: var(--layer-float);
+    top: calc(var(--safe-top) + var(--space-3));
+    left: max(var(--layout-gutter), var(--safe-left));
+    width: var(--size-touch);
+    height: var(--size-touch);
     justify-content: center;
     margin: 0;
-    border-radius: 50%;
-    border: 1px solid var(--line);
-    background: var(--card);
-    color: var(--ink);
-    box-shadow: var(--shadow);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-full);
+    background: var(--color-surface);
+    color: var(--color-text);
+    box-shadow: var(--shadow-sm);
   }
   .back-chip span {
     position: absolute;
@@ -516,10 +492,10 @@ main {
     position: static;
     width: auto;
     height: auto;
+    margin-bottom: var(--space-4);
     border: 0;
     background: none;
     box-shadow: none;
-    margin-bottom: 16px;
   }
   .app:not([data-signed-in]) .back-chip span {
     position: static;
@@ -529,20 +505,25 @@ main {
   }
   .sticky-actions {
     position: fixed;
-    z-index: 25;
+    z-index: var(--layer-sticky);
     left: 0;
     right: 0;
     bottom: 0;
-    margin: 0;
     flex-wrap: nowrap;
-    padding: 12px max(var(--gutter), var(--safe-right))
-      calc(12px + var(--safe-bottom)) max(var(--gutter), var(--safe-left));
-    background: color-mix(in srgb, var(--card) 94%, transparent);
-    backdrop-filter: saturate(1.4) blur(14px);
-    -webkit-backdrop-filter: saturate(1.4) blur(14px);
-    border-top: 1px solid var(--line);
+    margin: 0;
+    padding: var(--space-3) max(var(--layout-gutter), var(--safe-right))
+      calc(var(--space-3) + var(--safe-bottom))
+      max(var(--layout-gutter), var(--safe-left));
+    background: color-mix(
+      in srgb,
+      var(--color-surface) var(--glass-opacity),
+      transparent
+    );
+    backdrop-filter: var(--glass-filter);
+    -webkit-backdrop-filter: var(--glass-filter);
+    border-top: var(--border-width) solid var(--color-border);
   }
-  .sticky-actions > .button {
+  .sticky-actions > .rp-button {
     flex: 1;
   }
 }

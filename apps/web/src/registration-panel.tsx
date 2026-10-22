@@ -9,8 +9,17 @@ import { useApi } from "./use-api";
 import { useMutation } from "./use-mutation";
 import { useIsPhone } from "./frame";
 import { ShareButton } from "./share-button";
-import { Notice, Pending, Sheet, StatusBanner, StickyActions } from "./ui";
-import type { Tone } from "./ui";
+import {
+  buttonClass,
+  CheckField,
+  Field,
+  Notice,
+  Pending,
+  Sheet,
+  StatusBanner,
+} from "@rallypoint/ui";
+import { StickyActions } from "./ui";
+import type { Tone } from "@rallypoint/ui";
 import { feeLabel } from "@rallypoint/domain/session";
 import type { SharedSession } from "@rallypoint/domain/session";
 import type { RegistrationView } from "@rallypoint/domain/registration";
@@ -62,16 +71,16 @@ export function RegistrationPanel({
       : "Agree & join";
   const ownTone: Tone =
     event.state !== "published" || !own
-      ? "closed"
+      ? "neutral"
       : own.state === "confirmed"
-        ? "ok"
+        ? "success"
         : own.state === "waitlisted"
-          ? "wait"
-          : "closed";
+          ? "warning"
+          : "neutral";
   const ownIcon =
-    ownTone === "ok" ? (
+    ownTone === "success" ? (
       <CheckCircleIcon size={22} />
-    ) : ownTone === "wait" ? (
+    ) : ownTone === "warning" ? (
       <HourglassIcon size={22} />
     ) : (
       <LockSimpleIcon size={22} />
@@ -105,7 +114,7 @@ export function RegistrationPanel({
         <StickyActions>
           <button
             type="button"
-            className={`button ${tone}`}
+            className={buttonClass({ variant: tone })}
             aria-haspopup="dialog"
             onClick={() => setSheetOpen(true)}
           >
@@ -128,7 +137,7 @@ export function RegistrationPanel({
       {own ? (
         <div className="own-status">
           <StatusBanner tone={ownTone} icon={ownIcon}>
-            <span className="pill">
+            <span className="rp-badge rp-badge--inherit">
               {event.state !== "published"
                 ? "Your registration record"
                 : own.state === "confirmed"
@@ -223,7 +232,7 @@ export function RegistrationPanel({
                       records are kept; any refund is arranged with the
                       organizer outside RallyPoint.
                     </p>
-                    <p className="field-help">
+                    <p className="rp-help">
                       Cancellation cutoff:{" "}
                       {new Date(d.cutoffAt!).toLocaleString(undefined, {
                         timeZone: d.timeZone,
@@ -232,7 +241,7 @@ export function RegistrationPanel({
                       your request. Self-service withdrawal closes at start.
                     </p>
                     <button
-                      className="button secondary"
+                      className={buttonClass()}
                       aria-describedby="withdraw-terms"
                     >
                       {mutation.busy
@@ -276,24 +285,22 @@ export function RegistrationPanel({
               <legend>Make room for a good time.</legend>
               {d.guests && Number(d.capacity) >= 2 ? (
                 <>
-                  <label className="checkbox-field">
-                    <input
-                      type="checkbox"
-                      checked={guest}
-                      onChange={(e) => setGuest(e.target.checked)}
-                    />
+                  <CheckField
+                    checked={guest}
+                    onChange={(e) => setGuest(e.target.checked)}
+                  >
                     Bring one guest (two seats together)
-                  </label>
+                  </CheckField>
                   {guest ? (
-                    <label className="guest-field">
-                      Guest name (optional)
+                    <Field id="guest-name" label="Guest name (optional)">
                       <input
+                        id="guest-name"
                         value={guestName}
                         onChange={(e) => setGuestName(e.target.value)}
                         maxLength={80}
                         autoComplete="off"
                       />
-                    </label>
+                    </Field>
                   ) : null}
                 </>
               ) : null}
@@ -306,7 +313,7 @@ export function RegistrationPanel({
                 including after the cancellation cutoff, and then owes the
                 published fee. New joins and waitlist entries stop at start.
               </p>
-              <p className="field-help">
+              <p className="rp-help">
                 Before cutoff, withdrawing removes unpaid fees; at/after cutoff
                 an obligation remains unless waived. Refunds are handled outside
                 RallyPoint. Self-service withdrawal closes at start.
@@ -315,7 +322,7 @@ export function RegistrationPanel({
                 <Notice>The party fee is too large to store precisely.</Notice>
               ) : null}
               <button
-                className="button primary"
+                className={buttonClass({ variant: "primary" })}
                 aria-describedby="join-terms"
                 disabled={!Number.isSafeInteger(total)}
               >
@@ -327,7 +334,7 @@ export function RegistrationPanel({
         )
       ) : (
         <div className="own-status">
-          <StatusBanner tone="closed" icon={<LockSimpleIcon size={22} />}>
+          <StatusBanner tone="neutral" icon={<LockSimpleIcon size={22} />}>
             <h2>
               {event.registrationWindow === "closed"
                 ? "Registration is closed."
@@ -343,7 +350,7 @@ export function RegistrationPanel({
       {!hasAction && mutation.error ? <Notice>{mutation.error}</Notice> : null}
       {!hasAction ? mutation.recovery : null}
       <button
-        className="text-button"
+        className={buttonClass({ variant: "link" })}
         disabled={mutation.busy || mutation.uncertain}
         onClick={refresh}
       >
@@ -351,7 +358,7 @@ export function RegistrationPanel({
         Refresh status and availability
       </button>
       {view.rosterAllowed ? (
-        <section className="card roster">
+        <section className="rp-card roster">
           <h2>{view.canManage ? "Organizer roster" : "Who’s confirmed"}</h2>
           {view.roster.length ? (
             <ul>
@@ -387,7 +394,7 @@ export function RegistrationPanel({
           )}
         </section>
       ) : (
-        <p className="field-help">
+        <p className="rp-help">
           The display-name roster is available to confirmed participants. Other
           people’s fee and attendance history stays private.
         </p>

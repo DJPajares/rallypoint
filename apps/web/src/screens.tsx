@@ -19,13 +19,16 @@ import { useApi } from "./use-api";
 import type { GroupSummary, Identity } from "@rallypoint/domain/contracts";
 import { useCreateTarget, useFrame } from "./frame";
 import {
-  DetailPage,
+  buttonClass,
+  Divider,
   EmptyState,
+  Field,
   Notice,
   Pending,
   SpotsMeter,
   Ticket,
-} from "./ui";
+} from "@rallypoint/ui";
+import { DetailPage } from "./ui";
 import { GroupSessions } from "./session-pages";
 function Redirect({ href }: { href: string; replace?: boolean }) {
   const router = useRouter();
@@ -47,17 +50,17 @@ export function Landing() {
     <div className="landing">
       <section className="landing-hero">
         <div className="landing-copy">
-          <span className="page-kicker">A little less organising.</span>
+          <span className="rp-kicker">A little less organising.</span>
           <h1>
             Good company.
             <br />
             <span>Great sessions.</span>
           </h1>
-          <p className="lede">
+          <p className="rp-lede">
             Bring your people together, then get back to the good part. One
             shared link shows who’s in, what it costs and when to cancel by.
           </p>
-          <Link className="button primary" href="/sign-in">
+          <Link className={buttonClass({ variant: "primary" })} href="/sign-in">
             Find your people
             <ArrowRightIcon size={20} aria-hidden="true" />
           </Link>
@@ -65,15 +68,15 @@ export function Landing() {
         </div>
         <div className="landing-art" aria-hidden="true">
           <div className="landing-card">
-            <span className="page-kicker">Thursday Pickleball Crew</span>
+            <span className="rp-kicker">Thursday Pickleball Crew</span>
             <p className="landing-card-title">Thursday night doubles</p>
             <Ticket
               date={{ weekday: "Thu", day: "24", month: "Oct", time: "" }}
             >
-              <div className="ticket-time">7:00 – 9:00 pm</div>
-              <div className="ticket-zone">Riverside Courts · court 3</div>
+              <div className="rp-ticket__time">7:00 – 9:00 pm</div>
+              <div className="rp-ticket__meta">Riverside Courts · court 3</div>
             </Ticket>
-            <div className="card">
+            <div className="rp-card">
               <SpotsMeter capacity={12} taken={10} />
             </div>
             <span className="landing-join">Join · 2 spots left</span>
@@ -86,8 +89,8 @@ export function Landing() {
           ["Share", "Drop one link in the group chat."],
           ["Show up", "Everyone knows if they’re in or waiting."],
         ].map(([title, body], index) => (
-          <div key={title} className="card landing-step">
-            <span className="step-number nums">{index + 1}</span>
+          <div key={title} className="rp-card landing-step">
+            <span className="step-number rp-nums">{index + 1}</span>
             <h2>{title}</h2>
             <p>{body}</p>
           </div>
@@ -114,23 +117,21 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 }
 function GroupCard({ group }: { group: GroupSummary }) {
   return (
-    <article className="card group-card">
-      <span className="icon-tile" aria-hidden="true">
+    <article className="rp-card group-card">
+      <span className="rp-icon-tile" aria-hidden="true">
         <UsersThreeIcon size={24} />
       </span>
       <div className="group-card-text">
-        <span className="pill">{roleName(group.role)}</span>
+        <span className="rp-badge">{roleName(group.role)}</span>
         <h2>{group.name}</h2>
       </div>
       {group.role !== "member" ? (
-        <Link href={`/groups/${group.id}`} className="button secondary">
+        <Link href={`/groups/${group.id}`} className={buttonClass()}>
           Open group
           <ArrowRightIcon size={18} aria-hidden="true" />
         </Link>
       ) : (
-        <p className="field-help">
-          Organizers share session links with members.
-        </p>
+        <p className="rp-help">Organizers share session links with members.</p>
       )}
     </article>
   );
@@ -144,7 +145,7 @@ export function HomeDashboard() {
   return (
     <section className="page home-page">
       <div className="page-head">
-        <span className="page-kicker">Good to see you</span>
+        <span className="rp-kicker">Good to see you</span>
         <h1>
           {identity.data
             ? `Hi, ${identity.data.displayName.split(" ")[0]}.`
@@ -154,7 +155,7 @@ export function HomeDashboard() {
       {identity.error ? (
         <Notice retry={identity.retry}>{identity.error}</Notice>
       ) : null}
-      <div className="card plan-card">
+      <div className="rp-card rp-card--accent plan-card">
         <div>
           <h2>Plan the next one</h2>
           <p>
@@ -164,12 +165,19 @@ export function HomeDashboard() {
           </p>
         </div>
         {canCreate ? (
-          <button type="button" className="button primary" onClick={openCreate}>
+          <button
+            type="button"
+            className={buttonClass({ variant: "primary" })}
+            onClick={openCreate}
+          >
             <PlusIcon size={20} weight="bold" aria-hidden="true" />
             New session
           </button>
         ) : (
-          <Link className="button primary" href="/groups/new">
+          <Link
+            className={buttonClass({ variant: "primary" })}
+            href="/groups/new"
+          >
             <PlusIcon size={20} weight="bold" aria-hidden="true" />
             Start a group
           </Link>
@@ -178,7 +186,7 @@ export function HomeDashboard() {
       <div className="section-head">
         <h2>Your groups</h2>
         {groups.length > 3 ? (
-          <Link className="text-button" href="/workspace">
+          <Link className={buttonClass({ variant: "link" })} href="/workspace">
             See all {groups.length}
           </Link>
         ) : null}
@@ -194,7 +202,7 @@ export function HomeDashboard() {
           ))}
         </div>
       ) : (
-        <p className="field-help">
+        <p className="rp-help">
           No groups yet. When an organizer adds you to a group, you’ll find it
           here.
         </p>
@@ -212,7 +220,7 @@ export function SessionsPage() {
         icon={<CalendarDotsIcon size={34} />}
         title="Your sessions, all in one place"
         action={
-          <Link className="button secondary" href="/workspace">
+          <Link className={buttonClass()} href="/workspace">
             Go to your groups
           </Link>
         }
@@ -296,19 +304,19 @@ export function SignIn() {
   return (
     <section className="signin-page">
       <div className="signin-intro">
-        <span className="page-kicker">A familiar face is all it takes.</span>
+        <span className="rp-kicker">A familiar face is all it takes.</span>
         <h1>
           Your people.
           <br />
           Your next plan.
         </h1>
-        <p className="lede">
+        <p className="rp-lede">
           Sign in to find your groups and pick up where you left off.
         </p>
       </div>
-      <div className="card signin-card">
+      <div className="rp-card signin-card">
         <h2>Welcome to RallyPoint</h2>
-        <p className="field-help">Good to have you here.</p>
+        <p className="rp-help">Good to have you here.</p>
         {loading ? (
           <Pending />
         ) : authError ? (
@@ -321,7 +329,7 @@ export function SignIn() {
         ) : (
           <>
             <button
-              className="button google"
+              className={buttonClass({ variant: "accent", wide: true })}
               onClick={() => void google()}
               disabled={busy || !config.auth?.google}
             >
@@ -329,7 +337,7 @@ export function SignIn() {
               <ArrowRightIcon size={20} aria-hidden="true" />
             </button>
             {!config.auth?.google ? (
-              <p className="field-help">
+              <p className="rp-help">
                 Google sign-in has not been connected in this environment.
               </p>
             ) : null}
@@ -338,38 +346,38 @@ export function SignIn() {
                 onSubmit={(event) => void submit(event)}
                 className="local-form"
               >
-                <div className="form-divider">
-                  <span>Local development</span>
-                </div>
-                <p className="field-help">
+                <Divider>Local development</Divider>
+                <p className="rp-help">
                   Use a synthetic account. Your code stays in the local mail
                   inbox.
                 </p>
-                <label htmlFor="email">Email address</label>
-                <input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  disabled={sent || busy}
-                  required
-                />
+                <Field id="email" label="Email address">
+                  <input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    disabled={sent || busy}
+                    required
+                  />
+                </Field>
                 {sent ? (
                   <>
-                    <label htmlFor="code">One-time code</label>
-                    <input
-                      ref={input}
-                      id="code"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      pattern="[0-9]{6}"
-                      maxLength={6}
-                      value={code}
-                      onChange={(event) => setCode(event.target.value)}
-                      required
-                    />
-                    <p role="status" className="field-help">
+                    <Field id="code" label="One-time code">
+                      <input
+                        ref={input}
+                        id="code"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        pattern="[0-9]{6}"
+                        maxLength={6}
+                        value={code}
+                        onChange={(event) => setCode(event.target.value)}
+                        required
+                      />
+                    </Field>
+                    <p role="status" className="rp-help">
                       Open the{" "}
                       <a
                         href="http://127.0.0.1:54324"
@@ -382,7 +390,10 @@ export function SignIn() {
                     </p>
                   </>
                 ) : null}
-                <button className="button primary wide" disabled={busy}>
+                <button
+                  className={buttonClass({ variant: "primary", wide: true })}
+                  disabled={busy}
+                >
                   {busy
                     ? "Please wait…"
                     : sent
@@ -393,7 +404,7 @@ export function SignIn() {
                 {sent ? (
                   <button
                     type="button"
-                    className="text-button"
+                    className={buttonClass({ variant: "link" })}
                     onClick={() => {
                       setSent(false);
                       setCode("");
@@ -408,7 +419,7 @@ export function SignIn() {
           </>
         )}
         {error ? <Notice>{error}</Notice> : null}
-        <p className="field-help signin-footnote">
+        <p className="rp-help signin-footnote">
           Just looking around? <Link href="/">Back to home</Link>
         </p>
       </div>
@@ -434,10 +445,10 @@ export function Workspace() {
     <section className="page">
       <div className="page-head-row">
         <div>
-          <span className="page-kicker">Your corner of RallyPoint</span>
+          <span className="rp-kicker">Your corner of RallyPoint</span>
           <h1>Your groups</h1>
         </div>
-        <Link className="button secondary" href="/groups/new">
+        <Link className={buttonClass()} href="/groups/new">
           <PlusIcon size={18} weight="bold" aria-hidden="true" />
           Start a group
         </Link>
@@ -457,7 +468,10 @@ export function Workspace() {
           icon={<UsersThreeIcon size={34} />}
           title="No groups yet"
           action={
-            <Link href="/groups/new" className="button primary">
+            <Link
+              href="/groups/new"
+              className={buttonClass({ variant: "primary" })}
+            >
               Start a group
             </Link>
           }
@@ -495,7 +509,7 @@ export function GroupSetup() {
       ) : result.data ? (
         <>
           <div className="page-head">
-            <span className="page-kicker">Your group space</span>
+            <span className="rp-kicker">Your group space</span>
             <h1>{result.data.group.name}</h1>
             <p className="role-confirmation">
               <CheckIcon size={18} aria-hidden="true" />
@@ -511,17 +525,19 @@ export function GroupSetup() {
 export function NotFound() {
   return (
     <section className="page">
-      <div className="empty-state">
-        <span className="empty-icon nums" aria-hidden="true">
-          404
-        </span>
-        <h1>That page isn’t here.</h1>
-        <p>The link may be incomplete or the page may have moved.</p>
-        <Link className="button primary" href="/">
-          Back to home
-          <ArrowRightIcon size={18} aria-hidden="true" />
-        </Link>
-      </div>
+      <EmptyState
+        headingLevel={1}
+        icon={<span className="rp-nums">404</span>}
+        title="That page isn’t here."
+        action={
+          <Link className={buttonClass({ variant: "primary" })} href="/">
+            Back to home
+            <ArrowRightIcon size={18} aria-hidden="true" />
+          </Link>
+        }
+      >
+        The link may be incomplete or the page may have moved.
+      </EmptyState>
     </section>
   );
 }

@@ -1,0 +1,453 @@
+/* Library components. Class names start with rp- and every value is a token. */
+
+/* Text roles */
+.rp-kicker {
+  display: block;
+  margin-bottom: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+.rp-lede {
+  max-width: var(--layout-reading);
+  color: var(--color-text-muted);
+  font-size: var(--text-lg);
+}
+.rp-help {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* Button */
+.rp-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--size-control);
+  padding: 0 var(--space-5);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-full);
+  background: none;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+.rp-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.rp-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.rp-button--primary {
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+.rp-button--primary:hover:not(:disabled) {
+  background: var(--color-action-hover);
+}
+.rp-button--secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+.rp-button--secondary:hover:not(:disabled) {
+  background: var(--color-surface-sunken);
+}
+.rp-button--accent {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+.rp-button--link {
+  min-height: var(--size-touch);
+  padding: 0;
+  border: 0;
+  color: var(--color-link);
+  font-size: var(--text-sm);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.rp-button--link:active:not(:disabled) {
+  transform: none;
+}
+.rp-button--link:disabled {
+  color: var(--color-text-muted);
+}
+.rp-button--sm {
+  min-height: var(--size-touch);
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+}
+.rp-button--wide {
+  width: 100%;
+}
+
+/* Round icon button: the floating menu, back and close chips. */
+.rp-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--size-touch);
+  height: var(--size-touch);
+  padding: 0;
+  border-radius: var(--radius-full);
+  border: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+.rp-icon-button:hover {
+  background: var(--color-surface-sunken);
+}
+.rp-icon-button--flat {
+  box-shadow: none;
+}
+
+/* Card */
+.rp-card {
+  padding: var(--space-5);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+.rp-card--accent {
+  border-color: transparent;
+  background: var(--color-stub);
+  color: var(--color-on-stub);
+}
+
+/* Badge */
+.rp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-0) var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+/* Inside a status banner a badge takes the banner's own colour. */
+.rp-badge--inherit {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  color: inherit;
+}
+
+.rp-icon-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--size-icon-tile);
+  height: var(--size-icon-tile);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+.rp-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--size-control);
+  height: var(--size-control);
+  border-radius: var(--radius-full);
+  background: var(--color-action);
+  color: var(--color-on-action);
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+}
+
+/* Feedback */
+.rp-pending {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+}
+.rp-spin {
+  animation: rp-spin 900ms linear infinite;
+}
+@keyframes rp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.rp-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+}
+.rp-notice--warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+.rp-notice > svg {
+  flex: none;
+}
+.rp-notice .rp-button--link {
+  display: flex;
+  min-height: var(--space-10);
+  color: inherit;
+}
+.rp-status {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-md);
+}
+.rp-status__icon {
+  display: inline-flex;
+  margin-top: var(--space-0);
+}
+.rp-status h2 {
+  margin: 0 0 var(--space-0);
+  font-size: var(--text-xl);
+  color: inherit;
+}
+.rp-status p {
+  margin: 0;
+}
+.rp-tone-success {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+.rp-tone-warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+.rp-tone-neutral {
+  background: var(--color-neutral-bg);
+  color: var(--color-neutral);
+}
+.rp-tone-danger {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+/* Empty state */
+.rp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 440px;
+  margin: var(--space-6) auto;
+  padding: var(--space-8) var(--space-5);
+  text-align: center;
+}
+.rp-empty p {
+  color: var(--color-text-muted);
+}
+.rp-empty__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-16);
+  height: var(--space-16);
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-xl);
+  background: var(--color-action);
+  color: var(--color-on-action);
+  font-weight: var(--weight-bold);
+}
+
+/* Ticket */
+.rp-ticket {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+.rp-ticket__stub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-width: var(--size-stub);
+  padding: var(--space-3) var(--space-2);
+  background: var(--color-stub);
+  color: var(--color-on-stub);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+.rp-ticket__day {
+  margin: var(--space-0) 0;
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  line-height: 1;
+  letter-spacing: var(--tracking-tight);
+}
+.rp-ticket__body {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: var(--border-width-strong) dashed var(--color-border);
+}
+.rp-ticket__time {
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+.rp-ticket__meta {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* Spots meter */
+.rp-spots__text {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+.rp-spots__text span {
+  color: var(--color-text-muted);
+}
+.rp-spots__dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.rp-spots__dot {
+  width: var(--size-dot);
+  height: var(--size-dot);
+  border-radius: var(--radius-full);
+  border: var(--border-width-strong) dashed var(--color-border-strong);
+}
+.rp-spots__dot--taken {
+  border: 0;
+  background: var(--color-accent);
+}
+.rp-spots__bar {
+  height: var(--space-2);
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  border: var(--border-width) dashed var(--color-border-strong);
+  background: var(--color-surface-sunken);
+}
+.rp-spots__fill {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+}
+
+/* Fields */
+.rp-field {
+  margin-bottom: var(--space-4);
+}
+.rp-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 var(--space-1);
+  font-weight: var(--weight-medium);
+}
+.rp-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-5) 0 var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+.rp-divider::before,
+.rp-divider::after {
+  content: "";
+  flex: 1;
+  height: var(--border-width);
+  background: var(--color-border);
+}
+
+/* Sheet: bottom-anchored on phones, a centred card elsewhere. */
+.rp-sheet {
+  width: min(480px, calc(100% - var(--space-8)));
+  max-height: min(85dvh, 720px);
+  padding: 0;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+}
+.rp-sheet[open] {
+  animation: rp-sheet-in var(--duration-base) var(--ease-standard);
+}
+.rp-sheet::backdrop {
+  background: var(--color-scrim);
+}
+@keyframes rp-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-4));
+  }
+}
+.rp-sheet__body {
+  padding: var(--space-2) var(--space-5) var(--space-6);
+}
+.rp-sheet__head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0 calc(var(--space-5) * -1) var(--space-2);
+  padding: var(--space-3) var(--space-5) var(--space-2);
+  background: var(--color-surface);
+}
+.rp-sheet__head h2 {
+  margin: 0;
+  font-size: var(--text-xl);
+}
+@media (max-width: 767px) {
+  .rp-sheet {
+    width: 100%;
+    max-width: 100%;
+    margin: auto 0 0;
+    border-bottom: 0;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+  .rp-sheet__body {
+    padding-bottom: calc(var(--space-6) + var(--safe-bottom));
+  }
+  /* A grab handle says "this slides up from the bottom". */
+  .rp-sheet__head::before {
+    content: "";
+    position: absolute;
+    top: var(--space-1);
+    left: 50%;
+    width: var(--space-10);
+    height: var(--space-1);
+    margin-left: calc(var(--space-10) / -2);
+    border-radius: var(--radius-full);
+    background: var(--color-border-strong);
+  }
+}

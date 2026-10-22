@@ -1,9 +1,4 @@
-export interface TicketDate {
-  weekday: string;
-  day: string;
-  month: string;
-  time: string;
-}
+import type { TicketDate } from "@rallypoint/ui";
 function parts(date: Date, timeZone: string): TicketDate {
   const get = (options: Intl.DateTimeFormatOptions) =>
     new Intl.DateTimeFormat("en", { timeZone, ...options }).format(date);
