@@ -177,6 +177,24 @@ GET `/api/dues` returns `{ dues }`: the verified actor's own fee obligations acr
 sessions (at most 200), unpaid first, each with its session's slug, title, start,
 time zone and state. It never contains another party's data.
 
+### Split cost claims
+
+Session details optionally select `feeMode: "split"`; `fee` is the entered total,
+normalized to `totalMinor` instead of a fixed `feeMinor`. Omitted mode retains
+the legacy fixed contract and payload. Booked material edits remain locked.
+Confirmation or promotion creates a pending claim, with no payable fee. Shared
+session/registration projections add aggregate `split` estimates; own party
+reads add `splitClaim` (`eligible`, `waived`, `estimateMinor`), while managers
+also receive its write `revision`. No other participant's claim/history is exposed.
+
+Pending claims use the existing payment route for `waive`/`undo_waiver`, against
+the claim revision. Paid/unpaid actions refuse with `409 split_not_finalized`.
+Before-cutoff withdrawal permanently removes eligibility, even if waived;
+undo never revives that eligibility. Late withdrawal retains its seats in the
+split unless explicitly waived; replacing or rejoining creates another claim.
+Waiting parties have no claim. Queue, attendance and fixed-fee contracts remain
+independent. Amount finalization and reviewed corrections follow separately.
+
 ### Attendance (P-07 contract)
 
 POST `/api/registrations/:slug/attendance` accepts

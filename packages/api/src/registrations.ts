@@ -150,6 +150,8 @@ export async function registrationRequest(
         "That session is not available for registration.",
       );
     const conflicts: Record<string, string> = {
+      split_not_finalized:
+        "This is still an estimate. Finalize the split before recording payment.",
       stale_payment:
         "This fee changed since you loaded it. Refresh to see the latest record, then try again.",
       payment_transition_invalid:
