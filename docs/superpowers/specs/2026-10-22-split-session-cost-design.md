@@ -1,6 +1,7 @@
 # Total session cost and finalized splits
 
-Date: 2026-10-22. Written specification awaiting owner review.
+Date: 2026-10-22. Written specification accepted by the owner on 2026-10-22;
+implementation plan and execution-method review follow separately.
 
 ## Intent and approval boundary
 
@@ -15,10 +16,10 @@ exact rounding; unallocated cost with no payers; and explicit reviewed correctio
 that preserve payment history. Payment tracking follows finalization. These are
 recorded in [PRD RP-09 and D-04](../../../PRD.md#rp-09--free-fixed-and-split-costs).
 
-This document makes that behavior concrete. Details identified as proposed below
-need review with this written specification. Approval to write this document is
-separate from written-spec approval, implementation planning, implementation,
-external task creation, merge and deployment.
+This document makes that behavior concrete. The owner accepted the written
+specification, including the refinements below, and authorized implementation
+planning. That acceptance is separate from implementation-plan review, execution
+method selection, external task creation, merge and deployment.
 
 ## Context and scope
 
@@ -63,11 +64,11 @@ the start time alone never creates final amounts or payment markers.
 The join/waitlist consent explains that the final share can change as paying
 seats change, a guest counts as another seat, late withdrawal retains liability
 unless waived, and pre-start promotion creates the same contingent liability.
-Proposed consent detail: make clear that a party could owe up to the published
+Accepted consent detail: make clear that a party could owe up to the published
 total if it is the only paying party left. An estimate is never a finalized
 monetary obligation or a paid amount.
 
-Proposed presentation detail: show aggregate paying-seat count alongside the
+Accepted presentation detail: show aggregate paying-seat count alongside the
 estimate, including that it may include retained cancellations. Public/link
 visitors receive no payer identities, individual cancellation liabilities,
 payment markers or financial history. Only the participant sees their own
@@ -120,7 +121,7 @@ exact allocations, actor and time. Financial snapshots stay separate from live
 registration status and attendance. With no paying seats, record an unallocated
 result with no participant amount due; the organizer sees the uncovered cost.
 
-Proposed deterministic rounding detail: for total `T` in currency minor units
+Accepted deterministic rounding detail: for total `T` in currency minor units
 and `N > 0` paying seats, use `base = T div N` and `remainder = T mod N`.
 Order parties by their existing queue sequence, then their stable ID as a tie
 breaker; within a party, order primary before guest. Give one extra minor unit
@@ -151,13 +152,17 @@ post-finalization waiver restores the same allocation. Original allocated amount
 still sum to the finalized total; amounts currently due, paid markers and waived
 amounts are distinct summaries.
 
-The following correction safeguards are proposed for written-spec review:
+The following correction safeguards were accepted in written-spec review:
 
 - If a claim was waived before initial finalization, there is no original
   allocation to restore. Its later undo must use the pricing-correction preview
   and atomically reinclude that previously eligible claim with the new split.
   It never invents an amount or silently changes everyone else's bill. The
   correction can be blocked by an affected paid allocation, as described below.
+  The same reviewed undo is required if a later redistribution excluded that
+  party from the current split; restoring an old amount alongside redistributed
+  bills would exceed the total. Ordinary undo restores an allocation only while
+  that allocation remains part of the current split.
 - A pricing correction previews the old and proposed total, paying basis,
   party amounts and affected payment states. It requires an organizer reason,
   explicit confirmation and a fresh revision; it records actor/time and preserves
@@ -242,6 +247,6 @@ These are future acceptance checks, not results observed during specification wo
 
 This change writes the specification and updates accepted PRD decisions only.
 No application code, schema, service configuration or external task is changed.
-No release note is needed for documentation alone. After owner review of this
-written specification, use Superpowers writing-plans to prepare the implementation
-plan for its separate review and execution-method choice.
+No release note is needed for documentation alone. The owner accepted this
+written specification and authorized Superpowers writing-plans to prepare the
+implementation plan for its separate review and execution-method choice.
