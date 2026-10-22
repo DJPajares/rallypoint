@@ -1,4 +1,5 @@
 import { Temporal } from "@js-temporal/polyfill";
+import type { FeeMode, SplitSummary } from "./fees.ts";
 
 export const currencies = {
   SGD: 2,
@@ -22,6 +23,7 @@ export interface SessionForm {
   fee: string;
   currency: string;
   guests: boolean;
+  feeMode?: FeeMode;
 }
 export interface SessionDetails extends SessionForm {
   startsAt?: string;
@@ -29,6 +31,7 @@ export interface SessionDetails extends SessionForm {
   opensAt?: string;
   cutoffAt?: string;
   feeMinor?: number;
+  totalMinor?: number;
 }
 export interface SessionRecord {
   id: string;
@@ -47,6 +50,7 @@ export interface SharedSession {
   state: "published" | "cancelled" | "completed";
   registrationWindow: "open" | "not_open" | "closed";
   counts: { confirmedSeats: number; waitingParties: number };
+  split?: SplitSummary;
 }
 export const blankSession = (): SessionForm => ({
   title: "",
@@ -94,6 +98,11 @@ export function normalizeSession(
   if (typeof raw.guests !== "boolean")
     throw new InputError("Choose whether a guest is allowed.");
   const form = { ...result, guests: raw.guests } as unknown as SessionForm;
+  if (raw.feeMode !== undefined) {
+    if (raw.feeMode !== "fixed" && raw.feeMode !== "split")
+      throw new InputError("Choose a fee per seat or a total to split.");
+    form.feeMode = raw.feeMode;
+  }
   if (!publish) return form;
   if (!form.title || !form.activity || !form.location)
     throw new InputError(
@@ -115,6 +124,7 @@ export function normalizeSession(
   const feeMinor = Number(whole + fraction.padEnd(precision, "0"));
   if (!Number.isSafeInteger(feeMinor))
     throw new InputError("The fee is too large to store precisely.");
+  if (feeMinor === 0 && form.feeMode === "split") form.feeMode = "fixed";
   if (!form.timeZone || /^[+-]/.test(form.timeZone))
     throw new InputError("Use a named IANA timezone.");
   const instant = (local: string, label: string) => {
@@ -150,7 +160,7 @@ export function normalizeSession(
     endsAt: end.toString(),
     opensAt: open.toString(),
     cutoffAt: cutoff.toString(),
-    feeMinor,
+    ...(form.feeMode === "split" ? { totalMinor: feeMinor } : { feeMinor }),
   };
 }
 export function feeLabel(d: Pick<SessionDetails, "currency" | "feeMinor">) {

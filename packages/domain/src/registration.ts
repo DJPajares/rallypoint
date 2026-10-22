@@ -4,7 +4,9 @@ export interface Counts {
 }
 export interface Fee {
   currency: string;
-  unitMinor: number;
+  unitMinor: number | null;
+  mode?: FeeMode;
+  splitRunId?: string;
   chargedSeats: number;
   totalMinor: number;
   liabilityState: "due" | "removed_before_cutoff" | "waived";
@@ -68,12 +70,15 @@ export interface OwnParty {
   consentVersion: number;
   withdrawnAt: string | null;
   fee: Fee | null;
+  splitClaim?: OwnSplitClaim;
+  splitHistory?: OwnSplitChange[];
 }
 export interface RegistrationView {
   own: OwnParty | null;
   canManage: boolean;
   rosterAllowed: boolean;
   counts: Counts;
+  split?: SplitSummary;
   roster: Array<{
     primaryName: string;
     guestName: string;
@@ -81,7 +86,15 @@ export interface RegistrationView {
     id?: string;
     state?: string;
     fee?: ManagedFee | null;
+    splitClaim?: ManagedSplitClaim;
     /** Organizers/co-hosts only; one entry per confirmed seat. */
     attendance?: SeatAttendance[];
   }>;
 }
+import type {
+  FeeMode,
+  ManagedSplitClaim,
+  OwnSplitChange,
+  OwnSplitClaim,
+  SplitSummary,
+} from "./fees.ts";
