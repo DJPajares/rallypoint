@@ -390,6 +390,8 @@ test("registration ordering, integrity, fee and privacy contract", async (t) => 
             "guestName",
             "primaryName",
             "seats",
+            // The badge a person chose to show (D-16); null when none.
+            "title",
           ]);
         const unrelated = await view(queue, actors[14]);
         assert.equal(unrelated.own, null);
