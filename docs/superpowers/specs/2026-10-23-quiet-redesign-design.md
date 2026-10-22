@@ -2,7 +2,7 @@
 
 Date: 2026-10-23. Builds on: D-12 (navigation frame), D-13 (interface boundaries), D-15 ("Quiet, not boring"), D-16 (badges). Mockup: [2026-10-23-quiet-redesign-mockup.html](2026-10-23-quiet-redesign-mockup.html).
 
-**Status: proposal.** The owner asked how to bring "quiet, not boring" to the rest of the app and skipped the questions ("skip"). Everything below is the builder's recommendation until the owner accepts it. Nothing here is built yet.
+**Status: accepted, 2026-10-23.** The owner asked how to bring "quiet, not boring" to the rest of the app and skipped the questions ("skip"). After reviewing this proposal and its mockup, the owner replied: "Accept the redesign direction and the recommended order. Start building R1 and R2." The two open calls below were not answered separately, so the recommended options stand until the owner says otherwise: Sessions lists only sessions you joined or host, and PHP is added now with other currencies on request.
 
 ## Why
 
