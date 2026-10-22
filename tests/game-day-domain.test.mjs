@@ -97,6 +97,30 @@ test("everyone shows confirmed, the queue in order, and who left owing a record"
   assert.deepEqual(names(left), ["Lee"]);
 });
 
+test("a late-withdrawn party with a pending split share stays under Left", () => {
+  const pending = (over) =>
+    party("P", {
+      state: "withdrawn",
+      fee: null,
+      attendance: undefined,
+      splitClaim: {
+        eligible: true,
+        waived: false,
+        estimateMinor: 500,
+        revision: 1,
+        ...over,
+      },
+    });
+  const late = { ...pending({}), primaryName: "Late" };
+  const waived = {
+    ...pending({ eligible: false, waived: true }),
+    primaryName: "Waived",
+  };
+  const early = { ...pending({ eligible: false }), primaryName: "Early" };
+  const { left } = filterParties([late, waived, early], "everyone");
+  assert.deepEqual(names(left), ["Late", "Waived"]);
+});
+
 test("not here hides waiting and left parties", () => {
   const { confirmed, waiting, left } = filterParties(roster, "not_here");
   assert.deepEqual(names(confirmed), ["Alex", "Riley"]);

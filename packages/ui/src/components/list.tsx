@@ -32,7 +32,7 @@ export function ListRow({
   subtitle,
   trailing,
   onSelect,
-  selectLabel,
+  selectHint,
   className,
   children,
 }: {
@@ -41,7 +41,11 @@ export function ListRow({
   subtitle?: ReactNode;
   trailing?: ReactNode;
   onSelect?: () => void;
-  selectLabel?: string;
+  /**
+   * Hidden words added after the row's visible text, such as "Open details".
+   * The visible text stays the accessible name, so nothing shown is lost.
+   */
+  selectHint?: string;
   className?: string;
   /** Anything that belongs to the row but sits below it, like an error. */
   children?: ReactNode;
@@ -59,13 +63,11 @@ export function ListRow({
     <li className={cx("rp-row", className)}>
       <div className="rp-row__line">
         {onSelect ? (
-          <button
-            type="button"
-            className="rp-row__main"
-            aria-label={selectLabel}
-            onClick={onSelect}
-          >
+          <button type="button" className="rp-row__main" onClick={onSelect}>
             {body}
+            {selectHint ? (
+              <span className="rp-sr-only">{selectHint}</span>
+            ) : null}
           </button>
         ) : (
           <div className="rp-row__main">{body}</div>

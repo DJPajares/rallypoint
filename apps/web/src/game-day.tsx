@@ -111,7 +111,7 @@ function ConfirmedRow({
         ) : undefined
       }
       onSelect={onOpen}
-      selectLabel={`${partyName(party)}: details`}
+      selectHint="Open details"
       trailing={
         seat && party.id ? (
           <button
@@ -257,7 +257,7 @@ export function GameDay({
       title={partyName(p)}
       subtitle={subtitle}
       onSelect={() => setOpenId(p.id ?? null)}
-      selectLabel={`${partyName(p)}: details`}
+      selectHint="Open details"
     />
   );
   return (

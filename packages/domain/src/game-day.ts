@@ -13,11 +13,16 @@ const owes = (p: RosterParty) =>
   !p.fee.markedPaid &&
   p.fee.totalMinor > 0;
 
-/** Withdrawn or removed, but still carrying a fee an organizer may act on. */
+/**
+ * Withdrawn or removed, but still carrying money an organizer may act on: a
+ * fee that is due or waived, or (before a split is final) a retained or
+ * waived share.
+ */
 const leftWithFee = (p: RosterParty) =>
   (p.state === "withdrawn" || p.state === "removed") &&
-  !!p.fee &&
-  (p.fee.liabilityState === "due" || p.fee.liabilityState === "waived");
+  (p.fee
+    ? p.fee.liabilityState === "due" || p.fee.liabilityState === "waived"
+    : !!p.splitClaim && (p.splitClaim.eligible || p.splitClaim.waived));
 
 export function gameDaySummary(roster: Roster) {
   const confirmed = roster.filter((p) => p.state === "confirmed");
