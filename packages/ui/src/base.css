@@ -99,33 +99,74 @@ label {
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
 }
-input:not([type="checkbox"], [type="radio"]),
+/* One look for every typed control: native inputs and the rp-control
+   triggers of pickers and selects share these rules. An input inside an
+   rp-control box (combobox, stepper, prefix) is rp-bare: the box is the frame. */
+input:not([type="checkbox"], [type="radio"], [type="hidden"], .rp-bare),
 select,
-textarea {
-  display: block;
+textarea,
+.rp-control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   width: 100%;
   min-height: var(--size-control);
   margin-top: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-4);
   border: var(--border-width) solid var(--color-border-strong);
   border-radius: var(--radius-md);
   background: var(--color-surface);
+  color: var(--color-text);
   font-size: var(--text-md);
-  transition: border-color var(--duration-fast) var(--ease-standard);
+  text-align: left;
+  outline: none;
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
 }
 textarea {
+  display: block;
   resize: vertical;
+  line-height: var(--leading-normal);
 }
-input:not([type="checkbox"], [type="radio"]):hover,
+::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.75;
+}
+input:not([type="checkbox"], [type="radio"], [type="hidden"], .rp-bare):hover,
 select:hover,
-textarea:hover {
+textarea:hover,
+.rp-control:hover {
   border-color: var(--color-text-muted);
+}
+/* A soft halo instead of the browser's outline: same colour as the focus ring. */
+input:not(
+    [type="checkbox"],
+    [type="radio"],
+    [type="hidden"],
+    .rp-bare
+  ):focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.rp-control:focus-visible,
+.rp-control[data-popup-open] {
+  border-color: var(--color-focus);
+  box-shadow: var(--shadow-focus);
+  outline: none;
 }
 input:disabled,
 select:disabled,
-textarea:disabled {
+textarea:disabled,
+.rp-control:disabled,
+.rp-control[data-disabled] {
   background: var(--color-surface-sunken);
   color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+[aria-invalid="true"],
+.rp-control[aria-invalid="true"] {
+  border-color: var(--color-danger);
 }
 input[type="checkbox"] {
   width: var(--size-check);

@@ -1,5 +1,11 @@
 "use client";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
@@ -19,13 +25,19 @@ import { UserPlusIcon } from "@phosphor-icons/react/dist/csr/UserPlus";
 import { fromInstant, fromLocal } from "./dates";
 import { ShareButton } from "./share-button";
 import {
+  AffixInput,
   buttonClass,
-  CheckField,
+  ComboboxField,
+  DateTimeField,
   Field,
   Notice,
+  NumberStepper,
   Pending,
+  SelectField,
   SpotsMeter,
+  SwitchField,
   Ticket,
+  timezoneOptions,
 } from "@rallypoint/ui";
 import { DetailPage, StickyActions } from "./ui";
 import {
@@ -45,6 +57,10 @@ const subscribeOrigin = () => () => {};
 const clientOrigin = () => window.location.origin;
 const serverOrigin = () => "";
 
+const currencyOptions = Object.keys(currencies).map((code) => ({
+  value: code,
+  label: code,
+}));
 type Result = {
   session?: SessionRecord;
   group?: GroupSummary;
@@ -276,6 +292,10 @@ function Editor({
   const terminal =
     record?.state === "cancelled" || record?.state === "completed";
   const locked = !!record?.bookingsStarted || terminal;
+  // Custom controls aren't all native form elements, so the fieldset's
+  // disabled state is passed to them as well.
+  const disabledFields = mutation.busy || mutation.uncertain || locked;
+  const zones = useMemo(() => timezoneOptions(), []);
   const url =
     record && record.state !== "draft" ? `${origin}/s/${record.slug}` : null;
   return (
@@ -380,10 +400,22 @@ function Editor({
           </div>
           <div className="form-grid">
             <Field id="startLocal" label="Starts">
-              {input("startLocal", "datetime-local")}
+              <DateTimeField
+                id="startLocal"
+                title="Starts"
+                value={form.startLocal}
+                onChange={(next) => setForm({ ...form, startLocal: next })}
+                disabled={disabledFields}
+              />
             </Field>
             <Field id="endLocal" label="Ends">
-              {input("endLocal", "datetime-local")}
+              <DateTimeField
+                id="endLocal"
+                title="Ends"
+                value={form.endLocal}
+                onChange={(next) => setForm({ ...form, endLocal: next })}
+                disabled={disabledFields}
+              />
             </Field>
           </div>
           <Field
@@ -391,15 +423,16 @@ function Editor({
             label="Timezone"
             help="All four times use this timezone. Repeated or missing daylight-saving times need a different time."
           >
-            {input("timeZone", "text", {
-              list: "timezones",
-              "aria-describedby": "timeZone-help",
-            })}
-            <datalist id="timezones">
-              {Intl.supportedValuesOf("timeZone").map((z) => (
-                <option key={z} value={z} />
-              ))}
-            </datalist>
+            <ComboboxField
+              id="timeZone"
+              value={form.timeZone}
+              onChange={(next) => setForm({ ...form, timeZone: next })}
+              options={zones}
+              placeholder="Search for a city"
+              empty="No timezone matches that search."
+              disabled={disabledFields}
+              aria-describedby="timeZone-help"
+            />
           </Field>
           <Field id="location" label="Location">
             {input("location", "text", {
@@ -425,37 +458,61 @@ function Editor({
           </Field>
           <div className="form-grid">
             <Field id="capacity" label="Capacity, in seats">
-              {input("capacity", "text", { inputMode: "numeric" })}
+              <NumberStepper
+                id="capacity"
+                value={form.capacity}
+                onChange={(next) => setForm({ ...form, capacity: next })}
+                min={1}
+                disabled={disabledFields}
+              />
             </Field>
             <Field id="currency" label="Currency">
-              <select
+              <SelectField
                 id="currency"
                 value={form.currency}
-                onChange={(e) => setForm({ ...form, currency: e.target.value })}
-              >
-                {Object.keys(currencies).map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
+                onChange={(next) => setForm({ ...form, currency: next })}
+                options={currencyOptions}
+                disabled={disabledFields}
+              />
             </Field>
             <Field id="fee" label="Fixed fee per seat">
-              {input("fee", "text", { inputMode: "decimal" })}
+              <AffixInput
+                id="fee"
+                prefix={form.currency}
+                inputMode="decimal"
+                value={form.fee}
+                onChange={(e) => setForm({ ...form, fee: e.target.value })}
+              />
             </Field>
           </div>
           <div className="form-grid">
             <Field id="openLocal" label="Registration opens">
-              {input("openLocal", "datetime-local")}
+              <DateTimeField
+                id="openLocal"
+                title="Registration opens"
+                value={form.openLocal}
+                onChange={(next) => setForm({ ...form, openLocal: next })}
+                disabled={disabledFields}
+              />
             </Field>
             <Field id="cutoffLocal" label="Cancellation fee cutoff">
-              {input("cutoffLocal", "datetime-local")}
+              <DateTimeField
+                id="cutoffLocal"
+                title="Cancellation fee cutoff"
+                value={form.cutoffLocal}
+                onChange={(next) => setForm({ ...form, cutoffLocal: next })}
+                disabled={disabledFields}
+              />
             </Field>
           </div>
-          <CheckField
+          <SwitchField
             checked={form.guests}
-            onChange={(e) => setForm({ ...form, guests: e.target.checked })}
+            onCheckedChange={(guests) => setForm({ ...form, guests })}
+            disabled={disabledFields}
+            description="Two seats that join, wait and withdraw together."
           >
-            Allow each participant to bring one guest (two seats together)
-          </CheckField>
+            Allow each participant to bring one guest
+          </SwitchField>
           <p className="rp-help">
             Unlisted is the initial visibility. Fees are tracked manually;
             RallyPoint doesn’t collect payments.

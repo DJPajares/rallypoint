@@ -287,7 +287,8 @@ export function RegistrationPanel({
                 <>
                   <CheckField
                     checked={guest}
-                    onChange={(e) => setGuest(e.target.checked)}
+                    onCheckedChange={setGuest}
+                    disabled={mutation.busy || mutation.uncertain}
                   >
                     Bring one guest (two seats together)
                   </CheckField>

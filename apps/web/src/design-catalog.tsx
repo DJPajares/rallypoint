@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
 import { HourglassIcon } from "@phosphor-icons/react/dist/csr/Hourglass";
 import { LockSimpleIcon } from "@phosphor-icons/react/dist/csr/LockSimple";
@@ -8,11 +8,14 @@ import { ReceiptIcon } from "@phosphor-icons/react/dist/csr/Receipt";
 import { UsersThreeIcon } from "@phosphor-icons/react/dist/csr/UsersThree";
 import { WarningIcon } from "@phosphor-icons/react/dist/csr/Warning";
 import {
+  AffixInput,
   Avatar,
   Badge,
   Button,
   Card,
   CheckField,
+  ComboboxField,
+  DateTimeField,
   Divider,
   EmptyState,
   Field,
@@ -22,13 +25,17 @@ import {
   Kicker,
   Lede,
   Notice,
+  NumberStepper,
   Pending,
+  SelectField,
   Sheet,
   SpotsMeter,
   StatusBanner,
+  SwitchField,
   Ticket,
   TicketMeta,
   TicketTime,
+  timezoneOptions,
 } from "@rallypoint/ui";
 const colors = [
   "bg",
@@ -57,6 +64,13 @@ const radii = ["xs", "sm", "md", "lg", "xl", "full"];
  */
 export function DesignCatalog() {
   const [sheet, setSheet] = useState(false);
+  const [when, setWhen] = useState("2026-11-05T19:00");
+  const [zone, setZone] = useState("Asia/Manila");
+  const [seats, setSeats] = useState("12");
+  const [currency, setCurrency] = useState("SGD");
+  const [guests, setGuests] = useState(true);
+  const [guest, setGuest] = useState(false);
+  const zones = useMemo(() => timezoneOptions(), []);
   return (
     <section className="page catalog">
       <div className="page-head">
@@ -193,14 +207,70 @@ export function DesignCatalog() {
 
       <h2>Forms</h2>
       <Card>
-        <Field
-          id="catalog-title"
-          label="Session title"
-          help="Shown on the shared page."
-        >
-          <input id="catalog-title" placeholder="Sunday morning badminton" />
+        <div className="form-grid">
+          <Field
+            id="catalog-title"
+            label="Session title"
+            help="Shown on the shared page."
+          >
+            <input
+              id="catalog-title"
+              placeholder="Sunday morning badminton"
+              aria-describedby="catalog-title-help"
+            />
+          </Field>
+          <Field id="catalog-when" label="Starts">
+            <DateTimeField id="catalog-when" value={when} onChange={setWhen} />
+          </Field>
+        </div>
+        <Field id="catalog-zone" label="Timezone">
+          <ComboboxField
+            id="catalog-zone"
+            value={zone}
+            onChange={setZone}
+            options={zones}
+            placeholder="Search for a city"
+          />
         </Field>
-        <CheckField>Bring one guest (two seats together)</CheckField>
+        <div className="form-grid">
+          <Field id="catalog-seats" label="Capacity, in seats">
+            <NumberStepper
+              id="catalog-seats"
+              value={seats}
+              onChange={setSeats}
+              min={1}
+            />
+          </Field>
+          <Field id="catalog-currency" label="Currency">
+            <SelectField
+              id="catalog-currency"
+              value={currency}
+              onChange={setCurrency}
+              options={["SGD", "USD", "EUR"].map((code) => ({
+                value: code,
+                label: code,
+              }))}
+            />
+          </Field>
+          <Field id="catalog-fee" label="Fixed fee per seat">
+            <AffixInput
+              id="catalog-fee"
+              prefix={currency}
+              inputMode="decimal"
+              defaultValue="12.00"
+            />
+          </Field>
+        </div>
+        <SwitchField
+          checked={guests}
+          onCheckedChange={setGuests}
+          description="Two seats that join, wait and withdraw together."
+        >
+          Allow each participant to bring one guest
+        </SwitchField>
+        <CheckField checked={guest} onCheckedChange={setGuest}>
+          Bring one guest (two seats together)
+        </CheckField>
         <Divider>Or</Divider>
         <Button variant="secondary" onClick={() => setSheet(true)}>
           Open a sheet
