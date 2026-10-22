@@ -4,7 +4,13 @@ import { z } from "zod";
 import { InputError, normalizeSession } from "@rallypoint/domain/session";
 import { ApiError, json, parse, readBody, uuid, uuidParam } from "./http";
 import type { ApiEnv } from "./identity";
-import { client, connection, notAvailable, requireUser } from "./identity";
+import {
+  client,
+  connection,
+  displayName,
+  notAvailable,
+  requireUser,
+} from "./identity";
 
 async function rpc(
   db: SupabaseClient,
@@ -163,6 +169,23 @@ export const sessions = new Hono<ApiEnv>()
     );
   })
   .all(`/groups/${id}/sessions`, requireUser, () => notAvailable())
+  .post(`/sessions/${id}/cancel`, requireUser, async (c) => {
+    const { operationKey } = parse(
+      key,
+      await readBody(c.req.raw),
+      "invalid_input",
+      "A valid request key is required.",
+    );
+    return json(
+      await rpc(c.var.db, "cancel_session", {
+        p_actor_id: c.var.user.id,
+        p_actor_name: displayName(c.var.user, "Organizer"),
+        p_key: operationKey,
+        p_session_id: c.req.param("id"),
+      }),
+    );
+  })
+  .all(`/sessions/${id}/cancel`, requireUser, () => notAvailable())
   .get(`/sessions/${id}`, requireUser, async (c) =>
     json({
       session: await rpc(c.var.db, "read_managed_session", {

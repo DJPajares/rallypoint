@@ -41,6 +41,7 @@ export interface SessionRecord {
   version: number;
   details: SessionDetails;
   bookingsStarted: boolean;
+  cancelledFrom?: "draft" | "published" | null;
 }
 export interface SharedSession {
   slug: string;
