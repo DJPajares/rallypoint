@@ -2,7 +2,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Checkbox } from "@base-ui/react/checkbox";
-import { Combobox } from "@base-ui/react/combobox";
 import { NumberField } from "@base-ui/react/number-field";
 import { Popover } from "@base-ui/react/popover";
 import { Select } from "@base-ui/react/select";
@@ -13,7 +12,6 @@ import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
 import { CaretLeftIcon } from "@phosphor-icons/react/dist/csr/CaretLeft";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
-import { GlobeHemisphereWestIcon } from "@phosphor-icons/react/dist/csr/GlobeHemisphereWest";
 import { MinusIcon } from "@phosphor-icons/react/dist/csr/Minus";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { useIsPhone } from "../media";
@@ -314,82 +312,6 @@ export function SelectField({
         </Select.Positioner>
       </Select.Portal>
     </Select.Root>
-  );
-}
-
-/** Type to filter a long list (timezones), then choose one. */
-export function ComboboxField({
-  id,
-  value,
-  onChange,
-  options,
-  disabled,
-  placeholder,
-  empty = "No matches",
-  icon = <GlobeHemisphereWestIcon size={20} aria-hidden="true" />,
-  "aria-describedby": describedBy,
-}: ControlProps & {
-  value: string;
-  onChange: (value: string) => void;
-  options: Option[];
-  placeholder?: string;
-  empty?: string;
-  icon?: ReactNode;
-}) {
-  const selected = options.find((option) => option.value === value) ?? null;
-  return (
-    <Combobox.Root
-      items={options}
-      value={selected}
-      onValueChange={(next: Option | null) => next && onChange(next.value)}
-      itemToStringLabel={(option: Option) => option.label}
-      isItemEqualToValue={(a: Option, b: Option) => a.value === b.value}
-      disabled={disabled}
-      limit={60}
-    >
-      <Combobox.InputGroup className="rp-control rp-combobox">
-        {icon}
-        <Combobox.Input
-          id={id}
-          className="rp-bare rp-combobox__input"
-          placeholder={placeholder}
-          aria-describedby={describedBy}
-        />
-        <Combobox.Trigger
-          className="rp-combobox__trigger"
-          aria-label="Show options"
-        >
-          <CaretDownIcon size={16} aria-hidden="true" />
-        </Combobox.Trigger>
-      </Combobox.InputGroup>
-      <Combobox.Portal>
-        <Combobox.Positioner
-          className="rp-positioner"
-          sideOffset={8}
-          collisionPadding={12}
-        >
-          <Combobox.Popup className="rp-popover rp-listbox rp-listbox--anchor">
-            <Combobox.Empty className="rp-listbox__empty">
-              {empty}
-            </Combobox.Empty>
-            <Combobox.List>
-              {(option: Option) => (
-                <Combobox.Item
-                  key={option.value}
-                  value={option}
-                  className="rp-option"
-                >
-                  <span>{option.label}</span>
-                  <Combobox.ItemIndicator className="rp-option__check">
-                    <CheckIcon size={16} aria-hidden="true" />
-                  </Combobox.ItemIndicator>
-                </Combobox.Item>
-              )}
-            </Combobox.List>
-          </Combobox.Popup>
-        </Combobox.Positioner>
-      </Combobox.Portal>
-    </Combobox.Root>
   );
 }
 

@@ -101,7 +101,7 @@ label {
 }
 /* One look for every typed control: native inputs and the rp-control
    triggers of pickers and selects share these rules. An input inside an
-   rp-control box (combobox, stepper, prefix) is rp-bare: the box is the frame. */
+   rp-control box (stepper, prefix) is rp-bare: the box is the frame. */
 input:not([type="checkbox"], [type="radio"], [type="hidden"], .rp-bare),
 select,
 textarea,

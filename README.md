@@ -124,8 +124,8 @@ all session details and publish; copy the stable link and open it unsigned.
 Only published details are shared. Drafts are stored in the database, not offline
 browser storage. No reservation is created by opening the link.
 
-All four times use the explicit IANA timezone. Missing/ambiguous daylight-saving
-times are rejected. Fixed fees support SGD/USD/EUR/GBP (two decimal places), JPY
+Times are wall-clock times in the timezone of the organizer's device, saved with
+the session and never shown. Missing/ambiguous daylight-saving times are rejected. Fixed fees support SGD/USD/EUR/GBP (two decimal places), JPY
 (zero) and KWD (three). No money is collected by RallyPoint.
 
 Failed validation keeps entered fields. If a response is interrupted, keep the
@@ -172,7 +172,7 @@ there is no offline queue. Guest changes remain outside this increment.
 Use **Withdraw my place**, **Withdraw both seats**, or **Withdraw from waitlist**
 on your own registration. The primary withdraws the whole party; an organizer
 cannot use this self-service operation for another participant. Before submitting,
-the page shows the cutoff in the event timezone and the fee implications. The
+the page shows the cutoff (in the session's local time) and the fee implications. The
 server checks its own clock after lock waits. Withdrawal closes exactly at start;
 existing records stay visible.
 

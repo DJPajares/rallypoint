@@ -10,7 +10,6 @@ import {
 } from "next/navigation";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/csr/ArrowRight";
 import { CalendarDotsIcon } from "@phosphor-icons/react/dist/csr/CalendarDots";
-import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { ReceiptIcon } from "@phosphor-icons/react/dist/csr/Receipt";
 import { UsersThreeIcon } from "@phosphor-icons/react/dist/csr/UsersThree";
@@ -50,7 +49,6 @@ export function Landing() {
     <div className="landing">
       <section className="landing-hero">
         <div className="landing-copy">
-          <span className="rp-kicker">A little less organising.</span>
           <h1>
             Good company.
             <br />
@@ -145,7 +143,6 @@ export function HomeDashboard() {
   return (
     <section className="page home-page">
       <div className="page-head">
-        <span className="rp-kicker">Good to see you</span>
         <h1>
           {identity.data
             ? `Hi, ${identity.data.displayName.split(" ")[0]}.`
@@ -304,7 +301,6 @@ export function SignIn() {
   return (
     <section className="signin-page">
       <div className="signin-intro">
-        <span className="rp-kicker">A familiar face is all it takes.</span>
         <h1>
           Your people.
           <br />
@@ -445,7 +441,6 @@ export function Workspace() {
     <section className="page">
       <div className="page-head-row">
         <div>
-          <span className="rp-kicker">Your corner of RallyPoint</span>
           <h1>Your groups</h1>
         </div>
         <Link className={buttonClass()} href="/groups/new">
@@ -509,12 +504,7 @@ export function GroupSetup() {
       ) : result.data ? (
         <>
           <div className="page-head">
-            <span className="rp-kicker">Your group space</span>
             <h1>{result.data.group.name}</h1>
-            <p className="role-confirmation">
-              <CheckIcon size={18} aria-hidden="true" />
-              You have {result.data.group.role} access.
-            </p>
           </div>
           <GroupSessions group={result.data.group} />
         </>

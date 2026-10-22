@@ -24,7 +24,6 @@ export { Divider, Field } from "./components/form";
 export {
   AffixInput,
   CheckField,
-  ComboboxField,
   DateTimeField,
   NumberStepper,
   SelectField,
@@ -35,6 +34,5 @@ export {
   formatLocalDateTime,
   joinLocalDateTime,
   splitLocalDateTime,
-  timezoneOptions,
 } from "./datetime";
 export { Sheet } from "./components/sheet";

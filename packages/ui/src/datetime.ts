@@ -48,16 +48,3 @@ export function timeSlots(step: number, only?: string[]) {
     });
   return values.map((value) => ({ value, label: timeLabel(value) }));
 }
-/** IANA timezones with their current offset, for a searchable picker. */
-export function timezoneOptions(now = new Date()) {
-  return Intl.supportedValuesOf("timeZone").map((zone) => {
-    const offset =
-      new Intl.DateTimeFormat("en", {
-        timeZone: zone,
-        timeZoneName: "shortOffset",
-      })
-        .formatToParts(now)
-        .find((part) => part.type === "timeZoneName")?.value ?? "";
-    return { value: zone, label: `${zone.replace(/_/g, " ")} (${offset})` };
-  });
-}

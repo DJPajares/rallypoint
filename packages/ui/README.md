@@ -59,7 +59,6 @@ Three layers, used top to bottom:
 | `Ticket`, `TicketTime`, `TicketMeta`, `SpotsMeter`   | Session pieces                                                                                  |
 | `Field`, `Divider`                                   | Labels, help text and section breaks for forms                                                  |
 | `DateTimeField`                                      | Date and time picker. A calendar plus 15-minute slots in a popover, or a bottom sheet on phones |
-| `ComboboxField`                                      | Type-to-filter choice from a long list, such as timezones (`timezoneOptions()`)                 |
 | `SelectField`                                        | A short list of fixed choices, such as currencies                                               |
 | `NumberStepper`                                      | A whole number with − and + buttons                                                             |
 | `AffixInput`                                         | A text input with a fixed prefix, such as a currency code                                       |
@@ -72,7 +71,7 @@ in both themes. Production builds return 404 for that page.
 ## Form controls
 
 The form controls are built on [Base UI](https://base-ui.com) (unstyled,
-accessible popover, select, combobox, number field, switch and checkbox) and
+accessible popover, select, number field, switch and checkbox) and
 [react-day-picker](https://daypicker.dev) for the calendar grid. Both are styled
 only through `fields.css` and the tokens, so they follow the theme. Date values
 stay `"YYYY-MM-DDTHH:mm"` wall-clock strings, the same format a

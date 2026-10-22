@@ -1,4 +1,4 @@
-/* Field controls: pickers, select, combobox, stepper, switch and checkbox.
+/* Field controls: pickers, select, stepper, switch and checkbox.
    They share the rp-control look from base.css; every value is a token. */
 
 .rp-placeholder {
@@ -220,14 +220,11 @@
   }
 }
 
-/* Select and combobox lists */
+/* Select list */
 .rp-listbox {
   min-width: var(--anchor-width);
   max-height: min(var(--size-popover-list), var(--available-height));
   padding: var(--space-1);
-}
-.rp-listbox--anchor {
-  width: var(--anchor-width);
 }
 .rp-option {
   display: flex;
@@ -252,26 +249,6 @@
   display: inline-flex;
   color: var(--color-accent);
 }
-.rp-listbox__empty {
-  padding: var(--space-3);
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
-}
-.rp-listbox__empty:empty {
-  display: none;
-}
-.rp-combobox {
-  padding-right: var(--space-1);
-  cursor: text;
-}
-.rp-combobox > svg {
-  flex: none;
-  color: var(--color-text-muted);
-}
-.rp-combobox:focus-within {
-  border-color: var(--color-focus);
-  box-shadow: var(--shadow-focus);
-}
 /* The input sits inside the styled box, so it has no frame of its own. */
 .rp-bare {
   flex: 1;
@@ -283,7 +260,6 @@
   font-size: var(--text-md);
   outline: none;
 }
-.rp-combobox__trigger,
 .rp-stepper__button {
   display: inline-flex;
   align-items: center;
@@ -297,7 +273,6 @@
   background: none;
   color: var(--color-text-muted);
 }
-.rp-combobox__trigger:hover,
 .rp-stepper__button:hover:not(:disabled) {
   background: var(--color-surface-sunken);
   color: var(--color-text);

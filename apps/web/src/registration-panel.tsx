@@ -69,6 +69,19 @@ export function RegistrationPanel({
     Number(d.capacity) - view.counts.confirmedSeats < (guest ? 2 : 1)
       ? "Agree & waitlist"
       : "Agree & join";
+  // Times read in the session's own local time, never with a zone label (D-13).
+  const when = (iso: string) =>
+    new Intl.DateTimeFormat("en", {
+      timeZone: d.timeZone,
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(iso));
+  const cutoffTerms = d.cutoffAt
+    ? `Cancel before ${when(d.cutoffAt)} and no fee is due; after that, the fee stays unless the organizer waives it.`
+    : "";
   const ownTone: Tone =
     event.state !== "published" || !own
       ? "neutral"
@@ -166,17 +179,17 @@ export function RegistrationPanel({
           </StatusBanner>
           {own.state === "waitlisted" ? (
             <p>
-              No fee is due while waiting. Your current party position is not a
-              promise of admission. The whole party stays together.
+              Waiting is free. If places open before the start, your party moves
+              in automatically and the fee applies.
             </p>
           ) : null}
           {own.fee ? (
             <p>
               <strong>
                 {own.fee.liabilityState === "removed_before_cutoff"
-                  ? "Unpaid fee removed: "
+                  ? "Fee removed: "
                   : own.fee.markedPaid
-                    ? "Fee marked paid manually: "
+                    ? "Marked paid by the organizer: "
                     : "Amount due: "}
                 {feeLabel({
                   ...d,
@@ -184,16 +197,11 @@ export function RegistrationPanel({
                   feeMinor: own.fee.totalMinor,
                 })}
               </strong>{" "}
-              · {own.fee.chargedSeats} chargeable{" "}
-              {own.fee.chargedSeats === 1 ? "seat" : "seats"}.
               {own.fee.liabilityState === "removed_before_cutoff"
-                ? " This allocation is kept for history; no amount is due."
+                ? " · You withdrew before the cutoff, so nothing is due."
                 : own.state === "withdrawn"
-                  ? " Your place is released. This fee remains unless an organizer explicitly waives it, even if someone fills the vacancy."
+                  ? " · The fee stays unless the organizer waives it."
                   : ""}
-              {own.fee.markedPaid
-                ? " The marker is a manual record, not verification of a transfer. Any refund is arranged outside RallyPoint."
-                : ""}
             </p>
           ) : null}
           {own.state === "confirmed" || own.state === "waitlisted" ? (
@@ -220,25 +228,10 @@ export function RegistrationPanel({
                         : "Withdraw your party"}
                     </legend>
                     <p id="withdraw-terms">
-                      This withdraws{" "}
                       {own.seats === 2
-                        ? "you and your guest together"
-                        : "your whole registration"}{" "}
-                      and releases your places. Before cutoff, unpaid fees are
-                      removed. At or after cutoff, an existing fee remains
-                      unless an organizer explicitly waives it. A waiting party
-                      may be promoted before this request reaches the server;
-                      its resulting fee follows the same cutoff rule. Paid
-                      records are kept; any refund is arranged with the
-                      organizer outside RallyPoint.
-                    </p>
-                    <p className="rp-help">
-                      Cancellation cutoff:{" "}
-                      {new Date(d.cutoffAt!).toLocaleString(undefined, {
-                        timeZone: d.timeZone,
-                      })}{" "}
-                      ({d.timeZone}). The server checks the time when processing
-                      your request. Self-service withdrawal closes at start.
+                        ? "You and your guest leave together."
+                        : "Your place is released."}{" "}
+                      {cutoffTerms}
                     </p>
                     <button
                       className={buttonClass()}
@@ -257,9 +250,7 @@ export function RegistrationPanel({
                 "secondary",
               )
             ) : (
-              <p>
-                Self-service withdrawal is closed. Your record remains visible.
-              </p>
+              <p>You can no longer withdraw here.</p>
             )
           ) : null}
         </div>
@@ -282,7 +273,7 @@ export function RegistrationPanel({
             }}
           >
             <fieldset disabled={mutation.busy || mutation.uncertain}>
-              <legend>Make room for a good time.</legend>
+              <legend>Join this session</legend>
               {d.guests && Number(d.capacity) >= 2 ? (
                 <>
                   <CheckField
@@ -306,18 +297,12 @@ export function RegistrationPanel({
                 </>
               ) : null}
               <p id="join-terms">
-                By choosing <strong>{joinLabel}</strong>, I agree to{" "}
+                By choosing <strong>{joinLabel}</strong>, I agree to pay{" "}
                 {feeLabel({ ...d, feeMinor: total })} for{" "}
-                {guest ? "two seats" : "one seat"} if confirmed. If full or a
-                party is waiting, I join the waitlist in order. Waiting is free;
-                my whole party may be automatically confirmed before start,
-                including after the cancellation cutoff, and then owes the
-                published fee. New joins and waitlist entries stop at start.
-              </p>
-              <p className="rp-help">
-                Before cutoff, withdrawing removes unpaid fees; at/after cutoff
-                an obligation remains unless waived. Refunds are handled outside
-                RallyPoint. Self-service withdrawal closes at start.
+                {guest ? "two seats" : "one seat"} if I get a place. If it’s
+                full, I join the waitlist for free; if a place opens before the
+                start, I’m moved in automatically and the fee applies.{" "}
+                {cutoffTerms}
               </p>
               {!Number.isSafeInteger(total) ? (
                 <Notice>The party fee is too large to store precisely.</Notice>
@@ -341,10 +326,9 @@ export function RegistrationPanel({
                 ? "Registration is closed."
                 : "Registration has not opened yet."}
             </h2>
-            <p>
-              Existing registrations stay visible. New joins and waitlist
-              entries close at the session start.
-            </p>
+            {event.registrationWindow !== "closed" && d.opensAt ? (
+              <p>Opens {when(d.opensAt)}.</p>
+            ) : null}
           </StatusBanner>
         </div>
       )}
@@ -356,7 +340,7 @@ export function RegistrationPanel({
         onClick={refresh}
       >
         <ArrowsClockwiseIcon size={18} aria-hidden="true" />
-        Refresh status and availability
+        Refresh
       </button>
       {view.rosterAllowed ? (
         <section className="rp-card roster">
@@ -376,9 +360,9 @@ export function RegistrationPanel({
                   {view.canManage && p.fee ? (
                     <span>
                       {p.fee.liabilityState === "removed_before_cutoff"
-                        ? "Unpaid fee removed: "
+                        ? "Fee removed: "
                         : p.fee.markedPaid
-                          ? "Marked paid manually: "
+                          ? "Marked paid: "
                           : "Amount due: "}
                       {feeLabel({
                         ...d,
@@ -394,12 +378,7 @@ export function RegistrationPanel({
             <p>No registrations yet.</p>
           )}
         </section>
-      ) : (
-        <p className="rp-help">
-          The display-name roster is available to confirmed participants. Other
-          people’s fee and attendance history stays private.
-        </p>
-      )}
+      ) : null}
     </section>
   );
 }

@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
 import { HourglassIcon } from "@phosphor-icons/react/dist/csr/Hourglass";
 import { LockSimpleIcon } from "@phosphor-icons/react/dist/csr/LockSimple";
@@ -14,7 +14,6 @@ import {
   Button,
   Card,
   CheckField,
-  ComboboxField,
   DateTimeField,
   Divider,
   EmptyState,
@@ -35,7 +34,6 @@ import {
   Ticket,
   TicketMeta,
   TicketTime,
-  timezoneOptions,
 } from "@rallypoint/ui";
 const colors = [
   "bg",
@@ -65,12 +63,10 @@ const radii = ["xs", "sm", "md", "lg", "xl", "full"];
 export function DesignCatalog() {
   const [sheet, setSheet] = useState(false);
   const [when, setWhen] = useState("2026-11-05T19:00");
-  const [zone, setZone] = useState("Asia/Manila");
   const [seats, setSeats] = useState("12");
   const [currency, setCurrency] = useState("SGD");
   const [guests, setGuests] = useState(true);
   const [guest, setGuest] = useState(false);
-  const zones = useMemo(() => timezoneOptions(), []);
   return (
     <section className="page catalog">
       <div className="page-head">
@@ -223,15 +219,6 @@ export function DesignCatalog() {
             <DateTimeField id="catalog-when" value={when} onChange={setWhen} />
           </Field>
         </div>
-        <Field id="catalog-zone" label="Timezone">
-          <ComboboxField
-            id="catalog-zone"
-            value={zone}
-            onChange={setZone}
-            options={zones}
-            placeholder="Search for a city"
-          />
-        </Field>
         <div className="form-grid">
           <Field id="catalog-seats" label="Capacity, in seats">
             <NumberStepper

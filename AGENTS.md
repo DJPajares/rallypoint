@@ -16,7 +16,7 @@ RallyPoint helps organizers run recurring group activities through one shared li
 - Follow accepted decisions and explicit user constraints. Do not reopen settled scope without a material conflict or new evidence.
 - Make the smallest coherent change meeting the request. Preserve unrelated work and inspect affected files before editing.
 - Keep the supplied MVP and its exclusions intact. Do not add discovery, social features, chat/DMs, payment processing, custom field builders, offline registration or phase 2/3 features without authorization.
-- Keep create/share/join actions short. Show spot status, fee, timezone and cutoff plainly; ask for optional information only when useful.
+- Keep create/share/join actions short. Show spot status, fee and cutoff plainly, once, where the person acts. Follow the PRD's D-13 interface boundaries: ask only what the organizer must decide and default the rest (timezone comes from the device and is never asked or shown); keep internal terms (versions, visibility, access control, server mechanics) and decorative copy out of the interface.
 - Use accessible controls, keyboard/focus behavior, understandable errors, non-color status indicators and reduced-motion behavior. Preserve context through failures.
 - Distinguish facts, assumptions, recommendations, accepted decisions and evidence. Do not claim a bank transfer was verified from a manual paid marker.
 - Make routine reversible choices within authorization. Resolve a consequential open decision before its dependent work; continue independent work.
