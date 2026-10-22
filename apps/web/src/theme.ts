@@ -21,18 +21,31 @@ export function setThemePreference(next: ThemePreference) {
   }
   listeners.forEach((listener) => listener());
 }
-export function useThemePreference() {
+const darkQuery = "(prefers-color-scheme: dark)";
+/**
+ * What the screen shows right now: an explicit choice, or the device setting
+ * when there is none. The switch flips this, so every tap visibly changes the
+ * theme (cycling through "system" could land on the look already showing).
+ */
+export function useAppearance() {
   return useSyncExternalStore(
     (listener) => {
+      const query = window.matchMedia(darkQuery);
       listeners.add(listener);
-      return () => listeners.delete(listener);
+      query.addEventListener("change", listener);
+      return () => {
+        listeners.delete(listener);
+        query.removeEventListener("change", listener);
+      };
     },
-    read,
-    (): ThemePreference => "system",
+    (): "light" | "dark" => {
+      const choice = read();
+      if (choice !== "system") return choice;
+      return window.matchMedia(darkQuery).matches ? "dark" : "light";
+    },
+    (): "light" | "dark" => "light",
   );
 }
-export const nextTheme: Record<ThemePreference, ThemePreference> = {
-  system: "light",
-  light: "dark",
-  dark: "system",
-};
+export function toggleAppearance(current: "light" | "dark") {
+  setThemePreference(current === "dark" ? "light" : "dark");
+}
