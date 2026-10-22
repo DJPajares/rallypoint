@@ -6,8 +6,8 @@ A mobile-first app for getting a recurring group together. The app
 provides the public shell, managed sessions, creator-owned groups, saved session
 drafts, unlisted publication, verified participant/+1 registration and a strict
 party waitlist, whole-party withdrawal and immediate promotion, and manual
-paid/unpaid markers and fee waivers. Payment instructions and attendance remain
-with subsequent tasks.
+paid/unpaid markers, fee waivers and per-seat check-in. Payment instructions,
+session cancellation and email remain with subsequent tasks.
 
 ## Run locally
 
@@ -236,6 +236,31 @@ first paid and waive the second; then, from a second browser, mark the first
 unpaid and retry **Mark unpaid** in the first browser. It must be refused. Open
 **Dues** as each participant and confirm each sees only their own fee.
 
+## Check in
+
+The organizer roster lists each confirmed place separately: the primary
+registrant and, for a party of two, their guest. Each starts **Not recorded**.
+Organizers and co-hosts choose **Check in**, **Clear** or, once the session's end
+time has passed, **Mark no-show**; the server checks the end time with its own
+clock. Nothing becomes a no-show automatically. Waitlisted, withdrawn and
+cancelled places cannot be checked in. Attendance never changes seats, fees or
+payment markers, and participants never see attendance, their own or anyone
+else's. The roster shows how many places are checked in.
+
+Like payments, each change records who made it and when, and names the revision
+the organizer saw; a stale or simultaneous change is refused rather than
+overwriting a newer one.
+
+`pnpm test:api` checks organizer/co-host-only access (including a revoked
+co-host), independent primary/guest seats and corrections, waitlisted/withdrawn/
+cancelled refusal, the end-time no-show boundary, stale and simultaneous changes,
+request-key replay and that participants receive no attendance data. A synthetic
+fixture moves a booked session's end into the past for the no-show cases.
+
+For a manual check, publish a session, join with a guest, and as organizer check
+in the primary but not the guest. Clear and restore the primary. After the end
+time, mark the guest a no-show. Confirm the participant's page shows no attendance.
+
 No cloud Supabase project is linked and no Cloudflare/Resend service is provisioned.
 The configuration contains no deploy script. Next production and local OpenNext
 build/preview are separate checks; neither provisions a cloud resource. The
@@ -272,7 +297,8 @@ Session publishing reuses this shell, Auth/data boundary and migration history.
 Registration adds party/queue records, separate initial fee obligations and durable
 registration signals. Withdrawal adds auditable liability removal and preserves manual paid declarations.
 Payment tracking adds revisioned paid/unpaid markers, waivers and a per-fee
-change history. Payment instructions and outbound delivery remain later work.
+change history. Attendance adds revisioned per-seat records with their own change
+history. Payment instructions and outbound delivery remain later work.
 
 ## Project destinations
 

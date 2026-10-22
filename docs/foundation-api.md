@@ -176,3 +176,22 @@ do. Seats, party state and the queue are not read or written.
 GET `/api/dues` returns `{ dues }`: the verified actor's own fee obligations across
 sessions (at most 200), unpaid first, each with its session's slug, title, start,
 time zone and state. It never contains another party's data.
+
+### Attendance (P-07 contract)
+
+POST `/api/registrations/:slug/attendance` accepts
+`{ operationKey, partyId, seat, state, revision }`: `seat` 1 is the primary and 2
+the guest; `state` is `unrecorded`, `checked_in` or `no_show`. Only a current
+owner/organizer/co-host may call it (`403 group_access_denied`). It returns
+`{ registration, operationKey }` with the manager roster.
+
+Only confirmed parties in published or completed sessions are eligible
+(`409 attendance_not_eligible`); a seat beyond the party's size is
+`409 seat_not_found`. `no_show` is refused before the session's `endsAt` by server
+time (`409 no_show_too_early`). Writing the current state is
+`409 attendance_unchanged`. `revision` is 0 for a never-recorded seat and must match
+the current revision (`409 stale_attendance`). Each change writes
+`app.seat_attendance` and one `app.attendance_changes` row with actor, display name
+and time. Manager roster parties carry `attendance` (one entry per confirmed seat
+with `seat`, `state`, `revision`, `by`, `at`); participant views never do. Seats,
+fees and payment markers are not read or written.
