@@ -85,7 +85,6 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
   min-height: var(--size-touch);
   padding: 0 var(--space-3);
   border-radius: var(--radius-full);
@@ -114,9 +113,6 @@
   height: var(--size-indicator-height);
   border-radius: var(--radius-xs) var(--radius-xs) 0 0;
   background: var(--color-accent);
-}
-.create-top {
-  margin-left: var(--space-2);
 }
 
 /* Main */
@@ -228,32 +224,16 @@ main {
   margin-top: var(--space-5);
 }
 
-/* Tablet: a compact bar; the create button keeps only its icon. */
+/* Tablet: the same text-only bar with tighter spacing. */
 @media (min-width: 768px) and (max-width: 1199px) {
   .topnav a {
     padding: 0 var(--space-2);
-    font-size: var(--text-xs);
-  }
-  .create-top {
-    width: var(--size-touch);
-    padding: 0;
-  }
-  .create-top .create-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
   }
   main {
     padding-top: var(--space-6);
   }
 }
 @media (min-width: 1200px) {
-  .topnav a svg {
-    display: none;
-  }
   main {
     padding-top: var(--space-10);
     padding-bottom: var(--space-16);

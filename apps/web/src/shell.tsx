@@ -15,7 +15,7 @@ import { FloatingMenu } from "./floating-menu";
 import { FrameContext, useStoredSessionHint } from "./frame";
 import { destinations, isActive } from "./navigation";
 import type { Destination } from "./navigation";
-import { buttonClass, Sheet } from "@rallypoint/ui";
+import { Sheet } from "@rallypoint/ui";
 const icons: Record<Destination["key"], Icon> = {
   home: HouseIcon,
   sessions: CalendarDotsIcon,
@@ -56,28 +56,19 @@ function Brand({ href }: { href: string }) {
     </Link>
   );
 }
+/**
+ * The phone bar's raised create button. Tablet and desktop have none: each
+ * page that can add something shows its own button where the action belongs.
+ */
 function CreateButton({
   href,
   onPick,
-  variant,
 }: {
   href: string | null;
   onPick: () => void;
-  variant: "top" | "bottom";
 }) {
-  const className =
-    variant === "top"
-      ? `${buttonClass({ variant: "primary", size: "sm" })} create-top`
-      : "create-bottom";
-  const content =
-    variant === "top" ? (
-      <>
-        <PlusIcon size={20} weight="bold" aria-hidden="true" />
-        <span className="create-label">New session</span>
-      </>
-    ) : (
-      <PlusIcon size={28} aria-hidden="true" />
-    );
+  const className = "create-bottom";
+  const content = <PlusIcon size={28} aria-hidden="true" />;
   // Inside a group the button goes straight to that group's form; elsewhere it
   // asks which group first. Same place, same icon, either way.
   return href ? (
@@ -127,33 +118,17 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="topbar-inner">
             <Brand href={signedIn ? "/home" : "/"} />
             {signedIn ? (
-              <>
-                <nav aria-label="Main" className="topnav">
-                  {destinations.map(({ key, href, label }) => {
-                    const Icon = icons[key];
-                    const active = isActive(pathname, href);
-                    return (
-                      <Link
-                        key={key}
-                        href={href}
-                        aria-current={active ? "page" : undefined}
-                      >
-                        <Icon
-                          size={20}
-                          weight={active ? "fill" : "regular"}
-                          aria-hidden="true"
-                        />
-                        <span>{label}</span>
-                      </Link>
-                    );
-                  })}
-                </nav>
-                <CreateButton
-                  variant="top"
-                  href={createHref}
-                  onPick={() => setPicking(true)}
-                />
-              </>
+              <nav aria-label="Main" className="topnav">
+                {destinations.map(({ key, href, label }) => (
+                  <Link
+                    key={key}
+                    href={href}
+                    aria-current={isActive(pathname, href) ? "page" : undefined}
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </nav>
             ) : null}
           </div>
         </header>
@@ -197,11 +172,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 })}
               </ul>
             </nav>
-            <CreateButton
-              variant="bottom"
-              href={createHref}
-              onPick={() => setPicking(true)}
-            />
+            <CreateButton href={createHref} onPick={() => setPicking(true)} />
           </div>
         ) : null}
         <Sheet open={picking} onClose={closePicker} title="New session">
