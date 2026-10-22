@@ -1,4 +1,4 @@
-import type { RegistrationView } from "./registration.ts";
+import type { PaymentNote, RegistrationView } from "./registration.ts";
 
 // What an organizer needs at a glance on the day (PRD D-17, R2). Every number
 // counts records the organizer already sees; nothing here decides anything.
@@ -53,10 +53,30 @@ export function paymentWords(
 ): string {
   if (!p.fee) return p.splitClaim ? "Share pending" : "";
   if (p.fee.liabilityState === "waived") return "Waived";
+  if (p.fee.liabilityState === "released_unpaid") return "Released";
   if (p.fee.liabilityState !== "due") return "Nothing due";
   if (p.fee.markedPaid) return "Paid";
   if (p.fee.totalMinor === 0) return "";
   return `${money(p.fee.currency, p.fee.totalMinor)} to pay`;
+}
+
+/**
+ * What a player said about sending payment, in the organizer's words. It is a
+ * hint, never a payment: it says nothing about whether the fee is paid.
+ */
+export function noteWords(note: PaymentNote | null | undefined): string {
+  if (!note) return "";
+  return note.reference ? `Says sent · ref ${note.reference}` : "Says sent";
+}
+
+/**
+ * The same hint for a roster row, only while the party's fee is still open: a
+ * fee that is paid, waived, removed or released has nothing left to hint at.
+ * A waiting party has no fee yet and may still have said it sent payment.
+ */
+export function partyNoteWords(p: RosterParty): string {
+  if (p.fee && (p.fee.liabilityState !== "due" || p.fee.markedPaid)) return "";
+  return noteWords(p.paymentNote);
 }
 
 /** The roster in three groups, narrowed by the chosen filter. Queue order is kept. */

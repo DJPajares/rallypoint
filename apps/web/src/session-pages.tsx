@@ -593,10 +593,12 @@ function Editor({
       ) : null}
       {record?.state === "cancelled" ? (
         <>
-          <p>
-            Unpaid fees are no longer due. Paid records stay; arrange any refund
-            outside RallyPoint.
-          </p>
+          {(record.details.paymentMode ?? "organizer") === "organizer" ? (
+            <p>
+              Unpaid fees are no longer due. Paid records stay; arrange any
+              refund outside RallyPoint.
+            </p>
+          ) : null}
           {record.bookingsStarted ? (
             <CancelledRoster slug={record.slug} />
           ) : null}

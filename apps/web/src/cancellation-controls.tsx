@@ -20,6 +20,8 @@ export function CancelSession({
   onDone: (record: SessionRecord) => void;
 }) {
   const [open, setOpen] = useState(false);
+  // "Not tracked here" has no fees or payment records to speak of.
+  const tracked = (record.details.paymentMode ?? "organizer") === "organizer";
   const mutation = useMutation<{ session: SessionRecord }>((value) => {
     setOpen(false);
     onDone(value.session);
@@ -46,10 +48,12 @@ export function CancelSession({
           This can’t be undone. No one can join or withdraw, and the waitlist
           stops.
         </p>
-        <p>
-          Unpaid fees stop being due. Paid records stay; arrange any refund
-          outside RallyPoint.
-        </p>
+        {tracked ? (
+          <p>
+            Unpaid fees stop being due. Paid records stay; arrange any refund
+            outside RallyPoint.
+          </p>
+        ) : null}
         <div className="fee-actions">
           <button
             type="button"

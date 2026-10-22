@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   filterParties,
   gameDaySummary,
+  noteWords,
+  partyNoteWords,
   partyStanding,
   paymentWords,
 } from "../packages/domain/src/game-day.ts";
@@ -148,4 +150,47 @@ test("payment words", () => {
     "Share pending",
   );
   assert.equal(paymentWords(roster[5], money), "Nothing due");
+});
+
+test("a released fee reads as Released, never as owed", () => {
+  const released = party("R", {
+    state: "removed",
+    fee: fee({ liabilityState: "released_unpaid" }),
+  });
+  assert.equal(paymentWords(released, money), "Released");
+});
+
+test("note words: nothing, a bare note, and a note with its reference", () => {
+  const sentAt = "2026-10-23T10:00:00.000Z";
+  assert.equal(noteWords(null), "");
+  assert.equal(noteWords(undefined), "");
+  assert.equal(noteWords({ reference: null, sentAt }), "Says sent");
+  assert.equal(
+    noteWords({ reference: "ABC 123", sentAt }),
+    "Says sent · ref ABC 123",
+  );
+});
+
+test("a sent note shows only while the party's fee is still open", () => {
+  const paymentNote = { reference: "ABC 123", sentAt: "2026-10-23T10:00:00Z" };
+  const said = "Says sent · ref ABC 123";
+  assert.equal(partyNoteWords(party("U", { paymentNote })), said);
+  // A waiting party has no fee yet, but may still have said they sent it.
+  assert.equal(
+    partyNoteWords(party("W", { state: "waitlisted", fee: null, paymentNote })),
+    said,
+  );
+  assert.equal(partyNoteWords(party("N")), "");
+  // Once the organizer has settled the fee, the hint no longer matters.
+  for (const over of [
+    { markedPaid: true },
+    { liabilityState: "waived" },
+    { liabilityState: "released_unpaid" },
+    { liabilityState: "removed_before_cutoff" },
+  ])
+    assert.equal(
+      partyNoteWords(party("S", { fee: fee(over), paymentNote })),
+      "",
+      JSON.stringify(over),
+    );
 });
