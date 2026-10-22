@@ -95,9 +95,21 @@ export function RegistrationPanel({
   // Only decides whether to offer no-show; the server checks its own clock.
   const ended = !!d.endsAt && now >= Date.parse(d.endsAt);
   const split = view.split ?? event.split;
-  const cutoffTerms = d.cutoffAt
-    ? `Cancel before ${when(d.cutoffAt)} and no fee is due; after that, your ${split ? "share" : "fee"} stays unless the organizer waives it.`
-    : "";
+  // Not tracked here has no fee, cutoff or payment terms to show. A session
+  // saved before payment modes behaves as Pay the organizer.
+  const tracked = (d.paymentMode ?? "organizer") === "organizer";
+  const released =
+    own?.state === "removed" && own.fee?.liabilityState === "released_unpaid";
+  // Said once, in the join step, only when the organizer turned release on and
+  // only until the cutoff: whoever is confirmed after it can't be released.
+  const payBy =
+    tracked && d.releaseUnpaid && d.cutoffAt && now < Date.parse(d.cutoffAt)
+      ? when(d.cutoffAt)
+      : "";
+  const cutoffTerms =
+    tracked && d.cutoffAt
+      ? `Cancel before ${when(d.cutoffAt)} and no fee is due; after that, your ${split ? "share" : "fee"} stays unless the organizer waives it.`
+      : "";
   const ownTone: Tone =
     event.state !== "published" || !own
       ? "neutral"
@@ -114,10 +126,13 @@ export function RegistrationPanel({
     ) : (
       <LockSimpleIcon size={22} />
     );
+  // A player whose unpaid spot went to the waitlist can join again.
+  const canJoin = event.registrationWindow === "open" && (!own || released);
   const hasAction = own
-    ? (own.state === "confirmed" || own.state === "waitlisted") &&
-      event.registrationWindow !== "closed"
-    : event.registrationWindow === "open";
+    ? ((own.state === "confirmed" || own.state === "waitlisted") &&
+        event.registrationWindow !== "closed") ||
+      canJoin
+    : canJoin;
   /**
    * The form, its error and its recovery stay together. Larger screens show
    * them inline; a phone keeps them in a sheet opened from the sticky bar, so
@@ -198,11 +213,17 @@ export function RegistrationPanel({
           </StatusBanner>
           {event.state === "published" && own.state === "waitlisted" ? (
             <p>
-              Waiting is free. If places open before the start, your party moves
-              in automatically and{" "}
-              {split
-                ? "your seats count toward the final split."
-                : "the fee applies."}
+              {tracked ? (
+                <>
+                  Waiting is free. If places open before the start, your party
+                  moves in automatically and{" "}
+                  {split
+                    ? "your seats count toward the final split."
+                    : "the fee applies."}
+                </>
+              ) : (
+                "If places open before the start, your party moves in automatically."
+              )}
             </p>
           ) : null}
           {split && own.splitClaim ? (
@@ -213,6 +234,11 @@ export function RegistrationPanel({
               history={own.splitHistory}
               cancelled={event.state === "cancelled"}
             />
+          ) : released ? (
+            <p>
+              Your spot went to the waitlist because it wasn’t marked paid by{" "}
+              {d.cutoffAt ? when(d.cutoffAt) : "the cutoff"}.
+            </p>
           ) : own.fee ? (
             <p>
               <strong>
@@ -240,7 +266,7 @@ export function RegistrationPanel({
                       : ""}
             </p>
           ) : null}
-          {view.paymentInstructions ? (
+          {tracked && view.paymentInstructions ? (
             <HowToPay
               slug={event.slug}
               instructions={view.paymentInstructions}
@@ -296,7 +322,8 @@ export function RegistrationPanel({
             )
           ) : null}
         </div>
-      ) : event.registrationWindow === "open" ? (
+      ) : null}
+      {canJoin ? (
         actionArea(
           "Join this session",
           view.counts.waitingParties > 0 ||
@@ -364,7 +391,7 @@ export function RegistrationPanel({
                     start includes our seats in the split. {cutoffTerms}
                   </p>
                 </>
-              ) : (
+              ) : tracked ? (
                 <p id="join-terms">
                   By choosing <strong>{joinLabel}</strong>, I agree to pay{" "}
                   {feeLabel({ ...d, feeMinor: total })} for{" "}
@@ -373,13 +400,27 @@ export function RegistrationPanel({
                   the start, I’m moved in automatically and the fee applies.{" "}
                   {cutoffTerms}
                 </p>
+              ) : (
+                <p id="join-terms">
+                  By choosing <strong>{joinLabel}</strong>, I take{" "}
+                  {guest ? "two seats" : "one seat"} if I get a place. If it’s
+                  full, I join the waitlist; if a place opens before the start,
+                  I’m moved in automatically.
+                </p>
               )}
+              {payBy ? (
+                <p id="join-pay-by">
+                  Pay by {payBy} or your spot may go to the waitlist.
+                </p>
+              ) : null}
               {!Number.isSafeInteger(total) ? (
                 <Notice>The party fee is too large to store precisely.</Notice>
               ) : null}
               <button
                 className={buttonClass({ variant: "primary" })}
-                aria-describedby="join-terms"
+                aria-describedby={
+                  payBy ? "join-terms join-pay-by" : "join-terms"
+                }
                 disabled={!Number.isSafeInteger(total)}
               >
                 {mutation.busy ? "Checking your place…" : joinLabel}
@@ -388,7 +429,7 @@ export function RegistrationPanel({
           </form>,
           "primary",
         )
-      ) : (
+      ) : !own ? (
         <div className="own-status">
           <StatusBanner tone="neutral" icon={<LockSimpleIcon size={22} />}>
             <h2>
@@ -401,7 +442,7 @@ export function RegistrationPanel({
             ) : null}
           </StatusBanner>
         </div>
-      )}
+      ) : null}
       {!hasAction && mutation.error ? <Notice>{mutation.error}</Notice> : null}
       {!hasAction ? mutation.recovery : null}
       <button
