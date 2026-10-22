@@ -35,8 +35,8 @@ on 2026-10-22. Every mutation requires a UUID `operationKey` in its JSON body.
 | POST `/api/groups/:id/sessions` | `groupId, intent: draft or publish, details, operationKey` | Current group manager |
 | GET `/api/sessions/:id` | Management projection/version | Current group manager |
 | POST `/api/sessions/:id` | Same fields plus expected `version`; draft/publish/update | Current group manager |
-| GET `/api/shared/:slug` | Published shareable details only | Public |
-| GET `/api/operations/:key` | Actor-owned reference and current resource state | Same actor and current group role |
+| GET `/api/shared/:slug` | Shareable details, counts and lifecycle | Public |
+| GET `/api/operations/:key` | Actor-owned reference and current resource state | Same actor; current group role for management operations |
 
 `SessionForm` in `src/shared/session.ts` defines the fields. Local times use the
 named timezone; invalid and ambiguous DST times are rejected. Publication requires
@@ -60,15 +60,52 @@ detail edit increments the version and writes a durable `app.session_changes`
 signal with actor and changed fields. P-06 owns delivery; no notification is
 claimed here. There is no unpublish operation.
 
-P-03 must set `bookings_started_at` under the same session lock on the first
-booking, including waiting parties, before enabling registration. Once set, all
+Registration sets `bookings_started_at` under the same session lock on the first
+booking, including waiting parties. Once set, all
 detail changes are refused until the booked-event policy is accepted; withdrawals
-must not clear it. No registration table is introduced here. General assignment/
+must not clear it. General assignment/
 invitation UI and membership entry remain outside this increment.
 
 Session errors add 413 oversized body, 415 non-JSON input, 422 invalid fields and
 409 idempotency/version/booked-event conflict. Failed validation never partially
 publishes. Unlisted links are shareable, not private access control.
+
+## Registration contract
+
+- GET `/api/registrations/:slug` returns `{ registration }` for the verified actor.
+- POST to the same path accepts `{ operationKey, version, seats: 1|2,
+  guestName: string, consent: true }` and returns `{ registration, operationKey }`.
+  The verified server identity supplies the primary; caller actor/role fields
+  never supply authority. Display names are display-only snapshots.
+- Public session projection adds `state`, `registrationWindow` and `counts`
+  (`confirmedSeats`, `waitingParties`); no party identity/fee rows are public.
+
+Registration returns own party/state/seat count/current waiting-party position and
+own fee, plus `canManage`, `rosterAllowed`, permitted roster and counts. Waiting
+parties have no obligation. Confirmed fixed fees use seat count × integer unit
+minor amount, rejecting totals beyond safe integer precision. There is no payment
+status or claim of a verified transfer. Confirmed participants get display names,
+guest labels and seat counts only; managers get the wider state/obligation view.
+Other verified nonparticipants/waiting participants get no roster.
+
+Transactions serialize the actor/key, lock group then session, and recheck current
+server time. Open is inclusive; start is exclusive for both new joins and waiting
+entries. Inactive/draft sessions refuse joins. Same-key payload mismatch conflicts;
+different-key retries with an existing active party return that party without
+changing its seats or consuming another fee. Replays/result lookups return current
+state, including after closure/removal, never restore an earlier confirmation.
+
+The queue has a monotonic party sequence. Allocation never splits a party or
+bypasses the first waiting party. `app.fill_waitlist` acquires the same locks and
+confirms whole heads before start, creating each obligation and durable
+`app.registration_events` signal once. P-04 must reconcile in its seat-release
+transaction; no public withdrawal or guest-edit operation is introduced here.
+Signals are not sent emails. P-06 owns actual delivery.
+
+The accepted D-03 start deadline is recorded in the PRD. Errors include 422 missing
+consent/disabled guest/impossible party and 409 stale terms/not-open/closed/key
+conflict. Raw application tables and all backend RPCs remain denied to browser
+roles. No raw mutation passthrough, client authority or offline registration exists.
 
 Google OAuth uses Supabase PKCE and a same-origin callback; live client/audience/
 redirect configuration is still required. Local email-code sign-in exercises

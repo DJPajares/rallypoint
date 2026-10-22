@@ -964,3 +964,79 @@ input:disabled {
     font-size: 16px;
   }
 }
+.availability {
+  margin: 24px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  align-items: center;
+  border-left: 3px solid #234dc4;
+  padding-left: 20px;
+}
+.availability p {
+  flex-basis: 100%;
+  margin: 0;
+}
+.registration-panel {
+  padding: 28px;
+  border-radius: 12px;
+  background: #eaf0df;
+  margin: 28px 0;
+}
+.registration-panel fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.registration-panel legend {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+.registration-panel p {
+  line-height: 1.65;
+  margin: 18px 0;
+}
+.registration-panel .checkbox-field {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.guest-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+}
+.guest-field input {
+  font: inherit;
+  padding: 12px;
+  border: 1px solid #bac2b5;
+  border-radius: 8px;
+  min-width: 0;
+}
+.roster {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #bcc9ad;
+}
+.roster ul {
+  list-style: none;
+  padding: 0;
+}
+.roster li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 0;
+  border-bottom: 1px solid #cbd5c0;
+}
+.own-status h2 {
+  margin-top: 18px;
+}
+@media (max-width: 650px) {
+  .registration-panel {
+    padding: 20px;
+  }
+}

@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { AppEnv } from "./env";
 import { ApiError, json } from "./http";
 import { sessionRoute, sessionRequest } from "./sessions";
+import { registrationRoute, registrationRequest } from "./registrations";
 function connection(env: AppEnv) {
   if (
     !env.SUPABASE_URL ||
@@ -50,7 +51,7 @@ export default {
   async fetch(request: Request, env: AppEnv): Promise<Response> {
     const path = new URL(request.url).pathname;
     try {
-      const featureRoute = sessionRoute(path);
+      const featureRoute = sessionRoute(path) || registrationRoute(path);
       if (request.method !== "GET" && !featureRoute)
         throw new ApiError(
           405,
@@ -115,6 +116,12 @@ export default {
           403,
           "verified_identity_required",
           "Verify your email before continuing.",
+        );
+      if (registrationRoute(path))
+        return await registrationRequest(
+          request,
+          client(c.url, c.secret),
+          user,
         );
       if (featureRoute)
         return await sessionRequest(request, client(c.url, c.secret), user.id);

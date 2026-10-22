@@ -10,7 +10,7 @@ const patterns = [
 ];
 export const sessionRoute = (path: string) =>
   path === "/api/groups" || patterns.some((p) => p.test(path));
-async function body(request: Request) {
+export async function readBody(request: Request) {
   if (!request.headers.get("content-type")?.startsWith("application/json"))
     throw new ApiError(415, "json_required", "Send JSON details.");
   const reader = request.body?.getReader();
@@ -65,6 +65,8 @@ export async function sessionRequest(
           "People have booked this session. Changes are locked until the booked-event edit policy is defined.",
         already_published:
           "This session is already published. Reload it to edit.",
+        session_closed:
+          "This session is cancelled or completed and cannot be edited.",
       };
       if (conflicts[error.message])
         throw new ApiError(409, error.message, conflicts[error.message]);
@@ -136,7 +138,7 @@ export async function sessionRequest(
       "method_not_allowed",
       "This action is not available.",
     );
-  const b = await body(request),
+  const b = await readBody(request),
     key = b.operationKey;
   if (typeof key !== "string" || !new RegExp(`^${uuid}$`, "i").test(key))
     throw new ApiError(

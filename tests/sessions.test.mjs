@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 import { localEnv, fixturePassword } from "../scripts/local-env.mjs";
-import { normalizeSession } from "../src/shared/session.ts";
+import { normalizeSession, feeLabel } from "../src/shared/session.ts";
 const env = localEnv(),
   base = process.env.RALLYPOINT_TEST_URL ?? "http://127.0.0.1:5173";
 assert.ok(["127.0.0.1", "localhost"].includes(new URL(base).hostname));
@@ -50,6 +50,12 @@ const request = (path, actor, body) =>
   });
 test("session input rules preserve precision and reject ambiguous local times", () => {
   assert.equal(normalizeSession(valid(), true).feeMinor, 1250);
+  assert.ok(
+    feeLabel({ ...valid(), feeMinor: 9007199254740991 }).endsWith("409.91"),
+  );
+  assert.ok(
+    feeLabel({ ...valid(), currency: "KWD", feeMinor: 1234 }).endsWith("1.234"),
+  );
   assert.equal(
     normalizeSession({ ...valid(), fee: "1.234", currency: "KWD" }, true)
       .feeMinor,
@@ -218,9 +224,12 @@ test("session publication and current-role boundary", async (t) => {
         assert.equal(r.headers.get("cache-control"), "no-store");
         const { session } = await r.json();
         assert.deepEqual(Object.keys(session).sort(), [
+          "counts",
           "details",
           "groupName",
+          "registrationWindow",
           "slug",
+          "state",
           "version",
         ]);
         assert.equal(session.details.capacity, "12");
