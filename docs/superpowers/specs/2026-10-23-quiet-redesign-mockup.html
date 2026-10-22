@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RallyPoint · Quiet redesign</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap');
+  :root {
+    --paper:#F5F7F2; --sunken:#ECEEE8; --card:#fff; --ink:#0E1A3D; --navy:#13235B; --muted:#5B6478; --line:#E4E7EE; --neon:#C6F432;
+    --d-bg:#0A1024; --d-card:#121B36; --d-ink:#EEF1F8; --d-muted:#98A2B8; --d-line:#243052; --d-neon:#C8FF3D;
+    --green:#11632F; --green-bg:#E3F6E9; --amber:#7F4D00; --amber-bg:#FFF1D6;
+    --display:"Bricolage Grotesque", Inter, system-ui, sans-serif; --text:Inter, system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:linear-gradient(180deg,#F3F4F7,#E8EBF1); color:var(--ink); font-family:var(--text); -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:1180px; margin:0 auto; padding:44px 24px 96px; }
+  h1 { font:800 44px/1.02 var(--display); letter-spacing:-.025em; margin:0; }
+  .lede { color:var(--muted); font-size:17px; line-height:1.5; max-width:700px; margin:12px 0 0; }
+  .phones { display:flex; gap:40px 36px; justify-content:center; flex-wrap:wrap; margin-top:44px; }
+  .unit { display:flex; flex-direction:column; align-items:center; }
+  .cap { margin-top:16px; text-align:center; max-width:290px; }
+  .cap b { display:block; font:700 15px/1.3 var(--display); }
+  .cap span { font-size:13px; color:var(--muted); line-height:1.45; }
+  .cap em { display:block; font-style:normal; font:600 11px var(--text); letter-spacing:.08em; text-transform:uppercase; color:#8A93A6; margin-bottom:4px; }
+  .device { width:300px; height:640px; border-radius:50px; padding:10px; background:#0B0F1A; box-shadow:0 40px 70px -30px rgba(14,26,61,.55), 0 0 0 1.5px #2A3142 inset; }
+  .screen { width:100%; height:100%; border-radius:40px; overflow:hidden; position:relative; background:var(--paper); }
+  .screen.dark { background:var(--d-bg); color:var(--d-ink); }
+  .island { position:absolute; top:10px; left:50%; transform:translateX(-50%); width:90px; height:26px; border-radius:20px; background:#000; z-index:40; }
+  .sb { height:46px; display:flex; justify-content:space-between; align-items:center; padding:2px 24px 0 30px; font:600 14px var(--text); position:relative; z-index:10; }
+  .homebar { position:absolute; bottom:7px; left:50%; transform:translateX(-50%); width:110px; height:4.5px; border-radius:3px; background:var(--ink); z-index:50; }
+  .dark .homebar { background:#fff; }
+  .pad { padding:0 16px; }
+  .top { display:flex; justify-content:space-between; align-items:center; margin:2px 0 10px; }
+  .chip { width:34px; height:34px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(14,26,61,.08); display:grid; place-items:center; }
+  .dark .chip { background:var(--d-card); box-shadow:none; }
+  .ring { width:34px; height:34px; border-radius:50%; padding:2px; background:conic-gradient(from 200deg,#C8FF3D,#7C68FF,#4FC3FF,#C8FF3D); }
+  .ring span { display:grid; place-items:center; width:100%; height:100%; border-radius:50%; background:#fff; border:2px solid #fff; font:800 12px var(--display); }
+  .eyebrow { font:600 11px/1 var(--text); letter-spacing:.07em; text-transform:uppercase; color:var(--muted); }
+  .dark .eyebrow { color:var(--d-muted); }
+  .large { font:800 30px/1.05 var(--display); letter-spacing:-.025em; margin:6px 0 0; }
+  .meta { font-size:13px; color:var(--muted); margin-top:5px; }
+  .dark .meta { color:var(--d-muted); }
+  .sect { display:flex; justify-content:space-between; align-items:baseline; margin:18px 2px 8px; }
+  .sect h3 { margin:0; font:700 18px/1 var(--display); letter-spacing:-.01em; }
+  .sect a { font-size:13px; color:var(--muted); }
+  .dark .sect a { color:var(--d-muted); }
+  /* grouped list */
+  .group { background:var(--card); border-radius:16px; overflow:hidden; box-shadow:0 1px 2px rgba(14,26,61,.05); }
+  .dark .group { background:var(--d-card); box-shadow:none; }
+  .li { display:flex; align-items:center; gap:11px; padding:9px 12px; position:relative; min-height:52px; }
+  .li + .li::before { content:""; position:absolute; top:0; left:56px; right:0; border-top:1px solid var(--line); }
+  .dark .li + .li::before { border-color:var(--d-line); }
+  .li .t { flex:1; min-width:0; }
+  .li .t b { display:block; font:600 14px/1.25 var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .li .t span { font-size:12px; color:var(--muted); }
+  .dark .li .t span { color:var(--d-muted); }
+  .av { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; color:#fff; font:700 12px var(--display); flex:none; }
+  .tile { width:34px; height:34px; border-radius:10px; display:grid; place-items:center; color:#fff; font:700 12px var(--display); flex:none; }
+  .chev { color:#B6BDCB; flex:none; }
+  .pill { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:999px; font:600 11px/1.3 var(--text); white-space:nowrap; }
+  .pill.in { background:var(--green-bg); color:var(--green); }
+  .pill.wait { background:var(--amber-bg); color:var(--amber); }
+  .pill.host { background:#E8ECFA; color:var(--navy); }
+  .pill.owe { background:var(--amber-bg); color:var(--amber); }
+  .pill.paid { background:var(--sunken); color:var(--muted); }
+  .dark .pill.in { background:#133527; color:#7BD6A4; } .dark .pill.wait { background:#3A2A0B; color:#F5C46B; } .dark .pill.host { background:#1D2A55; color:#C9D3FF; }
+  .tp { display:inline-flex; align-items:center; gap:3px; padding:1px 6px 1px 2px; border-radius:999px; border:1px solid var(--line); background:var(--sunken); font:600 10px/1.5 var(--text); color:var(--ink); vertical-align:middle; margin-left:4px; }
+  .tp i { width:12px; height:12px; border-radius:50%; background:linear-gradient(135deg,#9A8BFF,#4330C9); display:block; }
+  /* check toggle */
+  .check { width:30px; height:30px; border-radius:50%; flex:none; display:grid; place-items:center; border:2px solid #C3C9D4; }
+  .check.on { border:0; background:var(--navy); box-shadow:0 0 0 3px rgba(19,35,91,.12); }
+  .check.on svg { display:block; }
+  .check svg { display:none; }
+  /* segmented */
+  .seg { display:flex; background:var(--sunken); border-radius:10px; padding:3px; margin:12px 0 10px; }
+  .seg span { flex:1; text-align:center; font:600 12px/1 var(--text); padding:7px 0; border-radius:8px; color:var(--muted); }
+  .seg span.on { background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(14,26,61,.12); }
+  .dark .seg { background:var(--d-card); } .dark .seg span { color:var(--d-muted); } .dark .seg span.on { background:#24305A; color:#fff; box-shadow:none; }
+  /* stats strip */
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); background:#fff; border-radius:16px; margin-top:12px; box-shadow:0 1px 2px rgba(14,26,61,.05); }
+  .stats div { text-align:center; padding:9px 0 8px; font-size:11px; color:var(--muted); }
+  .stats div + div { border-left:1px solid var(--line); }
+  .stats b { display:block; font:800 21px/1.1 var(--display); color:var(--ink); font-variant-numeric:tabular-nums; }
+  .stats b small { font:700 13px var(--display); color:var(--muted); }
+  /* bottom bars */
+  .sticky { position:absolute; left:0; right:0; bottom:0; padding:10px 14px 22px; background:rgba(245,247,242,.82); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); border-top:.5px solid rgba(14,26,61,.1); display:flex; gap:8px; z-index:30; }
+  .dark .sticky { background:rgba(10,16,36,.8); border-color:rgba(255,255,255,.08); }
+  .btn { flex:1; border-radius:999px; padding:12px; text-align:center; font:700 14px var(--text); border:1.5px solid var(--navy); color:var(--navy); background:#fff; }
+  .btn.neon { background:var(--neon); border-color:var(--neon); color:var(--ink); }
+  .btn.ghost { border-color:transparent; background:transparent; }
+  .dark .btn { background:transparent; border-color:#34426B; color:#fff; } .dark .btn.neon { background:var(--d-neon); border-color:var(--d-neon); color:var(--d-bg); }
+  .tabs { position:absolute; left:0; right:0; bottom:0; height:80px; padding:8px 6px 0; display:grid; grid-template-columns:repeat(5,1fr);
+    background:rgba(245,247,242,.8); backdrop-filter:blur(22px) saturate(180%); -webkit-backdrop-filter:blur(22px) saturate(180%); border-top:.5px solid rgba(14,26,61,.1); z-index:30; }
+  .dark .tabs { background:rgba(10,16,36,.82); border-color:rgba(255,255,255,.08); }
+  .tab { display:flex; flex-direction:column; align-items:center; gap:3px; font:500 10px var(--text); color:#8A93A6; }
+  .tab.on { color:var(--ink); font-weight:700; } .dark .tab.on { color:#fff; }
+  .tab.on::after { content:""; width:5px; height:5px; border-radius:50%; background:var(--neon); box-shadow:0 0 0 1.5px var(--navy); }
+  .plus { width:48px; height:48px; border-radius:50%; background:var(--neon); display:grid; place-items:center; margin-top:-16px; box-shadow:0 8px 18px -6px rgba(110,150,10,.55), 0 0 0 4px rgba(245,247,242,.9); }
+  .dark .plus { background:var(--d-neon); box-shadow:0 8px 18px -6px rgba(110,150,10,.5), 0 0 0 4px rgba(10,16,36,.9); }
+  /* ticket */
+  .ticket { display:flex; background:#fff; border-radius:18px; box-shadow:0 1px 2px rgba(14,26,61,.05), 0 12px 28px -16px rgba(14,26,61,.25); position:relative; }
+  .dark .ticket { background:var(--d-card); box-shadow:none; }
+  .stub { width:64px; flex:none; background:var(--navy); color:#fff; border-radius:18px 0 0 18px; text-align:center; padding:12px 0 10px; }
+  .dark .stub { background:#22378A; }
+  .stub small { display:block; font:600 10px/1 var(--text); letter-spacing:.12em; opacity:.75; }
+  .stub b { display:block; font:800 28px/1.05 var(--display); margin:4px 0 3px; }
+  .perf { position:absolute; left:64px; top:9px; bottom:9px; border-left:2px dashed #DCE1EA; }
+  .dark .perf { border-color:#2C3A62; }
+  .tk { padding:11px 12px 11px 14px; flex:1; min-width:0; }
+  .tk strong { display:block; font:700 16px/1.2 var(--display); }
+  .tk .m { font-size:12px; color:var(--muted); margin-top:2px; }
+  .dark .tk .m { color:var(--d-muted); }
+  .row { display:flex; align-items:center; justify-content:space-between; margin-top:9px; gap:6px; }
+  .dots { display:flex; gap:3px; align-items:center; }
+  .dots i { width:6px; height:6px; border-radius:50%; background:var(--navy); display:block; }
+  .dots i.o { background:transparent; border:1.2px dashed #9AA3B5; }
+  .dark .dots i { background:#C8FF3D; } .dark .dots i.o { background:transparent; border-color:#4C5878; }
+  .left { font:600 11px var(--text); color:var(--muted); margin-left:5px; white-space:nowrap; }
+  /* person sheet */
+  .scrim { position:absolute; inset:0; background:rgba(8,14,32,.42); z-index:35; }
+  .sheet { position:absolute; left:0; right:0; bottom:0; z-index:45; background:#fff; border-radius:28px 28px 0 0; padding:10px 18px 30px; box-shadow:0 -18px 40px -10px rgba(8,14,32,.35); }
+  .grab { width:36px; height:5px; border-radius:3px; background:#D7DBE3; margin:0 auto 12px; }
+  .who { display:flex; align-items:center; gap:12px; }
+  .who .av { width:46px; height:46px; font-size:15px; }
+  .who b { display:block; font:700 18px/1.2 var(--display); }
+  .act { display:flex; align-items:center; gap:10px; padding:12px; border-radius:14px; background:var(--sunken); margin-top:10px; font:600 14px var(--text); }
+  .act .grow { flex:1; }
+  .hist { margin-top:14px; font-size:12px; color:var(--muted); line-height:1.6; }
+  .hist b { color:var(--ink); font-weight:600; }
+  /* form */
+  .fgroup { background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 1px 2px rgba(14,26,61,.05); margin-top:8px; }
+  .fl { display:flex; align-items:center; gap:10px; padding:11px 13px; font-size:14px; position:relative; min-height:46px; }
+  .fl + .fl::before { content:""; position:absolute; top:0; left:13px; right:0; border-top:1px solid var(--line); }
+  .fl .k { color:var(--muted); font-size:13px; width:74px; flex:none; }
+  .fl .v { flex:1; font-weight:600; }
+  .fl .v.ph { color:#A2ABC0; font-weight:500; }
+  .chips { display:flex; gap:6px; overflow:hidden; padding:2px 0; }
+  .chips span { padding:6px 10px; border-radius:999px; border:1px solid var(--line); font:600 12px var(--text); white-space:nowrap; background:#fff; }
+  .chips span.on { background:var(--navy); color:#fff; border-color:var(--navy); }
+  .stepper { display:flex; align-items:center; gap:10px; font:700 15px var(--display); }
+  .stepper i { width:26px; height:26px; border-radius:50%; background:var(--sunken); display:grid; place-items:center; font-style:normal; font:600 16px var(--text); color:var(--navy); }
+  .glabel { font:600 11px var(--text); letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin:14px 4px 0; }
+  .note { font-size:11.5px; color:var(--muted); margin:6px 4px 0; line-height:1.45; }
+  .pre { margin-top:12px; border:1.5px dashed #C3C9D4; border-radius:16px; padding:10px; }
+  .pre .eyebrow { margin-bottom:8px; }
+  /* section bits */
+  .day { font:600 11px var(--text); letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin:14px 4px 6px; }
+  .dark .day { color:var(--d-muted); }
+  .mini { width:40px; flex:none; text-align:center; line-height:1; }
+  .mini small { display:block; font:600 9px var(--text); letter-spacing:.1em; color:var(--muted); }
+  .mini b { font:800 18px var(--display); }
+  .dark .mini small { color:var(--d-muted); }
+  .seats { font:600 12px var(--text); color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .next { display:flex; align-items:center; gap:10px; background:#fff; border-radius:16px; padding:9px 12px; margin-top:10px; box-shadow:0 1px 2px rgba(14,26,61,.05); }
+  .next .t b { display:block; font:600 13.5px/1.25 var(--text); } .next .t span { font-size:11.5px; color:var(--muted); }
+  .medal { width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg,#9A8BFF,#4330C9); position:relative; flex:none; box-shadow:0 0 0 3px #fff, 0 0 0 5px #6B5CE7; }
+  .quiet { text-align:center; font-size:12.5px; color:var(--muted); margin-top:10px; }
+  .quiet b { color:var(--ink); }
+  .notes { margin-top:60px; display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:18px; }
+  .notes div { background:#fff; border-radius:20px; padding:18px 20px; box-shadow:0 1px 2px rgba(14,26,61,.05); }
+  .notes h3 { margin:0 0 6px; font:700 17px var(--display); }
+  .notes p { margin:0; font-size:13.5px; color:var(--muted); line-height:1.5; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="ck" viewBox="0 0 24 24"><path d="M5 12.5 L10 17 L19 7" fill="none" stroke="#C6F432" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="tick" viewBox="0 0 24 24"><path d="M5 12.5 L10 17 L19 7" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="chev" viewBox="0 0 10 16"><path d="M2 2 L8 8 L2 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="back" viewBox="0 0 24 24"><path d="M15 5 L8 12 L15 19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="bars" viewBox="0 0 62 12"><g fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="6" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/><path d="M30 11 l-2.4-2.6 a3.5 3.5 0 0 1 4.8 0z"/><path d="M24.5 5.2 a8 8 0 0 1 11 0 l-1.6 1.7 a5.6 5.6 0 0 0-7.8 0z"/><rect x="38" y="1" width="21" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="40" y="3" width="15" height="6" rx="1.5"/></g></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5 L12 4 L20 10.5 V19 a1.5 1.5 0 0 1 -1.5 1.5 H14.5 V14.5 H9.5 V20.5 H5.5 A1.5 1.5 0 0 1 4 19 Z" fill="currentColor"/></symbol>
+  <symbol id="i-home-o" viewBox="0 0 24 24"><path d="M4 10.5 L12 4 L20 10.5 V19 a1.5 1.5 0 0 1 -1.5 1.5 H14.5 V14.5 H9.5 V20.5 H5.5 A1.5 1.5 0 0 1 4 19 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="5.5" width="16" height="14.5" rx="3"/><path d="M4 10 H20 M9 3.5 V7 M15 3.5 V7"/></g></symbol>
+  <symbol id="i-cal-f" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="3" fill="currentColor"/><path d="M4 10 H20" stroke="#0A1024" stroke-width="1.8"/><path d="M9 3.5 V7 M15 3.5 V7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-grp" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="9" r="3.2"/><path d="M3 19.5 C3 16 5.7 14 9 14 S15 16 15 19.5"/><circle cx="17" cy="10" r="2.5"/><path d="M16 14.3 C18.6 14.4 21 16 21 19"/></g></symbol>
+  <symbol id="i-dues" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10.5 H21 M15.5 15 H18"/></g></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5 V19 M5 12 H19" stroke="#0E1A3D" stroke-width="2.6" stroke-linecap="round"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+  <h1>Quiet everywhere else, too.</h1>
+  <p class="lede">The same rules as the badges: one job per screen, one bright button, colour only where it means something. The biggest change is game day: an organizer sees who is here and who still owes at a glance, and checks people in with one tap.</p>
+
+  <div class="phones">
+
+    <!-- A · Game day -->
+    <div class="unit">
+      <div class="device"><div class="screen">
+        <div class="island"></div>
+        <div class="sb"><span>6:58</span><svg width="62" height="12" style="color:#0E1A3D"><use href="#bars"/></svg></div>
+        <div class="pad">
+          <div class="top"><div class="chip"><svg width="16" height="16" style="color:#0E1A3D"><use href="#back"/></svg></div><div class="ring"><span>MK</span></div></div>
+          <div class="eyebrow">Sunday Dink · Today</div>
+          <div class="large">7:00 – 10:00 AM</div>
+          <div class="meta">Pickleball Hub, Tiendesitas</div>
+          <div class="stats">
+            <div><b>9<small>/12</small></b>here</div>
+            <div><b>3</b>to pay</div>
+            <div><b>2</b>waiting</div>
+          </div>
+          <div class="seg"><span class="on">Everyone</span><span>Not here</span><span>To pay</span></div>
+          <div class="group">
+            <div class="li"><div class="av" style="background:linear-gradient(135deg,#5CCBFF,#2459E6)">SA</div><div class="t"><b>Sam <span class="tp"><i></i>Regular</span></b><span>Paid</span></div><div class="check on"><svg width="16" height="16"><use href="#ck"/></svg></div></div>
+            <div class="li"><div class="av" style="background:linear-gradient(135deg,#FF86B6,#BE2470)">AL</div><div class="t"><b>Alex + Jo</b><span><span class="pill owe">₱400 to pay</span></span></div><div class="check on"><svg width="16" height="16"><use href="#ck"/></svg></div></div>
+            <div class="li"><div class="av" style="background:linear-gradient(135deg,#FFAE52,#E5402A)">RI</div><div class="t"><b>Riley</b><span>Paid</span></div><div class="check"></div></div>
+            <div class="li"><div class="av" style="background:linear-gradient(135deg,#4FE0C8,#0E8F8A)">JD</div><div class="t"><b>Jun Dela Cruz</b><span><span class="pill owe">₱200 to pay</span></span></div><div class="check"></div></div>
+            <div class="li"><div class="av" style="background:linear-gradient(135deg,#C08BFF,#7A2BD6)">PA</div><div class="t"><b>Pat <span class="tp"><i></i>Host</span></b><span>Paid</span></div><div class="check on"><svg width="16" height="16"><use href="#ck"/></svg></div></div>
+          </div>
+        </div>
+        <div class="sticky"><div class="btn">Edit</div><div class="btn neon">Share link</div></div>
+        <div class="homebar"></div>
+      </div></div>
+      <div class="cap"><em>Organizer · session page</em><b>Game day</b><span>Big numbers up top, one round check per person, money as a quiet pill. Filters for “not here” and “to pay”. No rows of buttons.</span></div>
+    </div>
+
+    <!-- B · Person sheet -->
+    <div class="unit">
+      <div class="device"><div class="screen">
+        <div class="island"></div>
+        <div class="sb"><span>6:59</span><svg width="62" height="12" style="color:#0E1A3D"><use href="#bars"/></svg></div>
+        <div class="pad" style="filter:saturate(.9)">
+          <div class="top"><div class="chip"></div><div class="ring"><span>MK</span></div></div>
+          <div class="eyebrow">Sunday Dink · Today</div>
+          <div class="large">7:00 – 10:00 AM</div>
+          <div class="stats"><div><b>10<small>/12</small></b>here</div><div><b>3</b>to pay</div><div><b>2</b>waiting</div></div>
+        </div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="who"><div class="av" style="background:linear-gradient(135deg,#FF86B6,#BE2470)">AL</div><div><b>Alex + Jo</b><span style="font-size:12.5px;color:#5B6478">2 seats · joined Tue</span></div></div>
+          <div class="act"><div class="check on" style="width:26px;height:26px"><svg width="14" height="14"><use href="#ck"/></svg></div><span class="grow">Alex is here</span><span style="color:#5B6478;font-weight:500">7:02</span></div>
+          <div class="act"><div class="check" style="width:26px;height:26px"></div><span class="grow">Jo (guest) is here</span></div>
+          <div class="act"><span class="pill owe">₱400</span><span class="grow">Not paid yet</span><span style="color:#13235B">Mark paid</span></div>
+          <div class="hist"><b>History</b><br>Checked in by Mika · 7:02 AM<br>Joined with consent to ₱200 per seat · Tue</div>
+          <div class="btn ghost" style="margin-top:8px;color:#5B6478;font-weight:600">Waive fee</div>
+        </div>
+        <div class="homebar"></div>
+      </div></div>
+      <div class="cap"><em>Tap a person</em><b>Everything about one person, in one sheet</b><span>Check in each seat, mark paid, waive. The audit trail moves here instead of under every name.</span></div>
+    </div>
+
+    <!-- C · Home -->
+    <div class="unit">
+      <div class="device"><div class="screen">
+        <div class="island"></div>
+        <div class="sb"><span>9:41</span><svg width="62" height="12" style="color:#0E1A3D"><use href="#bars"/></svg></div>
+        <div class="pad">
+          <div class="top"><span></span><div class="ring"><span>MK</span></div></div>
+          <div class="eyebrow">Thursday 23 October</div>
+          <div class="large">Hi, Mika</div>
+          <div class="sect"><h3>Up next</h3><a>Your week</a></div>
+          <div class="ticket">
+            <div class="stub"><small>SUN</small><b>26</b><small>OCT</small></div><div class="perf"></div>
+            <div class="tk"><strong>Sunday Dink</strong><div class="m">7:00 AM · Tiendesitas</div>
+              <div class="dots" style="margin-top:8px"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="o"></i><i class="o"></i><span class="left">2 left</span></div>
+              <div class="row" style="justify-content:flex-start"><span class="pill host">Hosting</span><span class="pill owe">3 to pay</span></div>
+            </div>
+          </div>
+          <div class="group" style="margin-top:10px">
+            <div class="li"><div class="mini"><small>WED</small><b>29</b></div><div class="t"><b>Smash Makati</b><span>8:00 PM · BGC Courts</span></div><span class="pill in">You’re in</span></div>
+            <div class="li"><div class="mini"><small>SAT</small><b>1</b></div><div class="t"><b>Sunday Dink</b><span>7:00 AM · Tiendesitas</span></div><span class="pill wait">Waitlist #2</span></div>
+          </div>
+          <div class="next"><div class="medal"></div><div class="t" style="flex:1"><b>Seasoned Host</b><span>5 more sessions to run</span></div><svg width="9" height="14" class="chev"><use href="#chev"/></svg></div>
+        </div>
+        <nav class="tabs">
+          <div class="tab on"><svg width="24" height="24"><use href="#i-home"/></svg>Home</div>
+          <div class="tab"><svg width="24" height="24"><use href="#i-cal"/></svg>Sessions</div>
+          <div class="tab"><div class="plus"><svg width="22" height="22"><use href="#i-plus"/></svg></div></div>
+          <div class="tab"><svg width="24" height="24"><use href="#i-grp"/></svg>Groups</div>
+          <div class="tab"><svg width="24" height="24"><use href="#i-dues"/></svg>Dues</div>
+        </nav>
+        <div class="homebar"></div>
+      </div></div>
+      <div class="cap"><em>Home</em><b>Up next, not “plan the next one”</b><span>Your next session as the ticket, the rest of the week as rows, one badge nudge. Creating lives on the + only.</span></div>
+    </div>
+
+    <!-- D · Your week (dark) -->
+    <div class="unit">
+      <div class="device"><div class="screen dark">
+        <div class="island"></div>
+        <div class="sb" style="color:#fff"><span>9:41</span><svg width="62" height="12" style="color:#fff"><use href="#bars"/></svg></div>
+        <div class="pad">
+          <div class="top"><span></span><div class="ring"><span style="background:#121B36;border-color:#121B36;color:#fff">MK</span></div></div>
+          <div class="large" style="margin-top:2px">Sessions</div>
+          <div class="seg"><span class="on">Upcoming</span><span>Past</span></div>
+          <div class="day">Sunday · 26 Oct</div>
+          <div class="group">
+            <div class="li"><div class="tile" style="background:linear-gradient(135deg,#5CCBFF,#2459E6)">SD</div><div class="t"><b>Sunday Dink</b><span>7:00 AM · 10 of 12</span></div><span class="pill host">Hosting</span></div>
+          </div>
+          <div class="day">Wednesday · 29 Oct</div>
+          <div class="group">
+            <div class="li"><div class="tile" style="background:linear-gradient(135deg,#FF86B6,#E5402A)">SM</div><div class="t"><b>Smash Makati</b><span>8:00 PM · BGC Courts</span></div><span class="pill in">You’re in</span></div>
+          </div>
+          <div class="day">Saturday · 1 Nov</div>
+          <div class="group">
+            <div class="li"><div class="tile" style="background:linear-gradient(135deg,#5CCBFF,#2459E6)">SD</div><div class="t"><b>Sunday Dink</b><span>7:00 AM · Tiendesitas</span></div><span class="pill wait">Waitlist #2</span></div>
+            <div class="li"><div class="tile" style="background:linear-gradient(135deg,#FFD15A,#D96A0C)">TC</div><div class="t"><b>Tennis Club</b><span>4:00 PM · Rizal Park</span></div><span class="pill in">You’re in</span></div>
+          </div>
+        </div>
+        <nav class="tabs">
+          <div class="tab"><svg width="24" height="24"><use href="#i-home-o"/></svg>Home</div>
+          <div class="tab on"><svg width="24" height="24" style="color:#fff"><use href="#i-cal-f"/></svg>Sessions</div>
+          <div class="tab"><div class="plus"><svg width="22" height="22"><use href="#i-plus"/></svg></div></div>
+          <div class="tab"><svg width="24" height="24"><use href="#i-grp"/></svg>Groups</div>
+          <div class="tab"><svg width="24" height="24"><use href="#i-dues"/></svg>Dues</div>
+        </nav>
+        <div class="homebar"></div>
+      </div></div>
+      <div class="cap"><em>Sessions tab · dark</em><b>Your week, across every group</b><span>Replaces the “coming later” placeholder. Grouped by day, one status pill per row.</span></div>
+    </div>
+
+    <!-- E · Create -->
+    <div class="unit">
+      <div class="device"><div class="screen">
+        <div class="island"></div>
+        <div class="sb"><span>9:41</span><svg width="62" height="12" style="color:#0E1A3D"><use href="#bars"/></svg></div>
+        <div class="pad">
+          <div class="top"><div class="chip"><svg width="16" height="16" style="color:#0E1A3D"><use href="#back"/></svg></div><div class="ring"><span>MK</span></div></div>
+          <div class="eyebrow">Sunday Dink</div>
+          <div class="large">New session</div>
+          <div class="fgroup">
+            <div class="fl"><span class="v">Sunday morning dink</span></div>
+            <div class="fl"><div class="chips"><span class="on">Pickleball</span><span>Badminton</span><span>Tennis</span><span>Other</span></div></div>
+          </div>
+          <div class="fgroup">
+            <div class="fl"><span class="k">Date</span><span class="v">Sun, 26 Oct</span></div>
+            <div class="fl"><span class="k">Time</span><span class="v">7:00 – 9:00 AM</span></div>
+            <div class="fl"><span class="k">Place</span><span class="v">Pickleball Hub, Tiendesitas</span></div>
+          </div>
+          <div class="fgroup">
+            <div class="fl"><span class="k">Seats</span><span class="v"></span><div class="stepper"><i>–</i>12<i>+</i></div></div>
+            <div class="fl"><span class="k">Fee</span><span class="v">₱200 per seat</span><svg width="9" height="14" class="chev"><use href="#chev"/></svg></div>
+          </div>
+          <div class="fgroup">
+            <div class="fl"><span class="k">Rules</span><span class="v" style="font-weight:500;font-size:12.5px;color:#5B6478">Opens now · free cancel until 24h before · +1 allowed</span><svg width="9" height="14" class="chev"><use href="#chev"/></svg></div>
+          </div>
+          <div class="note">Time zone comes from this phone. Ends default to two hours after start.</div>
+        </div>
+        <div class="sticky"><div class="btn ghost" style="flex:.7">Save draft</div><div class="btn neon">Publish</div></div>
+        <div class="homebar"></div>
+      </div></div>
+      <div class="cap"><em>New session</em><b>Ask only what you must decide</b><span>Grouped like phone settings. Smart defaults fill the end time, opening and cutoff; rules sit in one summary row. Pesos are a first-class currency.</span></div>
+    </div>
+
+    <!-- F · Group -->
+    <div class="unit">
+      <div class="device"><div class="screen">
+        <div class="island"></div>
+        <div class="sb"><span>9:41</span><svg width="62" height="12" style="color:#0E1A3D"><use href="#bars"/></svg></div>
+        <div class="pad">
+          <div class="top"><div class="chip"><svg width="16" height="16" style="color:#0E1A3D"><use href="#back"/></svg></div><div class="ring"><span>MK</span></div></div>
+          <div class="eyebrow">You organize this group</div>
+          <div class="large">Sunday Social Club</div>
+          <div class="seg"><span class="on">Upcoming</span><span>Past</span><span>Drafts</span></div>
+          <div class="group">
+            <div class="li"><div class="mini"><small>SUN</small><b>26</b></div><div class="t"><b>Sunday Dink</b><span>7:00 AM · Tiendesitas</span></div><span class="seats">10/12</span><svg width="9" height="14" class="chev"><use href="#chev"/></svg></div>
+            <div class="li"><div class="mini"><small>SAT</small><b>1</b></div><div class="t"><b>Sunday Dink</b><span>7:00 AM · 2 waiting</span></div><span class="seats">Full</span><svg width="9" height="14" class="chev"><use href="#chev"/></svg></div>
+            <div class="li"><div class="mini"><small>SUN</small><b>2</b></div><div class="t"><b>Beginners’ hour</b><span>9:00 AM · Tiendesitas</span></div><span class="seats">3/8</span><svg width="9" height="14" class="chev"><use href="#chev"/></svg></div>
+            <div class="li" style="opacity:.55"><div class="mini"><small>SUN</small><b>9</b></div><div class="t"><b>Sunday Dink</b><span>Cancelled</span></div><svg width="9" height="14" class="chev"><use href="#chev"/></svg></div>
+          </div>
+          <div class="quiet">Tap a session to manage it.</div>
+        </div>
+        <div class="sticky"><div class="btn neon">New session</div></div>
+        <div class="homebar"></div>
+      </div></div>
+      <div class="cap"><em>Group page</em><b>One line per session</b><span>Seats at a glance, upcoming/past/drafts apart, the whole row opens it. No “Manage session” button on every card.</span></div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div><h3>Shared building blocks</h3><p>A grouped list row, a segmented control, status pills and a large-title header in the UI kit, so every screen is assembled from the same quiet parts.</p></div>
+    <div><h3>Dues, the same way</h3><p>One total up top (“₱450 to pay across 2 sessions”), rows with the amount right-aligned, settled ones folded away. No underlined neon titles.</p></div>
+    <div><h3>Fixes along the way</h3><p>Peso (PHP) support with the default currency taken from the phone’s region; drop the “Refresh” links in favour of refreshing when the app comes back into view.</p></div>
+  </div>
+</div>
+</body>
+</html>

@@ -38,6 +38,20 @@ function configure() {
     "Local credentials written to ignored apps/web/.env.local (values are not logged).",
   );
 }
+// Test suites add synthetic users on every run, so the fixtures can be past
+// the first page; read every page before deciding one is missing.
+async function allUsers(admin) {
+  const users = [];
+  for (let page = 1; ; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({
+      page,
+      perPage: 200,
+    });
+    if (error) throw new Error("Local Auth users could not be listed.");
+    users.push(...data.users);
+    if (data.users.length < 200) return { users };
+  }
+}
 async function seed() {
   const env = localEnv();
   const admin = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
@@ -45,9 +59,9 @@ async function seed() {
   });
   let existing;
   for (let attempt = 0; attempt < 30; attempt++) {
-    const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    const { error } = await admin.auth.admin.listUsers({ perPage: 1 });
     if (!error) {
-      existing = data;
+      existing = await allUsers(admin);
       break;
     }
     await new Promise((resolve) => setTimeout(resolve, 500));
