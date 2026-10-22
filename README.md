@@ -373,3 +373,10 @@ Earlier documentation/planning provenance remains in Git history, including the
 [bootstrap source](https://github.com/DJPajares/project-bootstrap-template/blob/ffc643068690548995a67d4bb85c3785894f9ec6/PROJECT_BOOTSTRAP.md).
 Past provider research is not live integration evidence. Each change's PR/issue
 report records its actual checks, environment and limitations.
+
+## Email decision work
+
+The [D-05 email delivery brief](docs/superpowers/specs/2026-10-22-email-delivery-decisions.md)
+records the owner's direction to reuse Trove's Resend sender and the remaining
+recipient, scheduler, retry/quota and failure-status proposals. Delivery is not
+implemented or enabled. Trove's shared SMTP/Auth configuration is unchanged.
