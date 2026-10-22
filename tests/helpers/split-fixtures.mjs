@@ -71,6 +71,10 @@ export async function splitFixture(
   t.after(async () => {
     if (session) {
       const id = session.id;
+      // Payment QR objects live in Storage, outside the database transaction.
+      const qr = admin.storage.from("payment-qr");
+      const { data: stored } = await qr.list(id);
+      if (stored?.length) await qr.remove(stored.map((o) => `${id}/${o.name}`));
       // New dependent objects are discovered by name, so RED tests can clean up
       // before their migration exists; SQL identifiers here are fixed constants.
       if (sql("select to_regclass('app.split_runs') is not null;") === "t") {
