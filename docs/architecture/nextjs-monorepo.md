@@ -9,7 +9,9 @@ Use one full-stack Next.js App Router application in `apps/web`, with real page
 routes and dynamic no-store API Route Handlers. Put reusable, browser-safe types,
 validation, money formatting and return-path validation in `packages/domain`.
 Put verified-identity API orchestration in `packages/api`; it remains server-only
-and keeps the existing explicit Postgres RPC contracts. Supabase migrations and
+and keeps the existing explicit Postgres RPC contracts. (Amended 2026-10-22: the
+API now lives in `apps/api` as a framework-independent Hono app with Zod
+validation, still mounted by `apps/web` at `/api` on the same origin.) Supabase migrations and
 local lifecycle scripts stay at the repository root so the local project/data
 identity is preserved. No database reset is required by a source-layout change.
 

@@ -1,11 +1,18 @@
 # Foundation API
 
-The browser authenticates with Supabase Auth. The Next.js API route delegates to the server-only `packages/api` boundary, which verifies the access
+The browser authenticates with Supabase Auth. The Next.js API route mounts the Hono app in `apps/api` (`app.fetch(request, env)`), which verifies the access
 token with `getUser`, requires a verified managed email, and derives the actor
 from that response. Editable metadata is display-only. All responses use
 `Cache-Control: no-store`. Rejected unread bodies are discarded without parsing,
 bounded to 16 KiB and one second, so small authorization/method errors remain
 visible through the local proxy.
+
+Request bodies and path parameters are validated with Zod schemas. Every
+validation failure for one request maps to that request's single `422` code and
+message, so clients see the same wording whichever field was wrong. An unknown
+`GET` path returns `404 not_found`; any other method on an unknown path, a
+known path's unsupported method, and every `HEAD` request return
+`405 method_not_allowed`.
 
 | GET path                | Result                                                        | Access                                        |
 | ----------------------- | ------------------------------------------------------------- | --------------------------------------------- |
