@@ -48,7 +48,7 @@ export function RegistrationPanel({
   return (
     <section className="registration-panel" aria-label="Your registration">
       {own ? (
-        <div className="own-status" role="status">
+        <div className="own-status">
           <span className="pill">
             {event.state !== "published"
               ? "Your registration record"
@@ -83,13 +83,85 @@ export function RegistrationPanel({
           {own.fee ? (
             <p>
               <strong>
-                Amount due: {feeLabel({ ...d, feeMinor: own.fee.totalMinor })}
+                {own.fee.liabilityState === "removed_before_cutoff"
+                  ? "Unpaid fee removed: "
+                  : own.fee.markedPaid
+                    ? "Fee marked paid manually: "
+                    : "Amount due: "}
+                {feeLabel({
+                  ...d,
+                  currency: own.fee.currency,
+                  feeMinor: own.fee.totalMinor,
+                })}
               </strong>{" "}
               · {own.fee.chargedSeats} chargeable{" "}
-              {own.fee.chargedSeats === 1 ? "seat" : "seats"}. Payment markers
-              and withdrawal controls come in the next increments; no transfer
-              is verified here.
+              {own.fee.chargedSeats === 1 ? "seat" : "seats"}.
+              {own.fee.liabilityState === "removed_before_cutoff"
+                ? " This allocation is kept for history; no amount is due."
+                : own.state === "withdrawn"
+                  ? " Your place is released. This fee remains unless an organizer explicitly waives it, even if someone fills the vacancy."
+                  : ""}
+              {own.fee.markedPaid
+                ? " The marker is a manual record, not verification of a transfer. Any refund is arranged outside RallyPoint."
+                : ""}
             </p>
+          ) : null}
+          {own.state === "confirmed" || own.state === "waitlisted" ? (
+            event.registrationWindow !== "closed" ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  mutation.run(`/api/registrations/${event.slug}/withdraw`, {
+                    partyId: own.id,
+                  });
+                }}
+              >
+                <fieldset disabled={mutation.busy || mutation.uncertain}>
+                  <legend>
+                    {own.state === "waitlisted"
+                      ? "Leave the waitlist"
+                      : "Withdraw your party"}
+                  </legend>
+                  <p id="withdraw-terms">
+                    This withdraws{" "}
+                    {own.seats === 2
+                      ? "you and your guest together"
+                      : "your whole registration"}{" "}
+                    and releases your places. Before cutoff, unpaid fees are
+                    removed. At or after cutoff, an existing fee remains unless
+                    an organizer explicitly waives it. A waiting party may be
+                    promoted before this request reaches the server; its
+                    resulting fee follows the same cutoff rule. Paid records are
+                    kept; any refund is arranged with the organizer outside
+                    RallyPoint.
+                  </p>
+                  <p className="field-help">
+                    Cancellation cutoff:{" "}
+                    {new Date(d.cutoffAt!).toLocaleString(undefined, {
+                      timeZone: d.timeZone,
+                    })}{" "}
+                    ({d.timeZone}). The server checks the time when processing
+                    your request. Self-service withdrawal closes at start.
+                  </p>
+                  <button
+                    className="button secondary"
+                    aria-describedby="withdraw-terms"
+                  >
+                    {mutation.busy
+                      ? "Checking withdrawal…"
+                      : own.state === "waitlisted"
+                        ? "Withdraw from waitlist"
+                        : own.seats === 2
+                          ? "Withdraw both seats"
+                          : "Withdraw my place"}
+                  </button>
+                </fieldset>
+              </form>
+            ) : (
+              <p>
+                Self-service withdrawal is closed. Your record remains visible.
+              </p>
+            )
           ) : null}
         </div>
       ) : event.registrationWindow === "open" ? (
@@ -141,8 +213,7 @@ export function RegistrationPanel({
             <p className="field-help">
               Before cutoff, withdrawing removes unpaid fees; at/after cutoff an
               obligation remains unless waived. Refunds are handled outside
-              RallyPoint. Withdrawal controls are not available in this build
-              yet.
+              RallyPoint. Self-service withdrawal closes at start.
             </p>
             {!Number.isSafeInteger(total) ? (
               <Notice>The party fee is too large to store precisely.</Notice>
@@ -195,8 +266,16 @@ export function RegistrationPanel({
                   </span>
                   {view.canManage && p.fee ? (
                     <span>
-                      Amount due:{" "}
-                      {feeLabel({ ...d, feeMinor: p.fee.totalMinor })}
+                      {p.fee.liabilityState === "removed_before_cutoff"
+                        ? "Unpaid fee removed: "
+                        : p.fee.markedPaid
+                          ? "Marked paid manually: "
+                          : "Amount due: "}
+                      {feeLabel({
+                        ...d,
+                        currency: p.fee.currency,
+                        feeMinor: p.fee.totalMinor,
+                      })}
                     </span>
                   ) : null}
                 </li>

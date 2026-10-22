@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { AppEnv } from "./env";
-import { ApiError, json } from "./http";
+import { ApiError, discardRejectedBody, json } from "./http";
 import { sessionRoute, sessionRequest } from "./sessions";
 import { registrationRoute, registrationRequest } from "./registrations";
 function connection(env: AppEnv) {
@@ -169,6 +169,7 @@ export default {
         );
       return json({ group });
     } catch (error) {
+      await discardRejectedBody(request);
       if (error instanceof ApiError)
         return json(
           { error: { code: error.code, message: error.message } },

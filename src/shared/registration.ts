@@ -7,6 +7,9 @@ export interface Fee {
   unitMinor: number;
   chargedSeats: number;
   totalMinor: number;
+  liabilityState: "due" | "removed_before_cutoff";
+  removedAt: string | null;
+  markedPaid: boolean;
 }
 export interface OwnParty {
   id: string;
@@ -16,6 +19,7 @@ export interface OwnParty {
   guestName: string;
   queuePosition: number | null;
   consentVersion: number;
+  withdrawnAt: string | null;
   fee: Fee | null;
 }
 export interface RegistrationView {
@@ -29,6 +33,6 @@ export interface RegistrationView {
     seats: number;
     id?: string;
     state?: string;
-    fee?: { currency: string; totalMinor: number } | null;
+    fee?: Fee | null;
   }>;
 }
