@@ -348,7 +348,7 @@ contains the original research and proposed future contracts. On 2026-10-22,
 the owner requested Next.js, Turborepo and pnpm, replacing the original frontend
 and package-manager choice under D-11. Cloudflare remains the hosting target
 through OpenNext; Supabase and accepted product policies remain in place. The remaining D-01
-membership and D-03/D-04/D-05 policies retain their own gates. On 2026-10-22
+membership and D-03/D-04 policies retain their own gates; the accepted D-05 delivery choices are recorded in the email decision brief below. On 2026-10-22
 the owner accepted creator-as-owner bootstrap and the pre-booking edit boundary
 for P-02. General membership and invitation policies remain separate.
 
@@ -373,3 +373,11 @@ Earlier documentation/planning provenance remains in Git history, including the
 [bootstrap source](https://github.com/DJPajares/project-bootstrap-template/blob/ffc643068690548995a67d4bb85c3785894f9ec6/PROJECT_BOOTSTRAP.md).
 Past provider research is not live integration evidence. Each change's PR/issue
 report records its actual checks, environment and limitations.
+
+## Email decision work
+
+The [D-05 email delivery brief](docs/superpowers/specs/2026-10-22-email-delivery-decisions.md)
+records the owner's accepted Trove sender reuse, recipient/timing rules,
+scheduler, retry/quota ceilings and failure statuses (approved 2026-10-22).
+P-06 owns implementation; P-12 owns live sender/key/shared-quota/runtime verification.
+Delivery is not implemented or enabled. Trove's shared SMTP/Auth configuration is unchanged.
