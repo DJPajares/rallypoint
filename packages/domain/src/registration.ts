@@ -127,6 +127,42 @@ export interface ManagedPaymentInstructions {
     updatedBy: string;
   } | null;
 }
+/** The kinds of email RallyPoint sends; matches the renderer in packages/email. */
+export type EmailKind =
+  | "joined_confirmed"
+  | "joined_waitlisted"
+  | "promoted"
+  | "released"
+  | "cancelled"
+  | "instructions_changed"
+  | "reminder";
+/**
+ * Organizer/co-host view of one email: "queued" covers waiting and sending, and
+ * "sent" means the email service accepted it, not that anyone read it. The
+ * reason is a safe code, or null. No address is ever included.
+ */
+export interface EmailStatus {
+  kind: EmailKind;
+  status: "queued" | "sent" | "not_confirmed" | "not_sent";
+  reason: string | null;
+  attempts: number;
+  at: string;
+}
+/** Organizer/co-host view: updates withheld from too many people, and the cancellation tally. */
+export interface EmailSummary {
+  suppressed: Array<{
+    kind: EmailKind;
+    reason: "audience_limit";
+    recipients: number;
+    at: string;
+  }>;
+  cancellation: {
+    queued: number;
+    sent: number;
+    notConfirmed: number;
+    notSent: number;
+  } | null;
+}
 export interface RegistrationView {
   own: OwnParty | null;
   canManage: boolean;
@@ -134,6 +170,8 @@ export interface RegistrationView {
   rosterAllowed: boolean;
   counts: Counts;
   split?: SplitSummary;
+  /** Organizers/co-hosts only. */
+  emailSummary?: EmailSummary;
   roster: Array<{
     primaryName: string;
     guestName: string;
@@ -151,6 +189,8 @@ export interface RegistrationView {
     releasable?: boolean;
     /** Organizers/co-hosts only; what this party said about sending payment. */
     paymentNote?: PaymentNote | null;
+    /** Organizers/co-hosts only; the latest email of each kind to this party's primary. */
+    emails?: EmailStatus[];
   }>;
 }
 import type {

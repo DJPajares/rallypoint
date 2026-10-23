@@ -430,6 +430,11 @@ test("signals leave one durable, private email job per recipient", async (t) => 
         );
         assert.equal((await cancel(s)).status, 200);
         assert.equal(count(s, "cancelled"), 0);
+        const summary = (await view(s, organizer)).emailSummary;
+        assert.equal(summary.suppressed[0].reason, "audience_limit");
+        assert.equal(summary.suppressed[0].kind, "cancelled");
+        assert.equal(summary.suppressed[0].recipients, 51);
+        assert.equal(summary.cancellation, null);
         assert.equal(
           sql(
             `select count(*)||':'||min(reason)||':'||min(recipients)||':'||min(kind) from app.email_suppressions where session_id='${s.id}';`,
@@ -476,6 +481,125 @@ test("signals leave one durable, private email job per recipient", async (t) => 
             `delete from app.email_jobs where session_id='${s.id}' and source_key like 'filler-%';`,
           );
         }
+      },
+    );
+
+    await t.test(
+      "organizers see the latest email of each kind in four plain states; nobody else sees any",
+      async () => {
+        const s = await event("3"),
+          own = await join(s, actors[0]);
+        const emails = async () =>
+          (await view(s, organizer)).roster.find((r) => r.id === own.id).emails;
+        let seen = await emails();
+        assert.equal(seen[0].kind, "joined_confirmed");
+        assert.equal(seen[0].status, "queued");
+        assert.equal(seen[0].reason, null);
+        assert.equal(seen[0].attempts, 0);
+        assert.ok(!Number.isNaN(Date.parse(seen[0].at)));
+        const set = (state, reason, attempts = 0) =>
+          sql(
+            `update app.email_jobs set state='${state}',reason=${reason ? `'${reason}'` : "null"},attempts=${attempts} where session_id='${s.id}' and kind='joined_confirmed';`,
+          );
+        const first = async () => {
+          const e = (await emails())[0];
+          return [e.status, e.reason];
+        };
+        // Waiting, in flight and the in-flight marker all read as queued, with no reason.
+        set("sending", "attempting", 1);
+        seen = await emails();
+        assert.deepEqual(
+          [seen[0].status, seen[0].reason, seen[0].attempts],
+          ["queued", null, 1],
+        );
+        set("queued", "daily_limit", 1);
+        assert.deepEqual(await first(), ["queued", "daily_limit"]);
+        set("queued", "monthly_limit", 1);
+        assert.deepEqual(await first(), ["queued", "monthly_limit"]);
+        set("queued", "attempting", 1);
+        assert.deepEqual(await first(), ["queued", null]);
+        set("queued", "rate_limited", 1);
+        assert.deepEqual(
+          await first(),
+          ["queued", null],
+          "A provider's own code is not shown",
+        );
+        set("sent", null, 1);
+        assert.deepEqual(await first(), ["sent", null]);
+        set("not_confirmed", "timeout", 2);
+        assert.deepEqual(await first(), ["not_confirmed", null]);
+        for (const reason of [
+          "superseded",
+          "expired",
+          "rejected",
+          "attempts_exhausted",
+          "delivery_disabled",
+          "queue_capacity",
+          "no_verified_email",
+          "destination_changed",
+        ]) {
+          set("not_sent", reason, 3);
+          assert.deepEqual(await first(), ["not_sent", reason]);
+        }
+        set("not_sent", "something_internal", 3);
+        assert.deepEqual(await first(), ["not_sent", null]);
+
+        // Only the latest job of a kind is shown.
+        sql(
+          `insert into app.email_jobs(kind,session_id,party_id,user_id,source_key,state,next_attempt_at,expires_at)
+            values('joined_confirmed','${s.id}','${own.id}','${actors[0].id}','later-signal','sent',now(),now()+interval '1 hour');`,
+        );
+        seen = await emails();
+        assert.equal(
+          seen.filter((e) => e.kind === "joined_confirmed").length,
+          1,
+        );
+        assert.equal(seen[0].status, "sent");
+
+        // The player and a stranger get neither key, and no address is in any view.
+        const mine = JSON.stringify(await view(s, actors[0]));
+        assert.ok(!mine.includes('"emails"') && !mine.includes("emailSummary"));
+        const theirs = JSON.stringify(await view(s, actors[1]));
+        assert.ok(
+          !theirs.includes('"emails"') && !theirs.includes("emailSummary"),
+        );
+        const managed = JSON.stringify(await view(s, organizer));
+        assert.ok(
+          managed.includes('"emails"') && managed.includes("emailSummary"),
+        );
+        for (const text of [mine, theirs, managed]) {
+          assert.ok(
+            !text.includes("@"),
+            "No email address in a registration view",
+          );
+        }
+      },
+    );
+
+    await t.test(
+      "the cancellation tally counts each state once and is empty before a cancellation",
+      async () => {
+        const s = await event("5");
+        for (let i = 0; i < 4; i++) await join(s, actors[i]);
+        assert.equal(
+          (await view(s, organizer)).emailSummary.cancellation,
+          null,
+        );
+        assert.equal((await cancel(s)).status, 200);
+        const ordered = sql(
+          `select string_agg(id::text,',' order by user_id) from app.email_jobs where session_id='${s.id}' and kind='cancelled';`,
+        ).split(",");
+        assert.equal(ordered.length, 4);
+        const states = ["queued", "sent", "not_confirmed", "not_sent"];
+        ordered.forEach((id, i) =>
+          sql(
+            `update app.email_jobs set state='${states[i]}' where id='${id}';`,
+          ),
+        );
+        assert.deepEqual((await view(s, organizer)).emailSummary, {
+          suppressed: [],
+          cancellation: { queued: 1, sent: 1, notConfirmed: 1, notSent: 1 },
+        });
       },
     );
 

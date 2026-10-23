@@ -9,7 +9,7 @@ provides the public shell, managed sessions, creator-owned groups, saved session
 drafts, unlisted publication, verified participant/+1 registration and a strict
 party waitlist, whole-party withdrawal and immediate promotion, and manual
 paid/unpaid markers, fee waivers, per-seat check-in and organizer payment
-instructions with an optional QR image. Email remains with subsequent tasks. Session cancellation preserves registration and paid history while ending unpaid liability.
+instructions with an optional QR image. Session emails are described under [Session emails](#session-emails). Session cancellation preserves registration and paid history while ending unpaid liability.
 
 ## Run locally
 
@@ -152,7 +152,7 @@ version and durable changed-field signal. P-03 must set `bookings_started_at`
 under its booking transaction's session lock before enabling registration; after
 that all detail changes are locked. The accepted post-booking edit rules (PRD
 D-14) replace that lock once P-16 implements them.
-P-06 owns outbound change notifications; no email is sent here.
+Material-change emails wait for P-16 with the post-booking edit rules; see [Session emails](#session-emails).
 
 `pnpm test:api` also checks owner bootstrap, private drafts, invalid
 publication, simultaneous retry/version conflicts, share projections, booked-edit
@@ -200,8 +200,8 @@ Organizers mark payments and waive fees as described below.
 Withdrawal releases seats and reconciles the strict whole-party queue in the same
 transaction. A two-seat head waits until both seats are free; later solos cannot
 bypass it. Removing a waiting head also reconciles the remaining queue. Promotion
-creates one fee and one durable signal before start. Email delivery is independent
-and belongs to P-06. If a response is interrupted, keep the page open and use
+creates one fee and one durable signal before start. The promotion email is
+independent of the promotion (see [Session emails](#session-emails)). If a response is interrupted, keep the page open and use
 **Check result** or **Retry same request** before taking another action.
 
 `pnpm test:api` checks simultaneous last-seat joins, duplicate joining and
@@ -323,12 +323,12 @@ a spot or fee, never appears on the confirmed-participant roster, and never goes
 into an email. Undoing removes the note from every view, and there is no image
 upload.
 
-**Email waits for P-06.** Releasing a spot saves a `released` registration
-event, and saving, changing or removing payment instructions on a published
-session that has bookings saves one private notice per saved revision (it holds
-no instruction text). No email is sent yet. P-06 will email the released player,
-and send confirmed and waitlisted primaries one message linking to the session;
-it should combine several unsent notices for the same session into one.
+**Emails.** Releasing a spot saves a `released` registration event, and saving,
+changing or removing payment instructions on a published session that has
+bookings saves one private notice per saved revision (it holds no instruction
+text). Each leaves a queued email: one to the released player, and one to each
+confirmed and waitlisted primary linking to the session, with several unsent
+notices for the same person combined. See [Session emails](#session-emails).
 
 `tests/payment-modes-domain.test.mjs`, `tests/payment-modes.test.mjs`,
 `tests/release-unpaid.test.mjs`, `tests/payment-notes.test.mjs`,
@@ -377,8 +377,8 @@ removal records the cancelling actor/time. Paid records remain unchanged. Arrang
 any refund outside RallyPoint; the app never says a refund happened.
 
 Previously published links show **Cancelled**. Cancelled drafts remain private.
-A private durable cancellation signal is saved in the same transaction for P-06;
-this action sends no email. Interrupted requests use **Check result** or
+A private durable cancellation signal is saved in the same transaction and queues
+the cancellation emails described under [Session emails](#session-emails). Interrupted requests use **Check result** or
 **Retry same request** without a second cancellation. Current roles are rechecked
 on replay and recovery.
 
@@ -519,7 +519,8 @@ registration signals. Withdrawal adds auditable liability removal and preserves 
 Payment tracking adds revisioned paid/unpaid markers, waivers and a per-fee
 change history. Attendance adds revisioned per-seat records with their own change
 history. Payment instructions add a separate revisioned record and a private
-QR image read only through the API. Outbound delivery remains later work.
+QR image read only through the API. Session emails are described under
+[Session emails](#session-emails).
 
 ## Project destinations
 
@@ -536,14 +537,88 @@ Earlier documentation/planning provenance remains in Git history, including the
 Past provider research is not live integration evidence. Each change's PR/issue
 report records its actual checks, environment and limitations.
 
-## Email decision work
+## Session emails
 
+P-06 sends short account emails about a person's own place. A failed or missing
+email never changes a spot, a promotion, a release, a cancellation or a fee; the
+session page stays the authority.
+
+**What is sent, and to whom.** Only the primary account receives anything; guests,
+other participants and organizers (as organizers) do not.
+
+| Email           | Sent to                                                                                 |
+| --------------- | --------------------------------------------------------------------------------------- |
+| Booking         | The primary who joined with a confirmed place                                           |
+| Waitlist        | The primary who joined the waitlist                                                     |
+| Moved up        | The primary promoted from the waitlist                                                  |
+| Spot released   | The primary whose unpaid spot an organizer gave to the waitlist                         |
+| Cancellation    | Primaries confirmed or waitlisted at cancellation, and those whose unpaid fee it ended  |
+| Payment details | Confirmed and waitlisted primaries, when published payment instructions change         |
+| Reminder        | The primary of a party confirmed at least 24 hours before the start, still confirmed    |
+
+Subjects are generic. A body holds only the person's own status, the session
+title, its local date and time, and a link. It never names other participants,
+payment details or notes, and it has no open or click tracking. A reminder is
+attempted once, during the 15 minutes after its time, and never late; a
+confirmation or promotion after that time gets no catch-up reminder. Booked
+details stay locked until P-16, so there are no material-change emails.
+
+**What organizers see.** In a person's details on game day, an **Emails** list
+shows the latest email of each kind for that person. A cancelled session shows
+one line of cancellation counts. Addresses are never shown. The only words are:
+
+| Words                                   | Meaning                                                                      |
+| --------------------------------------- | ---------------------------------------------------------------------------- |
+| Queued                                  | Waiting, or being sent. "Queued · daily email limit" (or monthly) when held for a sending limit |
+| Sent to email service                   | The email service accepted it. Not "delivered": RallyPoint cannot know       |
+| Not confirmed                           | An attempt's outcome is unknown (for example a timeout), so RallyPoint will not say it was or wasn’t sent |
+| Not sent · {reason}                     | It will not be sent: no longer applies, too late, email service refused it, email service didn’t accept it, email is off, too many emails waiting, no verified email, or email address changed |
+
+Bounces and later delivery problems are visible only in the Resend dashboard;
+RallyPoint does not receive them.
+
+**Ceilings.** A scheduled run handles at most 5 emails, one request at a time and
+at least a second apart. At most 50 attempts per UTC day and 1,500 per UTC month
+are made; each attempt counts, retries and unknown outcomes included. Each email
+is tried up to 3 times (now, after 1 minute, after 5 more) with a 10-second
+timeout and a stable idempotency key. A cancellation or payment-details update
+that would reach more than 50 people is withheld entirely (never sent to "the
+first 50"), and the organizer sees "Cancellation emails weren’t sent: more than
+50 people." At most 500 emails wait at once; the 501st is marked not sent. An
+email is never attempted after it expires.
+
+**Switching it on.** Delivery is off unless `EMAIL_DELIVERY_ENABLED=true` and
+`APP_ORIGIN` (the address the links point at) is set. While it is off, due
+emails are marked **Not sent · email is off** rather than held. `EMAIL_PROVIDER`
+is `mailpit` (local only) or `resend`; `MAILPIT_URL` is the local inbox's address.
+`apps/web/.env.example` documents these for Next. The Worker that sends reads
+them, with the Supabase settings, from `apps/web/.dev.vars` or `--var`; `db:start`
+does not add the email variables. A live Resend key would be read only from the
+`RESEND_API_KEY` server secret, and none is set or needed here.
+
+**Locally.** The sender is the every-minute `scheduled` handler in the Cloudflare
+Worker (`apps/web/worker.ts`); `pnpm dev` queues emails but does not send them.
+Mailpit is the local inbox at `http://127.0.0.1:54324`. The Worker-runtime check
+that passed on 2026-10-23, with local synthetic data (run `pnpm db:start` first):
+
+1. `pnpm --filter @rallypoint/web build:cloudflare`
+2. `pnpm --filter @rallypoint/web exec wrangler dev --test-scheduled --ip 127.0.0.1 --port 8788 --var EMAIL_DELIVERY_ENABLED:true --var EMAIL_PROVIDER:mailpit --var MAILPIT_URL:http://127.0.0.1:54324 --var APP_ORIGIN:http://127.0.0.1:8788`
+3. Join a synthetic published session through that Worker, then call
+   `GET http://127.0.0.1:8788/__scheduled?cron=*+*+*+*+*`.
+4. The job moves from queued to sent and one message reaches the account in Mailpit.
+
+Integration tests cover the queue and organizer status
+(`tests/email-outbox.test.mjs`), dispatch rules (`tests/email-dispatch.test.mjs`),
+the drain (`tests/email-drain.test.mjs`), rendering
+(`tests/email-render-domain.test.mjs`) and the status words
+(`tests/game-day-domain.test.mjs`).
+
+**Not live yet.** Staging has no cron and sends no email until P-12, which owns
+the live sender, its domain-restricted key, the shared-quota acceptance and
+runtime verification. This section is local synthetic evidence only.
 The [D-05 email delivery brief](docs/superpowers/specs/2026-10-22-email-delivery-decisions.md)
-records the owner's accepted Trove sender reuse, recipient/timing rules,
-scheduler, retry/quota ceilings and failure statuses (approved 2026-10-22).
-P-06 owns implementation; P-12 owns live sender/key/shared-quota/runtime verification.
-Delivery is not implemented or enabled. Trove's shared SMTP/Auth configuration is unchanged.
-
+records the accepted recipient and timing rules, scheduler, ceilings and
+failure statuses.
 
 ## Phone staging
 

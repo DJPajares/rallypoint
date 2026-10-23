@@ -1,4 +1,8 @@
-import type { PaymentNote, RegistrationView } from "./registration.ts";
+import type {
+  EmailSummary,
+  PaymentNote,
+  RegistrationView,
+} from "./registration.ts";
 
 // What an organizer needs at a glance on the day (PRD D-17, R2). Every number
 // counts records the organizer already sees; nothing here decides anything.
@@ -87,6 +91,80 @@ export function noteWords(note: PaymentNote | null | undefined): string {
 export function partyNoteWords(p: RosterParty): string {
   if (p.fee && (p.fee.liabilityState !== "due" || p.fee.markedPaid)) return "";
   return noteWords(p.paymentNote);
+}
+
+const emailKinds: Record<string, string> = {
+  joined_confirmed: "Booking",
+  joined_waitlisted: "Waitlist",
+  promoted: "Moved up",
+  released: "Spot released",
+  cancelled: "Cancellation",
+  instructions_changed: "Payment details",
+  reminder: "Reminder",
+};
+/** The short name an organizer sees before an email's status. */
+export const emailKindLabel = (kind: string): string =>
+  emailKinds[kind] ?? "Email";
+
+const notSentWords: Record<string, string> = {
+  superseded: "no longer applies",
+  expired: "too late",
+  rejected: "email service refused it",
+  attempts_exhausted: "email service didn’t accept it",
+  delivery_disabled: "email is off",
+  queue_capacity: "too many emails waiting",
+  no_verified_email: "no verified email",
+  destination_changed: "email address changed",
+};
+
+/**
+ * What the organizer may be told about one email. "Sent" means the email
+ * service accepted it; nothing here says it was delivered or read. A waiting
+ * email only ever explains a sending limit; an unknown reason says nothing.
+ */
+export function emailWords(e: {
+  status: string;
+  reason: string | null;
+  kind: string;
+}): string {
+  switch (e.status) {
+    case "queued":
+      return e.reason === "daily_limit"
+        ? "Queued · daily email limit"
+        : e.reason === "monthly_limit"
+          ? "Queued · monthly email limit"
+          : "Queued";
+    case "sent":
+      return "Sent to email service";
+    case "not_confirmed":
+      return "Not confirmed";
+    default: {
+      const why = e.reason ? notSentWords[e.reason] : undefined;
+      return why ? `Not sent · ${why}` : "Not sent";
+    }
+  }
+}
+
+/**
+ * One line on how the cancellation emails went, or "" when none were queued or
+ * withheld. Zero counts are left out. A withheld update says why in place of
+ * counts: it was never sent to anyone.
+ */
+export function cancellationEmailWords(
+  summary: EmailSummary | undefined,
+): string {
+  if (!summary) return "";
+  if (summary.suppressed.some((s) => s.kind === "cancelled"))
+    return "Cancellation emails weren’t sent: more than 50 people.";
+  const c = summary.cancellation;
+  if (!c) return "";
+  const parts = [
+    c.sent ? `${c.sent} sent to email service` : "",
+    c.queued ? `${c.queued} queued` : "",
+    c.notConfirmed ? `${c.notConfirmed} not confirmed` : "",
+    c.notSent ? `${c.notSent} not sent` : "",
+  ].filter(Boolean);
+  return parts.length ? `Cancellation emails: ${parts.join(" · ")}` : "";
 }
 
 /** The roster in three groups, narrowed by the chosen filter. Queue order is kept. */

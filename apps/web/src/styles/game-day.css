@@ -88,6 +88,20 @@
   margin: 0;
   color: var(--color-text-muted);
 }
+/* Email status for one person: quiet words in a plain list, never a badge. */
+.party-details__emails h3 {
+  margin: 0 0 var(--space-1);
+  font-size: inherit;
+  color: var(--color-text-muted);
+}
+.party-details__emails ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+}
 .release-spot {
   display: grid;
   gap: var(--space-2);
