@@ -145,6 +145,15 @@ test("deliveryFromEnv picks a provider from the environment alone", () => {
   );
 });
 
+test("an empty API schema setting falls back to the default schema", () => {
+  const keys = { SUPABASE_URL: env.SUPABASE_URL, SUPABASE_SECRET_KEY: "x" };
+  const schemaOf = (extra) =>
+    deliveryFromEnv({ ...keys, ...extra }).db.rest.schemaName;
+  assert.equal(schemaOf({ SUPABASE_API_SCHEMA: "" }), "api");
+  assert.equal(schemaOf({}), "api");
+  assert.equal(schemaOf({ SUPABASE_API_SCHEMA: "other_api" }), "other_api");
+});
+
 test("the drain sends each due email once, within the ceilings", async (t) => {
   const organizer = await login("organizer@rallypoint.test"),
     actors = [],
@@ -451,7 +460,7 @@ test("the drain sends each due email once, within the ceilings", async (t) => {
     });
 
     await t.test(
-      "a bad stored time ends the job as rejected instead of retrying",
+      "a bad stored time ends the job as render_failed instead of retrying",
       async () => {
         resetSender();
         const s = await event();
@@ -469,7 +478,7 @@ test("the drain sends each due email once, within the ceilings", async (t) => {
         assert.equal(own(p).length, 0);
         const [job] = jobsFor(s, actors[0]);
         assert.equal(job.state, "not_sent");
-        assert.equal(job.reason, "rejected");
+        assert.equal(job.reason, "render_failed");
         clearJobs();
       },
     );

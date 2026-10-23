@@ -110,6 +110,7 @@ const notSentWords: Record<string, string> = {
   superseded: "no longer applies",
   expired: "too late",
   rejected: "email service refused it",
+  render_failed: "couldn’t be prepared",
   attempts_exhausted: "email service didn’t accept it",
   delivery_disabled: "email is off",
   queue_capacity: "too many emails waiting",

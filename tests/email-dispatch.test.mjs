@@ -1118,6 +1118,51 @@ test("dispatch leases, rechecks and accounts for every email attempt", async (t)
     );
 
     await t.test(
+      "an open circuit names its limit on due waiting jobs and still creates reminders",
+      async () => {
+        resetSender();
+        const s = await event("6");
+        const A = await join(s, actors[0]);
+        sql(
+          `update app.registration_events set created_at=created_at-interval '1 hour' where party_id='${A.id}';`,
+        );
+        shift(s.id, "startsAt", "'23 hours 59 minutes'");
+        const before = sql(
+          `select next_attempt_at::text||'|'||expires_at::text from app.email_jobs where session_id='${s.id}' and kind='joined_confirmed';`,
+        );
+        assert.equal(forSession(s, "reminder").length, 0);
+        sql(
+          `update app.email_sender set circuit_until=clock_timestamp()+interval '1 hour',circuit_reason='daily_limit';`,
+        );
+        const open = await claim(5);
+        assert.deepEqual(open, { leased: true, jobs: [] });
+        const [reminder] = forSession(s, "reminder");
+        assert.ok(reminder, "The reminder due during the open circuit exists");
+        assert.equal(reminder.state, "queued");
+        assert.equal(reminder.reason, "daily_limit");
+        const [join1] = forSession(s, "joined_confirmed");
+        assert.deepEqual([join1.state, join1.reason], ["queued", "daily_limit"]);
+        assert.equal(
+          sql(
+            `select next_attempt_at::text||'|'||expires_at::text from app.email_jobs where session_id='${s.id}' and kind='joined_confirmed';`,
+          ),
+          before,
+          "Neither the next attempt nor the expiry moved",
+        );
+        const viewed = (
+          await (await request(`/api/registrations/${s.slug}`, organizer)).json()
+        ).registration.roster.find((r) => r.id === A.id).emails;
+        for (const kind of ["joined_confirmed", "reminder"]) {
+          const e = viewed.find((x) => x.kind === kind);
+          assert.deepEqual([e.status, e.reason], ["queued", "daily_limit"], kind);
+        }
+        shift(s.id, "startsAt", "'72 hours'");
+        resetSender();
+        clearJobs();
+      },
+    );
+
+    await t.test(
       "a join during the reminder window never deadlocks the claim",
       async () => {
         resetSender();

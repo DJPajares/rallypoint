@@ -558,8 +558,8 @@ other participants and organizers (as organizers) do not.
 
 Subjects are generic. A body holds only the person's own status, the session
 title, its local date and time, and a link. It never names other participants,
-payment details or notes, and it has no open or click tracking. A reminder is
-attempted once, during the 15 minutes after its time, and never late; a
+payment details or notes, and it has no open or click tracking. There is
+one reminder per session and person, attempted during the 15 minutes after it's due, and never late; a
 confirmation or promotion after that time gets no catch-up reminder. Booked
 details stay locked until P-16, so there are no material-change emails.
 
@@ -572,7 +572,7 @@ one line of cancellation counts. Addresses are never shown. The only words are:
 | Queued                                  | Waiting, or being sent. "Queued · daily email limit" (or monthly) when held for a sending limit |
 | Sent to email service                   | The email service accepted it. Not "delivered": RallyPoint cannot know       |
 | Not confirmed                           | An attempt's outcome is unknown (for example a timeout), so RallyPoint will not say it was or wasn’t sent |
-| Not sent · {reason}                     | It will not be sent: no longer applies, too late, email service refused it, email service didn’t accept it, email is off, too many emails waiting, no verified email, or email address changed |
+| Not sent · {reason}                     | It will not be sent: no longer applies, too late, email service refused it, couldn’t be prepared, email service didn’t accept it, email is off, too many emails waiting, no verified email, or email address changed |
 
 Bounces and later delivery problems are visible only in the Resend dashboard;
 RallyPoint does not receive them.

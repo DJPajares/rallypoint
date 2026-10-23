@@ -95,7 +95,8 @@ test("signals leave one durable, private email job per recipient", async (t) => 
   const organizer = await login("organizer@rallypoint.test"),
     actors = [],
     events = [],
-    extraUsers = [];
+    extraUsers = [],
+    crowdIds = [];
   const nonce = crypto.randomUUID().slice(0, 8);
   async function event(capacity = "6", extra = {}) {
     const r = await request(`/api/groups/${firstGroup}/sessions`, organizer, {
@@ -418,6 +419,7 @@ test("signals leave one durable, private email job per recipient", async (t) => 
         for (let i = 0; i < 51; i++) {
           const a = await account(`c${i}`);
           crowd.push(a.id);
+          crowdIds.push(a.id);
           extraUsers.push(a.id);
         }
         sql(
@@ -485,6 +487,127 @@ test("signals leave one durable, private email job per recipient", async (t) => 
     );
 
     await t.test(
+      "expired waiting jobs read as ended with no drain running, and do not fill the ceiling",
+      async () => {
+        const s = await event("5");
+        const own = await join(s, actors[0]);
+        const emails = async () =>
+          (await view(s, organizer)).roster.find((r) => r.id === own.id).emails;
+        const expire = (ambiguous) =>
+          sql(
+            `update app.email_jobs set expires_at=now()-interval '1 minute',ambiguous=${ambiguous} where session_id='${s.id}' and kind='joined_confirmed';`,
+          );
+        assert.equal((await emails())[0].status, "queued");
+        expire(false);
+        let [e] = await emails();
+        assert.deepEqual([e.status, e.reason], ["not_sent", "expired"]);
+        assert.equal(
+          sql(
+            `select state from app.email_jobs where session_id='${s.id}' and kind='joined_confirmed';`,
+          ),
+          "queued",
+          "Nothing ran: the stored state is unchanged",
+        );
+        expire(true);
+        [e] = await emails();
+        assert.deepEqual([e.status, e.reason], ["not_confirmed", null]);
+        sql(
+          `update app.email_jobs set state='sending' where session_id='${s.id}';`,
+        );
+        [e] = await emails();
+        assert.equal(e.status, "not_confirmed", "In flight and past expiry too");
+
+        // The cancellation tally counts such jobs the same way.
+        const t2 = await event("5");
+        for (let i = 0; i < 3; i++) await join(t2, actors[i]);
+        assert.equal((await cancel(t2)).status, 200);
+        const order = sql(
+          `select string_agg(id::text,',' order by user_id) from app.email_jobs where session_id='${t2.id}' and kind='cancelled';`,
+        ).split(",");
+        assert.equal(order.length, 3);
+        sql(
+          `update app.email_jobs set expires_at=now()-interval '1 minute',ambiguous=true where id='${order[0]}';
+           update app.email_jobs set expires_at=now()-interval '1 minute' where id='${order[1]}';`,
+        );
+        assert.deepEqual((await view(t2, organizer)).emailSummary.cancellation, {
+          queued: 1,
+          sent: 0,
+          notConfirmed: 1,
+          notSent: 1,
+        });
+
+        // 500 expired waiting rows leave room for a new join's job.
+        const s3 = await event("2");
+        sql(
+          `insert into app.email_jobs(kind,session_id,user_id,source_key,state,next_attempt_at,expires_at)
+            select 'reminder','${s3.id}','${actors[5].id}','filler-'||g,'queued',now()-interval '2 hours',now()-interval '1 hour' from generate_series(1,500) g;`,
+        );
+        try {
+          await join(s3, actors[0]);
+          assert.deepEqual(jobs(s3, "joined_confirmed"), [
+            `${actors[0].id}:queued:`,
+          ]);
+        } finally {
+          sql(
+            `delete from app.email_jobs where session_id='${s3.id}' and source_key like 'filler-%';`,
+          );
+        }
+      },
+    );
+
+    await t.test(
+      "a payment-details update is limited by its whole audience, and a stale withheld note goes away",
+      async () => {
+        assert.equal(crowdIds.length, 51);
+        const s = await event("100");
+        const people = [...crowdIds, ...actors.slice(0, 4).map((a) => a.id)];
+        assert.equal(people.length, 55);
+        sql(
+          `update app.sessions set bookings_started_at=now() where id='${s.id}';`,
+        );
+        sql(
+          people
+            .map(
+              (id, i) =>
+                `insert into app.parties(session_id,user_id,primary_name,seats,state,queue_sequence,consent_version,consent_at) values('${s.id}','${id}','Synthetic ${i}',1,'confirmed',${i + 1},${s.version},now());`,
+            )
+            .join(""),
+        );
+        // 45 of them already have an untouched update waiting.
+        sql(
+          people
+            .slice(0, 45)
+            .map(
+              (id, i) =>
+                `insert into app.email_jobs(kind,session_id,user_id,source_key,state,next_attempt_at,expires_at) values('instructions_changed','${s.id}','${id}','seed-${i}','queued',now()+interval '1 day',now()+interval '2 days');`,
+            )
+            .join(""),
+        );
+        await saveInstructions(s, 0, "Synthetic bank 1");
+        assert.equal(
+          sql(
+            `select count(*)||':'||min(reason)||':'||min(recipients)||':'||min(kind) from app.email_suppressions where session_id='${s.id}';`,
+          ),
+          "1:audience_limit:55:instructions_changed",
+          "Over 50 people in all: the whole update is withheld, not the 10 new ones",
+        );
+        assert.equal(count(s, "instructions_changed"), 45);
+        const before = (await view(s, organizer)).emailSummary.suppressed;
+        assert.equal(before.length, 1);
+        assert.equal(before[0].recipients, 55);
+
+        // The audience shrinks to one person; the later small update is queued
+        // and the earlier withheld note is no longer worth showing.
+        sql(
+          `delete from app.parties where session_id='${s.id}' and user_id<>'${actors[0].id}';`,
+        );
+        await saveInstructions(s, 1, "Synthetic bank 2");
+        assert.deepEqual(users(s, "instructions_changed").includes(actors[0].id), true);
+        assert.deepEqual((await view(s, organizer)).emailSummary.suppressed, []);
+      },
+    );
+
+    await t.test(
       "organizers see the latest email of each kind in four plain states; nobody else sees any",
       async () => {
         const s = await event("3"),
@@ -532,6 +655,7 @@ test("signals leave one durable, private email job per recipient", async (t) => 
           "superseded",
           "expired",
           "rejected",
+          "render_failed",
           "attempts_exhausted",
           "delivery_disabled",
           "queue_capacity",

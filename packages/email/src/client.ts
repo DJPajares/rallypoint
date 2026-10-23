@@ -34,7 +34,7 @@ export function deliveryFromEnv(env: EmailEnv): DrainOptions | null {
   if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY) return null;
   const db = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
-    db: { schema: env.SUPABASE_API_SCHEMA ?? "api" },
+    db: { schema: env.SUPABASE_API_SCHEMA || "api" },
   });
   const appOrigin = env.APP_ORIGIN ?? "";
   return {
