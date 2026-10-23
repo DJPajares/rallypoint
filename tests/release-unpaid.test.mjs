@@ -183,12 +183,21 @@ test("giving unpaid spots to the waitlist after the cutoff", async (t) => {
     assert.equal(r.status, 200, await r.clone().text());
     return (await r.json()).registration.own;
   }
+  // A release names the note the organizer saw; null means they saw none.
   const release = (s, a, partyId, revision, extra = {}) =>
     request(`/api/registrations/${s.slug}/release`, a, {
       operationKey: crypto.randomUUID(),
       partyId,
       revision,
+      noteSentAt: null,
       ...extra,
+    });
+  const note = (s, a, partyId, action = "mark", reference = "") =>
+    request(`/api/registrations/${s.slug}/payment-note`, a, {
+      operationKey: crypto.randomUUID(),
+      partyId,
+      action,
+      reference,
     });
   const pay = (s, partyId, action, revision) =>
     request(`/api/registrations/${s.slug}/payments`, organizer, {
@@ -205,6 +214,8 @@ test("giving unpaid spots to the waitlist after the cutoff", async (t) => {
     release_closed: "Spots can’t be given away once the session starts.",
     release_not_eligible:
       "Only spots booked before the cutoff and still unpaid can go to the waitlist. Refresh to see the latest record.",
+    note_changed:
+      "The player’s payment note changed since you opened this. Review it, then try again.",
   };
   const conflict = async (r, expected) => {
     assert.equal(r.status, 409, expected);
@@ -270,6 +281,7 @@ test("giving unpaid spots to the waitlist after the cutoff", async (t) => {
               p_slug: s.slug,
               p_party_id: a.id,
               p_revision: 1,
+              p_note_sent_at: null,
             })
           ).error,
           "A browser client cannot call the database function",
@@ -649,6 +661,124 @@ test("giving unpaid spots to the waitlist after the cutoff", async (t) => {
       },
     );
 
+    await t.test(
+      "a note posted or undone after loading blocks the release",
+      async () => {
+        const s = await event("4"),
+          a = await join(s, actors[0]),
+          b = await join(s, actors[1]),
+          c = await join(s, actors[2]);
+        cutoffPassed(s.id);
+        const revision = async (p) => (await entry(s, p.id)).fee.revision;
+        const stillConfirmed = async (p, rev) => {
+          const e = await entry(s, p.id);
+          assert.equal(e.state, "confirmed");
+          assert.equal(e.fee.liabilityState, "due");
+          assert.equal(
+            e.fee.revision,
+            rev,
+            "A refused release changes nothing",
+          );
+        };
+
+        // The organizer loaded game day with no note, then the player posted one.
+        const revA = await revision(a);
+        assert.equal(
+          (await note(s, actors[0], a.id, "mark", "ABC 123")).status,
+          200,
+        );
+        await conflict(
+          await release(s, organizer, a.id, revA, { noteSentAt: null }),
+          "note_changed",
+        );
+        await stillConfirmed(a, revA);
+        assert.equal(releasedIn(s), 0);
+
+        // Naming the note as it stands releases it, and a replay returns the first result.
+        const sentAt = (await entry(s, a.id)).paymentNote.sentAt;
+        const key = crypto.randomUUID();
+        const body = { operationKey: key, noteSentAt: sentAt };
+        const first = await release(s, organizer, a.id, revA, body);
+        assert.equal(first.status, 200, await first.clone().text());
+        const firstBody = await first.json();
+        assert.equal(
+          firstBody.registration.roster.find((p) => p.id === a.id).state,
+          "removed",
+        );
+        const replay = await release(s, organizer, a.id, revA, body);
+        assert.equal(replay.status, 200);
+        assert.deepEqual(await replay.json(), firstBody);
+        assert.equal(releasedIn(s), 1, "A replay releases nothing more");
+        // The same key with a different note is a different request.
+        const other = await release(s, organizer, a.id, revA, {
+          operationKey: key,
+          noteSentAt: null,
+        });
+        await conflict(other, "idempotency_conflict");
+
+        // The organizer saw a note, then the player undid it.
+        const revB = await revision(b);
+        assert.equal(
+          (await note(s, actors[1], b.id, "mark", "SEEN")).status,
+          200,
+        );
+        const seen = (await entry(s, b.id)).paymentNote.sentAt;
+        assert.equal((await note(s, actors[1], b.id, "undo")).status, 200);
+        await conflict(
+          await release(s, organizer, b.id, revB, { noteSentAt: seen }),
+          "note_changed",
+        );
+        await stillConfirmed(b, revB);
+        // Seeing no note now, it releases.
+        assert.equal(
+          (await release(s, organizer, b.id, revB, { noteSentAt: null }))
+            .status,
+          200,
+        );
+
+        // A note replaced after it was seen is a different note, even with the same words.
+        const revC = await revision(c);
+        assert.equal(
+          (await note(s, actors[2], c.id, "mark", "SAME")).status,
+          200,
+        );
+        const old = (await entry(s, c.id)).paymentNote.sentAt;
+        assert.equal(
+          (await note(s, actors[2], c.id, "mark", "SAME")).status,
+          200,
+        );
+        const current = (await entry(s, c.id)).paymentNote.sentAt;
+        assert.notEqual(current, old);
+        await conflict(
+          await release(s, organizer, c.id, revC, { noteSentAt: old }),
+          "note_changed",
+        );
+        await stillConfirmed(c, revC);
+        assert.equal(
+          (await release(s, organizer, c.id, revC, { noteSentAt: current }))
+            .status,
+          200,
+        );
+        assert.equal(releasedIn(s), 3);
+
+        // The field is required and must be a timestamp with an offset.
+        const d = await join(s, actors[3]);
+        const revD = await revision(d);
+        for (const noteSentAt of [
+          undefined,
+          "yesterday",
+          "2026-10-23T10:00:00",
+          5,
+        ])
+          assert.equal(
+            (await release(s, organizer, d.id, revD, { noteSentAt })).status,
+            422,
+            String(noteSentAt),
+          );
+        await stillConfirmed(d, revD);
+      },
+    );
+
     await t.test("split sessions can't turn release on", async () => {
       const r = await request(`/api/groups/${firstGroup}/sessions`, organizer, {
         operationKey: crypto.randomUUID(),
@@ -674,7 +804,7 @@ test("giving unpaid spots to the waitlist after the cutoff", async (t) => {
       const ids = events.map((id) => `'${id}'`).join(",");
       const parties = `select id from app.parties where session_id in(${ids})`;
       sql(
-        `begin;delete from app.operation_receipts where resource_id in(${parties}) or resource_id in(${ids});delete from app.fee_changes where party_id in(${parties});delete from app.registration_events where party_id in(${parties});delete from app.fee_obligations where party_id in(${parties});delete from app.parties where session_id in(${ids});delete from app.session_changes where session_id in(${ids});delete from app.sessions where id in(${ids});commit;`,
+        `begin;delete from app.payment_notes where party_id in(${parties});delete from app.operation_receipts where resource_id in(${parties}) or resource_id in(${ids});delete from app.fee_changes where party_id in(${parties});delete from app.registration_events where party_id in(${parties});delete from app.fee_obligations where party_id in(${parties});delete from app.parties where session_id in(${ids});delete from app.session_changes where session_id in(${ids});delete from app.sessions where id in(${ids});commit;`,
       );
     }
     sql(

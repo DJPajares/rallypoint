@@ -28,6 +28,7 @@ import type {
 } from "@rallypoint/domain/registration";
 import { splitMoney } from "@rallypoint/domain/fees";
 import { feeLabel } from "@rallypoint/domain/session";
+import { useAuth } from "./auth-context";
 import { useMutation } from "./use-mutation";
 import { FeeControls } from "./fee-controls";
 import { PendingSplitControls } from "./split-controls";
@@ -175,6 +176,10 @@ function ConfirmedRow({
  * waitlist. It repeats anything the player said about sending payment.
  * Nothing is released on its own; this is the only way it happens. It lives in
  * a sheet of its own, beside the details sheet rather than inside it.
+ *
+ * The release names the note this sheet shows (or none), and the server refuses
+ * it if the player has since posted, changed or undone one. Any refusal reloads
+ * the registration, so the sheet shows what is true now and can be tried again.
  */
 function ReleaseConfirm({
   slug,
@@ -182,18 +187,44 @@ function ReleaseConfirm({
   fee,
   onKeep,
   onDone,
+  onRefreshed,
 }: {
   slug: string;
   party: RosterParty;
   fee: ManagedFee;
   onKeep: () => void;
   onDone: (view: RegistrationView) => void;
+  onRefreshed: (view: RegistrationView) => void;
 }) {
+  const { session } = useAuth();
+  const token = session?.access_token;
   const mutation = useMutation<{ registration: RegistrationView }>((value) =>
     onDone(value.registration),
   );
   const busy = mutation.busy || mutation.uncertain;
   const said = party.paymentNote;
+  // A refusal is definite (an interrupted request is not): reload the roster so
+  // the revision and note shown here are current. The sheet stays open. The
+  // callback lives in a ref so a new render alone never reloads again.
+  const refreshed = useRef(onRefreshed);
+  useEffect(() => {
+    refreshed.current = onRefreshed;
+  });
+  useEffect(() => {
+    if (!mutation.error || mutation.uncertain) return;
+    const controller = new AbortController();
+    void fetch(`/api/registrations/${slug}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.any([controller.signal, AbortSignal.timeout(7000)]),
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body: { registration?: RegistrationView } | null) => {
+        if (body?.registration && !controller.signal.aborted)
+          refreshed.current(body.registration);
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [mutation.error, mutation.uncertain, slug, token]);
   return (
     <>
       <p>
@@ -223,6 +254,8 @@ function ReleaseConfirm({
             mutation.run(`/api/registrations/${slug}/release`, {
               partyId: party.id,
               revision: fee.revision,
+              // The note as this sheet shows it; null when it shows none.
+              noteSentAt: said?.sentAt ?? null,
             })
           }
         >
@@ -517,6 +550,7 @@ export function GameDay({
             party={releasing}
             fee={releasing.fee}
             onKeep={() => setReleaseId(null)}
+            onRefreshed={onDone}
             onDone={(next) => {
               onDone(next);
               setReleaseId(null);

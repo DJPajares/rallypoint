@@ -37,6 +37,8 @@ const conflicts: Record<string, string> = {
   note_not_allowed:
     "You can only say you’ve paid for your own booking in a session paid to the organizer.",
   note_already_paid: "The organizer has already marked this paid.",
+  note_changed:
+    "The player’s payment note changed since you opened this. Review it, then try again.",
   withdrawal_closed:
     "Self-service withdrawal is closed at the session start or when the session ends or is cancelled. Refresh your record.",
   stale_terms:
@@ -133,6 +135,8 @@ const release = z.object({
   operationKey: key,
   partyId: key,
   revision: z.number().int().min(1),
+  // The note's send time as the organizer last saw it, or null when they saw none.
+  noteSentAt: z.union([z.iso.datetime({ offset: true }), z.null()]),
 });
 const paymentNote = z.object({
   operationKey: key,
@@ -204,6 +208,7 @@ export const registrations = new Hono<ApiEnv>()
       p_key: b.operationKey,
       p_party_id: b.partyId,
       p_revision: b.revision,
+      p_note_sent_at: b.noteSentAt,
     });
   })
   .all(`${base}/release`, requireUser, () => notAvailable(action))
