@@ -17,6 +17,7 @@ import { ClockCountdownIcon } from "@phosphor-icons/react/dist/csr/ClockCountdow
 import { CoinsIcon } from "@phosphor-icons/react/dist/csr/Coins";
 import { CopyIcon } from "@phosphor-icons/react/dist/csr/Copy";
 import { DoorOpenIcon } from "@phosphor-icons/react/dist/csr/DoorOpen";
+import { MapPinIcon } from "@phosphor-icons/react/dist/csr/MapPin";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { RepeatIcon } from "@phosphor-icons/react/dist/csr/Repeat";
 import { UserPlusIcon } from "@phosphor-icons/react/dist/csr/UserPlus";
@@ -52,6 +53,7 @@ import type {
 } from "@rallypoint/domain/session";
 import type { GroupSummary } from "@rallypoint/domain/contracts";
 import { nextWeekForm } from "@rallypoint/domain/run-again";
+import { mapsUrl } from "@rallypoint/domain/my-sessions";
 import { copyPaymentDetails } from "./run-again";
 
 const subscribeOrigin = () => () => {};
@@ -792,6 +794,7 @@ export function SharedSessionPage() {
   // not tracked (never "Free"). A session saved before payment modes behaves
   // as Pay the organizer. Either way the facts list has its payment line.
   const tracked = (d.paymentMode ?? "organizer") === "organizer";
+  const mapHref = mapsUrl(d.location);
   return (
     <DetailPage back={back} backLabel="Home" className="shared-session">
       <EarnedBadgeCheck />
@@ -816,6 +819,17 @@ export function SharedSessionPage() {
                 : "Time to be decided"}
             </div>
             <div className="rp-ticket__meta">{d.location}</div>
+            {mapHref ? (
+              <a
+                className={buttonClass({ variant: "link" })}
+                href={mapHref}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <MapPinIcon size={18} aria-hidden="true" />
+                Open in Maps
+              </a>
+            ) : null}
           </Ticket>
         </div>
         <aside className="session-side" aria-label="Places and registration">
