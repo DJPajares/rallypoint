@@ -14,6 +14,7 @@ const changeWords: Record<ManagedFee["history"][number]["action"], string> = {
   marked_unpaid: "Marked unpaid",
   waived: "Waived",
   waiver_undone: "Waiver undone",
+  removed_after_change: "Removed after the session changed",
   removed_before_cutoff: "Removed before the cutoff",
   removed_session_cancelled: "Removed on session cancellation",
   released_unpaid: "Spot given to the waitlist",

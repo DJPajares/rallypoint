@@ -31,6 +31,7 @@ import {
   Pending,
   SelectField,
   SpotsMeter,
+  Sheet,
   SwitchField,
   Ticket,
 } from "@rallypoint/ui";
@@ -40,6 +41,7 @@ import {
   currencies,
   feeLabel,
   normalizeSession,
+  hasMaterialSessionChange,
 } from "@rallypoint/domain/session";
 import type {
   PaymentMode,
@@ -226,6 +228,10 @@ function Editor({
     [error, setError] = useState<string | null>(null);
   const [copy, setCopy] = useState("");
   const [cancelling, setCancelling] = useState(false);
+  const [pendingEdit, setPendingEdit] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
   const header = useRef<HTMLHeadingElement>(null);
   // Sessions saved before payment modes behave as Pay the organizer.
   const tracked = (form.paymentMode ?? "organizer") === "organizer",
@@ -253,20 +259,29 @@ function Editor({
     const details: SessionForm = tracked
       ? { ...form, releaseUnpaid: form.releaseUnpaid === true && fixedFee }
       : { ...form, cutoffLocal: form.startLocal, releaseUnpaid: false };
+    let normalized;
     try {
-      normalizeSession(details, intent !== "draft");
+      normalized = normalizeSession(details, intent !== "draft");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Check the details.");
       return;
     }
+    const body = {
+      groupId: record?.groupId ?? groupId,
+      intent,
+      version: record?.version,
+      details,
+    };
+    if (
+      record?.bookingsStarted &&
+      hasMaterialSessionChange(record.details, normalized)
+    ) {
+      setPendingEdit(body);
+      return;
+    }
     mutation.run(
       record ? `/api/sessions/${record.id}` : `/api/groups/${groupId}/sessions`,
-      {
-        groupId: record?.groupId ?? groupId,
-        intent,
-        version: record?.version,
-        details,
-      },
+      body,
     );
   }
   function input(
@@ -286,7 +301,14 @@ function Editor({
   }
   const terminal =
     record?.state === "cancelled" || record?.state === "completed";
-  const locked = !!record?.bookingsStarted || terminal;
+  const booked = !!record?.bookingsStarted;
+  const started =
+    record?.state === "published" &&
+    !!record.details.startsAt &&
+    Date.now() >= Date.parse(record.details.startsAt);
+  const locked = terminal || started;
+  // A changed local start uses the saved session zone; never the device zone.
+  const startChanged = booked && form.startLocal !== record?.details.startLocal;
   // Custom controls aren't all native form elements, so the fieldset's
   // disabled state is passed to them as well.
   const disabledFields =
@@ -363,9 +385,15 @@ function Editor({
           </p>
         </div>
       ) : null}
+      {started ? (
+        <Notice tone="warning">
+          This session has started and can no longer be edited.
+        </Notice>
+      ) : null}
       {record?.bookingsStarted && !terminal ? (
         <Notice tone="warning">
-          People have joined, so the details can’t be changed.
+          People have booked, so the fee and booking rules can't change. Cancel
+          this session and publish a new one.
         </Notice>
       ) : null}
       <form
@@ -453,7 +481,7 @@ function Editor({
                   { value: "untracked", label: "Not tracked here" },
                   { value: "organizer", label: "Pay the organizer" },
                 ]}
-                disabled={disabledFields}
+                disabled={disabledFields || booked}
               />
             </Field>
             {tracked ? (
@@ -464,7 +492,7 @@ function Editor({
                     value={form.currency}
                     onChange={(next) => setForm({ ...form, currency: next })}
                     options={currencyOptions}
-                    disabled={disabledFields}
+                    disabled={disabledFields || booked}
                   />
                 </Field>
                 <Field id="feeMode" label="Pricing">
@@ -478,7 +506,7 @@ function Editor({
                       { value: "fixed", label: "Fee per seat" },
                       { value: "split", label: "Total to split" },
                     ]}
-                    disabled={disabledFields}
+                    disabled={disabledFields || booked}
                   />
                 </Field>
                 <Field
@@ -493,6 +521,7 @@ function Editor({
                     id="fee"
                     prefix={form.currency}
                     inputMode="decimal"
+                    disabled={disabledFields || booked}
                     value={form.fee}
                     onChange={(e) => setForm({ ...form, fee: e.target.value })}
                   />
@@ -507,7 +536,7 @@ function Editor({
                 title="Registration opens"
                 value={form.openLocal}
                 onChange={(next) => setForm({ ...form, openLocal: next })}
-                disabled={disabledFields}
+                disabled={disabledFields || booked}
               />
             </Field>
             {tracked ? (
@@ -517,7 +546,7 @@ function Editor({
                   title="Cancellation fee cutoff"
                   value={form.cutoffLocal}
                   onChange={(next) => setForm({ ...form, cutoffLocal: next })}
-                  disabled={disabledFields}
+                  disabled={disabledFields || (booked && !startChanged)}
                 />
               </Field>
             ) : null}
@@ -528,7 +557,7 @@ function Editor({
               onCheckedChange={(releaseUnpaid) =>
                 setForm({ ...form, releaseUnpaid })
               }
-              disabled={disabledFields}
+              disabled={disabledFields || booked}
             >
               Unpaid spots can go to the waitlist after the cutoff
             </SwitchField>
@@ -536,7 +565,7 @@ function Editor({
           <SwitchField
             checked={form.guests}
             onCheckedChange={(guests) => setForm({ ...form, guests })}
-            disabled={disabledFields}
+            disabled={disabledFields || booked}
             description="Two seats that join, wait and withdraw together."
           >
             Allow each participant to bring one guest
@@ -572,6 +601,34 @@ function Editor({
           </p>
         ) : null}
       </form>
+      <Sheet
+        open={!!pendingEdit}
+        onClose={() => setPendingEdit(null)}
+        title="Change the time or place?"
+      >
+        <p>Everyone booked can withdraw without a fee until the start.</p>
+        <div className="inline-actions">
+          <button
+            type="button"
+            className={buttonClass()}
+            onClick={() => setPendingEdit(null)}
+          >
+            Keep editing
+          </button>
+          <button
+            type="button"
+            className={buttonClass({ variant: "primary" })}
+            onClick={() => {
+              if (!pendingEdit || !record) return;
+              const body = pendingEdit;
+              setPendingEdit(null);
+              mutation.run(`/api/sessions/${record.id}`, body);
+            }}
+          >
+            Save changes
+          </button>
+        </div>
+      </Sheet>
       {record &&
       !terminal &&
       (record.details.paymentMode ?? "organizer") === "organizer" ? (
