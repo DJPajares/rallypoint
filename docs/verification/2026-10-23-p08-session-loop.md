@@ -51,7 +51,7 @@ A separate API-created session had a paid two-seat party and an unpaid solo. Can
 
 Targeted keyboard checks: focus entered the join/party sheets; Escape closed the party sheet and returned focus to its row. The party flow ran with reduced motion. At 375 px the inspected join and party controls had no horizontal overflow. This is a targeted walkthrough, not a full accessibility audit. No physical-network performance claim is made. After organizer sign-out, the shared page showed no private instructions, manager payment controls or attendance panel, and the RallyPoint Auth storage key was absent. Desktop Tab navigation reached a visible control at 1280 × 800 without horizontal overflow. Cache Storage was empty and no service worker was registered in this test profile. Chromium installation diagnostics returned `in-incognito`, so this private automation profile cannot establish installability or installed/offline-shell behavior.
 
-## Staging evidence and blocker
+## Initial staging evidence and blocker (2026-10-23)
 
 Read-only provider inspection resolved `rallypoint.wndrhive.com` to READY Vercel deployment `dpl_QvHGqnKJwr7SdqjrACHu972vuqJn`, Git source `d12d46d6bc94c24da86e64ec5f9c16223fa80152`, region `sin1`. The deployed application matches this local product baseline.
 
@@ -61,14 +61,14 @@ The shared wProject database migration ledger still lists only the RallyPoint bo
 
 Current main contains 16 source migrations after the bootstrap's last source migration (`20261022170000_badges.sql`): currency/payment-mode/release/note/instruction changes, booked-session edits and email outbox/dispatch. Their mapped-schema upgrade must be reviewed against the actual cloud definitions, backed up and applied through a namespaced incremental migration before repeating the live loop. The bootstrap renderer explicitly refuses an existing installation; do not rerun it or use local `db push/reset/seed` against wProject. See [staging migration rules](../deployment/staging.md#database-setup-and-future-migrations).
 
-This task did not apply cloud SQL, change shared Auth/Trove settings, enable a sender/scheduler, deploy, upgrade plans or change the other agent's P-14 work. Runtime sender credentials, shared quota/headroom and actual Cloudflare delivery remain unverified. A Vercel READY deployment does not establish that the separate Cloudflare scheduled Worker runs the current email code.
+The initial inspection did not apply cloud SQL. The later owner-authorized upgrade is recorded below. Shared Auth/Trove settings, sender/scheduler setup, application deployments, plans and the other agent's P-14 work were not changed by this continuation. Runtime sender credentials, shared quota/headroom and actual Cloudflare delivery remain unverified. A Vercel READY deployment does not establish that the separate Cloudflare scheduled Worker runs the current email code.
 
 ## Remaining completion evidence
 
 | Required area                                | Current result / next evidence                                                                                                                                                                        |
 | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Local integrated loop and backend boundaries | Observed above; clean suite passes.                                                                                                                                                                   |
-| Live authenticated loop                      | Blocked by staging schema drift; repeat after a reviewed upgrade.                                                                                                                                     |
+| Live authenticated loop                      | Schema drift resolved on 2026-10-24; rollback-only live RPC checks passed. Authenticated browser/phone loop still pending.                                                                            |
 | Live email                                   | Verify actual existing-account code receipt and transactional/reminder email delivery separately from stand-ins; record sender, host/version and inbox outcome without publishing codes or addresses. |
 | Android/Chrome browser and installed PWA     | Owner can test Android/Chrome; actual OS/browser versions, install and outcomes not yet supplied.                                                                                                     |
 | iPhone/Safari browser and installed PWA      | No device evidence available. Owner's Android-only availability does not change D-08's accepted support matrix.                                                                                       |
@@ -79,7 +79,7 @@ Once staging is ready, record these Android results with the exact OS and Chrome
 
 P-13's separate provider eligibility/headroom, backup locations and synthetic restore/deletion prerequisites remain before real pilot data. Existing Maps, embedded payments, profile editing, badge tiers and other backlog features are outside P-08; passing these checks does not imply they exist. Keep P-08 open until its missing evidence is recorded and accepted. This internal verification report needs no user-facing release note.
 
-## Continued work: prepared staging upgrade, not yet applied
+## Prepared upgrade evidence (2026-10-23, before application)
 
 The owner asked to continue after the staging blocker was reported. The branch now adds an explicit `--upgrade` mode to the existing schema renderer, covering only the 16 reviewed source migrations after the original bootstrap through `20261023144000`. The two renderer safety tests failed before implementation and passed afterward; default initial-install behavior remains guarded, and invalid modes emit no SQL.
 
@@ -87,8 +87,35 @@ Read-only comparison found all **63 cloud RallyPoint function definitions exactl
 
 Rendered SQL SHA-256: `281c7a3d1ae420bec74ca5000d64f19da14399d478e575e4bce827ab70b863da` (1,920 lines, 125,902 bytes). Reproduce with `node scripts/render-staging-schema.mjs --upgrade`; inspect the [upgrade/recovery instructions](../deployment/staging.md#upgrade-the-existing-2026-10-23-bootstrap). The script emits SQL only and does not connect or apply it.
 
-**Recovery gate:** automatic approval review blocked the required recovery export; it was not retried or bypassed. No usable backup or cloud schema upgrade exists. Incomplete temporary exports were removed. The exact approval proposal is supplied privately to the owner; external review records retain technical results only. Live and device evidence remain pending.
+**Historical recovery gate:** automatic approval review blocked the broad shared-project export; that export was not retried. The owner subsequently requested the scoped deployment fix on 2026-10-24. A narrower recovery approach and the actual upgrade are recorded below; the broader P-13 recovery routine is still separate.
 
 Fresh continuation checks: `pnpm check` passed; `supabase db lint --local --schema rallypoint,rallypoint_api --fail-on error` found no schema errors. The complete clean local suite, including the new renderer checks, passed **267/267**, zero failed/skipped, in **155.932 seconds**. The earlier 265-test evidence remains the product baseline; the two additional tests cover safe upgrade rendering. These results still do not establish a cloud upgrade or physical-device/live-email success.
 
 A further local catalog comparison found **371 mapped columns, constraints, indexes and triggers** identical to the complete migration baseline. Fresh read-only review found no actionable defect in the prepared upgrade path. The SQL guard checks known sentinel objects rather than every possible drift; the documented pre-apply definition comparison remains mandatory. The reviewer did not independently verify cloud state, a backup/restore, a live upgrade, live email or physical devices; none is claimed here.
+
+## 2026-10-24 live deployment gap resolved
+
+Owner instruction: fix the deployment gap while preserving unrelated schemas/resources. Main and Vercel still use `d12d46d`. Source SQL remains SHA-256 `281c7a3d1ae420bec74ca5000d64f19da14399d478e575e4bce827ab70b863da`. No product/UI code changed in this continuation.
+
+A scoped recovery copy was encrypted, read back with matching checksums and restored into a network-isolated disposable local PostgreSQL 17 container. Its 19 RallyPoint tables and 63 functions restored; the exact upgrade preserved the captured records, and an injected failure rolled back. This limited recovery check does not establish whole-project/Auth disaster recovery or complete P-13 readiness. No broad shared-project export was retried.
+
+Supabase `apply_migration` returned `Invalid or expired requestState` twice. After verifying neither attempt changed the database, the authenticated Supabase CLI 2.121.0 ran the identical reviewed SQL inside explicit `BEGIN`/`COMMIT`, together with one new migration-history entry: **`20261023212741_rallypoint_staging_upgrade_20261023`**. CLI exit 0; cloud Postgres 17.6. The prior unrelated and RallyPoint migration entries remained present.
+
+Observed immediately after application:
+
+- All 19 original RallyPoint table row counts/hashes matched pre-upgrade state, excluding only the intended new `session_changes.material` field. Existing data was preserved.
+- All **95 function definitions matched individually** against the locally restored/upgraded recovery copy. The cloud has all **26 expected RallyPoint tables**; all have RLS and no RallyPoint function is executable by `anon` or `authenticated`.
+- A before/after fingerprint over **3,009 unrelated database definitions and permission/settings records** was identical. This covered other app and managed schemas, columns, functions, constraints, indexes, non-internal triggers, policies, ACLs/default ACLs and database-role settings. The expected single RallyPoint migration-history insertion is outside that comparison. This is catalog evidence, not a full functional test or row-by-row data scan of other apps.
+- No historical email jobs were backfilled. The sender lock/attempt state was unused; no sender or scheduler was enabled by this work.
+
+A **live rollback-only RPC smoke check** then published a synthetic PHP-fee session, confirmed a two-seat party, retried the same join key without duplication, verified PHP 2,500 minor-unit liability, recorded the member payment note without marking paid, marked paid as organizer, checked in both seats and verified notification enqueue. It used an existing RallyPoint identity reference without creating/editing Auth users. Every synthetic write rolled back; zero synthetic groups remained. This verifies the trusted database boundary, not browser authentication or inbox delivery.
+
+A later read observed a new join on the existing session, with its receipt, split claim and one queued `joined_confirmed` job. Those records are outside the rollback-only synthetic test and were preserved. They do not contradict the immediate post-migration preservation comparison; no cleanup or delivery attempt was made against them.
+
+Postman rechecked `https://rallypoint.wndrhive.com`: health HTTP 200, one assertion passed, exit 0; signed-out workspace HTTP 401 with `sign_in_required` and `no-store`, one assertion passed, CLI exit 1 for expected non-2xx. Security advisories remain the intentional service-only RLS/no-policy information and the pre-existing shared Auth password-setting warning; no new security-warning category appeared. The unrelated catalog fingerprint was unchanged again after the RPC smoke check.
+
+The [database-before-application release check](../deployment/staging.md#database-before-application-release-check) now requires verified compatible database migrations before merging dependent application code. This is a manual release dependency; no automatic migration system, schema renaming, new library, application deployment or merge was introduced. The two renderer safety tests passed again. Earlier 267-test/build evidence above remains historical; unchanged product code was not rebuilt solely for this operational/docs continuation.
+
+Fresh read-only review found no actionable Critical/Important issue in the documentation, renderer and supplied nonsensitive logs. The reviewer independently reran the two renderer checks, verified the SQL checksum and checked the diff, but did not independently verify cloud state or recovery contents.
+
+P-08 stays incomplete: authenticated browser/phone sign-in, installed-PWA behavior, live inbox delivery and the accepted device/accessibility/performance matrix still require evidence. Cloudflare remains deployed; its scheduler/code version was not changed or reverified here.

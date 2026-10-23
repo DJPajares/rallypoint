@@ -1,6 +1,6 @@
 # P-08 staging schema upgrade plan
 
-> **For agentic workers:** Use superpowers:executing-plans inline. Keep the cloud write gated by the recovery-backup approval recorded below.
+> **For agentic workers:** Use superpowers:executing-plans inline. Follow the scoped owner authorization and recovery evidence recorded below.
 
 **Goal:** Prepare and prove the missing RallyPoint staging upgrade before continuing live P-08 checks.
 **Architecture:** Reuse the existing schema renderer with an explicit upgrade mode for the known 16-migration bootstrap. Keep the generated SQL transactional and confined to RallyPoint namespaces. Preserve the shared Auth service and existing data.
@@ -11,7 +11,7 @@
 
 - No UI changes, new service, spending, shared Auth setting changes, bootstrap replay, cloud reset or broad migration push.
 - Upgrade source is reviewed main d12d46d: after 20261022170000 through 20261023144000, exactly 16 migrations.
-- Automatic approval review blocked the recovery export. Do not retry it before explicit owner approval; the proposal is provided privately. No usable backup currently exists; no cloud upgrade before backup.
+- The broad shared-project export remains unapproved and must not be retried. On 2026-10-24 the owner explicitly requested fixing the deployment gap while preserving everything outside RallyPoint. Use only a scoped RallyPoint recovery copy for this migration; this does not implement or amend the broader P-13 pilot recovery routine.
 
 ## Review Focus
 
@@ -30,4 +30,13 @@
 - [x] Add the smallest explicit upgrade mode; run focused checks.
 - [x] Rehearse bootstrap → populated synthetic records → upgrade in disposable Postgres; compare final definitions with full current bootstrap and test rollback/replay/refusal.
 - [x] Record local evidence and generated SQL checksum; obtain one read-only review, update draft PR #31.
-- [ ] Ask for the exact shared recovery-backup approval; once approved, encrypt/verify backup, apply reviewed namespaced upgrade and repeat live checks. Physical-device and actual inbox evidence remain separate.
+- [x] Continue under the later scoped owner authorization recorded below: verify the RallyPoint-only recovery copy, apply the reviewed upgrade and run live checks. Broad shared recovery approval, physical-device and actual inbox evidence remain separate.
+
+## 2026-10-24 scoped execution
+
+Ruling: use an encrypted recovery copy of only the two RallyPoint schemas/data for this bounded migration, following the owner’s direct instruction to fix the gap without affecting unrelated projects. The previously blocked broad export is excluded. This copy depends on the existing shared Auth identities and is not whole-project disaster recovery; P-13’s broader pilot readiness work remains outstanding.
+
+- [x] Reconfirm main and deployed application are d12d46d; cloud still has the old 63-function bootstrap.
+- [x] Verify encrypted scoped export, restore its 19 tables into a network-isolated local Postgres, and rehearse exact upgrade/rollback with existing records preserved.
+- [x] Apply the reviewed SQL as one RallyPoint-prefixed migration; compare existing data and unrelated schema/function/permission fingerprints.
+- [x] Verify live RPC/API behavior and document the database-before-application release step.
