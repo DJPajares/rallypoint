@@ -583,8 +583,10 @@ are made; each attempt counts, retries and unknown outcomes included. Each email
 is tried up to 3 times (now, after 1 minute, after 5 more) with a 10-second
 timeout and a stable idempotency key. A cancellation or payment-details update
 that would reach more than 50 people is withheld entirely (never sent to "the
-first 50"), and the organizer sees "Cancellation emails weren’t sent: more than
-50 people." At most 500 emails wait at once; the 501st is marked not sent. An
+first 50"). Organizers see "Cancellation emails weren’t sent: more than 50
+people." on the cancelled session, and "Payment-details emails weren’t sent:
+more than 50 people." beside the payment instructions editor (once, for the
+latest withheld update). At most 500 emails wait at once; the 501st is marked not sent. An
 email is never attempted after it expires.
 
 **Switching it on.** Delivery is off unless `EMAIL_DELIVERY_ENABLED=true` and

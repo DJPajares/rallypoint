@@ -167,6 +167,24 @@ export function cancellationEmailWords(
   return parts.length ? `Cancellation emails: ${parts.join(" · ")}` : "";
 }
 
+/**
+ * One line when the latest changed payment details were withheld because they
+ * would have reached more than 50 people, otherwise "". Said once, in words.
+ */
+export function instructionsEmailWords(
+  summary: EmailSummary | undefined,
+): string {
+  const latest = (summary?.suppressed ?? [])
+    .filter((s) => s.kind === "instructions_changed")
+    .reduce<EmailSummary["suppressed"][number] | null>(
+      (a, b) => (!a || Date.parse(b.at) >= Date.parse(a.at) ? b : a),
+      null,
+    );
+  return latest
+    ? "Payment-details emails weren’t sent: more than 50 people."
+    : "";
+}
+
 /** The roster in three groups, narrowed by the chosen filter. Queue order is kept. */
 export function filterParties(roster: Roster, filter: GameDayFilter) {
   const confirmed = roster.filter((p) => p.state === "confirmed");

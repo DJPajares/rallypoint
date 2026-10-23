@@ -1,9 +1,11 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { buttonClass, Field, Notice, Pending } from "@rallypoint/ui";
+import { instructionsEmailWords } from "@rallypoint/domain/game-day";
 import type {
   ManagedPaymentInstructions,
   PaymentInstructions,
+  RegistrationView,
 } from "@rallypoint/domain/registration";
 import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
@@ -111,6 +113,11 @@ export function PaymentInstructionsEditor({
   const { session } = useAuth();
   const path = `/api/sessions/${sessionId}/payment-instructions`;
   const loaded = useApi<ManagedPaymentInstructions>(path);
+  // Whether the last payment-details emails were withheld. Words only; if it
+  // can't be read, the editor simply says nothing about email.
+  const emails = useApi<{ registration: RegistrationView }>(
+    `/api/registrations/${slug}`,
+  );
   // A write's result applies until the next load of the server record.
   const [saved, setSavedFor] = useState<{
     base: ManagedPaymentInstructions | null;
@@ -128,6 +135,7 @@ export function PaymentInstructionsEditor({
     setSaved(value);
     setText(value.paymentInstructions?.text ?? "");
     setStatus(confirmation.current);
+    emails.retry();
   });
   const current =
     saved && saved.base === loaded.data ? saved.value : loaded.data;
@@ -138,6 +146,9 @@ export function PaymentInstructionsEditor({
       <Pending>Loading payment instructions…</Pending>
     );
   const instructions = current.paymentInstructions;
+  const emailNote = instructionsEmailWords(
+    emails.data?.registration.emailSummary,
+  );
   const draft = text ?? instructions?.text ?? "";
   const busy = mutation.busy || mutation.uncertain || uploading;
   function change(action: "save" | "remove" | "remove_image", done: string) {
@@ -292,6 +303,7 @@ export function PaymentInstructionsEditor({
       {instructions ? (
         <p className="rp-help">Last changed by {instructions.updatedBy}.</p>
       ) : null}
+      {emailNote ? <p className="rp-help">{emailNote}</p> : null}
       {mutation.error ? <Notice>{mutation.error}</Notice> : null}
       {uploadError ? <Notice>{uploadError}</Notice> : null}
       {mutation.recovery}

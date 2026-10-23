@@ -6,6 +6,7 @@ import {
   emailWords,
   filterParties,
   gameDaySummary,
+  instructionsEmailWords,
   noteWords,
   partyNoteWords,
   partyStanding,
@@ -322,5 +323,40 @@ test("cancellationEmailWords gives one line and omits zero counts", () => {
       cancellation: null,
     }),
     "",
+  );
+});
+
+test("instructionsEmailWords speaks once, and only for withheld payment details", () => {
+  const held = (kind, at) => ({
+    kind,
+    reason: "audience_limit",
+    recipients: 51,
+    at,
+  });
+  const line = "Payment-details emails weren’t sent: more than 50 people.";
+  assert.equal(instructionsEmailWords(undefined), "");
+  assert.equal(
+    instructionsEmailWords({ suppressed: [], cancellation: null }),
+    "",
+  );
+  // A withheld cancellation is the cancellation line's business.
+  assert.equal(
+    instructionsEmailWords({
+      suppressed: [held("cancelled", "2026-10-23T10:00:00Z")],
+      cancellation: null,
+    }),
+    "",
+  );
+  // Several withheld updates still give one line.
+  assert.equal(
+    instructionsEmailWords({
+      suppressed: [
+        held("instructions_changed", "2026-10-23T09:00:00Z"),
+        held("cancelled", "2026-10-23T09:30:00Z"),
+        held("instructions_changed", "2026-10-23T11:00:00Z"),
+      ],
+      cancellation: null,
+    }),
+    line,
   );
 });
