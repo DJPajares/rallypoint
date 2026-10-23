@@ -19,12 +19,17 @@ export function Sheet({
   children: ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   useEffect(() => {
     const element = dialog.current;
     if (!element) return;
-    if (open && !element.open) element.showModal();
-    else if (!open && element.open) element.close();
+    if (open && !element.open) {
+      element.showModal();
+      // Start on Close, even when the title holds a link, so a stray Enter
+      // dismisses the sheet instead of leaving the page.
+      closeButton.current?.focus();
+    } else if (!open && element.open) element.close();
   }, [open]);
   return (
     <dialog
@@ -42,6 +47,7 @@ export function Sheet({
           <div className="rp-sheet__head">
             <h2 id={titleId}>{title}</h2>
             <button
+              ref={closeButton}
               type="button"
               className="rp-icon-button rp-icon-button--flat"
               aria-label="Close"
