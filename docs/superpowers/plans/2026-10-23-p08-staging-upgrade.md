@@ -29,5 +29,5 @@
 - [x] Add failing renderer checks for exact source selection, mapping and invalid/repeated mode safety; observe failure.
 - [x] Add the smallest explicit upgrade mode; run focused checks.
 - [x] Rehearse bootstrap → populated synthetic records → upgrade in disposable Postgres; compare final definitions with full current bootstrap and test rollback/replay/refusal.
-- [ ] Record local evidence and generated SQL checksum; obtain one read-only review, update draft PR #31.
+- [x] Record local evidence and generated SQL checksum; obtain one read-only review, update draft PR #31.
 - [ ] Ask for the exact shared recovery-backup approval; once approved, encrypt/verify backup, apply reviewed namespaced upgrade and repeat live checks. Physical-device and actual inbox evidence remain separate.
