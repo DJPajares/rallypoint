@@ -42,9 +42,12 @@ const rejoin = (f, actor) =>
 const local = (ms) => new Date(ms).toISOString().slice(0, 16);
 
 async function ownGroup(t, f, owner) {
+  // Unique per run, so the rows of this test's own group can be told apart
+  // from whatever the shared database already holds for the same people.
+  const groupName = `Synthetic my-sessions ${crypto.randomUUID().slice(0, 8)}`;
   const made = await f.post(owner, "/api/groups", {
     operationKey: crypto.randomUUID(),
-    name: "Synthetic my-sessions group",
+    name: groupName,
   });
   assert.equal(made.status, 200, "Synthetic group must be created");
   const group = (await made.json()).group;
@@ -82,6 +85,9 @@ async function ownGroup(t, f, owner) {
   };
   return {
     group,
+    groupName,
+    save,
+    base,
     published: await save("publish", base),
     draft: await save("draft", {
       ...base,
@@ -120,12 +126,6 @@ test("a player sees only sessions they're in or waiting for", async (t) => {
   const outsider = await mine(f, a2);
   const all = [...outsider.upcoming, ...outsider.past];
   assert.equal(find(all, slug), undefined);
-  const groupName = in0.groupName;
-  assert.deepEqual(
-    all.filter((r) => r.groupName === groupName),
-    [],
-    "an outsider sees nothing from a group they have no part in",
-  );
   assert.equal(outsider.pastTotal, outsider.past.length);
 });
 
@@ -173,16 +173,17 @@ test("managers see their group's sessions and drafts, outsiders don't", async (t
   const { upcoming } = await mine(f, a2);
   const pub = find(upcoming, g.published.slug);
   assert.equal(pub.status, "organizing");
-  assert.equal(pub.groupName, "Synthetic my-sessions group");
+  assert.equal(pub.groupName, g.groupName);
   const draft = find(upcoming, g.draft.slug);
   assert.equal(draft.status, "draft");
   assert.equal(draft.id, g.draft.id);
   assert.equal(draft.startLocal, "");
   assert.equal(draft.startsAt, null);
-  assert.equal(
-    upcoming.findIndex((r) => r.slug === g.draft.slug),
-    upcoming.length - 1,
-    "an undated draft sorts last",
+  const own = upcoming.filter((r) => r.groupName === g.groupName);
+  assert.deepEqual(
+    own.map((r) => r.slug),
+    [g.published.slug, g.draft.slug],
+    "an undated draft sorts after the dated session in its group",
   );
   assert.deepEqual(Object.keys(draft).sort(), KEYS);
 
@@ -230,4 +231,42 @@ test("a session moves to past exactly at its end", async (t) => {
   assert.equal(find(after.upcoming, slug), undefined);
   assert.equal(find(after.past, slug).status, "in");
   assert.ok(after.pastTotal >= 1);
+});
+
+test("a cancelled draft is not listed, and nothing links to its missing page", async (t) => {
+  const f = await fixture(t);
+  const [a0, , a2] = f.actors;
+  const g = await ownGroup(t, f, a2);
+  const extra = await g.save("draft", {
+    ...g.base,
+    title: "Synthetic cancelled draft",
+    startLocal: "",
+    endLocal: "",
+    openLocal: "",
+    cutoffLocal: "",
+  });
+  const before = await mine(f, a2);
+  assert.ok(find(before.upcoming, extra.slug), "a saved draft is listed");
+
+  const cancelled = await f.post(a2, `/api/sessions/${extra.id}/cancel`, {
+    operationKey: crypto.randomUUID(),
+  });
+  assert.equal(cancelled.status, 200);
+
+  for (const actor of [a2, a0]) {
+    const after = await mine(f, actor);
+    assert.equal(
+      find([...after.upcoming, ...after.past], extra.slug),
+      undefined,
+      "a cancelled draft is in neither list",
+    );
+  }
+  const kept = (await mine(f, a2)).upcoming.filter(
+    (r) => r.groupName === g.groupName,
+  );
+  assert.deepEqual(
+    kept.map((r) => r.slug),
+    [g.published.slug, g.draft.slug],
+    "the group's other sessions stay listed",
+  );
 });
