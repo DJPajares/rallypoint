@@ -5,6 +5,7 @@ import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
 import { HourglassIcon } from "@phosphor-icons/react/dist/csr/Hourglass";
 import { LockSimpleIcon } from "@phosphor-icons/react/dist/csr/LockSimple";
 import { ArrowsClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowsClockwise";
+import { PaperPlaneTiltIcon } from "@phosphor-icons/react/dist/csr/PaperPlaneTilt";
 import { useApi } from "./use-api";
 import { useMutation } from "./use-mutation";
 import { useIsPhone } from "./frame";
@@ -29,7 +30,116 @@ import type { Tone } from "@rallypoint/ui";
 import { feeLabel } from "@rallypoint/domain/session";
 import type { SharedSession } from "@rallypoint/domain/session";
 import { feeStanding } from "@rallypoint/domain/registration";
-import type { RegistrationView } from "@rallypoint/domain/registration";
+import type {
+  OwnParty,
+  RegistrationView,
+} from "@rallypoint/domain/registration";
+
+/**
+ * "I've sent it": the player's own hint that they paid the organizer, with an
+ * optional reference. It is not a payment and changes nothing about their
+ * place; the organizer still marks the fee paid. They can take it back until
+ * then.
+ */
+function SentNote({
+  slug,
+  party,
+  onDone,
+}: {
+  slug: string;
+  party: OwnParty;
+  onDone: (view: RegistrationView) => void;
+}) {
+  const [reference, setReference] = useState("");
+  const box = useRef<HTMLDivElement>(null);
+  const sendButton = useRef<HTMLButtonElement>(null);
+  const undoButton = useRef<HTMLButtonElement>(null);
+  const mutation = useMutation<{ registration: RegistrationView }>((value) => {
+    setReference("");
+    onDone(value.registration);
+  });
+  const note = party.paymentNote ?? null;
+  const said = !!note;
+  const wasSaid = useRef(said);
+  // The button that was pressed is replaced, so focus follows to its
+  // replacement. A change that arrives while focus is elsewhere leaves it be.
+  useEffect(() => {
+    if (said === wasSaid.current) return;
+    wasSaid.current = said;
+    const active = document.activeElement;
+    if (active && active !== document.body && !box.current?.contains(active))
+      return;
+    (said ? undoButton : sendButton).current?.focus();
+  }, [said]);
+  const busy = mutation.busy || mutation.uncertain;
+  const send = (action: "mark" | "undo") =>
+    mutation.run(`/api/registrations/${slug}/payment-note`, {
+      partyId: party.id,
+      action,
+      reference: action === "mark" ? reference : "",
+    });
+  return (
+    <div ref={box} className="sent-note">
+      {note ? (
+        <>
+          <p id="sent-note-text" role="status" className="sent-note__said">
+            <PaperPlaneTiltIcon size={18} aria-hidden="true" />
+            <span>
+              You said you sent it
+              {note.reference ? ` · ref ${note.reference}` : ""}
+            </span>
+          </p>
+          <div>
+            <button
+              ref={undoButton}
+              type="button"
+              className={buttonClass({ size: "sm" })}
+              aria-describedby="sent-note-text"
+              disabled={busy}
+              onClick={() => send("undo")}
+            >
+              {mutation.busy ? "Undoing…" : "Undo"}
+            </button>
+          </div>
+        </>
+      ) : (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            send("mark");
+          }}
+        >
+          <fieldset disabled={busy}>
+            <Field id="payment-reference" label="Payment reference (optional)">
+              <input
+                id="payment-reference"
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+                maxLength={60}
+                autoComplete="off"
+              />
+            </Field>
+            <div>
+              <button
+                ref={sendButton}
+                className={buttonClass()}
+                aria-describedby="sent-note-help"
+              >
+                {mutation.busy ? "Saving…" : "I’ve sent it"}
+              </button>
+            </div>
+            <p id="sent-note-help" className="rp-help">
+              The organizer still marks it paid.
+            </p>
+          </fieldset>
+        </form>
+      )}
+      {mutation.error ? <Notice>{mutation.error}</Notice> : null}
+      {mutation.recovery}
+    </div>
+  );
+}
+
 export function RegistrationPanel({
   event,
   onChange,
@@ -95,9 +205,33 @@ export function RegistrationPanel({
   // Only decides whether to offer no-show; the server checks its own clock.
   const ended = !!d.endsAt && now >= Date.parse(d.endsAt);
   const split = view.split ?? event.split;
-  const cutoffTerms = d.cutoffAt
-    ? `Cancel before ${when(d.cutoffAt)} and no fee is due; after that, your ${split ? "share" : "fee"} stays unless the organizer waives it.`
-    : "";
+  // Not tracked here has no fee, cutoff or payment terms to show. A session
+  // saved before payment modes behaves as Pay the organizer.
+  const tracked = (d.paymentMode ?? "organizer") === "organizer";
+  const released =
+    own?.state === "removed" && own.fee?.liabilityState === "released_unpaid";
+  // "I've sent it" is offered to a booked player who still owes the organizer
+  // something: never once it is marked paid, waived, removed or released.
+  const canSaySent =
+    tracked &&
+    event.state === "published" &&
+    !!own &&
+    (own.state === "confirmed" || own.state === "waitlisted") &&
+    (own.fee
+      ? own.fee.liabilityState === "due" &&
+        !own.fee.markedPaid &&
+        own.fee.totalMinor > 0
+      : !split && (d.feeMinor ?? 0) > 0);
+  // Said once, in the join step, only when the organizer turned release on and
+  // only until the cutoff: whoever is confirmed after it can't be released.
+  const payBy =
+    tracked && d.releaseUnpaid && d.cutoffAt && now < Date.parse(d.cutoffAt)
+      ? when(d.cutoffAt)
+      : "";
+  const cutoffTerms =
+    tracked && d.cutoffAt
+      ? `Cancel before ${when(d.cutoffAt)} and no fee is due; after that, your ${split ? "share" : "fee"} stays unless the organizer waives it.`
+      : "";
   const ownTone: Tone =
     event.state !== "published" || !own
       ? "neutral"
@@ -114,10 +248,13 @@ export function RegistrationPanel({
     ) : (
       <LockSimpleIcon size={22} />
     );
+  // A player whose unpaid spot went to the waitlist can join again.
+  const canJoin = event.registrationWindow === "open" && (!own || released);
   const hasAction = own
-    ? (own.state === "confirmed" || own.state === "waitlisted") &&
-      event.registrationWindow !== "closed"
-    : event.registrationWindow === "open";
+    ? ((own.state === "confirmed" || own.state === "waitlisted") &&
+        event.registrationWindow !== "closed") ||
+      canJoin
+    : canJoin;
   /**
    * The form, its error and its recovery stay together. Larger screens show
    * them inline; a phone keeps them in a sheet opened from the sticky bar, so
@@ -178,7 +315,9 @@ export function RegistrationPanel({
                     ? "Waitlisted"
                     : own.state === "withdrawn"
                       ? "Withdrawn"
-                      : "Removed"}
+                      : released
+                        ? "Released"
+                        : "Removed"}
             </span>
             <h2 ref={statusHeading} tabIndex={-1}>
               {event.state !== "published"
@@ -198,11 +337,17 @@ export function RegistrationPanel({
           </StatusBanner>
           {event.state === "published" && own.state === "waitlisted" ? (
             <p>
-              Waiting is free. If places open before the start, your party moves
-              in automatically and{" "}
-              {split
-                ? "your seats count toward the final split."
-                : "the fee applies."}
+              {tracked ? (
+                <>
+                  Waiting is free. If places open before the start, your party
+                  moves in automatically and{" "}
+                  {split
+                    ? "your seats count toward the final split."
+                    : "the fee applies."}
+                </>
+              ) : (
+                "If places open before the start, your party moves in automatically."
+              )}
             </p>
           ) : null}
           {split && own.splitClaim ? (
@@ -213,6 +358,11 @@ export function RegistrationPanel({
               history={own.splitHistory}
               cancelled={event.state === "cancelled"}
             />
+          ) : released ? (
+            <p>
+              Your spot went to the waitlist because it wasn’t marked paid by{" "}
+              {d.cutoffAt ? when(d.cutoffAt) : "the cutoff"}.
+            </p>
           ) : own.fee ? (
             <p>
               <strong>
@@ -240,10 +390,20 @@ export function RegistrationPanel({
                       : ""}
             </p>
           ) : null}
-          {view.paymentInstructions ? (
+          {tracked && view.paymentInstructions ? (
             <HowToPay
               slug={event.slug}
               instructions={view.paymentInstructions}
+            />
+          ) : null}
+          {canSaySent ? (
+            <SentNote
+              slug={event.slug}
+              party={own}
+              onDone={(value) => {
+                setChanged(value);
+                onChange();
+              }}
             />
           ) : null}
           {own.state === "confirmed" || own.state === "waitlisted" ? (
@@ -296,7 +456,8 @@ export function RegistrationPanel({
             )
           ) : null}
         </div>
-      ) : event.registrationWindow === "open" ? (
+      ) : null}
+      {canJoin ? (
         actionArea(
           "Join this session",
           view.counts.waitingParties > 0 ||
@@ -364,7 +525,7 @@ export function RegistrationPanel({
                     start includes our seats in the split. {cutoffTerms}
                   </p>
                 </>
-              ) : (
+              ) : tracked ? (
                 <p id="join-terms">
                   By choosing <strong>{joinLabel}</strong>, I agree to pay{" "}
                   {feeLabel({ ...d, feeMinor: total })} for{" "}
@@ -373,13 +534,27 @@ export function RegistrationPanel({
                   the start, I’m moved in automatically and the fee applies.{" "}
                   {cutoffTerms}
                 </p>
+              ) : (
+                <p id="join-terms">
+                  By choosing <strong>{joinLabel}</strong>, I take{" "}
+                  {guest ? "two seats" : "one seat"} if I get a place. If it’s
+                  full, I join the waitlist; if a place opens before the start,
+                  I’m moved in automatically.
+                </p>
               )}
+              {payBy ? (
+                <p id="join-pay-by">
+                  Pay by {payBy} or your spot may go to the waitlist.
+                </p>
+              ) : null}
               {!Number.isSafeInteger(total) ? (
                 <Notice>The party fee is too large to store precisely.</Notice>
               ) : null}
               <button
                 className={buttonClass({ variant: "primary" })}
-                aria-describedby="join-terms"
+                aria-describedby={
+                  payBy ? "join-terms join-pay-by" : "join-terms"
+                }
                 disabled={!Number.isSafeInteger(total)}
               >
                 {mutation.busy ? "Checking your place…" : joinLabel}
@@ -388,7 +563,7 @@ export function RegistrationPanel({
           </form>,
           "primary",
         )
-      ) : (
+      ) : !own ? (
         <div className="own-status">
           <StatusBanner tone="neutral" icon={<LockSimpleIcon size={22} />}>
             <h2>
@@ -401,7 +576,7 @@ export function RegistrationPanel({
             ) : null}
           </StatusBanner>
         </div>
-      )}
+      ) : null}
       {!hasAction && mutation.error ? <Notice>{mutation.error}</Notice> : null}
       {!hasAction ? mutation.recovery : null}
       <button
@@ -440,6 +615,7 @@ export function RegistrationPanel({
           slug={event.slug}
           view={view}
           ended={ended}
+          tracked={tracked}
           when={when}
           splitCurrency={split?.currency}
           onDone={(value) => {

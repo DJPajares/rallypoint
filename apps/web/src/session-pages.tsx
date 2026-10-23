@@ -42,6 +42,7 @@ import {
   normalizeSession,
 } from "@rallypoint/domain/session";
 import type {
+  PaymentMode,
   SessionForm,
   SessionRecord,
   SharedSession,
@@ -226,6 +227,9 @@ function Editor({
   const [copy, setCopy] = useState("");
   const [cancelling, setCancelling] = useState(false);
   const header = useRef<HTMLHeadingElement>(null);
+  // Sessions saved before payment modes behave as Pay the organizer.
+  const tracked = (form.paymentMode ?? "organizer") === "organizer",
+    fixedFee = (form.feeMode ?? "fixed") === "fixed";
   useEffect(() => {
     header.current?.focus();
     document.title = `${record?.state === "cancelled" ? "Cancelled" : record?.details.title || "Create session"} · RallyPoint`;
@@ -244,8 +248,13 @@ function Editor({
     e.preventDefault();
     setError(null);
     setNotice("");
+    // Not tracked here asks for no cutoff, and only a fixed fee can release
+    // unpaid spots, so what is saved follows the chosen payment.
+    const details: SessionForm = tracked
+      ? { ...form, releaseUnpaid: form.releaseUnpaid === true && fixedFee }
+      : { ...form, cutoffLocal: form.startLocal, releaseUnpaid: false };
     try {
-      normalizeSession(form, intent !== "draft");
+      normalizeSession(details, intent !== "draft");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Check the details.");
       return;
@@ -256,7 +265,7 @@ function Editor({
         groupId: record?.groupId ?? groupId,
         intent,
         version: record?.version,
-        details: form,
+        details,
       },
     );
   }
@@ -433,45 +442,63 @@ function Editor({
                 disabled={disabledFields}
               />
             </Field>
-            <Field id="currency" label="Currency">
+            <Field id="paymentMode" label="Payment">
               <SelectField
-                id="currency"
-                value={form.currency}
-                onChange={(next) => setForm({ ...form, currency: next })}
-                options={currencyOptions}
-                disabled={disabledFields}
-              />
-            </Field>
-            <Field id="feeMode" label="Pricing">
-              <SelectField
-                id="feeMode"
-                value={form.feeMode ?? "fixed"}
+                id="paymentMode"
+                value={form.paymentMode ?? "organizer"}
                 onChange={(next) =>
-                  setForm({ ...form, feeMode: next as "fixed" | "split" })
+                  setForm({ ...form, paymentMode: next as PaymentMode })
                 }
                 options={[
-                  { value: "fixed", label: "Fee per seat" },
-                  { value: "split", label: "Total to split" },
+                  { value: "untracked", label: "Not tracked here" },
+                  { value: "organizer", label: "Pay the organizer" },
                 ]}
                 disabled={disabledFields}
               />
             </Field>
-            <Field
-              id="fee"
-              label={
-                form.feeMode === "split"
-                  ? "Total session cost"
-                  : "Fixed fee per seat"
-              }
-            >
-              <AffixInput
-                id="fee"
-                prefix={form.currency}
-                inputMode="decimal"
-                value={form.fee}
-                onChange={(e) => setForm({ ...form, fee: e.target.value })}
-              />
-            </Field>
+            {tracked ? (
+              <>
+                <Field id="currency" label="Currency">
+                  <SelectField
+                    id="currency"
+                    value={form.currency}
+                    onChange={(next) => setForm({ ...form, currency: next })}
+                    options={currencyOptions}
+                    disabled={disabledFields}
+                  />
+                </Field>
+                <Field id="feeMode" label="Pricing">
+                  <SelectField
+                    id="feeMode"
+                    value={form.feeMode ?? "fixed"}
+                    onChange={(next) =>
+                      setForm({ ...form, feeMode: next as "fixed" | "split" })
+                    }
+                    options={[
+                      { value: "fixed", label: "Fee per seat" },
+                      { value: "split", label: "Total to split" },
+                    ]}
+                    disabled={disabledFields}
+                  />
+                </Field>
+                <Field
+                  id="fee"
+                  label={
+                    form.feeMode === "split"
+                      ? "Total session cost"
+                      : "Fixed fee per seat"
+                  }
+                >
+                  <AffixInput
+                    id="fee"
+                    prefix={form.currency}
+                    inputMode="decimal"
+                    value={form.fee}
+                    onChange={(e) => setForm({ ...form, fee: e.target.value })}
+                  />
+                </Field>
+              </>
+            ) : null}
           </div>
           <div className="form-grid">
             <Field id="openLocal" label="Registration opens">
@@ -483,16 +510,29 @@ function Editor({
                 disabled={disabledFields}
               />
             </Field>
-            <Field id="cutoffLocal" label="Cancellation fee cutoff">
-              <DateTimeField
-                id="cutoffLocal"
-                title="Cancellation fee cutoff"
-                value={form.cutoffLocal}
-                onChange={(next) => setForm({ ...form, cutoffLocal: next })}
-                disabled={disabledFields}
-              />
-            </Field>
+            {tracked ? (
+              <Field id="cutoffLocal" label="Cancellation fee cutoff">
+                <DateTimeField
+                  id="cutoffLocal"
+                  title="Cancellation fee cutoff"
+                  value={form.cutoffLocal}
+                  onChange={(next) => setForm({ ...form, cutoffLocal: next })}
+                  disabled={disabledFields}
+                />
+              </Field>
+            ) : null}
           </div>
+          {tracked && fixedFee ? (
+            <SwitchField
+              checked={form.releaseUnpaid === true}
+              onCheckedChange={(releaseUnpaid) =>
+                setForm({ ...form, releaseUnpaid })
+              }
+              disabled={disabledFields}
+            >
+              Unpaid spots can go to the waitlist after the cutoff
+            </SwitchField>
+          ) : null}
           <SwitchField
             checked={form.guests}
             onCheckedChange={(guests) => setForm({ ...form, guests })}
@@ -532,7 +572,9 @@ function Editor({
           </p>
         ) : null}
       </form>
-      {record && !terminal ? (
+      {record &&
+      !terminal &&
+      (record.details.paymentMode ?? "organizer") === "organizer" ? (
         <PaymentInstructionsEditor sessionId={record.id} slug={record.slug} />
       ) : null}
       {record && !terminal ? (
@@ -551,10 +593,12 @@ function Editor({
       ) : null}
       {record?.state === "cancelled" ? (
         <>
-          <p>
-            Unpaid fees are no longer due. Paid records stay; arrange any refund
-            outside RallyPoint.
-          </p>
+          {(record.details.paymentMode ?? "organizer") === "organizer" ? (
+            <p>
+              Unpaid fees are no longer due. Paid records stay; arrange any
+              refund outside RallyPoint.
+            </p>
+          ) : null}
           {record.bookingsStarted ? (
             <CancelledRoster slug={record.slug} />
           ) : null}
@@ -614,6 +658,10 @@ export function SharedSessionPage() {
       : "To be decided";
   const start = fromInstant(d.startsAt, d.timeZone);
   const end = fromInstant(d.endsAt, d.timeZone);
+  // Not tracked here shows no fee or cancellation terms, only that payment is
+  // not tracked (never "Free"). A session saved before payment modes behaves
+  // as Pay the organizer. Either way the facts list has its payment line.
+  const tracked = (d.paymentMode ?? "organizer") === "organizer";
   return (
     <DetailPage back={back} backLabel="Home" className="shared-session">
       <EarnedBadgeCheck />
@@ -702,30 +750,40 @@ export function SharedSessionPage() {
         </aside>
         <div className="session-details">
           <dl className="facts">
-            <div>
-              <dt>
-                <CoinsIcon size={20} aria-hidden="true" />
-                {shared.state === "cancelled" ? "Original fee" : "Fee"}
-              </dt>
-              <dd>
-                {shared.split ? (
-                  shared.state === "cancelled" ? (
-                    <>
-                      {feeLabel({
-                        currency: shared.split.currency,
-                        feeMinor: shared.split.totalMinor,
-                      })}{" "}
-                      session total
-                    </>
+            {tracked ? (
+              <div>
+                <dt>
+                  <CoinsIcon size={20} aria-hidden="true" />
+                  {shared.state === "cancelled" ? "Original fee" : "Fee"}
+                </dt>
+                <dd>
+                  {shared.split ? (
+                    shared.state === "cancelled" ? (
+                      <>
+                        {feeLabel({
+                          currency: shared.split.currency,
+                          feeMinor: shared.split.totalMinor,
+                        })}{" "}
+                        session total
+                      </>
+                    ) : (
+                      <SplitFee summary={shared.split} />
+                    )
                   ) : (
-                    <SplitFee summary={shared.split} />
-                  )
-                ) : (
-                  <>{feeLabel(d)} per seat, paid to the organizer</>
-                )}
-              </dd>
-            </div>
-            {shared.state !== "cancelled" ? (
+                    <>{feeLabel(d)} per seat, paid to the organizer</>
+                  )}
+                </dd>
+              </div>
+            ) : (
+              <div>
+                <dt>
+                  <CoinsIcon size={20} aria-hidden="true" />
+                  Payment
+                </dt>
+                <dd>Not tracked here</dd>
+              </div>
+            )}
+            {tracked && shared.state !== "cancelled" ? (
               <div>
                 <dt>
                   <ClockCountdownIcon size={20} aria-hidden="true" />

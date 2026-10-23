@@ -75,6 +75,32 @@
   margin: 0;
   color: var(--color-text-muted);
 }
+/* What a player said about sending payment: quiet words, never a status. */
+.game-row__note {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.party-details__sent {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  color: var(--color-text-muted);
+}
+.release-spot {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+.game-day__status {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+.game-day__status:focus-visible {
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: var(--focus-offset);
+}
 @media (prefers-reduced-motion: reduce) {
   .check-toggle {
     transition: none;

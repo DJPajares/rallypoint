@@ -265,12 +265,15 @@ function DuesRow({ item }: { item: DuesItem }) {
         </span>
       </div>
       <div className="dues-amount">
-        <strong>
-          {feeLabel({
-            currency: item.fee.currency,
-            feeMinor: item.fee.totalMinor,
-          })}
-        </strong>
+        {/* A released spot's fee was dropped: no amount, so nothing looks owed. */}
+        {item.fee.liabilityState === "released_unpaid" ? null : (
+          <strong>
+            {feeLabel({
+              currency: item.fee.currency,
+              feeMinor: item.fee.totalMinor,
+            })}
+          </strong>
+        )}
         <Badge>{feeStanding(item.fee)}</Badge>
       </div>
     </li>

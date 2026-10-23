@@ -281,6 +281,85 @@ stored file) and confirm the text remains. Open the link signed out and as
 another account; neither shows payment details. Try an SVG and a file over
 1 MB; both are refused.
 
+## Payment modes
+
+Each session's host picks how payment is handled. A session saved before this
+setting existed behaves as **Pay the organizer**, so nothing about it changes.
+
+- **Not tracked here** is the default for a new session. The session asks for no
+  fee, currency or cancellation cutoff (the cutoff is stored as the start time),
+  and it shows no fee, payment instructions, Dues entry or payment words on game
+  day, and no "to pay" count or filter. It is never labelled "Free".
+- **Pay the organizer** has a fee per seat or a split total, a cancellation fee
+  cutoff and optional payment instructions. The organizer still marks payments
+  by hand (see **Track payments**). Nothing collects or verifies money.
+
+**Pay in RallyPoint** is not built. Nothing here names a country-specific
+payment service.
+
+**Unpaid spots can go to the waitlist.** For a fixed fee above zero (not a
+split), the host may turn on **Unpaid spots can go to the waitlist after the
+cutoff**. It locks once people book, like the fee, and the join step says
+"Pay by {cutoff} or your spot may go to the waitlist." once. From the cutoff
+(inclusive) until the start (exclusive), an organizer or co-host sees **Give
+spot to waitlist** in the details of a confirmed party that is still unpaid.
+Its confirmation repeats any "I've sent it" note. Giving the spot away is
+manual and one party at a time: the whole party (guest included) leaves, its
+unpaid fee is dropped with who did it and when, and the waitlist is promoted in
+strict order. A party confirmed at or after the cutoff can't be released this
+way. The player sees on their session page that their spot went to the waitlist
+and may join again at the end of the line; **Dues** shows **Released** with no
+amount.
+
+**I've sent it.** In **Pay the organizer**, a confirmed or waitlisted player
+who still owes a fee can say they sent payment, with an optional reference of up
+to 60 characters, and undo it until the organizer marks the fee paid. Only that
+player and the session's organizers/co-hosts see it, as "Says sent" under the
+party's amount on game day. It is a hint: it never counts as paid, never changes
+a spot or fee, never appears on the confirmed-participant roster, and never goes
+into an email. Undoing removes the note from every view, and there is no image
+upload.
+
+**Email waits for P-06.** Releasing a spot saves a `released` registration
+event, and saving, changing or removing payment instructions on a published
+session that has bookings saves one private notice per saved revision (it holds
+no instruction text). No email is sent yet. P-06 will email the released player,
+and send confirmed and waitlisted primaries one message linking to the session;
+it should combine several unsent notices for the same session into one.
+
+`tests/payment-modes-domain.test.mjs`, `tests/payment-modes.test.mjs`,
+`tests/release-unpaid.test.mjs`, `tests/payment-notes.test.mjs`,
+`tests/payment-instructions.test.mjs` and `tests/game-day-domain.test.mjs`
+check the modes, release rules (role denial, cutoff and start boundaries,
+stale revisions, strict promotion, two-seat parties, replay), notes and notices.
+Run them with `pnpm test:api`; this is local synthetic evidence only.
+
+For a manual check at 375 px and on desktop, sign in with the synthetic
+organizer and member accounts above:
+
+1. Create one session of each mode. "Free" must appear nowhere, the release
+   switch must appear only for a fixed fee, the pay-by line must appear once in
+   the join step, and the fields must lock after the first booking.
+2. Publish a **Pay the organizer** session with a fixed fee and the switch on,
+   a cutoff a few hours ahead and capacity 1. Book as the member before the
+   cutoff, and as a second account to wait in line.
+3. The cutoff can't be edited after booking, so move it as the tests do: in the
+   local database, switch off the `protect_booked_session` trigger on
+   `app.sessions`, set `details.cutoffAt` to now, and switch it back on.
+4. As the member, choose **I've sent it** with a reference. The organizer's game
+   day shows "Says sent · ref …" under the amount. **Undo** removes it; mark it
+   again.
+5. As the organizer, open the member's row and choose **Give spot to waitlist**.
+   The confirmation names the unpaid amount and repeats the note. Choose
+   **Keep** (focus returns to the row), then repeat and choose **Give spot
+   away**.
+6. The waiting account is now confirmed. The member sees that their spot went
+   to the waitlist, can join again and lands at the end of the line, and
+   **Dues** shows **Released** with no amount.
+7. Check keyboard focus moves into each sheet and back to the row or button,
+   every status is in words (not colour alone), and the sheets work with
+   reduced motion.
+
 ## Cancel a session
 
 In **Manage session**, choose **Cancel session** and confirm once. Current

@@ -196,7 +196,9 @@ test("only current organizers write and only booked people read", async (t) => {
   const shared = await (
     await f.get(null, `/api/shared/${f.session.slug}`)
   ).text();
-  assert.ok(!shared.includes("PayNow") && !shared.includes("payment"));
+  assert.ok(
+    !shared.includes("PayNow") && !shared.includes("paymentInstructions"),
+  );
 
   await ok(
     await f.post(confirmed, `/api/registrations/${f.session.slug}/withdraw`, {
@@ -392,4 +394,149 @@ test("cancelled sessions refuse changes and hide instructions from participants"
     (await ok(await f.get(f.organizer, path(f)))).paymentInstructions.text,
     "Bank 123",
   );
+});
+
+// Writing a notice for a draft, completed or replayed change, or storing any
+// instruction text in the notice table, must fail these assertions.
+test("changes after booking leave one private notice per saved revision", async (t) => {
+  const f = await splitFixture(t, { feeMode: "fixed", seats: [] });
+  const notices = (id = f.session.id) =>
+    f.sql(
+      `select coalesce(string_agg(revision::text,',' order by revision),'') from app.payment_instruction_notices where session_id='${id}';`,
+    );
+  const revision = (id = f.session.id) =>
+    f.sql(
+      `select revision from app.payment_instructions where session_id='${id}';`,
+    );
+
+  assert.equal(
+    f.sql(
+      `select count(*) from information_schema.columns where table_name='payment_instruction_notices' and column_name in ('body','text');`,
+    ),
+    "0",
+    "A notice never holds instruction text",
+  );
+  assert.equal(
+    f.sql(
+      `select string_agg(column_name,',' order by column_name) from information_schema.columns where table_schema='app' and table_name='payment_instruction_notices';`,
+    ),
+    "created_at,revision,session_id",
+  );
+  assert.equal(
+    f.sql(
+      `select has_table_privilege('anon','app.payment_instruction_notices','select') or has_table_privilege('authenticated','app.payment_instruction_notices','select');`,
+    ),
+    "f",
+    "Only the service role reads notices",
+  );
+
+  // Nobody has booked, so there is nobody to tell.
+  const early = crypto.randomUUID();
+  const earlyBody = { revision: 0, action: "save", text: "Early" };
+  await ok(await save(f, f.organizer, earlyBody, early));
+  assert.equal(notices(), "");
+
+  await f.join(f.actors[0]);
+  // Repeating that earlier request must not turn it into a change after booking.
+  await ok(await save(f, f.organizer, earlyBody, early));
+  assert.equal(
+    notices(),
+    "",
+    "A replay of a change made before booking adds nothing",
+  );
+  const key = crypto.randomUUID();
+  const same = await Promise.all([
+    save(f, f.organizer, { revision: 1, action: "save", text: "Bank 1" }, key),
+    save(f, f.organizer, { revision: 1, action: "save", text: "Bank 1" }, key),
+  ]);
+  for (const r of same) await ok(r);
+  assert.equal(revision(), "2");
+  assert.equal(notices(), "2", "Two copies of one request leave one notice");
+  await ok(
+    await save(
+      f,
+      f.organizer,
+      { revision: 1, action: "save", text: "Bank 1" },
+      key,
+    ),
+  );
+  assert.equal(notices(), "2", "A replay adds nothing");
+
+  await ok(await upload(f, f.organizer, png, "image/png", 2));
+  assert.equal(revision(), "3");
+  assert.equal(notices(), "2,3");
+  await ok(await save(f, f.organizer, { revision: 3, action: "remove_image" }));
+  assert.equal(revision(), "4");
+  assert.equal(notices(), "2,3,4");
+  await ok(await save(f, f.organizer, { revision: 4, action: "remove" }));
+  assert.equal(revision(), "5");
+  assert.equal(notices(), "2,3,4,5");
+
+  // A refused change is not a change.
+  const stale = await save(f, f.organizer, {
+    revision: 1,
+    action: "save",
+    text: "Stale",
+  });
+  assert.equal(stale.status, 409);
+  assert.equal(notices(), "2,3,4,5");
+
+  // A draft has no bookings.
+  const draftResponse = await f.post(
+    f.organizer,
+    `/api/groups/${f.firstGroup}/sessions`,
+    {
+      operationKey: crypto.randomUUID(),
+      groupId: f.firstGroup,
+      intent: "draft",
+      details: { ...f.session.details, title: "Private payment draft" },
+    },
+  );
+  assert.equal(draftResponse.status, 200);
+  const draft = (await draftResponse.json()).session;
+  t.after(() =>
+    f.sql(
+      `delete from app.operation_receipts where resource_id='${draft.id}';delete from app.session_changes where session_id='${draft.id}';delete from app.sessions where id='${draft.id}';`,
+    ),
+  );
+  await ok(
+    await f.post(
+      f.organizer,
+      `/api/sessions/${draft.id}/payment-instructions`,
+      {
+        operationKey: crypto.randomUUID(),
+        revision: 0,
+        action: "save",
+        text: "Draft bank",
+      },
+    ),
+  );
+  assert.equal(revision(draft.id), "1");
+  assert.equal(notices(draft.id), "");
+
+  // A session that has already finished is no longer one to tell people about.
+  f.sql(
+    `update app.sessions set state='completed' where id='${f.session.id}';`,
+  );
+  await ok(
+    await save(f, f.organizer, { revision: 5, action: "save", text: "Late" }),
+  );
+  assert.equal(revision(), "6");
+  assert.equal(notices(), "2,3,4,5");
+
+  // A cancelled session refuses the change, so it leaves nothing either.
+  const c = await splitFixture(t, { feeMode: "fixed", seats: [1] });
+  await ok(
+    await save(c, c.organizer, { revision: 0, action: "save", text: "Bank 2" }),
+  );
+  assert.equal(notices(c.session.id), "1");
+  await ok(
+    await c.post(c.organizer, `/api/sessions/${c.session.id}/cancel`, {
+      operationKey: crypto.randomUUID(),
+    }),
+  );
+  const closed = await save(c, c.organizer, { revision: 1, action: "remove" });
+  assert.equal(closed.status, 409);
+  assert.equal((await closed.json()).error.code, "session_closed");
+  assert.equal(notices(c.session.id), "1");
 });

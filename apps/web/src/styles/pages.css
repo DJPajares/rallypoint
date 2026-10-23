@@ -386,6 +386,23 @@
   margin: 0;
   justify-self: stretch;
 }
+/* "I've sent it": the player's own hint to the organizer, never a status. */
+.sent-note,
+.sent-note fieldset,
+.sent-note form {
+  display: grid;
+  gap: var(--space-3);
+}
+.sent-note__said {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-weight: var(--weight-semibold);
+}
+.sent-note .rp-help {
+  margin: 0;
+}
 .payment-text {
   white-space: pre-line;
   overflow-wrap: anywhere;

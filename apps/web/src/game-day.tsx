@@ -1,8 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
+import { PaperPlaneTiltIcon } from "@phosphor-icons/react/dist/csr/PaperPlaneTilt";
 import {
+  buttonClass,
   cx,
   ListGroup,
   ListRow,
@@ -15,13 +17,18 @@ import {
 import {
   filterParties,
   gameDaySummary,
+  partyNoteWords,
   partyStanding,
   paymentWords,
 } from "@rallypoint/domain/game-day";
 import type { GameDayFilter, RosterParty } from "@rallypoint/domain/game-day";
-import type { RegistrationView } from "@rallypoint/domain/registration";
+import type {
+  ManagedFee,
+  RegistrationView,
+} from "@rallypoint/domain/registration";
 import { splitMoney } from "@rallypoint/domain/fees";
 import { feeLabel } from "@rallypoint/domain/session";
+import { useAuth } from "./auth-context";
 import { useMutation } from "./use-mutation";
 import { FeeControls } from "./fee-controls";
 import { PendingSplitControls } from "./split-controls";
@@ -68,15 +75,29 @@ function Payment({ party }: { party: RosterParty }) {
   );
 }
 
+/** What the player said about sending payment: quiet words under the amount. */
+function SentNote({ party }: { party: RosterParty }) {
+  const words = partyNoteWords(party);
+  if (!words) return null;
+  return (
+    <span className="game-row__note">
+      <PaperPlaneTiltIcon size={14} aria-hidden="true" /> {words}
+    </span>
+  );
+}
+
 /** A confirmed party: the quick check acts on the primary seat only. */
 function ConfirmedRow({
   slug,
   party,
+  tracked,
   onOpen,
   onDone,
 }: {
   slug: string;
   party: RosterParty;
+  /** Whether this session tracks payment at all. */
+  tracked: boolean;
   onOpen: () => void;
   onDone: (view: RegistrationView) => void;
 }) {
@@ -91,7 +112,8 @@ function ConfirmedRow({
     party.seats === 2 && standing.seatsHere > 0 && standing.missing.length
       ? `${standing.missing.join(" and ")} not here yet`
       : "";
-  const payment = <Payment party={party} />;
+  const owed = tracked ? paymentWords(party, money) : "";
+  const note = tracked ? partyNoteWords(party) : "";
   return (
     <ListRow
       leading={<Avatar name={party.primaryName} />}
@@ -102,11 +124,12 @@ function ConfirmedRow({
         </>
       }
       subtitle={
-        missing || paymentWords(party, money) ? (
+        missing || owed || note ? (
           <>
             {missing}
-            {missing && paymentWords(party, money) ? " · " : null}
-            {payment}
+            {missing && owed ? " · " : null}
+            {owed ? <Payment party={party} /> : null}
+            {note ? <SentNote party={party} /> : null}
           </>
         ) : undefined
       }
@@ -148,25 +171,128 @@ function ConfirmedRow({
   );
 }
 
+/**
+ * The confirmation for giving one unpaid, confirmed party's spot to the
+ * waitlist. It repeats anything the player said about sending payment.
+ * Nothing is released on its own; this is the only way it happens. It lives in
+ * a sheet of its own, beside the details sheet rather than inside it.
+ *
+ * The release names the note this sheet shows (or none), and the server refuses
+ * it if the player has since posted, changed or undone one. Any refusal reloads
+ * the registration, so the sheet shows what is true now and can be tried again.
+ */
+function ReleaseConfirm({
+  slug,
+  party,
+  fee,
+  onKeep,
+  onDone,
+  onRefreshed,
+}: {
+  slug: string;
+  party: RosterParty;
+  fee: ManagedFee;
+  onKeep: () => void;
+  onDone: (view: RegistrationView) => void;
+  onRefreshed: (view: RegistrationView) => void;
+}) {
+  const { session } = useAuth();
+  const token = session?.access_token;
+  const mutation = useMutation<{ registration: RegistrationView }>((value) =>
+    onDone(value.registration),
+  );
+  const busy = mutation.busy || mutation.uncertain;
+  const said = party.paymentNote;
+  // A refusal is definite (an interrupted request is not): reload the roster so
+  // the revision and note shown here are current. The sheet stays open. The
+  // callback lives in a ref so a new render alone never reloads again.
+  const refreshed = useRef(onRefreshed);
+  useEffect(() => {
+    refreshed.current = onRefreshed;
+  });
+  useEffect(() => {
+    if (!mutation.error || mutation.uncertain) return;
+    const controller = new AbortController();
+    void fetch(`/api/registrations/${slug}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.any([controller.signal, AbortSignal.timeout(7000)]),
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body: { registration?: RegistrationView } | null) => {
+        if (body?.registration && !controller.signal.aborted)
+          refreshed.current(body.registration);
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [mutation.error, mutation.uncertain, slug, token]);
+  return (
+    <>
+      <p>
+        Their unpaid {money(fee.currency, fee.totalMinor)} is dropped and the{" "}
+        {party.seats === 2 ? "spots open" : "spot opens"} for the waitlist.
+        They’ll see this on their session page.
+      </p>
+      {said ? (
+        <p>
+          {party.primaryName} says they sent it
+          {said.reference ? ` · ref ${said.reference}` : ""}.
+        </p>
+      ) : null}
+      <div className="fee-actions">
+        <button
+          type="button"
+          className={buttonClass()}
+          disabled={busy}
+          onClick={onKeep}
+        >
+          Keep
+        </button>
+        <button
+          type="button"
+          className={buttonClass({ variant: "primary" })}
+          disabled={busy}
+          onClick={() =>
+            mutation.run(`/api/registrations/${slug}/release`, {
+              partyId: party.id,
+              revision: fee.revision,
+              // The note as this sheet shows it; null when it shows none.
+              noteSentAt: said?.sentAt ?? null,
+            })
+          }
+        >
+          {mutation.busy ? "Giving spot away…" : "Give spot away"}
+        </button>
+      </div>
+      {mutation.error ? <Notice>{mutation.error}</Notice> : null}
+      {mutation.recovery}
+    </>
+  );
+}
+
 /** Everything about one party, with the controls the roster used to repeat. */
 function PartyDetails({
   slug,
   party,
   queue,
   ended,
+  tracked,
   when,
   onDone,
+  onRelease,
   onUndoReview,
 }: {
   slug: string;
   party: RosterParty;
   queue: number | null;
   ended: boolean;
+  tracked: boolean;
   when: (iso: string) => string;
   onDone: (view: RegistrationView) => void;
+  onRelease: (partyId: string) => void;
   onUndoReview: (partyId: string) => void;
 }) {
   const labelId = `sheet-party-${party.id}`;
+  const said = tracked ? partyNoteWords(party) : "";
   return (
     <div className="party-details">
       <p id={labelId} className="party-details__meta">
@@ -191,6 +317,12 @@ function PartyDetails({
             />
           ))
         : null}
+      {said && party.paymentNote ? (
+        <p className="party-details__sent">
+          <PaperPlaneTiltIcon size={16} aria-hidden="true" /> {said} ·{" "}
+          {when(party.paymentNote.sentAt)}
+        </p>
+      ) : null}
       {party.id && party.fee ? (
         <FeeControls
           slug={slug}
@@ -206,6 +338,19 @@ function PartyDetails({
           }
         />
       ) : null}
+      {party.id && party.releasable && party.fee ? (
+        <div>
+          <button
+            type="button"
+            className={buttonClass({ size: "sm" })}
+            aria-describedby={labelId}
+            aria-haspopup="dialog"
+            onClick={() => onRelease(party.id!)}
+          >
+            Give spot to waitlist
+          </button>
+        </div>
+      ) : null}
       {party.id && party.splitClaim && !party.fee ? (
         <PendingSplitControls
           slug={slug}
@@ -219,7 +364,7 @@ function PartyDetails({
           }
         />
       ) : null}
-      {party.state === "waitlisted" ? (
+      {tracked && party.state === "waitlisted" ? (
         <p className="rp-help">Waiting is free until a place opens.</p>
       ) : null}
     </div>
@@ -230,6 +375,7 @@ export function GameDay({
   slug,
   view,
   ended,
+  tracked,
   when,
   splitCurrency,
   onDone,
@@ -238,6 +384,8 @@ export function GameDay({
   slug: string;
   view: RegistrationView;
   ended: boolean;
+  /** "Pay the organizer": only then do payment words, counts and filters show. */
+  tracked: boolean;
   when: (iso: string) => string;
   splitCurrency?: string;
   onDone: (view: RegistrationView) => void;
@@ -245,9 +393,24 @@ export function GameDay({
 }) {
   const [filter, setFilter] = useState<GameDayFilter>("everyone");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [releaseId, setReleaseId] = useState<string | null>(null);
+  // After a release the party's row is gone, so focus lands on this message
+  // rather than being lost, and it is read out as it takes focus.
+  const [gaveAway, setGaveAway] = useState("");
+  const gaveAwayNote = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (gaveAway) gaveAwayNote.current?.focus();
+  }, [gaveAway]);
   const summary = gameDaySummary(view.roster);
-  const { confirmed, waiting, left } = filterParties(view.roster, filter);
+  const filtered = filterParties(view.roster, filter);
+  const { confirmed, waiting } = filtered;
+  const left = tracked ? filtered.left : [];
   const open = view.roster.find((p) => p.id && p.id === openId);
+  const releasing = view.roster.find((p) => p.id && p.id === releaseId);
+  const openParty = (p: RosterParty) => {
+    setGaveAway("");
+    setOpenId(p.id ?? null);
+  };
   const queue = (p: RosterParty) =>
     view.roster.filter((x) => x.state === "waitlisted").indexOf(p) + 1 || null;
   const quietRow = (p: RosterParty, subtitle: ReactNode) => (
@@ -256,13 +419,23 @@ export function GameDay({
       leading={<Avatar name={p.primaryName} />}
       title={partyName(p)}
       subtitle={subtitle}
-      onSelect={() => setOpenId(p.id ?? null)}
+      onSelect={() => openParty(p)}
       selectHint="Open details"
     />
   );
   return (
     <section className="game-day" aria-labelledby="game-day-title">
       <h2 id="game-day-title">People</h2>
+      {gaveAway ? (
+        <p
+          ref={gaveAwayNote}
+          tabIndex={-1}
+          role="status"
+          className="game-day__status"
+        >
+          {gaveAway}
+        </p>
+      ) : null}
       <StatRow
         items={[
           {
@@ -274,7 +447,7 @@ export function GameDay({
               </>
             ),
           },
-          { label: "to pay", value: summary.toPay },
+          ...(tracked ? [{ label: "to pay", value: summary.toPay }] : []),
           { label: "waiting", value: summary.waiting },
         ]}
       />
@@ -285,7 +458,7 @@ export function GameDay({
         options={[
           { value: "everyone", label: "Everyone" },
           { value: "not_here", label: "Not here" },
-          { value: "to_pay", label: "To pay" },
+          ...(tracked ? [{ value: "to_pay" as const, label: "To pay" }] : []),
         ]}
       />
       {confirmed.length ? (
@@ -295,7 +468,8 @@ export function GameDay({
               key={p.id}
               slug={slug}
               party={p}
-              onOpen={() => setOpenId(p.id ?? null)}
+              tracked={tracked}
+              onOpen={() => openParty(p)}
               onDone={onDone}
             />
           ))}
@@ -316,9 +490,12 @@ export function GameDay({
             {waiting.map((p) =>
               quietRow(
                 p,
-                p.splitClaim?.estimateMinor != null && splitCurrency
-                  ? `Number ${queue(p)} · share about ${splitMoney(splitCurrency, p.splitClaim.estimateMinor)}`
-                  : `Number ${queue(p)} in line`,
+                <>
+                  {p.splitClaim?.estimateMinor != null && splitCurrency
+                    ? `Number ${queue(p)} · share about ${splitMoney(splitCurrency, p.splitClaim.estimateMinor)}`
+                    : `Number ${queue(p)} in line`}
+                  {tracked ? <SentNote party={p} /> : null}
+                </>,
               ),
             )}
           </ListGroup>
@@ -343,11 +520,48 @@ export function GameDay({
             party={open}
             queue={queue(open)}
             ended={ended}
+            tracked={tracked}
             when={when}
             onDone={onDone}
+            onRelease={(id) => {
+              // The details sheet closes first, so focus returns to the row
+              // and the confirmation opens from there.
+              setOpenId(null);
+              setReleaseId(id);
+            }}
             onUndoReview={(id) => {
               setOpenId(null);
               onUndoReview(id);
+            }}
+          />
+        ) : null}
+      </Sheet>
+      <Sheet
+        open={!!releasing}
+        onClose={() => setReleaseId(null)}
+        title={
+          releasing
+            ? releasing.seats === 2
+              ? `Give ${releasing.primaryName} and ${releasing.guestName || "their guest"}’s spots to the waitlist?`
+              : `Give ${releasing.primaryName}’s spot to the waitlist?`
+            : "Give spot to waitlist"
+        }
+      >
+        {releasing?.fee ? (
+          <ReleaseConfirm
+            slug={slug}
+            party={releasing}
+            fee={releasing.fee}
+            onKeep={() => setReleaseId(null)}
+            onRefreshed={onDone}
+            onDone={(next) => {
+              onDone(next);
+              setReleaseId(null);
+              setGaveAway(
+                releasing.seats === 2
+                  ? `${releasing.primaryName}’s spots are open for the waitlist.`
+                  : `${releasing.primaryName}’s spot is open for the waitlist.`,
+              );
             }}
           />
         ) : null}

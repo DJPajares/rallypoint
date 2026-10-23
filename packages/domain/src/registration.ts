@@ -10,7 +10,11 @@ export interface Fee {
   chargedSeats: number;
   totalMinor: number;
   liabilityState:
-    "due" | "removed_before_cutoff" | "removed_session_cancelled" | "waived";
+    | "due"
+    | "removed_before_cutoff"
+    | "removed_session_cancelled"
+    | "released_unpaid"
+    | "waived";
   removedAt: string | null;
   markedPaid: boolean;
 }
@@ -27,7 +31,8 @@ export interface ManagedFee extends Fee {
       | "waived"
       | "waiver_undone"
       | "removed_before_cutoff"
-      | "removed_session_cancelled";
+      | "removed_session_cancelled"
+      | "released_unpaid";
     previousMinor?: number | null;
     currentMinor?: number | null;
     currency?: string;
@@ -71,13 +76,23 @@ export const feeStanding = (fee: Fee) =>
   fee.liabilityState === "removed_before_cutoff" ||
   fee.liabilityState === "removed_session_cancelled"
     ? "Removed"
-    : fee.liabilityState === "waived"
-      ? "Waived"
-      : fee.markedPaid
-        ? "Paid"
-        : fee.totalMinor === 0
-          ? "Nothing due"
-          : "Unpaid";
+    : fee.liabilityState === "released_unpaid"
+      ? "Released"
+      : fee.liabilityState === "waived"
+        ? "Waived"
+        : fee.markedPaid
+          ? "Paid"
+          : fee.totalMinor === 0
+            ? "Nothing due"
+            : "Unpaid";
+/**
+ * "I've sent it": the player's own hint that they paid the organizer. Never
+ * proof of payment and never part of the fee, the spot or any email.
+ */
+export interface PaymentNote {
+  reference: string | null;
+  sentAt: string;
+}
 export interface OwnParty {
   id: string;
   state: "confirmed" | "waitlisted" | "withdrawn" | "removed";
@@ -88,6 +103,8 @@ export interface OwnParty {
   consentVersion: number;
   withdrawnAt: string | null;
   fee: Fee | null;
+  /** Their own note, or null; only booked people in "Pay the organizer" can have one. */
+  paymentNote?: PaymentNote | null;
   splitClaim?: OwnSplitClaim;
   splitHistory?: OwnSplitChange[];
 }
@@ -130,6 +147,10 @@ export interface RegistrationView {
     attendance?: SeatAttendance[];
     /** The badge this person chose to show, while it is still earned. */
     title?: RosterTitle | null;
+    /** Organizers/co-hosts only; whether this party could be released right now. */
+    releasable?: boolean;
+    /** Organizers/co-hosts only; what this party said about sending payment. */
+    paymentNote?: PaymentNote | null;
   }>;
 }
 import type {
