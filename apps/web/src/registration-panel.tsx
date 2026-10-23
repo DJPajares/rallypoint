@@ -204,9 +204,26 @@ export function RegistrationPanel({
     onChange();
   }
   // A read in flight or failed has no view, unless a change already gave one.
-  if (loading && !view) return <Pending>Checking your place…</Pending>;
-  if (error && !view) return <Notice retry={refresh}>{error}</Notice>;
-  if (!view) return null;
+  if (!view) {
+    const wait = loading ? (
+      <Pending>Checking your place…</Pending>
+    ) : error ? (
+      <Notice retry={refresh}>{error}</Notice>
+    ) : null;
+    // On game day the time, place and notes stay put while the read is out.
+    return gameDay ? (
+      <section
+        className="registration-panel game-day-panel"
+        aria-label="Your registration"
+      >
+        {gameDay.details}
+        {wait}
+        {gameDay.notes}
+      </section>
+    ) : (
+      wait
+    );
+  }
   const joinLabel =
     view.counts.waitingParties > 0 ||
     Number(d.capacity) - view.counts.confirmedSeats < (guest ? 2 : 1)
