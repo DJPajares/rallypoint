@@ -2,7 +2,7 @@
 
 Date: 2026-10-23, Asia/Singapore. [P-13 / WDL-388](https://linear.app/wwonderland/issue/WDL-388). Inspected main: `0cbe1e0`.
 
-**Status:** the owner accepted the pilot limits and owner-run approach below in chat. This short brief records those choices and proposes the remaining operating details for final owner review. It is a policy decision, not an implemented backup/deletion system or permission to launch with real data.
+**Status:** accepted by the owner on 2026-10-23. After reviewing the full policy in [PR #30](https://github.com/DJPajares/rallypoint/pull/30), the owner replied “accepted. proceed”. This includes the device/accessibility/performance targets and detailed recovery/retention rules below. It is a policy decision, not an implemented backup/deletion system or permission to launch with real data.
 
 ## Keep the pilot small
 
@@ -10,7 +10,7 @@ The owner approved **up to 3 groups, 30 seats per session (guests count), 100 Ra
 
 These are operating limits for the first pilot, not permanent product limits or new application caps implemented here. Count all participating groups together, including sessions on both deployed hosts. Use the existing app, shared wProject and hosting; add no monitoring, backup or workflow service.
 
-Proposed D-08 details:
+Accepted D-08 details:
 
 - Darwin Jason Pajares owns pilot admissions, support, backup, cleanup and the weekly usage check. Pause new admissions when any agreed limit or shared-provider headroom is exhausted; do not upgrade automatically. Existing commitments still need an orderly outcome.
 - Check one physical iPhone with current stable Safari and one Android phone with current stable Chrome, in the browser and installed PWA. Check desktop Chrome/Safari with a keyboard. Record actual device/OS/browser versions during P-08; support outside this matrix remains unverified.
@@ -32,7 +32,7 @@ No billing setting, sender, scheduler or P-06 implementation is changed by this 
 
 ## One practical backup routine
 
-**Owner-selected:** manual encrypted backups on days with changes and before migrations; keep them for **30 days**. Proposed operating detail: take one at the end of each active pilot day and immediately before every database migration or destructive cleanup. Keep an encrypted working copy and one encrypted copy off the app/provider, using an owner-controlled existing device/storage location. No new subscription. Track expiry dates and remove copies, versions and trash by their 30-day deadline, even when no new backup is made or the pilot is inactive.
+**Owner-selected:** manual encrypted backups on days with changes and before migrations; keep them for **30 days**. Accepted operating detail: take one at the end of each active pilot day and immediately before every database migration or destructive cleanup. Keep an encrypted working copy and one encrypted copy off the app/provider, using an owner-controlled existing device/storage location. No new subscription. Track expiry dates and remove copies, versions and trash by their 30-day deadline, even when no new backup is made or the pilot is inactive.
 
 Use one **wProject database recovery bundle**, including the Auth identities/dependencies needed by its app records, schema/roles/data, plus a separate copy of **RallyPoint's private uploaded files** and their object paths. A database export alone is not a Storage-file backup. This shared database snapshot necessarily includes other wProject app data; keep it encrypted and owner-only. It is not a claim that other apps' uploaded files are backed up. Preserve deployment/migration versions and keep secret configuration in the owner's secure credential store, outside Git/chat.
 
@@ -44,14 +44,14 @@ A RallyPoint defect gets a reviewed namespaced repair, not a whole-project resto
 
 ## Simple retention rules
 
-**Owner-selected:** session/payment/attendance history for **12 months**, backups for **30 days**, and RallyPoint-only deletion requests handled within **30 days**, preserving the shared Trove login. Proposed details:
+**Owner-selected:** session/payment/attendance history for **12 months**, backups for **30 days**, and RallyPoint-only deletion requests handled within **30 days**, preserving the shared Trove login. Accepted details:
 
 | Record | Keep / remove |
 | --- | --- |
 | Active profile, preferences and earned-summary data | While the RallyPoint account is active. On deletion, remove profile/contact overrides, photos, preferences and selected titles within 30 days. Do not preserve a deleted person's badge profile. |
 | Sessions, registrations/guests, fees/paid markers, attendance and correction history | 12 months after the session ends or is cancelled, then purge. Remove expired private QR/instruction files with their session. Retain the facts needed for reconciliation, not unnecessary personal notes. |
 | Receipts, consent, source signals and delivery deduplication | Keep with their related session/history so cleanup cannot recreate an operation or resend an old update. Remove addresses/frozen message content and routine delivery diagnostics after 30 days once terminal; preserve only the minimum non-content status/deduplication evidence until session expiry. |
-| Future reports | Collect none in this pilot. Proposed later default: 90 days after closure; decide D-07 access and any actual reporting obligations before enabling collection. |
+| Future reports | Collect none in this pilot. Accepted planning default for later: 90 days after closure; decide D-07 access and any actual reporting obligations before enabling collection. |
 | Backup copies | Maximum 30 days, including extra copies/versions/trash. A completed-deletion list stays privately available through the affected backup window, then expires with it. Reapply it before a restore is exposed. |
 
 On an account-deletion request, first resolve active bookings and group ownership through reviewed existing rules; deletion does not silently waive fees, refund money or abandon future sessions. Remove RallyPoint access and identifying snapshots; retain only the minimum de-identified transaction facts until the above deadline, using “Former member” where attribution is no longer retained. An internal ID that still links to shared Auth is **pseudonymous, not anonymous**: the cleanup design must remove that link before claiming anonymization. Never delete/ban a shared Auth user or globally revoke Trove sessions as a RallyPoint cleanup shortcut.
@@ -60,8 +60,8 @@ For a group-deletion request, resolve/cancel its future sessions under existing 
 
 The owner handles requests and combines retention checks with the weekly usage review. Keep a minimal private due-date list; purge records/copies that would reach their deadline before the next check, and complete deletion requests within 30 days independently of that review day. Inactivity or an owner absence never extends retention; arrange cover or clean up earlier. Current schemas require Auth references, badges derive from attendance, and no complete deletion/retention tool exists. A reviewed follow-on procedure must resolve those dependencies, preserve active users' earned summaries without keeping raw history forever, and prove that deleted data cannot reappear through Auth fallbacks or old backups. This brief neither implements that procedure nor authorizes destructive SQL. Before the first real pilot, verify a working owner-operated deletion path on synthetic data; otherwise stay synthetic-only. An unresolved dispute needs an explicit, documented owner decision before expiry, never silent indefinite retention. No legal/compliance or accounting-retention claim is made.
 
-## Decisions and evidence still needed
+## Operational evidence still needed
 
-The final owner review covers the proposed device/accessibility/performance targets and detailed recovery/retention rules. Real-pilot readiness additionally needs the Hobby-use eligibility decision, current shared usage headroom, backup locations and successful restore/deletion exercises. Those are operational evidence, not facts created by approving this document. P-08 records actual device/loop evidence; P-13 does not unpause P-06 or start new implementation tasks.
+The policy above is accepted. Real-pilot readiness still needs the Hobby-use eligibility decision, current shared usage headroom, backup locations and successful restore/deletion exercises. Those are operational evidence, not facts created by approving this document. P-08 records actual device/loop evidence; P-13 does not unpause P-06 or start new implementation tasks.
 
 Alternative considered: stay synthetic-only until funded managed backups are available. The owner chose the small owner-run pilot; managed backup services, new schedulers and a cleanup framework are unnecessary for this decision task. [Accessibility target reference](https://www.w3.org/TR/WCAG22/).
