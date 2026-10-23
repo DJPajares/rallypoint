@@ -228,8 +228,9 @@ function ReleaseConfirm({
   return (
     <>
       <p>
-        Their unpaid {money(fee.currency, fee.totalMinor)} is dropped and the
-        next person in line gets the spot.
+        Their unpaid {money(fee.currency, fee.totalMinor)} is dropped and the{" "}
+        {party.seats === 2 ? "spots open" : "spot opens"} for the waitlist.
+        They’ll see this on their session page.
       </p>
       {said ? (
         <p>
@@ -540,7 +541,9 @@ export function GameDay({
         onClose={() => setReleaseId(null)}
         title={
           releasing
-            ? `Give ${releasing.primaryName}’s spot to the waitlist?`
+            ? releasing.seats === 2
+              ? `Give ${releasing.primaryName} and ${releasing.guestName || "their guest"}’s spots to the waitlist?`
+              : `Give ${releasing.primaryName}’s spot to the waitlist?`
             : "Give spot to waitlist"
         }
       >
@@ -555,7 +558,9 @@ export function GameDay({
               onDone(next);
               setReleaseId(null);
               setGaveAway(
-                `${releasing.primaryName}’s spot went to the waitlist.`,
+                releasing.seats === 2
+                  ? `${releasing.primaryName}’s spots are open for the waitlist.`
+                  : `${releasing.primaryName}’s spot is open for the waitlist.`,
               );
             }}
           />

@@ -658,13 +658,10 @@ export function SharedSessionPage() {
       : "To be decided";
   const start = fromInstant(d.startsAt, d.timeZone);
   const end = fromInstant(d.endsAt, d.timeZone);
-  // Not tracked here shows no fee or cancellation terms. A session saved
-  // before payment modes behaves as Pay the organizer.
+  // Not tracked here shows no fee or cancellation terms, only that payment is
+  // not tracked (never "Free"). A session saved before payment modes behaves
+  // as Pay the organizer. Either way the facts list has its payment line.
   const tracked = (d.paymentMode ?? "organizer") === "organizer";
-  const hasFacts =
-    tracked ||
-    shared.registrationWindow === "not_open" ||
-    (shared.state !== "cancelled" && d.guests);
   return (
     <DetailPage back={back} backLabel="Home" className="shared-session">
       <EarnedBadgeCheck />
@@ -752,62 +749,68 @@ export function SharedSessionPage() {
           )}
         </aside>
         <div className="session-details">
-          {hasFacts ? (
-            <dl className="facts">
-              {tracked ? (
-                <div>
-                  <dt>
-                    <CoinsIcon size={20} aria-hidden="true" />
-                    {shared.state === "cancelled" ? "Original fee" : "Fee"}
-                  </dt>
-                  <dd>
-                    {shared.split ? (
-                      shared.state === "cancelled" ? (
-                        <>
-                          {feeLabel({
-                            currency: shared.split.currency,
-                            feeMinor: shared.split.totalMinor,
-                          })}{" "}
-                          session total
-                        </>
-                      ) : (
-                        <SplitFee summary={shared.split} />
-                      )
+          <dl className="facts">
+            {tracked ? (
+              <div>
+                <dt>
+                  <CoinsIcon size={20} aria-hidden="true" />
+                  {shared.state === "cancelled" ? "Original fee" : "Fee"}
+                </dt>
+                <dd>
+                  {shared.split ? (
+                    shared.state === "cancelled" ? (
+                      <>
+                        {feeLabel({
+                          currency: shared.split.currency,
+                          feeMinor: shared.split.totalMinor,
+                        })}{" "}
+                        session total
+                      </>
                     ) : (
-                      <>{feeLabel(d)} per seat, paid to the organizer</>
-                    )}
-                  </dd>
-                </div>
-              ) : null}
-              {tracked && shared.state !== "cancelled" ? (
-                <div>
-                  <dt>
-                    <ClockCountdownIcon size={20} aria-hidden="true" />
-                    Free cancellation until
-                  </dt>
-                  <dd>{time(d.cutoffAt)}</dd>
-                </div>
-              ) : null}
-              {shared.registrationWindow === "not_open" ? (
-                <div>
-                  <dt>
-                    <DoorOpenIcon size={20} aria-hidden="true" />
-                    Registration opens
-                  </dt>
-                  <dd>{time(d.opensAt)}</dd>
-                </div>
-              ) : null}
-              {shared.state !== "cancelled" && d.guests ? (
-                <div>
-                  <dt>
-                    <UserPlusIcon size={20} aria-hidden="true" />
-                    Guests
-                  </dt>
-                  <dd>You can bring one guest.</dd>
-                </div>
-              ) : null}
-            </dl>
-          ) : null}
+                      <SplitFee summary={shared.split} />
+                    )
+                  ) : (
+                    <>{feeLabel(d)} per seat, paid to the organizer</>
+                  )}
+                </dd>
+              </div>
+            ) : (
+              <div>
+                <dt>
+                  <CoinsIcon size={20} aria-hidden="true" />
+                  Payment
+                </dt>
+                <dd>Not tracked here</dd>
+              </div>
+            )}
+            {tracked && shared.state !== "cancelled" ? (
+              <div>
+                <dt>
+                  <ClockCountdownIcon size={20} aria-hidden="true" />
+                  Free cancellation until
+                </dt>
+                <dd>{time(d.cutoffAt)}</dd>
+              </div>
+            ) : null}
+            {shared.registrationWindow === "not_open" ? (
+              <div>
+                <dt>
+                  <DoorOpenIcon size={20} aria-hidden="true" />
+                  Registration opens
+                </dt>
+                <dd>{time(d.opensAt)}</dd>
+              </div>
+            ) : null}
+            {shared.state !== "cancelled" && d.guests ? (
+              <div>
+                <dt>
+                  <UserPlusIcon size={20} aria-hidden="true" />
+                  Guests
+                </dt>
+                <dd>You can bring one guest.</dd>
+              </div>
+            ) : null}
+          </dl>
           {d.instructions ? (
             <div className="rp-card session-instructions">
               <h2>Good to know</h2>

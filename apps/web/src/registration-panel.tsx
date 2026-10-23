@@ -315,7 +315,9 @@ export function RegistrationPanel({
                     ? "Waitlisted"
                     : own.state === "withdrawn"
                       ? "Withdrawn"
-                      : "Removed"}
+                      : released
+                        ? "Released"
+                        : "Removed"}
             </span>
             <h2 ref={statusHeading} tabIndex={-1}>
               {event.state !== "published"

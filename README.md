@@ -309,13 +309,14 @@ way. The player sees on their session page that their spot went to the waitlist
 and may join again at the end of the line; **Dues** shows **Released** with no
 amount.
 
-**I've sent it.** In **Pay the organizer**, a confirmed or waitlisted player can
-say they sent payment, with an optional reference of up to 60 characters, and
-undo it until the organizer marks the fee paid. Only that player and the
-session's organizers/co-hosts see it, as "Says sent" under the party's amount on
-game day. It is a hint: it never counts as paid, never changes a spot or fee,
-never appears on the confirmed-participant roster, and never goes into an
-email. Undoing deletes it; there is no history and no image upload.
+**I've sent it.** In **Pay the organizer**, a confirmed or waitlisted player
+who still owes a fee can say they sent payment, with an optional reference of up
+to 60 characters, and undo it until the organizer marks the fee paid. Only that
+player and the session's organizers/co-hosts see it, as "Says sent" under the
+party's amount on game day. It is a hint: it never counts as paid, never changes
+a spot or fee, never appears on the confirmed-participant roster, and never goes
+into an email. Undoing removes the note from every view, and there is no image
+upload.
 
 **Email waits for P-06.** Releasing a spot saves a `released` registration
 event, and saving, changing or removing payment instructions on a published
@@ -348,7 +349,7 @@ organizer and member accounts above:
    again.
 5. As the organizer, open the member's row and choose **Give spot to waitlist**.
    The confirmation names the unpaid amount and repeats the note. Choose
-   **Keep** (focus returns to the button), then repeat and choose **Give spot
+   **Keep** (focus returns to the row), then repeat and choose **Give spot
    away**.
 6. The waiting account is now confirmed. The member sees that their spot went
    to the waitlist, can join again and lands at the end of the line, and
