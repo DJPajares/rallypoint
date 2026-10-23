@@ -234,6 +234,23 @@ export function Medallion({
   );
 }
 
+/** An account holder's name; opens their public profile once they have one. */
+export function PersonName({
+  name,
+  profileId,
+}: {
+  name: string;
+  profileId?: string | null;
+}) {
+  return profileId ? (
+    <Link className="person-link" href={`/people/${profileId}`}>
+      {name}
+    </Link>
+  ) : (
+    <>{name}</>
+  );
+}
+
 export function TitlePill({ title }: { title: RosterTitle }) {
   return (
     <span className="title-pill">

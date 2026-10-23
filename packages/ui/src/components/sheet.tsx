@@ -15,7 +15,7 @@ export function Sheet({
 }: {
   open: boolean;
   onClose: () => void;
-  title: string;
+  title: ReactNode;
   children: ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
