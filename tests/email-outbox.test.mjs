@@ -556,6 +556,41 @@ test("signals leave one durable, private email job per recipient", async (t) => 
     );
 
     await t.test(
+      "a past-expiry attempt that never finished reads Not confirmed",
+      async () => {
+        // A drain that died after beginning the attempt leaves the job in
+        // sending/attempting with no outcome; the message may already be out.
+        const s = await event("5");
+        const own = await join(s, actors[0]);
+        sql(
+          `update app.email_jobs set state='sending',reason='attempting',ambiguous=false,expires_at=now()-interval '1 minute' where session_id='${s.id}' and kind='joined_confirmed';`,
+        );
+        const [e] = (await view(s, organizer)).roster.find(
+          (r) => r.id === own.id,
+        ).emails;
+        assert.deepEqual([e.status, e.reason], ["not_confirmed", null]);
+
+        const t2 = await event("5");
+        for (let i = 0; i < 2; i++) await join(t2, actors[i]);
+        assert.equal((await cancel(t2)).status, 200);
+        const order = sql(
+          `select string_agg(id::text,',' order by user_id) from app.email_jobs where session_id='${t2.id}' and kind='cancelled';`,
+        ).split(",");
+        assert.equal(order.length, 2);
+        sql(
+          `update app.email_jobs set state='sending',reason='attempting',ambiguous=false,expires_at=now()-interval '1 minute' where id='${order[0]}';
+           update app.email_jobs set expires_at=now()-interval '1 minute' where id='${order[1]}';`,
+        );
+        assert.deepEqual((await view(t2, organizer)).emailSummary.cancellation, {
+          queued: 0,
+          sent: 0,
+          notConfirmed: 1,
+          notSent: 1,
+        });
+      },
+    );
+
+    await t.test(
       "a payment-details update is limited by its whole audience, and a stale withheld note goes away",
       async () => {
         assert.equal(crowdIds.length, 51);
