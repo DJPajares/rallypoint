@@ -71,10 +71,25 @@ signal with actor and changed fields. P-06 owns delivery; no notification is
 claimed here. There is no unpublish operation.
 
 Registration sets `bookings_started_at` under the same session lock on the first
-booking, including waiting parties. Once set, all
-detail changes are refused until the booked-event policy is accepted; withdrawals
-must not clear it. General assignment/
-invitation UI and membership entry remain outside this increment.
+booking, including waiting parties; withdrawals must not clear it. D-14 now permits
+title/activity/instructions, capacity and time/venue edits until the old start.
+Capacity cannot fall below confirmed seats; an increase fills the strict queue in
+the same save. Fee/currency/payment mode, guest allowance, opening and saved
+timezone remain locked. Cutoff may change only with an actual start change;
+a new start must still be future. Fresh saves, including no-ops, check server time
+after locks; exact receipt replay remains recoverable after start and rechecks roles.
+
+Actual start/end instant or venue changes mark `app.session_changes.material`
+and commit one private `app.session_change_signals` row per session/version.
+It snapshots old/new changed fields and active party IDs for P-06; the session ID
+resolves its slug/link. No delivery worker or reminder scheduling is added.
+Authenticated/anonymous database clients cannot read the history or signals.
+An own-party projection adds `freeWithdrawalAfterChange`, true only for an active,
+affected party before current start. Withdrawal compares original consent with
+material history, including parties promoted later. Unpaid fees/split claims are
+released as `removed_after_change` with actor/time and distinct history; paid
+markers and already-withdrawn late fees stay. New joiners keep normal cutoff rules.
+General assignment/invitation UI and membership entry remain outside this increment.
 
 Session errors add 413 oversized body, 415 non-JSON input, 422 invalid fields and
 409 idempotency/version/booked-event conflict. Failed validation never partially

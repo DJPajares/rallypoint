@@ -314,7 +314,7 @@ test("registration ordering, integrity, fee and privacy contract", async (t) => 
               groupId: firstGroup,
               intent: "update",
               version: s.version,
-              details: { ...s.details, title: "Blocked change" },
+              details: { ...s.details, fee: "13.00" },
             })
           ).status,
           409,

@@ -30,7 +30,11 @@ async function rpc(
       idempotency_conflict:
         "This request key was already used for different details.",
       booked_event_locked:
-        "People have booked this session. Changes are locked until the booked-event edit policy is defined.",
+        "People have booked, so the fee and booking rules can't change. Cancel this session and publish a new one.",
+      session_started: "This session has started and can no longer be edited.",
+      future_start_required: "Choose a start time that is still in the future.",
+      capacity_below_confirmed:
+        "Capacity cannot be lower than the number of confirmed seats.",
       already_published:
         "This session is already published. Reload it to edit.",
       session_closed:

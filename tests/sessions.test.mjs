@@ -317,7 +317,7 @@ test("session publication and current-role boundary", async (t) => {
               groupId,
               intent: "update",
               version: event.version,
-              details: valid(),
+              details: { ...valid(), fee: "13.00" },
             })
           ).status,
           409,

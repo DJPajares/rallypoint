@@ -11,6 +11,7 @@ export interface Fee {
   totalMinor: number;
   liabilityState:
     | "due"
+    | "removed_after_change"
     | "removed_before_cutoff"
     | "removed_session_cancelled"
     | "released_unpaid"
@@ -30,6 +31,7 @@ export interface ManagedFee extends Fee {
       | "marked_unpaid"
       | "waived"
       | "waiver_undone"
+      | "removed_after_change"
       | "removed_before_cutoff"
       | "removed_session_cancelled"
       | "released_unpaid";
@@ -73,6 +75,7 @@ export interface SplitClaimDuesItem {
 }
 /** One plain word for a fee's standing, shared by every view. */
 export const feeStanding = (fee: Fee) =>
+  fee.liabilityState === "removed_after_change" ||
   fee.liabilityState === "removed_before_cutoff" ||
   fee.liabilityState === "removed_session_cancelled"
     ? "Removed"
@@ -101,6 +104,7 @@ export interface OwnParty {
   guestName: string;
   queuePosition: number | null;
   consentVersion: number;
+  freeWithdrawalAfterChange?: boolean;
   withdrawnAt: string | null;
   fee: Fee | null;
   /** Their own note, or null; only booked people in "Pay the organizer" can have one. */
