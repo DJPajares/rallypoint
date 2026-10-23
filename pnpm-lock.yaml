@@ -62,6 +62,9 @@ importers:
       '@rallypoint/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@rallypoint/email':
+        specifier: workspace:*
+        version: link:../../packages/email
       '@rallypoint/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -96,6 +99,12 @@ importers:
       '@js-temporal/polyfill':
         specifier: 0.5.1
         version: 0.5.1
+
+  packages/email:
+    dependencies:
+      '@supabase/supabase-js':
+        specifier: 2.118.0
+        version: 2.118.0
 
   packages/ui:
     dependencies:

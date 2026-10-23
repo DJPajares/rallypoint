@@ -15,6 +15,8 @@ import {
   StatRow,
 } from "@rallypoint/ui";
 import {
+  emailKindLabel,
+  emailWords,
   filterParties,
   gameDaySummary,
   partyNoteWords,
@@ -369,6 +371,18 @@ function PartyDetails({
       ) : null}
       {tracked && party.state === "waitlisted" ? (
         <p className="rp-help">Waiting is free until a place opens.</p>
+      ) : null}
+      {party.emails?.length ? (
+        <div className="party-details__emails">
+          <h3>Emails</h3>
+          <ul>
+            {party.emails.map((email) => (
+              <li key={email.kind}>
+                {emailKindLabel(email.kind)}: {emailWords(email)}
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
     </div>
   );

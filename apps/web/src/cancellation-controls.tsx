@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { buttonClass, Notice, Pending, Sheet } from "@rallypoint/ui";
 import type { SessionRecord } from "@rallypoint/domain/session";
 import { feeLabel } from "@rallypoint/domain/session";
+import { cancellationEmailWords } from "@rallypoint/domain/game-day";
 import { feeStanding } from "@rallypoint/domain/registration";
 import type { RegistrationView } from "@rallypoint/domain/registration";
 import { useMutation } from "./use-mutation";
@@ -92,9 +93,11 @@ export function CancelledRoster({ slug }: { slug: string }) {
   if (result.error) return <Notice retry={result.retry}>{result.error}</Notice>;
   if (!result.data?.registration.canManage) return null;
   const roster = result.data.registration.roster;
+  const emails = cancellationEmailWords(result.data.registration.emailSummary);
   return (
     <section className="rp-card roster">
       <h2>Registration records</h2>
+      {emails ? <p className="rp-help">{emails}</p> : null}
       {roster.length ? (
         <ul>
           {roster.map((p) => (

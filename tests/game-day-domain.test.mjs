@@ -1,8 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  cancellationEmailWords,
+  emailKindLabel,
+  emailWords,
   filterParties,
   gameDaySummary,
+  instructionsEmailWords,
   noteWords,
   partyNoteWords,
   partyStanding,
@@ -212,4 +216,148 @@ test("a sent note shows only while the party's fee is still open", () => {
       "",
       JSON.stringify(over),
     );
+});
+
+test("emailWords says only what the organizer can know", () => {
+  const w = (status, reason = null, kind = "joined_confirmed") =>
+    emailWords({ status, reason, kind });
+  assert.equal(w("queued"), "Queued");
+  assert.equal(w("queued", "daily_limit"), "Queued · daily email limit");
+  assert.equal(w("queued", "monthly_limit"), "Queued · monthly email limit");
+  // Only the two limits are ever worth saying on a waiting email.
+  assert.equal(w("queued", "attempting"), "Queued");
+  assert.equal(w("queued", "rate_limited"), "Queued");
+  assert.equal(w("sent"), "Sent to email service");
+  assert.equal(w("not_confirmed"), "Not confirmed");
+  assert.equal(w("not_confirmed", "rejected"), "Not confirmed");
+  const notSent = {
+    superseded: "no longer applies",
+    expired: "too late",
+    rejected: "email service refused it",
+    render_failed: "couldn’t be prepared",
+    attempts_exhausted: "email service didn’t accept it",
+    delivery_disabled: "email is off",
+    queue_capacity: "too many emails waiting",
+    no_verified_email: "no verified email",
+    destination_changed: "email address changed",
+  };
+  for (const [reason, words] of Object.entries(notSent))
+    assert.equal(w("not_sent", reason), `Not sent · ${words}`);
+  assert.equal(w("not_sent"), "Not sent");
+  assert.equal(w("not_sent", "something_internal"), "Not sent");
+  // Never "Delivered".
+  for (const status of ["queued", "sent", "not_confirmed", "not_sent"])
+    assert.ok(!/deliver/i.test(w(status)));
+});
+
+test("emailKindLabel names each kind for the organizer", () => {
+  assert.deepEqual(
+    [
+      "joined_confirmed",
+      "joined_waitlisted",
+      "promoted",
+      "released",
+      "cancelled",
+      "instructions_changed",
+      "reminder",
+    ].map(emailKindLabel),
+    [
+      "Booking",
+      "Waitlist",
+      "Moved up",
+      "Spot released",
+      "Cancellation",
+      "Payment details",
+      "Reminder",
+    ],
+  );
+});
+
+test("cancellationEmailWords gives one line and omits zero counts", () => {
+  const tally = (queued, sent, notConfirmed, notSent) => ({
+    suppressed: [],
+    cancellation: { queued, sent, notConfirmed, notSent },
+  });
+  assert.equal(cancellationEmailWords(undefined), "");
+  assert.equal(
+    cancellationEmailWords({ suppressed: [], cancellation: null }),
+    "",
+  );
+  assert.equal(
+    cancellationEmailWords(tally(2, 3, 1, 4)),
+    "Cancellation emails: 3 sent to email service · 2 queued · 1 not confirmed · 4 not sent",
+  );
+  assert.equal(
+    cancellationEmailWords(tally(0, 5, 0, 0)),
+    "Cancellation emails: 5 sent to email service",
+  );
+  assert.equal(
+    cancellationEmailWords(tally(1, 0, 0, 2)),
+    "Cancellation emails: 1 queued · 2 not sent",
+  );
+  // A withheld update says so instead of counting anything.
+  assert.equal(
+    cancellationEmailWords({
+      suppressed: [
+        {
+          kind: "cancelled",
+          reason: "audience_limit",
+          recipients: 51,
+          at: "2026-10-23T10:00:00Z",
+        },
+      ],
+      cancellation: null,
+    }),
+    "Cancellation emails weren’t sent: more than 50 people.",
+  );
+  // A withheld payment-details update is not a cancellation.
+  assert.equal(
+    cancellationEmailWords({
+      suppressed: [
+        {
+          kind: "instructions_changed",
+          reason: "audience_limit",
+          recipients: 51,
+          at: "2026-10-23T10:00:00Z",
+        },
+      ],
+      cancellation: null,
+    }),
+    "",
+  );
+});
+
+test("instructionsEmailWords speaks once, and only for withheld payment details", () => {
+  const held = (kind, at) => ({
+    kind,
+    reason: "audience_limit",
+    recipients: 51,
+    at,
+  });
+  const line = "Payment-details emails weren’t sent: more than 50 people.";
+  assert.equal(instructionsEmailWords(undefined), "");
+  assert.equal(
+    instructionsEmailWords({ suppressed: [], cancellation: null }),
+    "",
+  );
+  // A withheld cancellation is the cancellation line's business.
+  assert.equal(
+    instructionsEmailWords({
+      suppressed: [held("cancelled", "2026-10-23T10:00:00Z")],
+      cancellation: null,
+    }),
+    "",
+  );
+  // Several withheld updates still give one line.
+  assert.equal(
+    instructionsEmailWords({
+      suppressed: [
+        held("instructions_changed", "2026-10-23T09:00:00Z"),
+        held("cancelled", "2026-10-23T09:30:00Z"),
+        held("instructions_changed", "2026-10-23T11:00:00Z"),
+      ],
+      cancellation: null,
+    }),
+    line,
+  );
 });
