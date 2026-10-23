@@ -53,7 +53,16 @@ begin
     if new.bookings_started_at is distinct from old.bookings_started_at then
       raise sqlstate 'P0001' using message='booked_event_locked';
     end if;
-    if new.details is distinct from old.details then perform app.assert_booked_edit(old,new.details); end if;
+    if new.details is distinct from old.details then
+      -- Booked writes must pass through the full save transaction, which
+      -- validates and writes history/signals/promotions together. Restore the
+      -- transaction-local marker immediately after the guarded update.
+      if current_setting('app.session_edit_id',true) is distinct from old.id::text
+        or new.version<>old.version+1 then
+        raise sqlstate 'P0001' using message='booked_event_locked';
+      end if;
+      perform app.assert_booked_edit(old,new.details);
+    end if;
   end if;
   return new;
 end;
@@ -65,7 +74,7 @@ CREATE OR REPLACE FUNCTION app.save_session_before_cancellation(p_actor_id uuid,
  SET search_path TO ''
 AS $function$
 declare s app.sessions; receipt app.operation_receipts; payload jsonb;
-  changed jsonb; published boolean; previous_details jsonb; material_change boolean; at_time timestamptz;
+  changed jsonb; published boolean; previous_details jsonb; material_change boolean; at_time timestamptz; previous_edit_id text;
 begin
   if p_intent not in ('draft','publish','update') then raise check_violation using message='invalid_input'; end if;
   perform pg_advisory_xact_lock(hashtextextended(p_actor_id::text || p_key::text,0));
@@ -123,7 +132,10 @@ begin
     select coalesce(jsonb_agg(k order by k),'[]'::jsonb) into changed
       from (select jsonb_object_keys(p_details) k union select jsonb_object_keys(s.details)) keys
       where s.details->k is distinct from p_details->k;
+    previous_edit_id := current_setting('app.session_edit_id',true);
+    perform set_config('app.session_edit_id',s.id::text,true);
     update app.sessions set details=p_details,state=case when published then 'published' else 'draft' end,version=version+1,updated_at=clock_timestamp() where id=s.id returning * into s;
+    perform set_config('app.session_edit_id',coalesce(previous_edit_id,''),true);
     if p_intent='update' then
       insert into app.session_changes(session_id,version,actor_id,changed_fields,created_at,material)
         values(s.id,s.version,p_actor_id,changed,at_time,material_change);

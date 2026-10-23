@@ -413,3 +413,37 @@ test("legacy organizer-payment defaults do not lock a harmless title correction"
   const r = await edit(f, { title: "Legacy title corrected" });
   assert.equal(r.status, 200);
 });
+
+test("raw booked detail writes cannot skip material history or delete required times", async (t) => {
+  const f = await splitFixture(t, {
+    feeMode: "fixed",
+    seats: [1],
+    cutoffPast: true,
+  });
+  for (const value of [
+    'details||\'{"location":"Unaudited venue"}\'::jsonb',
+    "details-'startsAt'",
+    "jsonb_set(details,'{startsAt}','null')",
+    'details||\'{"capacity":"3"}\'::jsonb',
+  ]) {
+    assert.throws(
+      () =>
+        f.sql(
+          `update app.sessions set details=${value},version=version+1 where id='${f.session.id}';`,
+        ),
+      "Use the complete save pipeline for booked details",
+    );
+  }
+  assert.equal(
+    f.sql(
+      `select details->>'location' from app.sessions where id='${f.session.id}';`,
+    ),
+    "Synthetic room",
+  );
+  assert.equal(
+    f.sql(
+      `select count(*) from app.session_changes where session_id='${f.session.id}';`,
+    ),
+    "0",
+  );
+});

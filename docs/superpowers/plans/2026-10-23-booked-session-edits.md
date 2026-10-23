@@ -23,29 +23,29 @@ Inspect receipt replay after start and after co-host revocation; direct SQL trig
 
 **Files:** new Supabase migration; tests/booked-edits.test.mjs; apps/api/src/sessions.ts; docs/foundation-api.md.
 
-- [ ] Write API tests for allowed descriptive edits, immutable rules, capacity and strict queue, material signals, cutoff coupling, withdrawal consent, paid preservation, split claims, permissions, stale versions, retries and post-lock start boundaries.
-- [ ] Run focused tests against the separate pre-change database.
+- [x] Write API tests for allowed descriptive edits, immutable rules, capacity and strict queue, material signals, cutoff coupling, withdrawal consent, paid preservation, split claims, permissions, stale versions, retries and post-lock start boundaries.
+- [x] Run focused tests against the separate pre-change database.
   Command: RALLYPOINT_TEST_URL=http://127.0.0.1:3002 node --test --test-concurrency=1 tests/booked-edits.test.mjs
   Expected: new policy cases fail on the original blanket lock.
-- [ ] Create migration with CLI, replace booked guard/save validation, record material change plus one private durable signal and implement affected withdrawal history. Preserve old migration history.
-- [ ] Update API errors and contract docs. Run focused tests.
+- [x] Create migration with CLI, replace booked guard/save validation, record material change plus one private durable signal and implement affected withdrawal history. Preserve old migration history.
+- [x] Update API errors and contract docs. Run focused tests.
   Expected: all focused tests pass.
-- [ ] Commit policy and tests.
-- [ ] Final task command: same focused test command above.
+- [x] Commit policy and tests.
+- [x] Final task command: same focused test command above.
   Expected: all focused tests pass.
 
 ### Task 2: Editor, withdrawal and complete verification
 
 **Files:** packages/domain/src/{session,registration,fees}.ts; apps/web/src/{session-pages,registration-panel}.tsx and fee/split display consumers; tests/session-domain.test.mjs (existing domain test location if different); tests/sessions.test.mjs.
 
-- [ ] Write/run meaningful domain tests for actual material edits and preserved timezone.
+- [x] Write/run meaningful domain tests for actual material edits and preserved timezone.
   Expected: fail before implementation.
-- [ ] Enable permitted controls, keep booking rules disabled, confirm material changes once, show affected withdrawal and distinct removed-after-change history.
-- [ ] Update the prior blanket-lock expectation to exercise a genuinely locked booking-rule change.
-- [ ] Run pnpm check, pnpm db:lint and pnpm test:api against the isolated stack. Exercise editor and withdrawal at phone width; run clean staging build.
+- [x] Enable permitted controls, keep booking rules disabled, confirm material changes once, show affected withdrawal and distinct removed-after-change history.
+- [x] Update the prior blanket-lock expectation to exercise a genuinely locked booking-rule change.
+- [x] Run pnpm check, pnpm db:lint and pnpm test:api against the isolated stack. Exercise editor and withdrawal at phone width; run clean staging build.
   Expected: lint/types/build, SQL lint and complete suite pass; browser confirms actual behavior.
-- [ ] Commit UI and verification documentation.
-- [ ] Final task command: pnpm check && pnpm db:lint && pnpm test:api
+- [x] Commit UI and verification documentation.
+- [x] Final task command: pnpm check && pnpm db:lint && pnpm test:api
   Expected: all checks pass.
 
 ## Recovery and delivery

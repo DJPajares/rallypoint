@@ -72,3 +72,34 @@ test("a change-based release has the same removed standing as other releases", (
     "Removed",
   );
 });
+
+test("a published edit still requires confirmation when a first booking arrives after the editor loaded", () => {
+  const details = session.normalizeSession(form, true);
+  const loadedBeforeFirstBooking = {
+    state: "published",
+    bookingsStarted: false,
+    details,
+  };
+  assert.equal(typeof session.sessionEditNeedsConfirmation, "function");
+  assert.equal(
+    session.sessionEditNeedsConfirmation(loadedBeforeFirstBooking, {
+      ...details,
+      location: "Court B",
+    }),
+    true,
+  );
+  assert.equal(
+    session.sessionEditNeedsConfirmation(loadedBeforeFirstBooking, {
+      ...details,
+      title: "Corrected",
+    }),
+    false,
+  );
+  assert.equal(
+    session.sessionEditNeedsConfirmation(
+      { ...loadedBeforeFirstBooking, state: "draft" },
+      { ...details, location: "Court B" },
+    ),
+    false,
+  );
+});

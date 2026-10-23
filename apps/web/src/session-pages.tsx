@@ -41,7 +41,7 @@ import {
   currencies,
   feeLabel,
   normalizeSession,
-  hasMaterialSessionChange,
+  sessionEditNeedsConfirmation,
 } from "@rallypoint/domain/session";
 import type {
   PaymentMode,
@@ -272,10 +272,7 @@ function Editor({
       version: record?.version,
       details,
     };
-    if (
-      record?.bookingsStarted &&
-      hasMaterialSessionChange(record.details, normalized)
-    ) {
+    if (record && sessionEditNeedsConfirmation(record, normalized)) {
       setPendingEdit(body);
       return;
     }

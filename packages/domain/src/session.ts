@@ -307,3 +307,14 @@ export function hasMaterialSessionChange(
     before.location !== after.location
   );
 }
+
+/** A first booking may arrive after load without changing the session version. */
+export function sessionEditNeedsConfirmation(
+  record: Pick<SessionRecord, "state" | "details">,
+  details: SessionDetails,
+) {
+  return (
+    record.state === "published" &&
+    hasMaterialSessionChange(record.details, details)
+  );
+}
