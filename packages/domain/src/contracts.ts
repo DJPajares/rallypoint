@@ -13,6 +13,7 @@ export interface Identity {
   id: string;
   email: string;
   displayName: string;
+  profileId: string;
 }
 export interface GroupSummary {
   id: string;

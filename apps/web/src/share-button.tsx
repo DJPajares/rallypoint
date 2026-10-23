@@ -6,18 +6,23 @@ import { ShareNetworkIcon } from "@phosphor-icons/react/dist/csr/ShareNetwork";
 export function ShareButton({
   title,
   primary = false,
+  url,
+  label = "Share",
 }: {
   title: string;
   /** The page's one neon action, for organizers whose main job is sharing. */
   primary?: boolean;
+  /** What to share; the current page when left out. */
+  url?: string;
+  label?: string;
 }) {
   const [status, setStatus] = useState("");
   async function share() {
-    const url = window.location.href;
+    const link = url ?? window.location.href;
     setStatus("");
     if (navigator.share) {
       try {
-        await navigator.share({ title, url });
+        await navigator.share({ title, url: link });
         return;
       } catch (error) {
         // Dismissing the share sheet is a choice, not a failure.
@@ -26,7 +31,7 @@ export function ShareButton({
       }
     }
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(link);
       setStatus("Link copied.");
     } catch {
       setStatus("Copy wasn’t available. Copy the address from your browser.");
@@ -40,7 +45,7 @@ export function ShareButton({
         onClick={() => void share()}
       >
         <ShareNetworkIcon size={18} aria-hidden="true" />
-        Share
+        {label}
       </button>
       <span role="status" className="rp-sr-only">
         {status}
