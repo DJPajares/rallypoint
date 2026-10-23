@@ -172,3 +172,33 @@ test("Mailpit adapter posts to the local send API", async () => {
   });
   assert.equal((await failing.send(msg)).outcome, "transient");
 });
+
+test("a 2xx without a usable id is ambiguous, never accepted", async () => {
+  const raw = (status, body) => async () => new Response(body, { status });
+  const mailpit = (fetch) =>
+    mailpitProvider({ baseUrl: "http://127.0.0.1:54324", fetch }).send(msg);
+  const expected = { outcome: "ambiguous", code: "no_id" };
+  for (const body of ["{}", "not json", '{"id":""}', '{"id":5}']) {
+    assert.deepEqual(await send(raw(200, body)), expected, `resend ${body}`);
+  }
+  for (const body of ["{}", "not json", '{"ID":""}', '{"ID":5}']) {
+    assert.deepEqual(await mailpit(raw(200, body)), expected, `mailpit ${body}`);
+  }
+});
+
+test("permanent codes are only provider names that look like safe codes", async () => {
+  const raw = (status, body) => async () => new Response(body, { status });
+  assert.deepEqual(await send(raw(422, '{"name":"Bad Thing!<script>"}')), {
+    outcome: "permanent",
+    code: "http_422",
+  });
+  assert.deepEqual(await send(raw(422, "not json")), { outcome: "permanent", code: "http_422" });
+  assert.deepEqual(await send(raw(422, `{"name":"${"a".repeat(65)}"}`)), {
+    outcome: "permanent",
+    code: "http_422",
+  });
+  assert.deepEqual(await send(raw(422, '{"name":"validation_error"}')), {
+    outcome: "permanent",
+    code: "validation_error",
+  });
+});

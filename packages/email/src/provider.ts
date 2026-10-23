@@ -1,7 +1,7 @@
 export type SendResult =
   | { outcome: "accepted"; id: string }
   | { outcome: "transient"; retryAfterSeconds?: number; code: string }
-  | { outcome: "ambiguous"; code: "timeout" | "network" }
+  | { outcome: "ambiguous"; code: "timeout" | "network" | "no_id" }
   | { outcome: "permanent"; code: string }
   | { outcome: "quota"; code: "daily_quota" | "monthly_quota" };
 
@@ -19,6 +19,7 @@ export interface Provider {
 }
 
 const DEFAULT_TIMEOUT_MS = 10000;
+const SAFE_CODE = /^[a-z0-9_]{1,64}$/;
 
 type Raw = { status: number; headers: Headers; json: unknown };
 
@@ -97,7 +98,10 @@ export function resendProvider(o: {
       if (raw === "timeout" || raw === "network") return { outcome: "ambiguous", code: raw };
       const { status, headers, json } = raw;
       if (status >= 200 && status < 300) {
-        return { outcome: "accepted", id: field(json, "id") ?? "" };
+        const id = field(json, "id");
+        return id === undefined || id === ""
+          ? { outcome: "ambiguous", code: "no_id" }
+          : { outcome: "accepted", id };
       }
       const name = field(json, "name");
       if (name === "daily_quota_exceeded") return { outcome: "quota", code: "daily_quota" };
@@ -112,7 +116,8 @@ export function resendProvider(o: {
         return { outcome: "transient", code: "concurrent_idempotent" };
       }
       if (status >= 500 || status === 408) return { outcome: "transient", code: `http_${status}` };
-      return { outcome: "permanent", code: name ?? `http_${status}` };
+      const safe = name !== undefined && SAFE_CODE.test(name) ? name : `http_${status}`;
+      return { outcome: "permanent", code: safe };
     },
   };
 }
@@ -150,7 +155,10 @@ export function mailpitProvider(o: {
       );
       if (raw === "timeout" || raw === "network") return { outcome: "ambiguous", code: raw };
       if (raw.status >= 200 && raw.status < 300) {
-        return { outcome: "accepted", id: field(raw.json, "ID") ?? "" };
+        const id = field(raw.json, "ID");
+        return id === undefined || id === ""
+          ? { outcome: "ambiguous", code: "no_id" }
+          : { outcome: "accepted", id };
       }
       return raw.status >= 500
         ? { outcome: "transient", code: `http_${raw.status}` }
