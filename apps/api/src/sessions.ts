@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { InputError, normalizeSession } from "@rallypoint/domain/session";
 import { ApiError, json, parse, readBody, uuid, uuidParam } from "./http";
@@ -13,11 +12,11 @@ import {
 } from "./identity";
 
 async function rpc(
-  db: SupabaseClient,
+  db: ReturnType<typeof client>,
   name: string,
   args: Record<string, unknown>,
 ) {
-  const { data, error } = await db.schema("api").rpc(name, args);
+  const { data, error } = await db.rpc(name, args);
   if (error) {
     if (error.code === "42501")
       throw new ApiError(
@@ -103,7 +102,7 @@ export const sessions = new Hono<ApiEnv>()
   .get(`/shared/${id}`, async (c) => {
     const conn = connection(c.env);
     const session = await rpc(
-      client(conn.url, conn.secret),
+      client(conn.url, conn.secret, c.env.SUPABASE_API_SCHEMA ?? "api"),
       "read_shared_session",
       {
         p_slug: c.req.param("id"),

@@ -22,7 +22,9 @@
     "db:start": "node scripts/local.mjs start",
     "db:reset": "node scripts/local.mjs reset",
     "db:stop": "node scripts/local.mjs stop",
-    "db:lint": "supabase db lint --local"
+    "db:lint": "supabase db lint --local",
+    "build:staging": "node scripts/build-staging.mjs",
+    "deploy:staging": "pnpm build:staging && pnpm --filter @rallypoint/web exec wrangler deploy --config wrangler.staging.jsonc --upload-source-maps=false"
   },
   "devDependencies": {
     "@rallypoint/domain": "workspace:*",

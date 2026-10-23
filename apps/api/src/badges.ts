@@ -12,9 +12,10 @@ async function call(
   name: string,
   args: Record<string, unknown> = {},
 ) {
-  const { data, error } = await c.var.db
-    .schema("api")
-    .rpc(name, { p_actor_id: c.var.user.id, ...args });
+  const { data, error } = await c.var.db.rpc(name, {
+    p_actor_id: c.var.user.id,
+    ...args,
+  });
   if (error?.message === "title_not_earned")
     throw new ApiError(
       422,
