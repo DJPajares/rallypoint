@@ -182,6 +182,8 @@ Show organizer-supplied payment QR codes or plain payment instructions at the ap
 
 **Implemented for review, 2026-10-23 (D-18 pilot, branch `claude/payment-modes-pilot`):** the two pilot payment modes, the manual release of unpaid spots, the player's "I've sent it" note (RP-10) and the private payment-instructions change notice for P-06, following the [implementation plan](docs/superpowers/plans/2026-10-23-payment-modes-pilot.md). Builder's calls open to owner correction: new sessions start as "Not tracked here"; a release is refused when the player's note changed since the organizer saw it; releasing needs a cutoff strictly before start; saved instructions stay stored but hidden while a session is not tracked; a note is hidden once its party leaves. This records implementation, not acceptance; no email is sent until P-06, and nothing is deployed.
 
+**Release follow-ups accepted, 2026-10-23 (owner: "Approved. Proceed"):** a party with any seat checked in can't be released, because it showed up and the organizer collects at the court; correcting the check-in makes it releasable again. A released party stays listed on game day under Left with who gave the spot away and when, and no actions.
+
 **Acceptance:** an organizer records and corrects a payment; an ordinary participant cannot mark themselves or others paid through a direct request; a paid but cancelled registration is still not confirmed; two edits cannot silently obscure the final saved value or actor. If a save fails, the interface does not claim payment tracking was updated.
 
 ### RP-12 — Notifications and calendar

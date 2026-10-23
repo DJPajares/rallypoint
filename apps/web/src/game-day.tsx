@@ -20,6 +20,7 @@ import {
   partyNoteWords,
   partyStanding,
   paymentWords,
+  releaseRecord,
 } from "@rallypoint/domain/game-day";
 import type { GameDayFilter, RosterParty } from "@rallypoint/domain/game-day";
 import type {
@@ -299,7 +300,9 @@ function PartyDetails({
         {party.seats} {party.seats === 1 ? "seat" : "seats"} ·{" "}
         {party.state === "waitlisted" && queue
           ? `waiting, number ${queue} in line`
-          : party.state}
+          : releaseRecord(party)
+            ? "released"
+            : party.state}
       </p>
       {party.id
         ? party.attendance?.map((seat) => (
@@ -505,7 +508,20 @@ export function GameDay({
         <>
           <h3>Left</h3>
           <ListGroup>
-            {left.map((p) => quietRow(p, <Payment party={p} />))}
+            {left.map((p) => {
+              const released = releaseRecord(p);
+              return quietRow(
+                p,
+                released ? (
+                  <>
+                    Spot given to the waitlist by {released.by} ·{" "}
+                    {when(released.at)}
+                  </>
+                ) : (
+                  <Payment party={p} />
+                ),
+              );
+            })}
           </ListGroup>
         </>
       ) : null}
