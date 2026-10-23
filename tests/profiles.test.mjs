@@ -242,3 +242,123 @@ test("an unknown profile id is not found", async (t) => {
     assert.equal(body.error.message, "Profile not found");
   }
 });
+
+// One name everywhere: a fixed-fee session with actor 0 booked, so there is a
+// party, a fee and a payment history to rename.
+async function booked(t) {
+  const f = await splitFixture(t, {
+    feeMode: "fixed",
+    total: "10.00",
+    seats: [1],
+    capacity: 2,
+  });
+  t.after(() => {
+    f.sql(
+      `delete from app.profiles where user_id in (${f.actors.map((a) => `'${a.id}'`).join(",")});`,
+    );
+  });
+  return f;
+}
+const entryFor = async (f, index) => {
+  const response = await f.get(
+    f.organizer,
+    `/api/registrations/${f.session.slug}`,
+  );
+  const { registration } = await response.json();
+  return registration.roster.find((p) => p.id === f.parties[index].id);
+};
+
+test("a rename shows on a roster made before it", async (t) => {
+  const f = await booked(t);
+  const [actor] = f.actors;
+  const { profile } = await (
+    await save(f, actor, { name: "Renamed Sam", activities: [] })
+  ).json();
+  const entry = await entryFor(f, 0);
+  assert.equal(entry.primaryName, "Renamed Sam");
+  assert.equal(entry.profileId, profile.profileId);
+  assert.equal(
+    f.sql(
+      `select primary_name from app.parties where id='${f.parties[0].id}';`,
+    ),
+    "Renamed Sam",
+  );
+});
+
+test("a rename shows on a new booking", async (t) => {
+  const f = await booked(t);
+  const actor = f.actors[1];
+  assert.equal(
+    (await save(f, actor, { name: "Fresh Name", activities: [] })).status,
+    200,
+  );
+  assert.equal((await f.join(actor)).primaryName, "Fresh Name");
+});
+
+test("organizer actions carry the organizer's current name", async (t) => {
+  const f = await booked(t);
+  t.after(async () => {
+    // The organizer account is shared; put their profile back.
+    await save(f, f.organizer, { name: "", activities: [] });
+  });
+  const before = (await entryFor(f, 0)).fee;
+  const paid = await f.post(
+    f.organizer,
+    `/api/registrations/${f.session.slug}/payments`,
+    {
+      operationKey: randomUUID(),
+      partyId: f.parties[0].id,
+      action: "mark_paid",
+      revision: before.revision,
+    },
+  );
+  assert.equal(paid.status, 200);
+  assert.equal(
+    (await save(f, f.organizer, { name: "Org Renamed", activities: [] }))
+      .status,
+    200,
+  );
+  assert.equal(
+    f.sql(
+      `select string_agg(distinct actor_name,',') from app.fee_changes where party_id='${f.parties[0].id}' and actor_id='${f.organizer.id}';`,
+    ),
+    "Org Renamed",
+  );
+  // Only the name moved: the payment itself is as the organizer left it.
+  assert.equal((await entryFor(f, 0)).fee.revision, before.revision + 1);
+});
+
+test("clearing a name puts the account name back on old records", async (t) => {
+  const f = await booked(t);
+  const [actor] = f.actors;
+  await save(f, actor, { name: "Renamed Sam", activities: [] });
+  assert.equal((await entryFor(f, 0)).primaryName, "Renamed Sam");
+  assert.equal(
+    (await save(f, actor, { name: "", activities: [] })).status,
+    200,
+  );
+  assert.equal((await entryFor(f, 0)).primaryName, "Split person 0");
+});
+
+test("a roster person without a profile row stays readable", async (t) => {
+  const f = await booked(t);
+  const [actor] = f.actors;
+  f.sql(`delete from app.profiles where user_id='${actor.id}';`);
+  const entry = await entryFor(f, 0);
+  assert.equal(entry.profileId, null);
+  assert.ok(entry.primaryName.length > 0);
+});
+
+test("a rename changes names only and sends no email", async (t) => {
+  const f = await booked(t);
+  const [actor] = f.actors;
+  const rows = () =>
+    f.sql(
+      `select coalesce(jsonb_agg(to_jsonb(p) - 'primary_name' order by p.id),'[]') from app.parties p where p.session_id='${f.session.id}';`,
+    );
+  const jobs = () => f.sql("select count(*) from app.email_jobs;");
+  const before = { rows: rows(), jobs: jobs() };
+  await save(f, actor, { name: "Only A Name", activities: [] });
+  assert.equal(rows(), before.rows);
+  assert.equal(jobs(), before.jobs);
+});

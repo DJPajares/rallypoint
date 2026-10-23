@@ -6,7 +6,7 @@ import type { ApiEnv } from "./identity";
 import {
   client,
   connection,
-  displayName,
+  actorName,
   notAvailable,
   requireUser,
 } from "./identity";
@@ -182,7 +182,7 @@ export const sessions = new Hono<ApiEnv>()
     return json(
       await rpc(c.var.db, "cancel_session", {
         p_actor_id: c.var.user.id,
-        p_actor_name: displayName(c.var.user, "Organizer"),
+        p_actor_name: (await actorName(c, "Organizer")).name,
         p_key: operationKey,
         p_session_id: c.req.param("id"),
       }),
