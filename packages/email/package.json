@@ -1,0 +1,19 @@
+{
+  "name": "@rallypoint/email",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./render": "./src/render.ts",
+    "./provider": "./src/provider.ts",
+    "./drain": "./src/drain.ts",
+    "./client": "./src/client.ts"
+  },
+  "scripts": {
+    "lint": "oxlint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.118.0"
+  }
+}
