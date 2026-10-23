@@ -13,7 +13,8 @@
     "./badges": "./src/badges.ts",
     "./game-day": "./src/game-day.ts",
     "./run-again": "./src/run-again.ts",
-    "./my-sessions": "./src/my-sessions.ts"
+    "./my-sessions": "./src/my-sessions.ts",
+    "./profile": "./src/profile.ts"
   },
   "scripts": {
     "lint": "oxlint src",
