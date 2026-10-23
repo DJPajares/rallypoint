@@ -33,7 +33,7 @@ export interface PublicProfile {
   profileId: string;
   name: string;
   title: { key: string } | null;
-  badges: Array<{ key: string; earnedAt: string }>;
+  badges: Array<{ key: string }>;
   stats: { played: number; hosted: number; groups: number };
   activities: ProfileActivity[];
 }
@@ -71,8 +71,16 @@ export function normalizeProfile(
   | { ok: false; errors: ProfileError[] } {
   const errors: ProfileError[] = [];
 
-  const name = input.name.trim();
-  if (codePoints(name) > maxNameLength) {
+  const typed = input.name.trim();
+  // Invisible format characters (zero-width, direction overrides) are removed;
+  // control characters such as line breaks are refused.
+  const name = typed.replace(/\p{Cf}/gu, "").trim();
+  if (/\p{Cc}/u.test(typed) || (name !== "" && !/[\p{L}\p{N}]/u.test(name))) {
+    errors.push({
+      field: "name",
+      message: "Use letters or numbers in your name.",
+    });
+  } else if (codePoints(name) > maxNameLength) {
     errors.push({
       field: "name",
       message: "Use a name of up to 80 characters.",
@@ -96,7 +104,8 @@ export function normalizeProfile(
       fail("Choose a listed level.");
     }
 
-    const key = text.toLowerCase();
+    // Same activity whatever the case, spacing or accent composition.
+    const key = text.normalize("NFC").replace(/\s+/g, " ").toLowerCase();
     if (seen.has(key)) fail("Each activity can be added once.");
     seen.add(key);
 

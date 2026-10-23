@@ -22,7 +22,7 @@ import type {
   RosterTitle,
 } from "@rallypoint/domain/badges";
 import type { Identity } from "@rallypoint/domain/contracts";
-import { levelLabel, playsLine } from "@rallypoint/domain/profile";
+import { levelLabel } from "@rallypoint/domain/profile";
 import type {
   MyProfile,
   ProfileActivity,
@@ -416,8 +416,8 @@ export function RingAvatar({
   );
 }
 
-/** What the public sees: each level is marked as the person's own rating. */
-const publicPlaysLine = (activities: ProfileActivity[]) =>
+/** Owner and visitors read the same line: each level is marked as the person's own rating. */
+const playsLineSelfRated = (activities: ProfileActivity[]) =>
   activities.length === 0
     ? ""
     : `Plays: ${activities
@@ -462,7 +462,7 @@ function ProfileView({
   activities: ProfileActivity[];
   owner?: OwnerParts;
 }) {
-  const plays = owner ? playsLine(activities) : publicPlaysLine(activities);
+  const plays = playsLineSelfRated(activities);
   return (
     <section className="page profile-page">
       <div className="profile-head">
@@ -718,16 +718,10 @@ export function PersonProfilePage() {
         )}
       </section>
     );
-  // Each badge once, in catalog order, whichever group it came from.
-  const earliest = new Map<BadgeKey, string>();
-  for (const b of profile.badges) {
-    const key = b.key as BadgeKey;
-    if (!badgeCatalog.some((c) => c.key === key)) continue;
-    const seen = earliest.get(key);
-    if (seen === undefined || b.earnedAt < seen) earliest.set(key, b.earnedAt);
-  }
+  // Each badge once, in catalog order.
+  const earned = new Set(profile.badges.map((b) => b.key));
   const badges = badgeCatalog
-    .filter((b) => earliest.has(b.key))
+    .filter((b) => earned.has(b.key))
     .map((b) => ({ key: b.key }));
   const title = profile.title ? (profile.title.key as BadgeKey) : null;
   return (

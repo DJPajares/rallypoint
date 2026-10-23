@@ -19,7 +19,7 @@ test("a name is trimmed and blank means no override", () => {
 
 test("80 code points pass and 81 fail, emoji included", () => {
   assert.equal(
-    normalizeProfile({ name: "🏓".repeat(80), activities: [] }).ok,
+    normalizeProfile({ name: `A${"🏓".repeat(79)}`, activities: [] }).ok,
     true,
   );
   const r = normalizeProfile({ name: "é".repeat(81), activities: [] });
@@ -106,4 +106,48 @@ test("level labels read in words", () => {
   assert.equal(levelLabel.beginner, "Beginner");
   assert.equal(levelLabel.intermediate, "Intermediate");
   assert.equal(levelLabel.advanced, "Advanced");
+});
+
+test("names: control characters are refused, invisible ones stripped, a letter or digit is needed", () => {
+  const refused = [
+    { field: "name", message: "Use letters or numbers in your name." },
+  ];
+  assert.deepEqual(
+    normalizeProfile({ name: "Sam\nSmith", activities: [] }).errors,
+    refused,
+  );
+  assert.deepEqual(
+    normalizeProfile({ name: "Sam\u0007", activities: [] }).errors,
+    refused,
+  );
+  assert.equal(
+    normalizeProfile({ name: "Sa\u200Bm\u202E", activities: [] }).value.name,
+    "Sam",
+  );
+  // Only invisible characters leave nothing, which means no override.
+  assert.equal(
+    normalizeProfile({ name: "\u200B\u200D", activities: [] }).value.name,
+    null,
+  );
+  for (const name of ["🏓", "---", "!!"])
+    assert.deepEqual(
+      normalizeProfile({ name, activities: [] }).errors,
+      refused,
+    );
+  for (const name of ["李", "٣", "Zoë", "R2D2", "🏓 Sam"])
+    assert.equal(normalizeProfile({ name, activities: [] }).ok, true);
+});
+
+test("activities: case, inner spacing and accent composition do not make a new activity", () => {
+  const dup = (a, b) =>
+    normalizeProfile({
+      name: "",
+      activities: [
+        { name: a, level: null },
+        { name: b, level: null },
+      ],
+    });
+  assert.equal(dup("Table  Tennis", "table tennis").ok, false);
+  assert.equal(dup("Caf\u00e9 golf", "Cafe\u0301 golf").ok, false);
+  assert.equal(dup("Table Tennis", "Table Tennis 2").ok, true);
 });

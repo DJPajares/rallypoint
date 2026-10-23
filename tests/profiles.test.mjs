@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { createClient } from "@supabase/supabase-js";
+import { localEnv } from "../scripts/local-env.mjs";
 import { splitFixture } from "./helpers/split-fixtures.mjs";
 
 // Fresh synthetic accounts (full_name "Split person {i}") per test; their
@@ -14,6 +16,10 @@ async function fixture(t) {
   });
   return f;
 }
+const env = localEnv();
+const admin = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
 const save = (f, actor, body) => f.post(actor, "/api/me/profile", body);
 const mine = async (f, actor) =>
   (await (await f.get(actor, "/api/me/profile")).json()).profile;
@@ -87,7 +93,10 @@ test("a blank name clears the override", async (t) => {
 test("80 code points pass and 81 fail", async (t) => {
   const f = await fixture(t);
   const [actor] = f.actors;
-  const ok = await save(f, actor, { name: "🏓".repeat(80), activities: [] });
+  const ok = await save(f, actor, {
+    name: `A${"🏓".repeat(79)}`,
+    activities: [],
+  });
   assert.equal(ok.status, 200);
   assert.equal([...(await ok.json()).profile.name].length, 80);
   const tooLong = await save(f, actor, {
@@ -209,8 +218,12 @@ test("a public profile shows only its page fields", async (t) => {
   assert.deepEqual(shown.activities, [{ name: "Tennis", level: null }]);
   assert.deepEqual(shown.title, { key: "founder" });
   assert.ok(shown.badges.length >= 1);
+  // Badge keys only: no dates, and a repeatable badge appears once.
   for (const badge of shown.badges)
-    assert.deepEqual(Object.keys(badge).sort(), ["earnedAt", "key"]);
+    assert.deepEqual(Object.keys(badge), ["key"]);
+  const keys = shown.badges.map((b) => b.key);
+  assert.equal(new Set(keys).size, keys.length);
+  assert.deepEqual(keys, [...keys].sort());
   assert.deepEqual(Object.keys(shown.stats).sort(), [
     "groups",
     "hosted",
@@ -361,4 +374,89 @@ test("a rename changes names only and sends no email", async (t) => {
   await save(f, actor, { name: "Only A Name", activities: [] });
   assert.equal(rows(), before.rows);
   assert.equal(jobs(), before.jobs);
+});
+
+test("a rename shows on the next email", async (t) => {
+  const f = await booked(t);
+  const [actor] = f.actors;
+  await save(f, actor, { name: "Renamed Sam", activities: [] });
+  // Joining queued a confirmation; set other people's waiting jobs and the
+  // sender state aside while claiming, then put them back.
+  const parked = f.sql(
+    `select coalesce(string_agg(id::text,','),'') from app.email_jobs where state='queued' and session_id<>'${f.session.id}';`,
+  );
+  const ids = parked
+    .split(",")
+    .filter(Boolean)
+    .map((id) => `'${id}'`)
+    .join(",");
+  const prior = JSON.parse(
+    f.sql("select row_to_json(s) from app.email_sender s;"),
+  );
+  const value = (v) => (v ? `'${v}'` : "null");
+  try {
+    if (ids)
+      f.sql(
+        `update app.email_jobs set next_attempt_at=next_attempt_at+interval '1000 years' where id in(${ids});`,
+      );
+    f.sql(
+      "update app.email_sender set holder=null,lease_until=null,circuit_until=null,circuit_reason=null,last_request_at=null where id=1;",
+    );
+    const { data, error } = await admin
+      .schema("api")
+      .rpc("claim_email_jobs", { p_holder: randomUUID(), p_limit: 5 });
+    assert.ok(!error, error?.message);
+    const job = data.jobs.find((j) => j.userId === actor.id);
+    assert.ok(job, "the booked person's confirmation is claimed");
+    assert.equal(job.context.firstName, "Renamed");
+  } finally {
+    f.sql(`delete from app.email_jobs where session_id='${f.session.id}';`);
+    if (ids)
+      f.sql(
+        `update app.email_jobs set next_attempt_at=next_attempt_at-interval '1000 years' where id in(${ids});`,
+      );
+    f.sql(
+      `update app.email_sender set holder=${value(prior.holder)},lease_until=${value(prior.lease_until)},circuit_until=${value(prior.circuit_until)},circuit_reason=${value(prior.circuit_reason)},last_request_at=${value(prior.last_request_at)} where id=1;`,
+    );
+  }
+});
+
+test("a refresh puts the account name on records that kept an older one", async (t) => {
+  const f = await booked(t);
+  const [actor] = f.actors;
+  await f.get(actor, "/api/me/profile");
+  f.sql(
+    `update app.profiles set account_name='Old Google Name' where user_id='${actor.id}';update app.parties set primary_name='Older Name' where id='${f.parties[0].id}';`,
+  );
+  assert.equal((await entryFor(f, 0)).primaryName, "Older Name");
+  // The same statements as the one-time refresh in the profile-fixes migration,
+  // limited to this account.
+  f.sql(
+    `update app.profiles p set account_name=left(btrim(u.raw_user_meta_data->>'full_name'),80) from auth.users u where u.id=p.user_id and p.user_id='${actor.id}' and nullif(btrim(coalesce(u.raw_user_meta_data->>'full_name','')),'') is not null and p.account_name is distinct from left(btrim(u.raw_user_meta_data->>'full_name'),80);select app.propagate_name(user_id) from app.profiles where user_id='${actor.id}';`,
+  );
+  assert.equal((await entryFor(f, 0)).primaryName, "Split person 0");
+});
+
+test("the database applies the same name and activity rules", async (t) => {
+  const f = await fixture(t);
+  const [actor] = f.actors;
+  const call = (name, activities = []) =>
+    admin.schema("api").rpc("save_my_profile", {
+      p_actor_id: actor.id,
+      p_account_name: "Split person 0",
+      p_name: name,
+      p_activities: activities,
+    });
+  for (const name of ["Sam\nSmith", "Sam\u0007", "🏓", "---"]) {
+    const { error } = await call(name);
+    assert.equal(error?.message, "invalid_profile", JSON.stringify(name));
+  }
+  const dup = await call("", [
+    { name: "Table  Tennis", level: null },
+    { name: "table tennis", level: null },
+  ]);
+  assert.equal(dup.error?.message, "invalid_profile");
+  const stripped = await call("Sa​m‮");
+  assert.ok(!stripped.error, stripped.error?.message);
+  assert.equal(stripped.data.name, "Sam");
 });
