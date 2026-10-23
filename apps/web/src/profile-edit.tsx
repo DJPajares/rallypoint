@@ -149,6 +149,7 @@ function EditForm({ profile }: { profile: MyProfile }) {
   const activitiesError = useRef<HTMLParagraphElement>(null);
   const addButton = useRef<HTMLButtonElement>(null);
   const cancelButton = useRef<HTMLButtonElement>(null);
+  const saveButton = useRef<HTMLButtonElement>(null);
   const dirty = snapshot(draft) !== snapshot(initial);
   const nameError = errors.find((e) => e.field === "name")?.message;
   const activityError = errors.find((e) => e.field === "activities")?.message;
@@ -162,6 +163,7 @@ function EditForm({ profile }: { profile: MyProfile }) {
     if (target === "name") nameInput.current?.focus();
     else if (target === "activities") activitiesError.current?.focus();
     else if (target === "add") addButton.current?.focus();
+    else if (target === "save") saveButton.current?.focus();
     else document.getElementById(target)?.focus();
   });
 
@@ -170,6 +172,14 @@ function EditForm({ profile }: { profile: MyProfile }) {
     focus.current = next.some((e) => e.field === "name")
       ? "name"
       : "activities";
+  }
+
+  // Saving again is safe, so an unclear result just asks for another go.
+  function unconfirmed() {
+    setProblem(
+      "We couldn’t confirm your changes were saved. They’re still here — save again to be sure.",
+    );
+    focus.current = "save";
   }
 
   async function save(event: FormEvent) {
@@ -204,11 +214,13 @@ function EditForm({ profile }: { profile: MyProfile }) {
       }
       if (Array.isArray(body.errors) && body.errors.length)
         showErrors(body.errors as ProfileError[]);
-      else setProblem(body.error?.message ?? "Please try again.");
+      else if (response.status >= 500) unconfirmed();
+      else {
+        setProblem(body.error?.message ?? "Please try again.");
+        focus.current = "save";
+      }
     } catch {
-      setProblem(
-        "The connection was interrupted. Your changes are still here; save again to be sure.",
-      );
+      unconfirmed();
     }
     setBusy(false);
   }
@@ -247,7 +259,16 @@ function EditForm({ profile }: { profile: MyProfile }) {
   }
 
   return (
-    <DetailPage back="/profile" backLabel="Profile" className="form-page">
+    <DetailPage
+      back="/profile"
+      backLabel="Profile"
+      className="form-page"
+      onBack={(event) => {
+        if (!dirty) return;
+        event.preventDefault();
+        setDiscarding(true);
+      }}
+    >
       <div className="page-head">
         <h1>Edit profile</h1>
       </div>
@@ -366,6 +387,7 @@ function EditForm({ profile }: { profile: MyProfile }) {
           {problem ? <Notice>{problem}</Notice> : null}
           <StickyActions>
             <button
+              ref={saveButton}
               type="submit"
               className={buttonClass({ variant: "primary" })}
             >

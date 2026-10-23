@@ -417,7 +417,8 @@ interface ViewBadge {
 
 /** Only the owner's view has these: the controls, locked badges and account. */
 interface OwnerParts {
-  profileId: string;
+  /** Unknown until the account loads; there is no link to share before then. */
+  profileId: string | null;
   /** Stands in for the stats and badges while they load or fail to load. */
   status?: ReactNode;
   titleControl?: ReactNode;
@@ -461,15 +462,17 @@ function ProfileView({
               <PencilSimpleIcon size={18} aria-hidden="true" />
               Edit profile
             </Link>
-            <ShareButton
-              title={`${name} on RallyPoint`}
-              label="Share profile"
-              url={
-                typeof window === "undefined"
-                  ? undefined
-                  : `${window.location.origin}/people/${owner.profileId}`
-              }
-            />
+            {owner.profileId ? (
+              <ShareButton
+                title={`${name} on RallyPoint`}
+                label="Share profile"
+                url={
+                  typeof window === "undefined"
+                    ? undefined
+                    : `${window.location.origin}/people/${owner.profileId}`
+                }
+              />
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -560,18 +563,11 @@ export function ProfilePage() {
     ) : badges.error && !view ? (
       <Notice retry={badges.retry}>{badges.error}</Notice>
     ) : undefined;
-  if (!identity.data)
-    return (
-      <section className="page profile-page">
-        {identity.error ? (
-          <Notice retry={identity.retry}>{identity.error}</Notice>
-        ) : (
-          <Pending>Opening your profile…</Pending>
-        )}
-      </section>
-    );
   return (
     <>
+      {identity.error ? (
+        <Notice retry={identity.retry}>{identity.error}</Notice>
+      ) : null}
       {profile.error && !profile.data ? (
         <Notice retry={profile.retry}>{profile.error}</Notice>
       ) : null}
@@ -582,7 +578,7 @@ export function ProfilePage() {
         stats={view?.stats ?? { played: 0, hosted: 0, groups: 0 }}
         activities={profile.data?.profile.activities ?? []}
         owner={{
-          profileId: identity.data.profileId,
+          profileId: identity.data?.profileId ?? null,
           status,
           titleControl: earned.length ? (
             <button
