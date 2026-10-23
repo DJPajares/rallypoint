@@ -65,16 +65,28 @@ This task did not apply cloud SQL, change shared Auth/Trove settings, enable a s
 
 ## Remaining completion evidence
 
-| Required area | Current result / next evidence |
-| --- | --- |
-| Local integrated loop and backend boundaries | Observed above; clean suite passes. |
-| Live authenticated loop | Blocked by staging schema drift; repeat after a reviewed upgrade. |
-| Live email | Verify actual existing-account code receipt and transactional/reminder email delivery separately from stand-ins; record sender, host/version and inbox outcome without publishing codes or addresses. |
-| Android/Chrome browser and installed PWA | Owner can test Android/Chrome; actual OS/browser versions, install and outcomes not yet supplied. |
-| iPhone/Safari browser and installed PWA | No device evidence available. Owner's Android-only availability does not change D-08's accepted support matrix. |
-| Desktop keyboard | Chrome has targeted/partial coverage above; full core-loop keyboard/focus checks and desktop Safari remain unverified. |
-| Accessibility/performance | Complete the physical-device/core-loop checks; no WCAG or 3-second-budget claim from this limited browser walkthrough. |
+| Required area                                | Current result / next evidence                                                                                                                                                                        |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Local integrated loop and backend boundaries | Observed above; clean suite passes.                                                                                                                                                                   |
+| Live authenticated loop                      | Blocked by staging schema drift; repeat after a reviewed upgrade.                                                                                                                                     |
+| Live email                                   | Verify actual existing-account code receipt and transactional/reminder email delivery separately from stand-ins; record sender, host/version and inbox outcome without publishing codes or addresses. |
+| Android/Chrome browser and installed PWA     | Owner can test Android/Chrome; actual OS/browser versions, install and outcomes not yet supplied.                                                                                                     |
+| iPhone/Safari browser and installed PWA      | No device evidence available. Owner's Android-only availability does not change D-08's accepted support matrix.                                                                                       |
+| Desktop keyboard                             | Chrome has targeted/partial coverage above; full core-loop keyboard/focus checks and desktop Safari remain unverified.                                                                                |
+| Accessibility/performance                    | Complete the physical-device/core-loop checks; no WCAG or 3-second-budget claim from this limited browser walkthrough.                                                                                |
 
 Once staging is ready, record these Android results with the exact OS and Chrome versions: open the custom domain, receive/verify an existing account's code, add/install RallyPoint from Chrome, reopen it standalone, join a synthetic session, go offline and attempt a mutation (must stay unconfirmed), reconnect/recover the same request, sign out/switch accounts and confirm private roster/fee/attendance data does not follow the old identity. Use only synthetic session data; do not put authentication codes in the report. Repeat the accepted matrix on iPhone/Safari when a device is available.
 
 P-13's separate provider eligibility/headroom, backup locations and synthetic restore/deletion prerequisites remain before real pilot data. Existing Maps, embedded payments, profile editing, badge tiers and other backlog features are outside P-08; passing these checks does not imply they exist. Keep P-08 open until its missing evidence is recorded and accepted. This internal verification report needs no user-facing release note.
+
+## Continued work: prepared staging upgrade, not yet applied
+
+The owner asked to continue after the staging blocker was reported. The branch now adds an explicit `--upgrade` mode to the existing schema renderer, covering only the 16 reviewed source migrations after the original bootstrap through `20261023144000`. The two renderer safety tests failed before implementation and passed afterward; default initial-install behavior remains guarded, and invalid modes emit no SQL.
+
+Read-only comparison found all **63 cloud RallyPoint function definitions exactly matched** the recreated old baseline. A local rehearsal populated that baseline with a draft, a booked guest party, a paid fee, check-in and audit/receipt history. An injected failure after the upgrade rolled back all function/schema/data changes. The successful upgrade preserved the existing records (the new `session_changes.material` field has its intended false default), and all **95 final mapped function definitions matched** the current full migration chain. Existing local `app/api` definitions were unchanged; a repeated upgrade and a missing-install rehearsal were refused atomically. All staging tables retained RLS, zero RPCs became browser-callable, and historical bookings created no email jobs.
+
+Rendered SQL SHA-256: `281c7a3d1ae420bec74ca5000d64f19da14399d478e575e4bce827ab70b863da` (1,920 lines, 125,902 bytes). Reproduce with `node scripts/render-staging-schema.mjs --upgrade`; inspect the [upgrade/recovery instructions](../deployment/staging.md#upgrade-the-existing-2026-10-23-bootstrap). The script emits SQL only and does not connect or apply it.
+
+**Backup/export blocker:** automatic approval review rejected the proposed full shared-project export because it includes unrelated app records and shared Auth/Storage data, without explicit approval of that payload and its destination. It was not retried or bypassed. The earlier limited role export and credential-bearing dry-run were removed; no usable backup exists. The exact encrypted destination, contents, Keychain handling and 30-day expiry are proposed in the linked instructions for owner approval. No shared database migration or Auth setting change has been applied. The supported read-only CLI probe initialized its temporary database login role; that is not a backup or an application-schema upgrade. Live and device evidence remain pending.
+
+Fresh continuation checks: `pnpm check` passed; `supabase db lint --local --schema rallypoint,rallypoint_api --fail-on error` found no schema errors. The complete clean local suite, including the new renderer checks, passed **267/267**, zero failed/skipped, in **155.932 seconds**. The earlier 265-test evidence remains the product baseline; the two additional tests cover safe upgrade rendering. These results still do not establish a cloud upgrade or physical-device/live-email success.

@@ -27,18 +27,18 @@ Use the [RallyPoint Vercel project](https://vercel.com/djpajares-projects/rallyp
 
 In [Environment Variables](https://vercel.com/djpajares-projects/rallypoint/settings/environment-variables), use **Production** for this staging project's stable deployment:
 
-| Variable | Value |
-| --- | --- |
-| `SUPABASE_URL` | `https://zqidfkofbzusvpikftdf.supabase.co` |
-| `SUPABASE_PUBLISHABLE_KEY` | Existing wProject publishable key; owner enters through the dashboard |
-| `SUPABASE_SECRET_KEY` | Existing wProject server key; owner enters as Secret/Sensitive |
-| `SUPABASE_API_SCHEMA` | `rallypoint_api` |
-| `PAYMENT_QR_BUCKET` | `rallypoint-payment-qr` |
-| `EMAIL_AUTH_ENABLED` | `true` |
-| `EMAIL_OTP_LENGTH` | `8` |
-| `GOOGLE_AUTH_ENABLED` | `false` |
-| `LOCAL_AUTH_ENABLED` | `false` |
-| `ENABLE_EXPERIMENTAL_COREPACK` | `1` |
+| Variable                       | Value                                                                 |
+| ------------------------------ | --------------------------------------------------------------------- |
+| `SUPABASE_URL`                 | `https://zqidfkofbzusvpikftdf.supabase.co`                            |
+| `SUPABASE_PUBLISHABLE_KEY`     | Existing wProject publishable key; owner enters through the dashboard |
+| `SUPABASE_SECRET_KEY`          | Existing wProject server key; owner enters as Secret/Sensitive        |
+| `SUPABASE_API_SCHEMA`          | `rallypoint_api`                                                      |
+| `PAYMENT_QR_BUCKET`            | `rallypoint-payment-qr`                                               |
+| `EMAIL_AUTH_ENABLED`           | `true`                                                                |
+| `EMAIL_OTP_LENGTH`             | `8`                                                                   |
+| `GOOGLE_AUTH_ENABLED`          | `false`                                                               |
+| `LOCAL_AUTH_ENABLED`           | `false`                                                               |
+| `ENABLE_EXPERIMENTAL_COREPACK` | `1`                                                                   |
 
 Use the names shown; never add `NEXT_PUBLIC_` to the server key. Credentials are dashboard-managed and must not be copied into source, chat, local upload files or review artifacts. The owner elected to enter Vercel credentials themselves. Existing preview deployments are not configured with staging database credentials.
 
@@ -67,6 +67,27 @@ Local credentials and development mail settings never belong in the uploaded art
 Cloud migration names are `rallypoint_staging_bootstrap` and `rallypoint_staging_api_exposure`. The second preserves `public, graphql_public` and adds `rallypoint_api` to the authenticator's PostgREST schema list. Browser roles have no schema/function grants; all app tables have RLS.
 
 Do not link this local development project to wProject and run `db push`, `db reset` or seed commands. Those operations target different migration namespaces and could affect shared services. Future cloud changes need reviewed, namespaced incremental migrations with the `rallypoint_` prefix. Do not re-render/reapply the bootstrap as an upgrade.
+
+## Upgrade the existing 2026-10-23 bootstrap
+
+The zero-argument renderer remains initial-install-only. For the known bootstrap through `20261022170000_badges.sql`, render its reviewed 16-source-migration transition through `20261023144000_email_attempting_is_ambiguous.sql` with:
+
+```sh
+node scripts/render-staging-schema.mjs --upgrade > /private/tmp/rallypoint-staging-upgrade.sql
+```
+
+This is one specific transition, not a general migration runner. For this prepared artifact, verify SHA-256 `281c7a3d1ae420bec74ca5000d64f19da14399d478e575e4bce827ab70b863da`; re-review a mismatch. Check the actual installed definitions first; P-08 compared all 63 existing cloud function definitions with the old baseline. The generated SQL requires the existing RallyPoint schema/bucket, refuses known partial/repeated upgrades, limits lock waits to five seconds and statements to 90 seconds, and retains service-only grants/RLS. The source SQL is reused unchanged apart from the established namespace/bucket mapping. It does not enable email delivery, backfill old emails or edit Auth/provider settings.
+
+Apply only after a verified encrypted recovery backup, using a single transaction through Supabase `apply_migration` named `rallypoint_staging_upgrade_20261023`, or `psql --single-transaction -v ON_ERROR_STOP=1` with the rendered file. Do not split it into per-statement autocommit calls. After applying, verify preserved record counts, all 95 mapped function definitions, schema grants/RLS and authenticated app reads; then test a synthetic session. Retry after an error only after confirming rollback and the installed state. Keep schemas/history on an application rollback and use a reviewed forward repair.
+
+**Current gate:** the cloud application has not been upgraded by P-08. Automatic approval review blocked a complete shared-project backup because its sensitive payload and destination need explicit owner approval. No complete backup exists. The local upgrade rehearsal and renderer are ready for review; approval of this paragraph alone does not establish recovery or live-test evidence.
+
+Proposed recovery bundle for that approval:
+
+- Export the shared wProject application's database schemas, custom roles and data, including Trove/watchlist/RallyPoint records, shared Auth identities/session data, Storage metadata and migration history. Include RallyPoint private uploaded file bytes if any appear before export (zero were present at inspection). Other apps' uploaded file bytes and provider runtime secrets are outside this bundle; their original secure stores remain necessary for broader disaster recovery.
+- Use a mode-0700 temporary directory and mode-0600 exports, create an AES-256 encrypted macOS disk image with a random passphrase held in the owner's login Keychain. Mount it read-only to verify each exported file against its SHA-256 manifest, then unmount and delete transient plaintext. Never print records, keys or the passphrase.
+- Keep the encrypted working archive at `/private/tmp/rallypoint-p08-recovery/2026-10-23-pre-upgrade.dmg` and an owner-controlled off-provider copy at `~/Documents/RallyPoint Backups/wProject/2026-10-23-pre-upgrade.dmg`, outside Git. No subscription or plan change.
+- Both copies and any versions/trash expire no later than **2026-11-22** under D-09. The owner tracks removal; no recurring automation is created here. Recovery is rehearsed with synthetic records; this is not authorization to restore the whole shared project over Trove.
 
 ## Recovery
 
