@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import type { FormEvent } from "react";
+import type { FormEvent, RefObject } from "react";
 import Link from "next/link";
 import { EarnedBadgeCheck } from "./badges";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
@@ -52,6 +52,7 @@ import type {
   SharedSession,
 } from "@rallypoint/domain/session";
 import type { GroupSummary } from "@rallypoint/domain/contracts";
+import type { RegistrationView } from "@rallypoint/domain/registration";
 import { nextWeekForm } from "@rallypoint/domain/run-again";
 import { mapsUrl } from "@rallypoint/domain/my-sessions";
 import { copyPaymentDetails } from "./run-again";
@@ -739,6 +740,236 @@ function Editor({
     </DetailPage>
   );
 }
+// Times read in the session's own local time, never with a zone label (D-13).
+function sessionTime(shared: SharedSession, value: string | undefined) {
+  return value
+    ? new Intl.DateTimeFormat("en", {
+        timeZone: shared.details.timeZone,
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      }).format(new Date(value))
+    : "To be decided";
+}
+/** When and where: the date stub, the time, the venue and its maps link. */
+function SessionTicket({ shared }: { shared: SharedSession }) {
+  const d = shared.details;
+  const start = fromInstant(d.startsAt, d.timeZone);
+  const end = fromInstant(d.endsAt, d.timeZone);
+  const mapHref = mapsUrl(d.location);
+  return (
+    <Ticket date={start}>
+      <div className="rp-ticket__time">
+        {start ? `${start.time} – ${end?.time ?? "?"}` : "Time to be decided"}
+      </div>
+      <div className="rp-ticket__meta">{d.location}</div>
+      {mapHref ? (
+        <a
+          className={buttonClass({ variant: "link" })}
+          href={mapHref}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <MapPinIcon size={18} aria-hidden="true" />
+          Open in Maps
+        </a>
+      ) : null}
+    </Ticket>
+  );
+}
+function SessionHead({
+  shared,
+  heading,
+  ticket = true,
+}: {
+  shared: SharedSession;
+  heading: RefObject<HTMLHeadingElement | null>;
+  ticket?: boolean;
+}) {
+  return (
+    <div className="session-head">
+      <span className="rp-kicker">{shared.groupName}</span>
+      <h1 ref={heading} tabIndex={-1}>
+        {shared.details.title}
+      </h1>
+      <p className="rp-lede">{shared.details.activity}</p>
+      {shared.state !== "published" ? (
+        <Notice tone="warning">
+          {shared.state === "cancelled"
+            ? "Cancelled — this session will not take place."
+            : "This session has finished."}
+        </Notice>
+      ) : null}
+      {ticket ? <SessionTicket shared={shared} /> : null}
+    </div>
+  );
+}
+/** The spots card. Signed out, it carries its own Refresh. */
+function Availability({
+  shared,
+  onRefresh,
+}: {
+  shared: SharedSession;
+  onRefresh?: () => void;
+}) {
+  const { counts } = shared;
+  return (
+    <div className="rp-card availability" role="status">
+      {shared.state === "cancelled" ? (
+        <p>
+          Previously registered: {counts.confirmedSeats}{" "}
+          {counts.confirmedSeats === 1 ? "seat" : "seats"}.
+        </p>
+      ) : (
+        <SpotsMeter
+          capacity={Number(shared.details.capacity)}
+          taken={counts.confirmedSeats}
+        />
+      )}
+      {shared.state === "published" && counts.waitingParties > 0 ? (
+        <p className="rp-help">
+          {counts.waitingParties}{" "}
+          {counts.waitingParties === 1 ? "party is" : "parties are"}{" "}
+          waiting and will get the next places, in order.
+        </p>
+      ) : null}
+      {onRefresh ? (
+        <button
+          className={buttonClass({ variant: "link" })}
+          onClick={onRefresh}
+        >
+          Refresh
+        </button>
+      ) : null}
+    </div>
+  );
+}
+function SessionFacts({ shared }: { shared: SharedSession }) {
+  const d = shared.details;
+  const time = (value: string | undefined) => sessionTime(shared, value);
+  // Not tracked here shows no fee or cancellation terms, only that payment is
+  // not tracked (never "Free"). A session saved before payment modes behaves
+  // as Pay the organizer. Either way the facts list has its payment line.
+  const tracked = (d.paymentMode ?? "organizer") === "organizer";
+  return (
+    <dl className="facts">
+      {tracked ? (
+        <div>
+          <dt>
+            <CoinsIcon size={20} aria-hidden="true" />
+            {shared.state === "cancelled" ? "Original fee" : "Fee"}
+          </dt>
+          <dd>
+            {shared.split ? (
+              shared.state === "cancelled" ? (
+                <>
+                  {feeLabel({
+                    currency: shared.split.currency,
+                    feeMinor: shared.split.totalMinor,
+                  })}{" "}
+                  session total
+                </>
+              ) : (
+                <SplitFee summary={shared.split} />
+              )
+            ) : (
+              <>{feeLabel(d)} per seat, paid to the organizer</>
+            )}
+          </dd>
+        </div>
+      ) : (
+        <div>
+          <dt>
+            <CoinsIcon size={20} aria-hidden="true" />
+            Payment
+          </dt>
+          <dd>Not tracked here</dd>
+        </div>
+      )}
+      {tracked && shared.state !== "cancelled" ? (
+        <div>
+          <dt>
+            <ClockCountdownIcon size={20} aria-hidden="true" />
+            Free cancellation until
+          </dt>
+          <dd>{time(d.cutoffAt)}</dd>
+        </div>
+      ) : null}
+      {shared.registrationWindow === "not_open" ? (
+        <div>
+          <dt>
+            <DoorOpenIcon size={20} aria-hidden="true" />
+            Registration opens
+          </dt>
+          <dd>{time(d.opensAt)}</dd>
+        </div>
+      ) : null}
+      {shared.state !== "cancelled" && d.guests ? (
+        <div>
+          <dt>
+            <UserPlusIcon size={20} aria-hidden="true" />
+            Guests
+          </dt>
+          <dd>You can bring one guest.</dd>
+        </div>
+      ) : null}
+    </dl>
+  );
+}
+function GoodToKnow({ shared }: { shared: SharedSession }) {
+  if (!shared.details.instructions) return null;
+  return (
+    <div className="rp-card session-instructions">
+      <h2>Good to know</h2>
+      <p>{shared.details.instructions}</p>
+    </div>
+  );
+}
+/**
+ * The signed-in page. It owns the viewer's registration read so the page can
+ * choose its layout from it; the panel shows and changes that one read.
+ */
+function SignedInSession({
+  shared,
+  heading,
+  onChange,
+}: {
+  shared: SharedSession;
+  heading: RefObject<HTMLHeadingElement | null>;
+  onChange: () => void;
+}) {
+  const result = useApi<{ registration: RegistrationView }>(
+    `/api/registrations/${shared.slug}`,
+  );
+  const [changed, setChanged] = useState<RegistrationView | null>(null);
+  const view = changed ?? result.data?.registration ?? null;
+  return (
+    <div className="session-layout">
+      <SessionHead shared={shared} heading={heading} />
+      <aside className="session-side" aria-label="Places and registration">
+        <Availability shared={shared} />
+        <RegistrationPanel
+          event={shared}
+          view={view}
+          loading={result.loading}
+          error={result.error}
+          onRefresh={() => {
+            setChanged(null);
+            result.retry();
+          }}
+          onChanged={setChanged}
+          onChange={onChange}
+        />
+      </aside>
+      <div className="session-details">
+        <SessionFacts shared={shared} />
+        <GoodToKnow shared={shared} />
+      </div>
+    </div>
+  );
+}
 export function SharedSessionPage() {
   const { slug } = useParams<{ slug: string }>();
   const result = useApi<{ session: SharedSession }>(
@@ -774,97 +1005,22 @@ export function SharedSessionPage() {
     );
   if (!result.data) return null;
   const shared = result.data.session;
-  const { details: d, groupName, counts } = shared;
-  const capacity = Number(d.capacity);
-  // Times read in the session's own local time, never with a zone label (D-13).
-  const time = (value: string | undefined) =>
-    value
-      ? new Intl.DateTimeFormat("en", {
-          timeZone: d.timeZone,
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "2-digit",
-        }).format(new Date(value))
-      : "To be decided";
-  const start = fromInstant(d.startsAt, d.timeZone);
-  const end = fromInstant(d.endsAt, d.timeZone);
-  // Not tracked here shows no fee or cancellation terms, only that payment is
-  // not tracked (never "Free"). A session saved before payment modes behaves
-  // as Pay the organizer. Either way the facts list has its payment line.
-  const tracked = (d.paymentMode ?? "organizer") === "organizer";
-  const mapHref = mapsUrl(d.location);
+  const d = shared.details;
   return (
     <DetailPage back={back} backLabel="Home" className="shared-session">
       <EarnedBadgeCheck />
-      <div className="session-layout">
-        <div className="session-head">
-          <span className="rp-kicker">{groupName}</span>
-          <h1 ref={heading} tabIndex={-1}>
-            {d.title}
-          </h1>
-          <p className="rp-lede">{d.activity}</p>
-          {shared.state !== "published" ? (
-            <Notice tone="warning">
-              {shared.state === "cancelled"
-                ? "Cancelled — this session will not take place."
-                : "This session has finished."}
-            </Notice>
-          ) : null}
-          <Ticket date={start}>
-            <div className="rp-ticket__time">
-              {start
-                ? `${start.time} – ${end?.time ?? "?"}`
-                : "Time to be decided"}
-            </div>
-            <div className="rp-ticket__meta">{d.location}</div>
-            {mapHref ? (
-              <a
-                className={buttonClass({ variant: "link" })}
-                href={mapHref}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <MapPinIcon size={18} aria-hidden="true" />
-                Open in Maps
-              </a>
-            ) : null}
-          </Ticket>
-        </div>
-        <aside className="session-side" aria-label="Places and registration">
-          <div className="rp-card availability" role="status">
-            {shared.state === "cancelled" ? (
-              <p>
-                Previously registered: {counts.confirmedSeats}{" "}
-                {counts.confirmedSeats === 1 ? "seat" : "seats"}.
-              </p>
-            ) : (
-              <SpotsMeter capacity={capacity} taken={counts.confirmedSeats} />
-            )}
-            {shared.state === "published" && counts.waitingParties > 0 ? (
-              <p className="rp-help">
-                {counts.waitingParties}{" "}
-                {counts.waitingParties === 1 ? "party is" : "parties are"}{" "}
-                waiting and will get the next places, in order.
-              </p>
-            ) : null}
-            {!session ? (
-              <button
-                className={buttonClass({ variant: "link" })}
-                onClick={result.retry}
-              >
-                Refresh
-              </button>
-            ) : null}
-          </div>
-          {session ? (
-            <RegistrationPanel
-              key={session.user.id + slug}
-              event={shared}
-              onChange={result.retry}
-            />
-          ) : (
+      {session ? (
+        <SignedInSession
+          key={session.user.id + slug}
+          shared={shared}
+          heading={heading}
+          onChange={result.retry}
+        />
+      ) : (
+        <div className="session-layout">
+          <SessionHead shared={shared} heading={heading} />
+          <aside className="session-side" aria-label="Places and registration">
+            <Availability shared={shared} onRefresh={result.retry} />
             <div className="rp-card registration-note">
               <h2>
                 {shared.registrationWindow === "open"
@@ -890,79 +1046,13 @@ export function SharedSessionPage() {
                 <ShareButton title={d.title} />
               </StickyActions>
             </div>
-          )}
-        </aside>
-        <div className="session-details">
-          <dl className="facts">
-            {tracked ? (
-              <div>
-                <dt>
-                  <CoinsIcon size={20} aria-hidden="true" />
-                  {shared.state === "cancelled" ? "Original fee" : "Fee"}
-                </dt>
-                <dd>
-                  {shared.split ? (
-                    shared.state === "cancelled" ? (
-                      <>
-                        {feeLabel({
-                          currency: shared.split.currency,
-                          feeMinor: shared.split.totalMinor,
-                        })}{" "}
-                        session total
-                      </>
-                    ) : (
-                      <SplitFee summary={shared.split} />
-                    )
-                  ) : (
-                    <>{feeLabel(d)} per seat, paid to the organizer</>
-                  )}
-                </dd>
-              </div>
-            ) : (
-              <div>
-                <dt>
-                  <CoinsIcon size={20} aria-hidden="true" />
-                  Payment
-                </dt>
-                <dd>Not tracked here</dd>
-              </div>
-            )}
-            {tracked && shared.state !== "cancelled" ? (
-              <div>
-                <dt>
-                  <ClockCountdownIcon size={20} aria-hidden="true" />
-                  Free cancellation until
-                </dt>
-                <dd>{time(d.cutoffAt)}</dd>
-              </div>
-            ) : null}
-            {shared.registrationWindow === "not_open" ? (
-              <div>
-                <dt>
-                  <DoorOpenIcon size={20} aria-hidden="true" />
-                  Registration opens
-                </dt>
-                <dd>{time(d.opensAt)}</dd>
-              </div>
-            ) : null}
-            {shared.state !== "cancelled" && d.guests ? (
-              <div>
-                <dt>
-                  <UserPlusIcon size={20} aria-hidden="true" />
-                  Guests
-                </dt>
-                <dd>You can bring one guest.</dd>
-              </div>
-            ) : null}
-          </dl>
-          {d.instructions ? (
-            <div className="rp-card session-instructions">
-              <h2>Good to know</h2>
-              <p>{d.instructions}</p>
-            </div>
-          ) : null}
+          </aside>
+          <div className="session-details">
+            <SessionFacts shared={shared} />
+            <GoodToKnow shared={shared} />
+          </div>
         </div>
-      </div>
+      )}
     </DetailPage>
   );
 }

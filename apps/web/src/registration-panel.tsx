@@ -6,7 +6,6 @@ import { HourglassIcon } from "@phosphor-icons/react/dist/csr/Hourglass";
 import { LockSimpleIcon } from "@phosphor-icons/react/dist/csr/LockSimple";
 import { ArrowsClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowsClockwise";
 import { PaperPlaneTiltIcon } from "@phosphor-icons/react/dist/csr/PaperPlaneTilt";
-import { useApi } from "./use-api";
 import { useMutation } from "./use-mutation";
 import { useIsPhone } from "./frame";
 import { ShareButton } from "./share-button";
@@ -140,18 +139,32 @@ function SentNote({
   );
 }
 
+/**
+ * The viewer's place in a session and what they can do about it. The page
+ * owns the registration read (it chooses the layout from it); every change
+ * here hands the new view back through onChanged.
+ */
 export function RegistrationPanel({
   event,
+  view,
+  loading,
+  error,
+  onRefresh,
+  onChanged,
   onChange,
 }: {
   event: SharedSession;
+  view: RegistrationView | null;
+  loading: boolean;
+  error: string | null;
+  /** Drops any view from a change and reads it again. */
+  onRefresh: () => void;
+  /** A change returned the viewer's new registration view. */
+  onChanged: (view: RegistrationView) => void;
+  /** Reads the shared session again. */
   onChange: () => void;
 }) {
-  const result = useApi<{ registration: RegistrationView }>(
-    `/api/registrations/${event.slug}`,
-  );
-  const [changed, setChanged] = useState<RegistrationView | null>(null),
-    [guest, setGuest] = useState(false),
+  const [guest, setGuest] = useState(false),
     [guestName, setGuestName] = useState("");
   // On phones the join/withdraw form lives in a sheet. It closes before the
   // new status heading takes focus (the sheet is a child, so its effect runs
@@ -161,10 +174,9 @@ export function RegistrationPanel({
   const [undoPartyId, setUndoPartyId] = useState<string | undefined>();
   const mutation = useMutation<{ registration: RegistrationView }>((value) => {
     setSheetOpen(false);
-    setChanged(value.registration);
+    onChanged(value.registration);
     onChange();
   });
-  const view = changed ?? result.data?.registration;
   const own = view?.own;
   const statusHeading = useRef<HTMLHeadingElement>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -178,14 +190,12 @@ export function RegistrationPanel({
   const d = event.details,
     total = (d.feeMinor ?? 0) * (guest ? 2 : 1);
   function refresh() {
-    setChanged(null);
-    result.retry();
+    onRefresh();
     onChange();
   }
-  if (result.loading && !changed)
-    return <Pending>Checking your place…</Pending>;
-  if (result.error && !changed)
-    return <Notice retry={refresh}>{result.error}</Notice>;
+  // A read in flight or failed has no view, unless a change already gave one.
+  if (loading && !view) return <Pending>Checking your place…</Pending>;
+  if (error && !view) return <Notice retry={refresh}>{error}</Notice>;
   if (!view) return null;
   const joinLabel =
     view.counts.waitingParties > 0 ||
@@ -404,7 +414,7 @@ export function RegistrationPanel({
               slug={event.slug}
               party={own}
               onDone={(value) => {
-                setChanged(value);
+                onChanged(value);
                 onChange();
               }}
             />
@@ -599,7 +609,7 @@ export function RegistrationPanel({
         <SplitControls
           slug={event.slug}
           onDone={(value) => {
-            setChanged(value);
+            onChanged(value);
             onChange();
           }}
           refreshKey={view.roster
@@ -627,7 +637,7 @@ export function RegistrationPanel({
           when={when}
           splitCurrency={split?.currency}
           onDone={(value) => {
-            setChanged(value);
+            onChanged(value);
             onChange();
           }}
           onUndoReview={setUndoPartyId}
