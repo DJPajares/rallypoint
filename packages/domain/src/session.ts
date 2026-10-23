@@ -293,3 +293,28 @@ export function feeLabel(d: Pick<SessionDetails, "currency" | "feeMinor">) {
     .map((part) => (part.type === "fraction" ? fraction : part.value))
     .join("");
 }
+
+/** Compare normalized instants, never the editor/device's presentation strings. */
+export function hasMaterialSessionChange(
+  before: SessionDetails,
+  after: SessionDetails,
+) {
+  const sameInstant = (a?: string, b?: string) =>
+    a === b || (!!a && !!b && Temporal.Instant.compare(a, b) === 0);
+  return (
+    !sameInstant(before.startsAt, after.startsAt) ||
+    !sameInstant(before.endsAt, after.endsAt) ||
+    before.location !== after.location
+  );
+}
+
+/** A first booking may arrive after load without changing the session version. */
+export function sessionEditNeedsConfirmation(
+  record: Pick<SessionRecord, "state" | "details">,
+  details: SessionDetails,
+) {
+  return (
+    record.state === "published" &&
+    hasMaterialSessionChange(record.details, details)
+  );
+}

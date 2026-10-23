@@ -366,7 +366,8 @@ export function RegistrationPanel({
           ) : own.fee ? (
             <p>
               <strong>
-                {own.fee.liabilityState === "removed_before_cutoff" ||
+                {own.fee.liabilityState === "removed_after_change" ||
+                own.fee.liabilityState === "removed_before_cutoff" ||
                 own.fee.liabilityState === "removed_session_cancelled"
                   ? "Fee removed: "
                   : own.fee.liabilityState === "waived"
@@ -381,13 +382,15 @@ export function RegistrationPanel({
               </strong>{" "}
               {own.fee.liabilityState === "removed_session_cancelled"
                 ? " · This session was cancelled, so nothing is due."
-                : own.fee.liabilityState === "removed_before_cutoff"
-                  ? " · You withdrew before the cutoff, so nothing is due."
-                  : own.fee.liabilityState === "waived"
-                    ? " · Nothing is due."
-                    : own.state === "withdrawn" && !own.fee.markedPaid
-                      ? " · The fee stays unless the organizer waives it."
-                      : ""}
+                : own.fee.liabilityState === "removed_after_change"
+                  ? " · The time or place changed after you booked, so nothing is due."
+                  : own.fee.liabilityState === "removed_before_cutoff"
+                    ? " · You withdrew before the cutoff, so nothing is due."
+                    : own.fee.liabilityState === "waived"
+                      ? " · Nothing is due."
+                      : own.state === "withdrawn" && !own.fee.markedPaid
+                        ? " · The fee stays unless the organizer waives it."
+                        : ""}
             </p>
           ) : null}
           {tracked && view.paymentInstructions ? (
@@ -433,7 +436,12 @@ export function RegistrationPanel({
                       {own.seats === 2
                         ? "You and your guest leave together."
                         : "Your place is released."}{" "}
-                      {cutoffTerms}
+                      {own.freeWithdrawalAfterChange
+                        ? "The time or place changed after you booked, so withdrawing now is free."
+                        : cutoffTerms}
+                      {own.freeWithdrawalAfterChange && own.fee?.markedPaid
+                        ? " Your payment marker stays. Contact the organizer about any refund."
+                        : ""}
                     </p>
                     <button
                       className={buttonClass()}
