@@ -29,6 +29,7 @@ import type { Tone } from "@rallypoint/ui";
 import { feeLabel } from "@rallypoint/domain/session";
 import type { SharedSession } from "@rallypoint/domain/session";
 import { feeStanding } from "@rallypoint/domain/registration";
+import { comingLine, gameDayHeadline } from "@rallypoint/domain/my-sessions";
 import type {
   OwnParty,
   RegistrationView,
@@ -152,6 +153,7 @@ export function RegistrationPanel({
   onRefresh,
   onChanged,
   onChange,
+  gameDay,
 }: {
   event: SharedSession;
   view: RegistrationView | null;
@@ -163,6 +165,11 @@ export function RegistrationPanel({
   onChanged: (view: RegistrationView) => void;
   /** Reads the shared session again. */
   onChange: () => void;
+  /**
+   * Set on game day for a joined player: the page's own parts, placed in
+   * the order that player needs them.
+   */
+  gameDay?: { details: ReactNode; notes: ReactNode; more: ReactNode };
 }) {
   const [guest, setGuest] = useState(false),
     [guestName, setGuestName] = useState("");
@@ -172,6 +179,7 @@ export function RegistrationPanel({
   const phone = useIsPhone();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [undoPartyId, setUndoPartyId] = useState<string | undefined>();
+  const [rosterOpen, setRosterOpen] = useState(false);
   const mutation = useMutation<{ registration: RegistrationView }>((value) => {
     setSheetOpen(false);
     onChanged(value.registration);
@@ -265,6 +273,13 @@ export function RegistrationPanel({
         event.registrationWindow !== "closed") ||
       canJoin
     : canJoin;
+  // A request's error and its recovery, shown in one place only.
+  const requestState = (
+    <>
+      {mutation.error ? <Notice>{mutation.error}</Notice> : null}
+      {mutation.recovery}
+    </>
+  );
   /**
    * The form, its error and its recovery stay together. Larger screens show
    * them inline; a phone keeps them in a sheet opened from the sticky bar, so
@@ -277,14 +292,36 @@ export function RegistrationPanel({
     form: ReactNode,
     tone: "primary" | "secondary",
   ) {
+    // On game day the request's error and recovery sit above More, so they
+    // stay in view; a phone shows them in its sheet while that is open.
     const body = (
       <>
         {form}
-        {mutation.error ? <Notice>{mutation.error}</Notice> : null}
-        {mutation.recovery}
+        {!gameDay || (phone && sheetOpen) ? requestState : null}
       </>
     );
     if (!phone) return <div className="action-area">{body}</div>;
+    // On game day the trigger waits under More, with no sticky bar.
+    if (gameDay)
+      return (
+        <>
+          <button
+            type="button"
+            className={buttonClass({ variant: tone })}
+            aria-haspopup="dialog"
+            onClick={() => setSheetOpen(true)}
+          >
+            {mutation.uncertain ? "Check your request" : triggerLabel}
+          </button>
+          <Sheet
+            open={sheetOpen}
+            onClose={() => setSheetOpen(false)}
+            title={sheetTitle}
+          >
+            {body}
+          </Sheet>
+        </>
+      );
     return (
       <>
         <StickyActions>
@@ -309,6 +346,233 @@ export function RegistrationPanel({
           {body}
         </Sheet>
       </>
+    );
+  }
+  // What the player owes, and how to pay and say they sent it.
+  const feeBlock = own ? (
+    <>
+      {split && own.splitClaim ? (
+        <SplitFee
+          summary={split}
+          claim={own.splitClaim}
+          fee={own.fee}
+          history={own.splitHistory}
+          cancelled={event.state === "cancelled"}
+        />
+      ) : released ? (
+        <p>
+          Your spot went to the waitlist because it wasn’t marked paid by{" "}
+          {d.cutoffAt ? when(d.cutoffAt) : "the cutoff"}.
+        </p>
+      ) : own.fee ? (
+        <p>
+          <strong>
+            {own.fee.liabilityState === "removed_after_change" ||
+            own.fee.liabilityState === "removed_before_cutoff" ||
+            own.fee.liabilityState === "removed_session_cancelled"
+              ? "Fee removed: "
+              : own.fee.liabilityState === "waived"
+                ? "Fee waived by the organizer: "
+                : own.fee.markedPaid
+                  ? "Marked paid by the organizer: "
+                  : "Amount due: "}
+            {feeLabel({
+              currency: own.fee.currency,
+              feeMinor: own.fee.totalMinor,
+            })}
+          </strong>{" "}
+          {own.fee.liabilityState === "removed_session_cancelled"
+            ? " · This session was cancelled, so nothing is due."
+            : own.fee.liabilityState === "removed_after_change"
+              ? " · The time or place changed after you booked, so nothing is due."
+              : own.fee.liabilityState === "removed_before_cutoff"
+                ? " · You withdrew before the cutoff, so nothing is due."
+                : own.fee.liabilityState === "waived"
+                  ? " · Nothing is due."
+                  : own.state === "withdrawn" && !own.fee.markedPaid
+                    ? " · The fee stays unless the organizer waives it."
+                    : ""}
+        </p>
+      ) : null}
+      {tracked && view.paymentInstructions ? (
+        <HowToPay
+          slug={event.slug}
+          instructions={view.paymentInstructions}
+        />
+      ) : null}
+      {canSaySent ? (
+        <SentNote
+          slug={event.slug}
+          party={own}
+          onDone={(value) => {
+            onChanged(value);
+            onChange();
+          }}
+        />
+      ) : null}
+    </>
+  ) : null;
+  // Withdraw or leave the waitlist, or say it can no longer happen here.
+  const withdrawArea =
+    own &&
+    (own.state === "confirmed" || own.state === "waitlisted") ? (
+      event.registrationWindow !== "closed" ? (
+        actionArea(
+          own.state === "waitlisted" ? "Leave the waitlist" : "Withdraw",
+          own.state === "waitlisted"
+            ? "Leave waitlist"
+            : own.seats === 2
+              ? "Withdraw both seats"
+              : "Withdraw my place",
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              mutation.run(`/api/registrations/${event.slug}/withdraw`, {
+                partyId: own.id,
+              });
+            }}
+          >
+            <fieldset disabled={mutation.busy || mutation.uncertain}>
+              <legend>
+                {own.state === "waitlisted"
+                  ? "Leave the waitlist"
+                  : "Withdraw your party"}
+              </legend>
+              <p id="withdraw-terms">
+                {own.seats === 2
+                  ? "You and your guest leave together."
+                  : "Your place is released."}{" "}
+                {own.freeWithdrawalAfterChange
+                  ? "The time or place changed after you booked, so withdrawing now is free."
+                  : cutoffTerms}
+                {own.freeWithdrawalAfterChange && own.fee?.markedPaid
+                  ? " Your payment marker stays. Contact the organizer about any refund."
+                  : ""}
+              </p>
+              <button
+                className={buttonClass()}
+                aria-describedby="withdraw-terms"
+              >
+                {mutation.busy
+                  ? "Checking withdrawal…"
+                  : own.state === "waitlisted"
+                    ? "Withdraw from waitlist"
+                    : own.seats === 2
+                      ? "Withdraw both seats"
+                      : "Withdraw my place"}
+              </button>
+            </fieldset>
+          </form>,
+          "secondary",
+        )
+      ) : (
+        <p>You can no longer withdraw here.</p>
+      )
+    ) : null;
+  // Display names only; the server decides who may see them.
+  const rosterList = view.roster.length ? (
+    <ul>
+      {view.roster.map((p, i) => (
+        <li key={p.id ?? i}>
+          <div id={p.id ? `party-${p.id}` : undefined}>
+            <strong>{p.primaryName}</strong>
+            {p.seats === 2 ? ` + ${p.guestName || "one guest"}` : ""}
+            {p.title ? <TitlePill title={p.title} /> : null}
+          </div>
+          <span>
+            {p.seats} {p.seats === 1 ? "seat" : "seats"}
+            {p.state ? ` · ${p.state}` : ""}
+          </span>
+          {event.state === "cancelled" && view.canManage && p.fee ? (
+            <p>
+              {feeStanding(p.fee)} ·{" "}
+              {feeLabel({
+                currency: p.fee.currency,
+                feeMinor: p.fee.totalMinor,
+              })}
+            </p>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p>No registrations yet.</p>
+  );
+  if (gameDay && own) {
+    // Game day: where they stand, when and where, who's coming, their fee
+    // and the organizer's notes. Everything else waits under More.
+    const date = d.startsAt
+      ? new Intl.DateTimeFormat("en", {
+          timeZone: d.timeZone,
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        }).format(new Date(d.startsAt))
+      : "";
+    // A waitlisted party owes nothing until it moves in.
+    const showFee =
+      tracked &&
+      !(own.state === "waitlisted" && !own.fee && !own.splitClaim);
+    return (
+      <section
+        className="registration-panel game-day-panel"
+        aria-label="Your registration"
+      >
+        <div className="own-status">
+          <StatusBanner tone={ownTone} icon={ownIcon}>
+            <span className="rp-badge rp-badge--inherit">
+              {own.state === "confirmed" ? "Confirmed" : "Waitlisted"}
+            </span>
+            <h2 ref={statusHeading} tabIndex={-1}>
+              {gameDayHeadline(own)}
+            </h2>
+            {date ? <p>{date}</p> : null}
+          </StatusBanner>
+        </div>
+        {gameDay.details}
+        <div className="game-day-coming">
+          <p>{comingLine(view.counts.confirmedSeats, Number(d.capacity))}</p>
+          {view.rosterAllowed ? (
+            <>
+              <button
+                type="button"
+                className={buttonClass({ variant: "link" })}
+                aria-expanded={rosterOpen}
+                aria-controls="game-day-roster"
+                onClick={() => setRosterOpen((open) => !open)}
+              >
+                {"See who's coming"}
+              </button>
+              <div
+                id="game-day-roster"
+                className="roster"
+                hidden={!rosterOpen}
+              >
+                {rosterList}
+              </div>
+            </>
+          ) : null}
+        </div>
+        {showFee ? feeBlock : null}
+        {gameDay.notes}
+        {phone && sheetOpen ? null : requestState}
+        <details className="game-day-more">
+          <summary>More</summary>
+          <div className="game-day-more__body">
+            {gameDay.more}
+            <ShareButton title={d.title} />
+            {withdrawArea}
+          </div>
+        </details>
+        <button
+          className={buttonClass({ variant: "link" })}
+          disabled={mutation.busy || mutation.uncertain}
+          onClick={refresh}
+        >
+          <ArrowsClockwiseIcon size={18} aria-hidden="true" />
+          Refresh
+        </button>
+      </section>
     );
   }
   return (
@@ -360,119 +624,8 @@ export function RegistrationPanel({
               )}
             </p>
           ) : null}
-          {split && own.splitClaim ? (
-            <SplitFee
-              summary={split}
-              claim={own.splitClaim}
-              fee={own.fee}
-              history={own.splitHistory}
-              cancelled={event.state === "cancelled"}
-            />
-          ) : released ? (
-            <p>
-              Your spot went to the waitlist because it wasn’t marked paid by{" "}
-              {d.cutoffAt ? when(d.cutoffAt) : "the cutoff"}.
-            </p>
-          ) : own.fee ? (
-            <p>
-              <strong>
-                {own.fee.liabilityState === "removed_after_change" ||
-                own.fee.liabilityState === "removed_before_cutoff" ||
-                own.fee.liabilityState === "removed_session_cancelled"
-                  ? "Fee removed: "
-                  : own.fee.liabilityState === "waived"
-                    ? "Fee waived by the organizer: "
-                    : own.fee.markedPaid
-                      ? "Marked paid by the organizer: "
-                      : "Amount due: "}
-                {feeLabel({
-                  currency: own.fee.currency,
-                  feeMinor: own.fee.totalMinor,
-                })}
-              </strong>{" "}
-              {own.fee.liabilityState === "removed_session_cancelled"
-                ? " · This session was cancelled, so nothing is due."
-                : own.fee.liabilityState === "removed_after_change"
-                  ? " · The time or place changed after you booked, so nothing is due."
-                  : own.fee.liabilityState === "removed_before_cutoff"
-                    ? " · You withdrew before the cutoff, so nothing is due."
-                    : own.fee.liabilityState === "waived"
-                      ? " · Nothing is due."
-                      : own.state === "withdrawn" && !own.fee.markedPaid
-                        ? " · The fee stays unless the organizer waives it."
-                        : ""}
-            </p>
-          ) : null}
-          {tracked && view.paymentInstructions ? (
-            <HowToPay
-              slug={event.slug}
-              instructions={view.paymentInstructions}
-            />
-          ) : null}
-          {canSaySent ? (
-            <SentNote
-              slug={event.slug}
-              party={own}
-              onDone={(value) => {
-                onChanged(value);
-                onChange();
-              }}
-            />
-          ) : null}
-          {own.state === "confirmed" || own.state === "waitlisted" ? (
-            event.registrationWindow !== "closed" ? (
-              actionArea(
-                own.state === "waitlisted" ? "Leave the waitlist" : "Withdraw",
-                own.state === "waitlisted"
-                  ? "Leave waitlist"
-                  : own.seats === 2
-                    ? "Withdraw both seats"
-                    : "Withdraw my place",
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    mutation.run(`/api/registrations/${event.slug}/withdraw`, {
-                      partyId: own.id,
-                    });
-                  }}
-                >
-                  <fieldset disabled={mutation.busy || mutation.uncertain}>
-                    <legend>
-                      {own.state === "waitlisted"
-                        ? "Leave the waitlist"
-                        : "Withdraw your party"}
-                    </legend>
-                    <p id="withdraw-terms">
-                      {own.seats === 2
-                        ? "You and your guest leave together."
-                        : "Your place is released."}{" "}
-                      {own.freeWithdrawalAfterChange
-                        ? "The time or place changed after you booked, so withdrawing now is free."
-                        : cutoffTerms}
-                      {own.freeWithdrawalAfterChange && own.fee?.markedPaid
-                        ? " Your payment marker stays. Contact the organizer about any refund."
-                        : ""}
-                    </p>
-                    <button
-                      className={buttonClass()}
-                      aria-describedby="withdraw-terms"
-                    >
-                      {mutation.busy
-                        ? "Checking withdrawal…"
-                        : own.state === "waitlisted"
-                          ? "Withdraw from waitlist"
-                          : own.seats === 2
-                            ? "Withdraw both seats"
-                            : "Withdraw my place"}
-                    </button>
-                  </fieldset>
-                </form>,
-                "secondary",
-              )
-            ) : (
-              <p>You can no longer withdraw here.</p>
-            )
-          ) : null}
+          {feeBlock}
+          {withdrawArea}
         </div>
       ) : null}
       {canJoin ? (
@@ -649,34 +802,7 @@ export function RegistrationPanel({
               ? "Registration records"
               : "Who’s confirmed"}
           </h2>
-          {view.roster.length ? (
-            <ul>
-              {view.roster.map((p, i) => (
-                <li key={p.id ?? i}>
-                  <div id={p.id ? `party-${p.id}` : undefined}>
-                    <strong>{p.primaryName}</strong>
-                    {p.seats === 2 ? ` + ${p.guestName || "one guest"}` : ""}
-                    {p.title ? <TitlePill title={p.title} /> : null}
-                  </div>
-                  <span>
-                    {p.seats} {p.seats === 1 ? "seat" : "seats"}
-                    {p.state ? ` · ${p.state}` : ""}
-                  </span>
-                  {event.state === "cancelled" && view.canManage && p.fee ? (
-                    <p>
-                      {feeStanding(p.fee)} ·{" "}
-                      {feeLabel({
-                        currency: p.fee.currency,
-                        feeMinor: p.fee.totalMinor,
-                      })}
-                    </p>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>No registrations yet.</p>
-          )}
+          {rosterList}
         </section>
       ) : null}
     </section>

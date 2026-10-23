@@ -54,7 +54,7 @@ import type {
 import type { GroupSummary } from "@rallypoint/domain/contracts";
 import type { RegistrationView } from "@rallypoint/domain/registration";
 import { nextWeekForm } from "@rallypoint/domain/run-again";
-import { mapsUrl } from "@rallypoint/domain/my-sessions";
+import { isGameDay, mapsUrl } from "@rallypoint/domain/my-sessions";
 import { copyPaymentDetails } from "./run-again";
 
 const subscribeOrigin = () => () => {};
@@ -929,7 +929,10 @@ function GoodToKnow({ shared }: { shared: SharedSession }) {
 }
 /**
  * The signed-in page. It owns the viewer's registration read so the page can
- * choose its layout from it; the panel shows and changes that one read.
+ * choose its layout from it; the panel shows and changes that one read. A
+ * joined player gets the game-day layout until the session ends. The panel
+ * keeps its place in the tree across both, so a request in flight survives
+ * the switch.
  */
 function SignedInSession({
   shared,
@@ -945,11 +948,32 @@ function SignedInSession({
   );
   const [changed, setChanged] = useState<RegistrationView | null>(null);
   const view = changed ?? result.data?.registration ?? null;
+  // Checked each minute, so the layout steps back once the session ends.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+  const gameDay =
+    !!view &&
+    isGameDay(
+      {
+        state: shared.state,
+        endsAt: shared.details.endsAt,
+        canManage: view.canManage,
+        ownState: view.own?.state,
+      },
+      now,
+    );
   return (
-    <div className="session-layout">
-      <SessionHead shared={shared} heading={heading} />
+    <div
+      className={
+        gameDay ? "session-layout session-layout--game-day" : "session-layout"
+      }
+    >
+      <SessionHead shared={shared} heading={heading} ticket={!gameDay} />
       <aside className="session-side" aria-label="Places and registration">
-        <Availability shared={shared} />
+        {gameDay ? null : <Availability shared={shared} />}
         <RegistrationPanel
           event={shared}
           view={view}
@@ -961,12 +985,28 @@ function SignedInSession({
           }}
           onChanged={setChanged}
           onChange={onChange}
+          gameDay={
+            gameDay
+              ? {
+                  details: <SessionTicket shared={shared} />,
+                  notes: <GoodToKnow shared={shared} />,
+                  more: (
+                    <>
+                      <Availability shared={shared} />
+                      <SessionFacts shared={shared} />
+                    </>
+                  ),
+                }
+              : undefined
+          }
         />
       </aside>
-      <div className="session-details">
-        <SessionFacts shared={shared} />
-        <GoodToKnow shared={shared} />
-      </div>
+      {gameDay ? null : (
+        <div className="session-details">
+          <SessionFacts shared={shared} />
+          <GoodToKnow shared={shared} />
+        </div>
+      )}
     </div>
   );
 }
