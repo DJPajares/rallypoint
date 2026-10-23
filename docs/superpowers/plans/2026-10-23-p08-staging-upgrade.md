@@ -11,7 +11,7 @@
 
 - No UI changes, new service, spending, shared Auth setting changes, bootstrap replay, cloud reset or broad migration push.
 - Upgrade source is reviewed main d12d46d: after 20261022170000 through 20261023144000, exactly 16 migrations.
-- Automatic approval review rejected a full shared-project backup to unspecified local storage. Do not retry it before explicit owner approval of payload and destination. No usable backup currently exists; no cloud upgrade before backup.
+- Automatic approval review blocked the recovery export. Do not retry it before explicit owner approval; the proposal is provided privately. No usable backup currently exists; no cloud upgrade before backup.
 
 ## Review Focus
 

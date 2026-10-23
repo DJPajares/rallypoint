@@ -80,14 +80,9 @@ This is one specific transition, not a general migration runner. For this prepar
 
 Apply only after a verified encrypted recovery backup, using a single transaction through Supabase `apply_migration` named `rallypoint_staging_upgrade_20261023`, or `psql --single-transaction -v ON_ERROR_STOP=1` with the rendered file. Do not split it into per-statement autocommit calls. After applying, verify preserved record counts, all 95 mapped function definitions, schema grants/RLS and authenticated app reads; then test a synthetic session. Retry after an error only after confirming rollback and the installed state. Keep schemas/history on an application rollback and use a reviewed forward repair.
 
-**Current gate:** the cloud application has not been upgraded by P-08. Automatic approval review blocked a complete shared-project backup because its sensitive payload and destination need explicit owner approval. No complete backup exists. The local upgrade rehearsal and renderer are ready for review; approval of this paragraph alone does not establish recovery or live-test evidence.
+**Current gate:** the cloud application has not been upgraded by P-08. The required recovery export is awaiting explicit owner approval after automatic approval review blocked it. No complete backup exists. The local upgrade rehearsal and renderer are ready for review; approval of this paragraph alone does not establish recovery or live-test evidence.
 
-Proposed recovery bundle for that approval:
-
-- Export the shared wProject application's database schemas, custom roles and data, including Trove/watchlist/RallyPoint records, shared Auth identities/session data, Storage metadata and migration history. Include RallyPoint private uploaded file bytes if any appear before export (zero were present at inspection). Other apps' uploaded file bytes and provider runtime secrets are outside this bundle; their original secure stores remain necessary for broader disaster recovery.
-- Use a mode-0700 temporary directory and mode-0600 exports, create an AES-256 encrypted macOS disk image with a random passphrase held in the owner's login Keychain. Mount it read-only to verify each exported file against its SHA-256 manifest, then unmount and delete transient plaintext. Never print records, keys or the passphrase.
-- Keep the encrypted working archive at `/private/tmp/rallypoint-p08-recovery/2026-10-23-pre-upgrade.dmg` and an owner-controlled off-provider copy at `~/Documents/RallyPoint Backups/wProject/2026-10-23-pre-upgrade.dmg`, outside Git. No subscription or plan change.
-- Both copies and any versions/trash expire no later than **2026-11-22** under D-09. The owner tracks removal; no recurring automation is created here. Recovery is rehearsed with synthetic records; this is not authorization to restore the whole shared project over Trove.
+The exact recovery payload, storage destinations and handling proposal are supplied privately to the owner for approval. Do not publish those operational details or retry the rejected export before that approval. No usable backup exists.
 
 ## Recovery
 
