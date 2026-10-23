@@ -93,6 +93,18 @@ app.get("/dues", requireUser, async (c) => {
     );
   return json({ dues, splitClaims });
 });
+app.get("/me/sessions", requireUser, async (c) => {
+  const { data, error } = await c.var.db.rpc("list_my_sessions", {
+    p_actor_id: c.var.user.id,
+  });
+  if (error)
+    throw new ApiError(
+      503,
+      "service_unavailable",
+      "Your sessions could not be loaded. Please try again.",
+    );
+  return json(data);
+});
 app.get("/groups/:id{[0-9a-f-]+}/setup", requireUser, async (c) => {
   const id = c.req.param("id");
   if (!uuid.test(id))
