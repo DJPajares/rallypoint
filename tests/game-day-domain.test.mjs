@@ -7,6 +7,7 @@ import {
   partyNoteWords,
   partyStanding,
   paymentWords,
+  releaseRecord,
 } from "../packages/domain/src/game-day.ts";
 
 const fee = (over = {}) => ({
@@ -158,6 +159,24 @@ test("a released fee reads as Released, never as owed", () => {
     fee: fee({ liabilityState: "released_unpaid" }),
   });
   assert.equal(paymentWords(released, money), "Released");
+});
+
+test("a released party stays under Left with who released it, but not under to pay", () => {
+  const at = "2026-10-23T10:00:00.000000+00:00";
+  const released = party("Nia", {
+    state: "removed",
+    fee: fee({
+      liabilityState: "released_unpaid",
+      removedAt: at,
+      history: [{ action: "released_unpaid", by: "Org", at }],
+    }),
+    attendance: undefined,
+  });
+  const list = [...roster, released];
+  assert.deepEqual(names(filterParties(list, "everyone").left), ["Lee", "Nia"]);
+  assert.deepEqual(names(filterParties(list, "to_pay").left), ["Lee"]);
+  assert.deepEqual(releaseRecord(released), { by: "Org", at });
+  assert.equal(releaseRecord(roster[0]), null);
 });
 
 test("note words: nothing, a bare note, and a note with its reference", () => {

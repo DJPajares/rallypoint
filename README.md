@@ -307,9 +307,12 @@ Its confirmation repeats any "I've sent it" note. Giving the spot away is
 manual and one party at a time: the whole party (guest included) leaves, its
 unpaid fee is dropped with who did it and when, and the waitlist is promoted in
 strict order. A party confirmed at or after the cutoff can't be released this
-way. The player sees on their session page that their spot went to the waitlist
-and may join again at the end of the line; **Dues** shows **Released** with no
-amount.
+way, and neither can a party with anyone checked in: they showed up, so the
+organizer collects at the court (correcting the check-in makes the spot
+releasable again). Release needs a cutoff before the start. The player sees on
+their session page that their spot went to the waitlist and may join again at
+the end of the line; **Dues** shows **Released** with no amount. On game day
+the released party stays under **Left** with who gave the spot away and when.
 
 **I've sent it.** In **Pay the organizer**, a confirmed or waitlisted player
 who still owes a fee can say they sent payment, with an optional reference of up
@@ -355,7 +358,10 @@ organizer and member accounts above:
    away**.
 6. The waiting account is now confirmed. The member sees that their spot went
    to the waitlist, can join again and lands at the end of the line, and
-   **Dues** shows **Released** with no amount.
+   **Dues** shows **Released** with no amount. On game day the member stays under
+   **Left** with "Spot given to the waitlist by {organizer} · {time}". Check in a
+   second unpaid member and confirm their details offer no **Give spot to
+   waitlist**.
 7. Check keyboard focus moves into each sheet and back to the row or button,
    every status is in words (not colour alone), and the sheets work with
    reduced motion.

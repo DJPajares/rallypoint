@@ -438,6 +438,52 @@ test("giving unpaid spots to the waitlist after the cutoff", async (t) => {
       },
     );
 
+    await t.test(
+      "a party with anyone checked in can't be released",
+      async () => {
+        const s = await event("4"),
+          pair = await join(s, actors[0], 2),
+          solo = await join(s, actors[1]);
+        cutoffPassed(s.id);
+        const attend = async (partyId, seat, state) => {
+          const seats = (await entry(s, partyId)).attendance;
+          const { revision } = seats.find((a) => a.seat === seat);
+          const r = await request(
+            `/api/registrations/${s.slug}/attendance`,
+            organizer,
+            {
+              operationKey: crypto.randomUUID(),
+              partyId,
+              seat,
+              state,
+              revision,
+            },
+          );
+          assert.equal(r.status, 200, await r.clone().text());
+        };
+        // Only the guest is here: the whole party still showed up.
+        await attend(pair.id, 2, "checked_in");
+        const held = await entry(s, pair.id);
+        assert.equal(held.releasable, false);
+        await conflict(
+          await release(s, organizer, pair.id, held.fee.revision),
+          "release_not_eligible",
+        );
+        assert.equal((await entry(s, pair.id)).state, "confirmed");
+        await attend(solo.id, 1, "checked_in");
+        assert.equal((await entry(s, solo.id)).releasable, false);
+        // Correcting a mistaken check-in makes the spot releasable again.
+        await attend(solo.id, 1, "unrecorded");
+        const corrected = await entry(s, solo.id);
+        assert.equal(corrected.releasable, true);
+        assert.equal(
+          (await release(s, organizer, solo.id, corrected.fee.revision)).status,
+          200,
+        );
+        assert.equal(releasedIn(s), 1);
+      },
+    );
+
     await t.test("a session without the switch refuses release", async () => {
       const off = await event("2", { releaseUnpaid: false }),
         a = await join(off, actors[0]);
@@ -804,7 +850,7 @@ test("giving unpaid spots to the waitlist after the cutoff", async (t) => {
       const ids = events.map((id) => `'${id}'`).join(",");
       const parties = `select id from app.parties where session_id in(${ids})`;
       sql(
-        `begin;delete from app.payment_notes where party_id in(${parties});delete from app.operation_receipts where resource_id in(${parties}) or resource_id in(${ids});delete from app.fee_changes where party_id in(${parties});delete from app.registration_events where party_id in(${parties});delete from app.fee_obligations where party_id in(${parties});delete from app.parties where session_id in(${ids});delete from app.session_changes where session_id in(${ids});delete from app.sessions where id in(${ids});commit;`,
+        `begin;delete from app.payment_notes where party_id in(${parties});delete from app.operation_receipts where resource_id in(${parties}) or resource_id in(${ids});delete from app.attendance_changes where party_id in(${parties});delete from app.seat_attendance where party_id in(${parties});delete from app.fee_changes where party_id in(${parties});delete from app.registration_events where party_id in(${parties});delete from app.fee_obligations where party_id in(${parties});delete from app.parties where session_id in(${ids});delete from app.session_changes where session_id in(${ids});delete from app.sessions where id in(${ids});commit;`,
       );
     }
     sql(
