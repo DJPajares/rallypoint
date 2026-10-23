@@ -31,7 +31,7 @@ The first install/check ran in the isolated branch; the clean checkout also inst
 - Clean-stack complete API suite: **265 passed, 0 failed, 0 skipped**, exit 0, 155.311 seconds. Reused-database results are not substituted for this clean repeat.
 - Existing real-Auth/Postgres cases cover visitor/participant/organizer/co-host/unrelated-group boundaries, revoked roles and metadata spoofing, direct RPC/table denial, concurrent last-seat joins, strict party ordering, replay/recovery, opening/cutoff/start/end clock boundaries, fee/payment/attendance independence and cancellation rollback/history. See [tests](../../tests/) for the actual assertions.
 - Email tests use recording provider stand-ins and a real local Mailpit sink. They cover durable outbox creation, confirmation/promotion/cancellation/reminder audiences and expiry, retries/ambiguity, idempotency, ceilings, disabled delivery, status/privacy and local inbox receipt. These are not Resend receipt or Cloudflare scheduler evidence.
-- Postman unsaved local health request: HTTP 200, one assertion passed, exit 0. No new collection, workspace or test framework was introduced.
+- Postman unsaved local health request on `127.0.0.1:3108`: HTTP 200, one assertion passed, exit 0. No new collection, workspace or test framework was introduced.
 
 ## Integrated twelve-seat walkthrough
 
@@ -72,6 +72,7 @@ This task did not apply cloud SQL, change shared Auth/Trove settings, enable a s
 | Live email | Verify actual existing-account code receipt and transactional/reminder email delivery separately from stand-ins; record sender, host/version and inbox outcome without publishing codes or addresses. |
 | Android/Chrome browser and installed PWA | Owner can test Android/Chrome; actual OS/browser versions, install and outcomes not yet supplied. |
 | iPhone/Safari browser and installed PWA | No device evidence available. Owner's Android-only availability does not change D-08's accepted support matrix. |
+| Desktop keyboard | Chrome has targeted/partial coverage above; full core-loop keyboard/focus checks and desktop Safari remain unverified. |
 | Accessibility/performance | Complete the physical-device/core-loop checks; no WCAG or 3-second-budget claim from this limited browser walkthrough. |
 
 Once staging is ready, record these Android results with the exact OS and Chrome versions: open the custom domain, receive/verify an existing account's code, add/install RallyPoint from Chrome, reopen it standalone, join a synthetic session, go offline and attempt a mutation (must stay unconfirmed), reconnect/recover the same request, sign out/switch accounts and confirm private roster/fee/attendance data does not follow the old identity. Use only synthetic session data; do not put authentication codes in the report. Repeat the accepted matrix on iPhone/Safari when a device is available.
