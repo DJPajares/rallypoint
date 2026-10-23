@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { EarnedBadgeCheck } from "./badges";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
 import { useMutation } from "./use-mutation";
@@ -18,6 +18,7 @@ import { CoinsIcon } from "@phosphor-icons/react/dist/csr/Coins";
 import { CopyIcon } from "@phosphor-icons/react/dist/csr/Copy";
 import { DoorOpenIcon } from "@phosphor-icons/react/dist/csr/DoorOpen";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
+import { RepeatIcon } from "@phosphor-icons/react/dist/csr/Repeat";
 import { UserPlusIcon } from "@phosphor-icons/react/dist/csr/UserPlus";
 import { fromInstant, fromLocal } from "./dates";
 import { ShareButton } from "./share-button";
@@ -50,6 +51,8 @@ import type {
   SharedSession,
 } from "@rallypoint/domain/session";
 import type { GroupSummary } from "@rallypoint/domain/contracts";
+import { nextWeekForm } from "@rallypoint/domain/run-again";
+import { copyPaymentDetails } from "./run-again";
 
 const subscribeOrigin = () => () => {};
 const clientOrigin = () => window.location.origin;
@@ -190,6 +193,14 @@ function SessionLoader({ id }: { id: string }) {
 }
 export function NewSession() {
   const { id } = useParams<{ id: string }>();
+  const from = useSearchParams().get("from");
+  return from ? (
+    <RunAgain groupId={id!} from={from} />
+  ) : (
+    <BlankSession groupId={id!} />
+  );
+}
+function BlankSession({ groupId: id }: { groupId: string }) {
   const group = useApi<{ group: GroupSummary }>(`/api/groups/${id}/setup`);
   return group.loading ? (
     <DetailPage back={`/groups/${id}`} backLabel="Group sessions">
@@ -200,15 +211,45 @@ export function NewSession() {
       <Notice retry={group.retry}>{group.error}</Notice>
     </DetailPage>
   ) : (
-    <Editor groupId={id!} />
+    <Editor groupId={id} />
+  );
+}
+/** Running a session again: next week's form, filled from the source (P-22). */
+function RunAgain({ groupId, from }: { groupId: string; from: string }) {
+  const source = useApi<{ session: SessionRecord }>(`/api/sessions/${from}`);
+  if (source.loading)
+    return (
+      <DetailPage back={`/groups/${groupId}`} backLabel="Group sessions">
+        <Pending>Copying the session…</Pending>
+      </DetailPage>
+    );
+  if (source.error || !source.data)
+    return (
+      <DetailPage back={`/groups/${groupId}`} backLabel="Group sessions">
+        <Notice retry={source.retry}>
+          {source.error ?? "That session couldn’t be opened."}
+        </Notice>
+      </DetailPage>
+    );
+  return <RunAgainEditor source={source.data.session} />;
+}
+function RunAgainEditor({ source }: { source: SessionRecord }) {
+  // Worked out once when the form opens, so it never shifts while typing.
+  const [prefill] = useState(() => nextWeekForm(source.details, Date.now()));
+  return (
+    <Editor groupId={source.groupId} prefill={prefill} copyFrom={source} />
   );
 }
 function Editor({
   initial,
   groupId,
+  prefill,
+  copyFrom,
 }: {
   initial?: SessionRecord;
   groupId?: string;
+  prefill?: SessionForm;
+  copyFrom?: SessionRecord;
 }) {
   const router = useRouter();
   const [record, setRecord] = useState(initial);
@@ -217,8 +258,10 @@ function Editor({
     clientOrigin,
     serverOrigin,
   );
+  const { session: auth } = useAuth();
+  const copyFailed = useSearchParams().get("copy") === "failed";
   const [form, setForm] = useState<SessionForm>(
-      initial?.details ?? blankSession,
+      initial?.details ?? prefill ?? blankSession,
     ),
     // A new session reopens here after its first save, so a loaded draft
     // confirms it is saved rather than going quiet.
@@ -248,7 +291,24 @@ function Editor({
         ? "Saved. Share the link when you’re ready."
         : "Draft saved.",
     );
-    if (!record) router.replace(`/sessions/${result.session.id}/edit`);
+    if (record) return;
+    const created = result.session,
+      target = `/sessions/${created.id}/edit`;
+    // A session run again brings its payment details along. A failed copy
+    // never undoes the new session; its page asks for the details instead.
+    const paidToOrganizer = (s: SessionRecord) =>
+      (s.details.paymentMode ?? "organizer") === "organizer";
+    if (
+      copyFrom &&
+      paidToOrganizer(copyFrom) &&
+      paidToOrganizer(created) &&
+      auth?.access_token
+    ) {
+      setNotice("Copying the payment details…");
+      void copyPaymentDetails(auth.access_token, copyFrom, created.id).then(
+        (copied) => router.replace(copied ? target : `${target}?copy=failed`),
+      );
+    } else router.replace(target);
   });
   function submit(e: FormEvent, intent: string) {
     e.preventDefault();
@@ -381,6 +441,22 @@ function Editor({
             {copy}
           </p>
         </div>
+      ) : null}
+      {record && record.state !== "draft" ? (
+        <div className="run-again">
+          <Link
+            className={buttonClass()}
+            href={`/groups/${record.groupId}/sessions/new?from=${record.id}`}
+          >
+            <RepeatIcon size={18} aria-hidden="true" />
+            Run again next week
+          </Link>
+        </div>
+      ) : null}
+      {copyFailed ? (
+        <Notice tone="warning">
+          The payment details weren’t copied. Add them below.
+        </Notice>
       ) : null}
       {started ? (
         <Notice tone="warning">
