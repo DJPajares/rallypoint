@@ -3,8 +3,9 @@ import { badges } from "./badges";
 import type { AppEnv } from "./env";
 import { ApiError, discardRejectedBody, errorJson, json, uuid } from "./http";
 import type { ApiEnv } from "./identity";
-import { connection, requireUser } from "./identity";
+import { actorName, connection, requireUser } from "./identity";
 import { payments } from "./payments";
+import { profiles } from "./profiles";
 import { registrations } from "./registrations";
 import { sessions } from "./sessions";
 import { splits } from "./splits";
@@ -47,15 +48,16 @@ app.get("/config", (c) => {
   }
 });
 
-app.get("/me", requireUser, (c) => {
+app.get("/me", requireUser, async (c) => {
   const user = c.var.user;
+  const { name, profileId } = await actorName(c, "Participant");
   return json({
     id: user.id,
     email: user.email,
-    // Editable metadata is display-only, never role authority.
-    displayName: String(
-      user.user_metadata.full_name ?? user.email?.split("@")[0],
-    ).slice(0, 80),
+    profileId,
+    // The name they chose to show, else their account name. Display-only,
+    // never role authority.
+    displayName: name,
   });
 });
 app.get("/workspace", requireUser, async (c) => {
@@ -133,6 +135,7 @@ app.route("/", registrations);
 app.route("/", splits);
 app.route("/", payments);
 app.route("/", badges);
+app.route("/", profiles);
 
 // Unknown reads are missing pages; any other unknown method is refused.
 app.notFound(async (c) => {

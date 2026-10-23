@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
+import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import type { AppEnv } from "./env";
 import { ApiError } from "./http";
@@ -103,9 +104,35 @@ export const requireUser = createMiddleware<ApiEnv>(async (c, next) => {
 
 /** Display-only; editable metadata never grants authority. */
 export const displayName = (user: User, fallback: string) =>
-  String(user.user_metadata.full_name ?? user.email?.split("@")[0] ?? fallback)
-    .trim()
-    .slice(0, 80) || fallback;
+  // Cut by code point so an emoji at the limit is never split in half.
+  [
+    ...String(
+      user.user_metadata.full_name ?? user.email?.split("@")[0] ?? fallback,
+    ).trim(),
+  ]
+    .slice(0, 80)
+    .join("") || fallback;
+
+/**
+ * The name this person shows everywhere (their chosen name, else their account
+ * name) and their public profile id. Creates the profile row on first use.
+ */
+export async function actorName(
+  c: Context<ApiEnv>,
+  fallback: string,
+): Promise<{ name: string; profileId: string }> {
+  const { data, error } = await c.var.db.rpc("ensure_my_profile", {
+    p_actor_id: c.var.user.id,
+    p_account_name: displayName(c.var.user, fallback),
+  });
+  if (error || !data)
+    throw new ApiError(
+      503,
+      "service_unavailable",
+      "Your profile could not be loaded. Please try again.",
+    );
+  return data as { name: string; profileId: string };
+}
 
 /** For routes reached by a method they don't support. */
 export const notAvailable = (message = "This action is not available.") => {
