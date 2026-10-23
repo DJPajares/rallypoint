@@ -308,3 +308,64 @@ test("instructions saved before switching to Not tracked here stay stored but ar
     await admin.auth.admin.deleteUser(player.id);
   }
 });
+
+test("a session that releases unpaid spots needs a cutoff before its start", async () => {
+  const organizer = await login("organizer@rallypoint.test");
+  const publish = (extra) =>
+    request(`/api/groups/${firstGroup}/sessions`, organizer, {
+      operationKey: crypto.randomUUID(),
+      groupId: firstGroup,
+      intent: "publish",
+      details: {
+        ...details(),
+        paymentMode: "organizer",
+        feeMode: "fixed",
+        releaseUnpaid: true,
+        ...extra,
+      },
+    });
+  // A cutoff at the start leaves no window to release in: refused before
+  // anything is saved.
+  const atStart = details().startLocal;
+  const refused = await publish({ cutoffLocal: atStart });
+  assert.equal(refused.status, 422, await refused.clone().text());
+  assert.equal(
+    (await refused.json()).error.message,
+    "Set the cutoff before the start so unpaid spots can go to the waitlist.",
+  );
+
+  // The database refuses it too, whatever calls it. The same call with the
+  // cutoff a minute earlier goes through (rolled back here), so the cutoff is
+  // what is being refused.
+  const call = (cutoffAt) => `select app.save_session_before_cancellation(
+    '${organizer.id}','${crypto.randomUUID()}','${firstGroup}',null,'publish',null,
+    '${JSON.stringify({
+      title: "Synthetic release window",
+      activity: "Workshop",
+      location: "Synthetic room",
+      capacity: "4",
+      startsAt: "2031-05-09T10:00:00Z",
+      endsAt: "2031-05-09T12:00:00Z",
+      opensAt: "2031-05-01T09:00:00Z",
+      cutoffAt,
+      currency: "SGD",
+      guests: false,
+      paymentMode: "organizer",
+      feeMode: "fixed",
+      feeMinor: 1250,
+      releaseUnpaid: true,
+    })}'::jsonb);`;
+  assert.throws(
+    () => sql(`begin;${call("2031-05-09T10:00:00Z")}rollback;`),
+    /invalid_input/,
+  );
+  assert.doesNotThrow(() =>
+    sql(`begin;${call("2031-05-09T09:59:00Z")}rollback;`),
+  );
+  assert.equal(
+    sql(
+      `select count(*) from app.sessions where details->>'title'='Synthetic release window';`,
+    ),
+    "0",
+  );
+});

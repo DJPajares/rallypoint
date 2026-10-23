@@ -64,6 +64,36 @@ test("release needs a fixed fee above zero", () => {
   assert.equal(details.releaseUnpaid, true);
 });
 
+test("release needs a cutoff before the start", () => {
+  const atStart = { ...session("200.00"), cutoffLocal: "2027-05-09T10:00" };
+  assert.throws(
+    () => normalizeSession({ ...atStart, releaseUnpaid: true }, true),
+    (error) =>
+      error instanceof InputError &&
+      error.message ===
+        "Set the cutoff before the start so unpaid spots can go to the waitlist.",
+  );
+  // The same cutoff is fine while release is off, and a draft is not checked.
+  assert.equal(
+    normalizeSession(atStart, true).cutoffAt,
+    "2027-05-09T02:00:00Z",
+  );
+  assert.equal(
+    normalizeSession({ ...atStart, releaseUnpaid: true }, false).releaseUnpaid,
+    true,
+  );
+  // A cutoff a minute before the start leaves a window.
+  const details = normalizeSession(
+    {
+      ...session("200.00"),
+      cutoffLocal: "2027-05-09T09:59",
+      releaseUnpaid: true,
+    },
+    true,
+  );
+  assert.equal(details.releaseUnpaid, true);
+});
+
 test("unknown payment modes are refused", () => {
   assert.throws(
     () =>

@@ -261,6 +261,12 @@ export function normalizeSession(
     throw new InputError(
       "Cancellation cutoff must fall between opening and start.",
     );
+  // Release runs from the cutoff until the start, so a cutoff at the start
+  // leaves no window to give an unpaid spot away in.
+  if (form.releaseUnpaid && Temporal.Instant.compare(cutoff, start) >= 0)
+    throw new InputError(
+      "Set the cutoff before the start so unpaid spots can go to the waitlist.",
+    );
   return {
     ...form,
     startsAt: start.toString(),
