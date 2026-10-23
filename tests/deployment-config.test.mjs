@@ -166,3 +166,30 @@ test("staging email sign-in is explicit and never enables local-only authenticat
   delete env.EMAIL_AUTH_ENABLED;
   assert.equal((await read(env)).auth.email, false);
 });
+
+// Wrangler configs are JSONC: strip comments and trailing commas, then parse.
+function readWranglerConfig(name) {
+  const text = readFileSync(
+    new URL(`../apps/web/${name}`, import.meta.url),
+    "utf8",
+  );
+  const stripped = text
+    .replace(
+      /("(?:[^"\\]|\\.)*")|\/\/[^\n]*|\/\*[\s\S]*?\*\//g,
+      (m, str) => str ?? "",
+    )
+    .replace(/,(\s*[}\]])/g, "$1");
+  return JSON.parse(stripped);
+}
+
+test("local Worker runs the email drain every minute", () => {
+  const config = readWranglerConfig("wrangler.jsonc");
+  assert.equal(config.main, "worker.ts");
+  assert.deepEqual(config.triggers?.crons, ["* * * * *"]);
+});
+
+test("staging gets no cron or delivery until P-12", () => {
+  const config = readWranglerConfig("wrangler.staging.jsonc");
+  assert.equal(config.triggers, undefined);
+  assert.ok(!("EMAIL_DELIVERY_ENABLED" in (config.vars ?? {})));
+});

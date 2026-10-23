@@ -62,6 +62,9 @@ importers:
       '@rallypoint/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@rallypoint/email':
+        specifier: workspace:*
+        version: link:../../packages/email
       '@rallypoint/ui':
         specifier: workspace:*
         version: link:../../packages/ui
