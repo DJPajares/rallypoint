@@ -2,7 +2,7 @@
 
 Date: 2026-10-23 (Asia/Singapore). Task: [WDL-381 / P-08](https://linear.app/wwonderland/issue/WDL-381/p-08-verify-the-complete-first-session-loop-in-the-mobile-pwa). Source: `d12d46d6bc94c24da86e64ec5f9c16223fa80152` (main after PR #30).
 
-**P-08 is incomplete.** Local checks below passed; authenticated staging, live session email delivery and the accepted physical-device matrix still lack evidence. This report does not establish pilot readiness, WCAG compliance, a production launch or full-MVP completion. No product/UI change was needed for the checks performed.
+**P-08 is incomplete.** Local and live RPC checks below passed. On 2026-10-24 the owner reported that the Android/Chrome, installed-PWA, sign-in and inbox checklist worked. That is owner-reported evidence; exact device/browser versions, individual notification types and the remaining accepted device/accessibility/performance checks are not yet recorded. This report does not establish pilot readiness, WCAG compliance, a production launch or full-MVP completion. No product/UI change was needed for the checks performed.
 
 ## Environment and reproducibility
 
@@ -65,17 +65,17 @@ The initial inspection did not apply cloud SQL. The later owner-authorized upgra
 
 ## Remaining completion evidence
 
-| Required area                                | Current result / next evidence                                                                                                                                                                        |
-| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Local integrated loop and backend boundaries | Observed above; clean suite passes.                                                                                                                                                                   |
-| Live authenticated loop                      | Schema drift resolved on 2026-10-24; rollback-only live RPC checks passed. Authenticated browser/phone loop still pending.                                                                            |
-| Live email                                   | Verify actual existing-account code receipt and transactional/reminder email delivery separately from stand-ins; record sender, host/version and inbox outcome without publishing codes or addresses. |
-| Android/Chrome browser and installed PWA     | Owner can test Android/Chrome; actual OS/browser versions, install and outcomes not yet supplied.                                                                                                     |
-| iPhone/Safari browser and installed PWA      | No device evidence available. Owner's Android-only availability does not change D-08's accepted support matrix.                                                                                       |
-| Desktop keyboard                             | Chrome has targeted/partial coverage above; full core-loop keyboard/focus checks and desktop Safari remain unverified.                                                                                |
-| Accessibility/performance                    | Complete the physical-device/core-loop checks; no WCAG or 3-second-budget claim from this limited browser walkthrough.                                                                                |
+| Required area                                | Current result / next evidence                                                                                                                                                                    |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Local integrated loop and backend boundaries | Observed above; clean suite passes.                                                                                                                                                               |
+| Live authenticated loop                      | Schema drift resolved; live rollback-only RPC checks passed. Owner reports phone sign-in and joining work; the full live organizer/member loop is not independently observed.                     |
+| Live email                                   | Owner reports sign-in codes and session notification receipt work. Individual notification types, timings, sender and scheduler host/version were not supplied; no independent inbox observation. |
+| Android/Chrome browser and installed PWA     | Owner reports the described browser/install/reopen/join/interrupted-connection/sign-out checks work. Phone model, OS and Chrome versions were not supplied.                                       |
+| iPhone/Safari browser and installed PWA      | No device evidence available. Owner's Android-only availability does not change D-08's accepted support matrix.                                                                                   |
+| Desktop keyboard                             | Chrome has targeted/partial coverage above; full core-loop keyboard/focus checks and desktop Safari remain unverified.                                                                            |
+| Accessibility/performance                    | Complete the physical-device/core-loop checks; no WCAG or 3-second-budget claim from this limited browser walkthrough.                                                                            |
 
-Once staging is ready, record these Android results with the exact OS and Chrome versions: open the custom domain, receive/verify an existing account's code, add/install RallyPoint from Chrome, reopen it standalone, join a synthetic session, go offline and attempt a mutation (must stay unconfirmed), reconnect/recover the same request, sign out/switch accounts and confirm private roster/fee/attendance data does not follow the old identity. Use only synthetic session data; do not put authentication codes in the report. Repeat the accepted matrix on iPhone/Safari when a device is available.
+The owner has now reported the following Android checklist works, without supplying exact OS/Chrome versions: open the custom domain, receive/verify an existing account's code, add/install RallyPoint from Chrome, reopen it standalone, join a synthetic session, go offline and attempt a mutation (must stay unconfirmed), reconnect/recover the same request, sign out/switch accounts and confirm private roster/fee/attendance data does not follow the old identity. Use only synthetic session data; do not put authentication codes in the report. Repeat the accepted matrix on iPhone/Safari when a device is available.
 
 P-13's separate provider eligibility/headroom, backup locations and synthetic restore/deletion prerequisites remain before real pilot data. Existing Maps, embedded payments, profile editing, badge tiers and other backlog features are outside P-08; passing these checks does not imply they exist. Keep P-08 open until its missing evidence is recorded and accepted. This internal verification report needs no user-facing release note.
 
@@ -118,4 +118,12 @@ The [database-before-application release check](../deployment/staging.md#databas
 
 Fresh read-only review found no actionable Critical/Important issue in the documentation, renderer and supplied nonsensitive logs. The reviewer independently reran the two renderer checks, verified the SQL checksum and checked the diff, but did not independently verify cloud state or recovery contents.
 
-P-08 stays incomplete: authenticated browser/phone sign-in, installed-PWA behavior, live inbox delivery and the accepted device/accessibility/performance matrix still require evidence. Cloudflare remains deployed; its scheduler/code version was not changed or reverified here.
+At this point in the operational continuation, owner phone/inbox confirmation had not yet been supplied; the later confirmation is recorded below. Cloudflare remained deployed; its scheduler/code version was not changed or independently reverified here.
+
+## 2026-10-24 owner phone and inbox confirmation
+
+After the assistant described the real-phone/inbox checklist for https://rallypoint.wndrhive.com, the owner replied: **“yes all are working.”** The previously supplied device scope was Android/Chrome only.
+
+Record this as the owner's report that Android/Chrome sign-in and joining, home-screen installation/reopening, interrupted-connection handling, sign-out privacy, receipt/use of the eight-digit sign-in code, and session notification receipt work. It is not a new agent-observed browser or mailbox run. No mailbox contents, authentication codes or participant details were collected.
+
+The owner did not supply phone model, Android/Chrome versions, individual notification kinds/timings, or sender/scheduler configuration. Do not infer that every D-05 reminder/change/cancellation case ran or that the Cloudflare scheduler version was inspected. The owner confirmation resolves the previously missing general phone/inbox outcome report; iPhone/Safari, full desktop keyboard/Safari, the broader organizer/member flow and accessibility/performance coverage still need their own evidence under the accepted matrix. P-08 remains In Progress and PR #31 remains draft; no acceptance, merge, launch or policy waiver is inferred.
