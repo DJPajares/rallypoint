@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 import {
   localEnv,
@@ -861,6 +861,16 @@ test("dispatch leases, rechecks and accounts for every email attempt", async (t)
         sql(
           `update app.email_sender set lease_until=clock_timestamp()-interval '1 second';update app.email_jobs set lease_until=clock_timestamp()-interval '1 second' where id='${id}';`,
         );
+        const early = await claim(5, B);
+        assert.ok(
+          !early.jobs.some((j) => j.id === id),
+          "A vanished first attempt keeps its one-minute spacing",
+        );
+        assert.equal(row(id).state, "queued");
+        assert.ok(near(row(id).next_attempt_at, 60));
+        sql(
+          `update app.email_jobs set next_attempt_at=clock_timestamp() where id='${id}';`,
+        );
         const taken = await claim(5, B);
         const again = taken.jobs.find((j) => j.id === id);
         assert.ok(again, "B gets the job back");
@@ -1025,6 +1035,154 @@ test("dispatch leases, rechecks and accounts for every email attempt", async (t)
       resetSender();
       clearJobs();
     });
+
+    await t.test(
+      "a vanished second attempt waits five minutes before the next claim hands it out",
+      async () => {
+        resetSender();
+        const s = await event("6");
+        clearJobs();
+        const id = newJob(s, actors[0]);
+        sql(
+          `update app.email_jobs set attempts=2,payload='{"to":"a@x"}',state='sending',reason='attempting',lease_until=clock_timestamp()-interval '1 second' where id='${id}';`,
+        );
+        const r = await claim(5);
+        assert.ok(!r.jobs.some((j) => j.id === id));
+        assert.equal(row(id).state, "queued");
+        assert.equal(row(id).ambiguous, true);
+        assert.ok(near(row(id).next_attempt_at, 300), "About 5 minutes later");
+        // Already later than the backoff: the later time stands.
+        sql(
+          `update app.email_jobs set state='sending',lease_until=clock_timestamp()-interval '1 second',next_attempt_at=clock_timestamp()+interval '20 minutes' where id='${id}';`,
+        );
+        await claim(5);
+        assert.ok(near(row(id).next_attempt_at, 1200, 12));
+        resetSender();
+        clearJobs();
+      },
+    );
+
+    await t.test(
+      "superseded jobs end even while the circuit is open and never use up a slot",
+      async () => {
+        resetSender();
+        const s = await event("1");
+        const a = await join(s, actors[0]);
+        await join(s, actors[1]);
+        await withdraw(s, actors[0], a);
+        assert.equal(forSession(s, "promoted").length, 1);
+        await cancel(s);
+        resetSender();
+        sql(
+          `update app.email_sender set circuit_until=clock_timestamp()+interval '1 hour',circuit_reason='daily_limit';`,
+        );
+        const open = await claim(5);
+        assert.deepEqual(open, { leased: true, jobs: [] });
+        const jobs = forSession(s);
+        const promoted = jobs.find((j) => j.kind === "promoted");
+        assert.equal(promoted.state, "not_sent");
+        assert.equal(promoted.reason, "superseded");
+        assert.ok(
+          jobs
+            .filter((j) => j.kind.startsWith("joined"))
+            .every((j) => j.reason === "superseded"),
+        );
+        assert.equal(
+          jobs.find((j) => j.kind === "cancelled").state,
+          "queued",
+          "Its cancellation email is still waiting",
+        );
+        // Stale rows older than five valid ones must not take their slots.
+        resetSender();
+        clearJobs();
+        const other = await event("6");
+        const t2 = await event("1");
+        const c = await join(t2, actors[0]);
+        await join(t2, actors[1]);
+        await withdraw(t2, actors[0], c);
+        await cancel(t2);
+        sql(
+          `update app.email_jobs set next_attempt_at=clock_timestamp()-interval '1 hour' where session_id='${t2.id}' and kind<>'cancelled';`,
+        );
+        actors.slice(2, 7).forEach((u) => newJob(other, u));
+        const full = await claim(5);
+        assert.equal(full.jobs.length, 5);
+        assert.ok(
+          forSession(t2).every(
+            (j) => j.kind === "cancelled" || j.reason === "superseded",
+          ),
+        );
+        resetSender();
+        clearJobs();
+      },
+    );
+
+    await t.test(
+      "a join during the reminder window never deadlocks the claim",
+      async () => {
+        resetSender();
+        const s = await event("6");
+        const A = await join(s, actors[0]);
+        sql(
+          `update app.registration_events set created_at=created_at-interval '1 hour' where party_id='${A.id}';`,
+        );
+        clearJobs();
+        shift(s.id, "startsAt", "'23 hours 59 minutes'");
+        // A transaction that holds the session row the way a join does.
+        const held = spawn(
+          "docker",
+          [
+            "exec",
+            "-i",
+            "supabase_db_rallypoint",
+            "psql",
+            "-U",
+            "postgres",
+            "-d",
+            "postgres",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-Atq",
+          ],
+          { stdio: ["pipe", "pipe", "pipe"] },
+        );
+        let out = "";
+        held.stdout.on("data", (d) => (out += d));
+        try {
+          held.stdin.write(
+            `begin;select 'locked' from app.sessions where id='${s.id}' for update;\n`,
+          );
+          for (let i = 0; i < 100 && !out.includes("locked"); i++)
+            await new Promise((r) => setTimeout(r, 50));
+          assert.ok(out.includes("locked"), "The session row is held");
+          const raced = await Promise.race([
+            claim(5),
+            new Promise((r) => setTimeout(() => r("blocked"), 8000)),
+          ]);
+          assert.notEqual(
+            raced,
+            "blocked",
+            "The claim did not wait on the held session",
+          );
+          assert.equal(
+            forSession(s, "reminder").length,
+            0,
+            "A busy session is skipped for now",
+          );
+        } finally {
+          held.stdin.write("commit;\n");
+          held.stdin.end();
+          await new Promise((r) => held.on("close", r));
+        }
+        await claim(5);
+        const reminders = forSession(s, "reminder");
+        assert.equal(reminders.length, 1, "The next claim creates it");
+        assert.equal(reminders[0].user, actors[0].id);
+        shift(s.id, "startsAt", "'72 hours'");
+        resetSender();
+        clearJobs();
+      },
+    );
 
     await t.test(
       "only the service role can call dispatch functions",
