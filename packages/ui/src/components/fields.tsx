@@ -336,6 +336,7 @@ export function NumberStepper({
   const parsed = value.trim() === "" ? null : Number(value);
   return (
     <NumberField.Root
+      id={id}
       value={Number.isFinite(parsed) ? parsed : null}
       onValueChange={(next) => onChange(next === null ? "" : String(next))}
       min={min}
@@ -351,7 +352,6 @@ export function NumberStepper({
           <MinusIcon size={18} aria-hidden="true" />
         </NumberField.Decrement>
         <NumberField.Input
-          id={id}
           className="rp-bare rp-stepper__input rp-nums"
           aria-describedby={describedBy}
         />

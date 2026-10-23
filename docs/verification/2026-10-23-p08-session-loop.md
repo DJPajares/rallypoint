@@ -2,7 +2,7 @@
 
 Date: 2026-10-23 (Asia/Singapore). Task: [WDL-381 / P-08](https://linear.app/wwonderland/issue/WDL-381/p-08-verify-the-complete-first-session-loop-in-the-mobile-pwa). Source: `d12d46d6bc94c24da86e64ec5f9c16223fa80152` (main after PR #30).
 
-**P-08 is incomplete.** Local and live RPC checks below passed. On 2026-10-24 the owner reported that the Android/Chrome, installed-PWA, sign-in and inbox checklist worked. That is owner-reported evidence; exact device/browser versions, individual notification types and the remaining accepted device/accessibility/performance checks are not yet recorded. This report does not establish pilot readiness, WCAG compliance, a production launch or full-MVP completion. No product/UI change was needed for the checks performed.
+**P-08 is incomplete.** Local and live RPC checks below passed. On 2026-10-24 the owner reported that the Android/Chrome, installed-PWA, sign-in and inbox checklist worked. That is owner-reported evidence; exact device/browser versions, individual notification types and the remaining accepted device/accessibility/performance checks are not yet recorded. This report does not establish pilot readiness, WCAG compliance, a production launch or full-MVP completion. The latest continuation fixes one number-control accessibility reference; the visible layout is unchanged.
 
 ## Environment and reproducibility
 
@@ -72,7 +72,7 @@ The initial inspection did not apply cloud SQL. The later owner-authorized upgra
 | Live email                                   | Owner reports sign-in codes and session notification receipt work. Individual notification types, timings, sender and scheduler host/version were not supplied; no independent inbox observation. |
 | Android/Chrome browser and installed PWA     | Owner reports the described browser/install/reopen/join/interrupted-connection/sign-out checks work. Phone model, OS and Chrome versions were not supplied.                                       |
 | iPhone/Safari browser and installed PWA      | No device evidence available. Owner's Android-only availability does not change D-08's accepted support matrix.                                                                                   |
-| Desktop keyboard                             | Chrome has targeted/partial coverage above; full core-loop keyboard/focus checks and desktop Safari remain unverified.                                                                            |
+| Desktop keyboard                             | Chrome keyboard coverage now includes sign-in, setup/publish/share, guest join, check-in and withdrawal. Full payment/waitlist keyboard coverage and desktop Safari remain unverified.            |
 | Accessibility/performance                    | Complete the physical-device/core-loop checks; no WCAG or 3-second-budget claim from this limited browser walkthrough.                                                                            |
 
 The owner has now reported the following Android checklist works, without supplying exact OS/Chrome versions: open the custom domain, receive/verify an existing account's code, add/install RallyPoint from Chrome, reopen it standalone, join a synthetic session, go offline and attempt a mutation (must stay unconfirmed), reconnect/recover the same request, sign out/switch accounts and confirm private roster/fee/attendance data does not follow the old identity. Use only synthetic session data; do not put authentication codes in the report. Repeat the accepted matrix on iPhone/Safari when a device is available.
@@ -127,3 +127,33 @@ After the assistant described the real-phone/inbox checklist for https://rallypo
 Record this as the owner's report that Android/Chrome sign-in and joining, home-screen installation/reopening, interrupted-connection handling, sign-out privacy, receipt/use of the eight-digit sign-in code, and session notification receipt work. It is not a new agent-observed browser or mailbox run. No mailbox contents, authentication codes or participant details were collected.
 
 The owner did not supply phone model, Android/Chrome versions, individual notification kinds/timings, or sender/scheduler configuration. Do not infer that every D-05 reminder/change/cancellation case ran or that the Cloudflare scheduler version was inspected. The owner confirmation resolves the previously missing general phone/inbox outcome report; iPhone/Safari, full desktop keyboard/Safari, the broader organizer/member flow and accessibility/performance coverage still need their own evidence under the accepted matrix. P-08 remains In Progress and PR #31 remains draft; no acceptance, merge, launch or policy waiver is inferred.
+
+## 2026-10-24 extended Chrome checks and capacity accessibility fix
+
+The owner asked to continue. Reused the dedicated local P-08 stack and exact product source described above, with the single NumberStepper fix below copied from this branch. Browser: headless Chrome 155 (user agent reports 155.0.0.0) on macOS 27.0.1; desktop viewport 1280 × 800, then 375 × 812 for reflow/reduced-motion sampling. All identities, sessions, email codes and writes in this continuation were local synthetic data; shared staging/Auth/schemas and other local stacks were not changed.
+
+**Defect found and fixed:** axe-core 4.13.0 reported `aria-valid-attr-value` on the capacity decrement/increment buttons: each referenced a generated input ID absent from the DOM. `NumberStepper` assigned its caller-supplied ID directly to `NumberField.Input`, leaving Base UI Root's context with a different generated ID. Following the installed Base UI 1.8.0 contract, moved that same `id` to `NumberField.Root`. This changes no styling, layout, business rule, dependency or database schema. Both buttons now reference the rendered `capacity` input; label/description associations are preserved. Plain-language note: improved accessibility of the session capacity control.
+
+A focused real-browser assertion failed before the fix because both ARIA targets were missing, then passed after rebuilding with the fix. The session form's automated violations changed from one rule affecting two nodes to zero. No new test framework or package was introduced.
+
+**Observed keyboard/browser behavior:** synthetic organizer email-code sign-in; workspace/group navigation; empty-publish validation with a readable alert; title/activity entry, radio arrow selection, calendar arrow/date/time selection and Escape return; capacity arrow adjustment; payment select opening; registration opening and guest switch; publish and Copy link. A separate member browser signed in, dismissed the badge dialog with Escape, selected a guest, entered the guest name and confirmed two seats. Organizer check-in worked for primary and guest; Escape returned from the party sheet to its row. Member withdrew both seats. Local SQL confirmed one withdrawn party, two independent attendance records and zero money records for this untracked-payment session. This extends the earlier paid-session and queue evidence; it does not claim every payment/waitlist action was repeated using only a keyboard.
+
+Local timings from key activation to the stated observation:
+
+| Action / observation                              | Time   |
+| ------------------------------------------------- | ------ |
+| Publish, edit-route navigation                    | 188 ms |
+| Copy link, success status                         | 14 ms  |
+| Guest join, authoritative two-seat count rendered | 187 ms |
+| Guest check-in, control state updated             | 191 ms |
+| Withdraw, authoritative empty seat count rendered | 84 ms  |
+
+These are individual localhost samples, with no physical-network throttling or statistical performance/load claim. They do not establish the three-second phone-network target.
+
+**Automated accessibility coverage:** sampled sign-in, workspace/group, session setup, published setup, shared/joined/withdrawn member states, organizer/badge/party-sheet states and the narrow organizer view using axe WCAG 2 A/AA, 2.1 AA and 2.2 AA tags. After the number-control fix, sampled states reported zero violations. Additional WCAG 2.1 A rules also reported zero violations on the final organizer/member views. Some contrast checks remain `incomplete` (the final narrow view had one short-content element requiring human classification); zero automated violations is not a full WCAG audit. At 375 px, document width equalled viewport width; reduced-motion preference was enabled. The workspace Open group link had a visible 3 px focus outline, and dialog Escape/return behavior was exercised.
+
+**Safari boundary:** installed Safari reports 27.0.1. A supported WebDriver session probe failed because Allow Remote Automation is disabled. No Safari setting was changed and no Safari session was created; the test driver was stopped. No WebKit emulation or phone-width Chrome run is presented as physical Safari evidence.
+
+Fresh focused review found no actionable regression in the two-line prop move. The reviewer checked both call sites and Base UI's installed source/types, confirming Root forwards the ID to the input and step-button references without creating duplicate IDs; browser/build evidence was not independently rerun by the reviewer.
+
+Fresh regression result: **267/267 passed**, zero failed/skipped, in **152.017 seconds**, with the local API test URL explicitly set to port 3118. Lint, type checking and the production build also passed after the fix. P-08 remains In Progress for the explicitly unverified parts of the accepted matrix; the owner's Android/inbox confirmation above remains valid. This continuation does not merge or redeploy the application.
