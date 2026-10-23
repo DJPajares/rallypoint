@@ -12,7 +12,8 @@
     "./fees": "./src/fees.ts",
     "./badges": "./src/badges.ts",
     "./game-day": "./src/game-day.ts",
-    "./run-again": "./src/run-again.ts"
+    "./run-again": "./src/run-again.ts",
+    "./my-sessions": "./src/my-sessions.ts"
   },
   "scripts": {
     "lint": "oxlint src",
