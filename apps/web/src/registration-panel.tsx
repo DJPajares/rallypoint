@@ -6,6 +6,7 @@ import { HourglassIcon } from "@phosphor-icons/react/dist/csr/Hourglass";
 import { LockSimpleIcon } from "@phosphor-icons/react/dist/csr/LockSimple";
 import { ArrowsClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowsClockwise";
 import { PaperPlaneTiltIcon } from "@phosphor-icons/react/dist/csr/PaperPlaneTilt";
+import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
 import { useMutation } from "./use-mutation";
 import { useIsPhone } from "./frame";
 import { ShareButton } from "./share-button";
@@ -180,6 +181,7 @@ export function RegistrationPanel({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [undoPartyId, setUndoPartyId] = useState<string | undefined>();
   const [rosterOpen, setRosterOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const mutation = useMutation<{ registration: RegistrationView }>((value) => {
     setSheetOpen(false);
     onChanged(value.registration);
@@ -292,8 +294,8 @@ export function RegistrationPanel({
     form: ReactNode,
     tone: "primary" | "secondary",
   ) {
-    // On game day the request's error and recovery sit above More, so they
-    // stay in view; a phone shows them in its sheet while that is open.
+    // On game day the request's error and recovery sit under the withdraw
+    // area in More; a phone shows them in its sheet while that is open.
     const body = (
       <>
         {form}
@@ -509,6 +511,7 @@ export function RegistrationPanel({
           day: "numeric",
         }).format(new Date(d.startsAt))
       : "";
+    const requestShowing = !!mutation.error || mutation.uncertain;
     // A waitlisted party owes nothing until it moves in.
     const showFee =
       tracked &&
@@ -555,23 +558,40 @@ export function RegistrationPanel({
         </div>
         {showFee ? feeBlock : null}
         {gameDay.notes}
-        {phone && sheetOpen ? null : requestState}
-        <details className="game-day-more">
-          <summary>More</summary>
+        {/* Held open while a request's error or recovery shows, so a
+            collapsed More can't hide it. */}
+        <details
+          className="game-day-more"
+          open={moreOpen || requestShowing}
+          onToggle={(e) => setMoreOpen(e.currentTarget.open)}
+        >
+          <summary
+            onClick={(e) => {
+              if (requestShowing) e.preventDefault();
+            }}
+          >
+            More
+            <CaretDownIcon
+              className="game-day-more__caret"
+              size={18}
+              aria-hidden="true"
+            />
+          </summary>
           <div className="game-day-more__body">
             {gameDay.more}
             <ShareButton title={d.title} />
             {withdrawArea}
+            {phone && sheetOpen ? null : requestState}
+            <button
+              className={buttonClass({ variant: "link" })}
+              disabled={mutation.busy || mutation.uncertain}
+              onClick={refresh}
+            >
+              <ArrowsClockwiseIcon size={18} aria-hidden="true" />
+              Refresh
+            </button>
           </div>
         </details>
-        <button
-          className={buttonClass({ variant: "link" })}
-          disabled={mutation.busy || mutation.uncertain}
-          onClick={refresh}
-        >
-          <ArrowsClockwiseIcon size={18} aria-hidden="true" />
-          Refresh
-        </button>
       </section>
     );
   }

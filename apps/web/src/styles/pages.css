@@ -673,9 +673,25 @@
 .game-day-more > summary {
   display: flex;
   align-items: center;
+  gap: var(--space-2);
   min-height: 44px;
+  list-style: none;
   cursor: pointer;
   font-weight: var(--weight-semibold);
+}
+.game-day-more > summary::-webkit-details-marker {
+  display: none;
+}
+.game-day-more__caret {
+  transition: transform var(--duration-base) var(--ease-standard);
+}
+.game-day-more[open] .game-day-more__caret {
+  transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-day-more__caret {
+    transition: none;
+  }
 }
 .game-day-more__body {
   display: grid;

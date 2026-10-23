@@ -948,6 +948,12 @@ function SignedInSession({
   );
   const [changed, setChanged] = useState<RegistrationView | null>(null);
   const view = changed ?? result.data?.registration ?? null;
+  // A read in flight (a refresh, a retry, a new access token) has no view
+  // yet. The layout follows the last one known, so the page doesn't flip to
+  // today's layout and back; the panel still shows its own progress.
+  const [lastView, setLastView] = useState<RegistrationView | null>(null);
+  if (view && view !== lastView) setLastView(view);
+  const layoutView = view ?? lastView;
   // Checked each minute, so the layout steps back once the session ends.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -955,13 +961,13 @@ function SignedInSession({
     return () => clearInterval(timer);
   }, []);
   const gameDay =
-    !!view &&
+    !!layoutView &&
     isGameDay(
       {
         state: shared.state,
         endsAt: shared.details.endsAt,
-        canManage: view.canManage,
-        ownState: view.own?.state,
+        canManage: layoutView.canManage,
+        ownState: layoutView.own?.state,
       },
       now,
     );
