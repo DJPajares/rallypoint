@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
+import { splitFixture } from "./helpers/split-fixtures.mjs";
 import {
   localEnv,
   fixturePassword,
@@ -474,6 +475,45 @@ test("whole-party withdrawal and promotion contract", async (t) => {
       },
     );
     await t.test(
+      "a fee kept after a late withdrawal stays visible after rejoining, to that player only, until waived",
+      async () => {
+        const s = await event("4", local(Date.now() - 300000)),
+          old = await join(s, actors[4]);
+        assert.equal((await withdraw(s, actors[4], old)).status, 200);
+        assert.equal((await view(s, actors[4])).own.fee.liabilityState, "due");
+        const fresh = await join(s, actors[4]);
+        assert.notEqual(fresh.id, old.id);
+        const rejoined = await view(s, actors[4]);
+        assert.equal(rejoined.own.id, fresh.id);
+        assert.deepEqual(rejoined.earlierFees, [
+          { currency: "SGD", totalMinor: 1250 },
+        ]);
+        assert.deepEqual((await view(s, actors[5])).earlierFees, []);
+        assert.deepEqual(
+          (await view(s, organizer)).earlierFees,
+          [],
+          "a manager's own view is theirs alone",
+        );
+        const { revision } = row(
+          `select revision from app.fee_obligations where party_id='${old.id}'`,
+        );
+        const waived = await request(
+          `/api/registrations/${s.slug}/payments`,
+          organizer,
+          {
+            operationKey: crypto.randomUUID(),
+            partyId: old.id,
+            action: "waive",
+            revision,
+          },
+        );
+        assert.equal(waived.status, 200);
+        const after = await view(s, actors[4]);
+        assert.equal(after.own.id, fresh.id);
+        assert.deepEqual(after.earlierFees, []);
+      },
+    );
+    await t.test(
       "paid declarations and their actor/time survive withdrawal on both sides of cutoff",
       async () => {
         for (const late of [false, true]) {
@@ -584,4 +624,53 @@ test("whole-party withdrawal and promotion contract", async (t) => {
     }
     for (const a of actors) await admin.auth.admin.deleteUser(a.id);
   }
+});
+
+test("a player who withdrew can join again and gets a new place in line", async (t) => {
+  const f = await splitFixture(t, {
+    feeMode: "fixed",
+    total: "10.00",
+    seats: [1],
+    capacity: 2,
+    cutoffPast: true,
+  });
+  const [player] = f.actors,
+    old = f.parties[0];
+  const w = await f.post(
+    player,
+    `/api/registrations/${f.session.slug}/withdraw`,
+    { operationKey: crypto.randomUUID(), partyId: old.id },
+  );
+  assert.equal(w.status, 200);
+  assert.equal((await w.json()).registration.own.state, "withdrawn");
+  const again = await f.join(player);
+  assert.notEqual(again.id, old.id);
+  assert.equal(again.state, "confirmed");
+  // The withdrawn record keeps its retained fee; the new party has its own.
+  assert.equal(
+    f.sql(`select state from app.parties where id='${old.id}';`),
+    "withdrawn",
+  );
+  assert.equal(
+    f.sql(
+      `select liability_state from app.fee_obligations where party_id='${old.id}';`,
+    ),
+    "due",
+  );
+  assert.equal(
+    f.sql(
+      `select count(*) from app.fee_obligations where party_id='${again.id}';`,
+    ),
+    "1",
+  );
+  const view = (
+    await (
+      await f.get(f.organizer, `/api/registrations/${f.session.slug}`)
+    ).json()
+  ).registration;
+  const confirmed = view.roster.filter(
+    (r) => r.state === "confirmed" && r.primaryName === "Split person 0",
+  );
+  assert.equal(confirmed.length, 1);
+  assert.equal(confirmed[0].id, again.id);
 });
