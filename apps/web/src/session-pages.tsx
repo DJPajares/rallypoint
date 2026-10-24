@@ -544,7 +544,6 @@ function Editor({
               type="url"
               inputMode="url"
               autoComplete="off"
-              maxLength={2048}
               value={form.mapsLink ?? ""}
               onChange={(e) => {
                 if (mapsError) setError(null);
@@ -557,7 +556,7 @@ function Editor({
               }
             />
             {mapsError ? (
-              <p id="mapsLink-error" className="field-error">
+              <p id="mapsLink-error" className="field-error" role="alert">
                 {mapsLinkError}
               </p>
             ) : null}
@@ -942,8 +941,8 @@ function Availability({
       {shared.state === "published" && counts.waitingParties > 0 ? (
         <p className="rp-help">
           {counts.waitingParties}{" "}
-          {counts.waitingParties === 1 ? "party is" : "parties are"} waiting and
-          will get the next places, in order.
+          {counts.waitingParties === 1 ? "party is" : "parties are"}{" "}
+          waiting and will get the next places, in order.
         </p>
       ) : null}
       {onRefresh ? (

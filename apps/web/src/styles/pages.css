@@ -651,53 +651,16 @@
 }
 
 /* Cost estimates and reviewed allocations use the same card rhythm as fees. */
-.split-fee,
-.split-controls {
-  display: grid;
-  gap: var(--space-3);
-  min-width: 0;
-}
-.split-fee p,
-.split-controls p {
-  margin: 0;
-}
-.split-controls fieldset {
-  display: grid;
-  gap: var(--space-3);
-}
-.split-controls {
-  margin-block: var(--space-5);
-}
-.split-preview {
-  border-top: var(--border-width) solid var(--color-border);
-  padding-top: var(--space-4);
-  display: grid;
-  gap: var(--space-3);
-}
-.split-preview ul,
-.split-history {
-  list-style: none;
-  padding: 0;
-  display: grid;
-  gap: var(--space-3);
-}
-.split-preview li {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-.split-history li {
-  overflow-wrap: anywhere;
-}
-.split-history ul {
-  padding-left: var(--space-4);
-}
-.split-controls details summary,
-.split-fee details summary {
-  cursor: pointer;
-  font-weight: var(--weight-medium);
-}
+.split-fee, .split-controls { display: grid; gap: var(--space-3); min-width: 0; }
+.split-fee p, .split-controls p { margin: 0; }
+.split-controls fieldset { display: grid; gap: var(--space-3); }
+.split-controls { margin-block: var(--space-5); }
+.split-preview { border-top: var(--border-width) solid var(--color-border); padding-top: var(--space-4); display: grid; gap: var(--space-3); }
+.split-preview ul, .split-history { list-style: none; padding: 0; display: grid; gap: var(--space-3); }
+.split-preview li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2); }
+.split-history li { overflow-wrap: anywhere; }
+.split-history ul { padding-left: var(--space-4); }
+.split-controls details summary, .split-fee details summary { cursor: pointer; font-weight: var(--weight-medium); }
 
 /* Game day: one quiet column for a joined player, everything else under More */
 .session-layout.session-layout--game-day {
