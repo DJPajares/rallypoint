@@ -625,3 +625,5 @@ failure statuses.
 ## Phone staging
 
 The owner selected shared wProject with RallyPoint-specific schemas and verified email codes for staging on 2026-10-23. The current test address is [rallypoint.wndrhive.com](https://rallypoint.wndrhive.com), hosted in the Vercel project `rallypoint`. The original Cloudflare Worker `rallypoint-staging` remains running. See [staging deployment and recovery](docs/deployment/staging.md) for the exact boundaries, clean-build commands and runtime configuration. Local development stays isolated.
+
+Database changes have a separate release step: apply and verify the reviewed RallyPoint-only migration before merging dependent code to `main`. Vercel deploys the application automatically; it does not run SQL migrations. See the [database-before-application release check](docs/deployment/staging.md#database-before-application-release-check). The 2026-10-24 staging upgrade now matches the deployed application through source migration `20261023144000`.
