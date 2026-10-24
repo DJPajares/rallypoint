@@ -35,10 +35,12 @@ import {
   Field,
   Notice,
   Pending,
+  Sheet,
   SpotsMeter,
   Ticket,
 } from "@rallypoint/ui";
-import { DetailPage } from "./ui";
+import { DetailPage, StickyActions } from "./ui";
+import { useMutation } from "./use-mutation";
 import { GroupSessions } from "./session-pages";
 import { EarnedBadgeSheet, NextBadge } from "./badges";
 import type { BadgesView } from "@rallypoint/domain/badges";
@@ -142,7 +144,9 @@ function GroupCard({ group }: { group: GroupSummary }) {
           <ArrowRightIcon size={18} aria-hidden="true" />
         </Link>
       ) : (
-        <p className="rp-help">Organizers share session links with members.</p>
+        <p className="rp-help">
+          Sessions you join in this group show on your Sessions tab.
+        </p>
       )}
     </article>
   );
@@ -216,8 +220,8 @@ export function HomeDashboard() {
         </div>
       ) : (
         <p className="rp-help">
-          No groups yet. When an organizer adds you to a group, you’ll find it
-          here.
+          No groups yet. Start one to run sessions — sessions you join are on
+          the Sessions tab.
         </p>
       )}
     </section>
@@ -707,27 +711,30 @@ export function Workspace() {
             </Link>
           }
         >
-          When an organizer adds you to a group, you’ll find it here. Joining a
-          session does not automatically make you a group member.
+          Start a group to run sessions. Sessions you join are on the Sessions
+          tab.
         </EmptyState>
       )}
     </section>
   );
 }
+/** Focus the page title and name the tab once the page has something to show. */
+function useHeadingFocus(loading: boolean, data: unknown, error: unknown) {
+  useEffect(() => {
+    if (loading) return;
+    const title = document.querySelector<HTMLElement>("main h1");
+    if (title) {
+      title.tabIndex = -1;
+      title.focus({ preventScroll: true });
+      document.title = `${title.innerText} · RallyPoint`;
+    }
+  }, [loading, data, error]);
+}
 export function GroupSetup() {
   const { id } = useParams<{ id: string }>();
   const result = useApi<{ group: GroupSummary }>(`/api/groups/${id}/setup`);
   useCreateTarget(result.data ? `/groups/${id}/sessions/new` : null);
-  useEffect(() => {
-    if (!result.loading) {
-      const title = document.querySelector<HTMLElement>("main h1");
-      if (title) {
-        title.tabIndex = -1;
-        title.focus({ preventScroll: true });
-        document.title = `${title.innerText} · RallyPoint`;
-      }
-    }
-  }, [result.loading, result.data, result.error]);
+  useHeadingFocus(result.loading, result.data, result.error);
   return (
     <DetailPage back="/workspace" backLabel="Your groups">
       {result.loading ? (
@@ -747,15 +754,155 @@ export function GroupSetup() {
               <h1>{result.data.group.name}</h1>
             </div>
             {result.data.group.role === "owner" ? (
-              <Link className={buttonClass()} href={`/groups/${id}/cohosts`}>
-                Co-hosts
-              </Link>
+              <div className="fee-actions">
+                <Link className={buttonClass()} href={`/groups/${id}/edit`}>
+                  Edit group
+                </Link>
+                <Link className={buttonClass()} href={`/groups/${id}/cohosts`}>
+                  Co-hosts
+                </Link>
+              </div>
             ) : null}
           </div>
           <GroupSessions group={result.data.group} />
         </>
       ) : null}
     </DetailPage>
+  );
+}
+/** Owner only: rename the group or remove it. */
+export function EditGroup() {
+  const { id } = useParams<{ id: string }>();
+  const result = useApi<{ group: GroupSummary }>(`/api/groups/${id}/setup`);
+  useHeadingFocus(result.loading, result.data, result.error);
+  const group = result.data?.group;
+  return (
+    <DetailPage
+      back={`/groups/${id}`}
+      backLabel={group?.name ?? "Your group"}
+      className="form-page"
+    >
+      {result.loading ? (
+        <Pending>Opening your group…</Pending>
+      ) : result.error ? (
+        <>
+          <h1>Group unavailable</h1>
+          <Notice retry={result.retry}>{result.error}</Notice>
+        </>
+      ) : group && group.role !== "owner" ? (
+        <>
+          <h1>Group unavailable</h1>
+          <Notice>Only the group’s owner can edit it.</Notice>
+        </>
+      ) : group ? (
+        <EditGroupForm group={group} />
+      ) : null}
+    </DetailPage>
+  );
+}
+function EditGroupForm({ group }: { group: GroupSummary }) {
+  const router = useRouter(),
+    [name, setName] = useState(group.name),
+    [open, setOpen] = useState(false);
+  const save = useMutation<{ group: GroupSummary }>(() =>
+    router.push(`/groups/${group.id}`),
+  );
+  const remove = useMutation<{ archived: boolean }>(() =>
+    router.push("/workspace"),
+  );
+  const working = save.busy || save.uncertain;
+  const removing = remove.busy || remove.uncertain;
+  return (
+    <>
+      <div className="page-head">
+        <h1>Edit group</h1>
+      </div>
+      <form
+        className="rp-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+          save.run(`/api/groups/${group.id}/rename`, { name });
+        }}
+      >
+        <fieldset disabled={working || removing}>
+          <Field id="group-name" label="Group name">
+            <input
+              id="group-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={100}
+              required
+              autoComplete="organization"
+            />
+          </Field>
+          <StickyActions>
+            {/* A disabled fieldset doesn't stop links, so hold this one still while saving. */}
+            <Link
+              className={buttonClass()}
+              href={`/groups/${group.id}`}
+              aria-disabled={working || removing || undefined}
+              tabIndex={working || removing ? -1 : undefined}
+              style={
+                working || removing
+                  ? { opacity: 0.6, cursor: "not-allowed" }
+                  : undefined
+              }
+              onClick={(e) => {
+                if (working || removing) e.preventDefault();
+              }}
+            >
+              Cancel
+            </Link>
+            <button className={buttonClass({ variant: "primary" })}>
+              {save.busy ? "Saving…" : "Save"}
+            </button>
+          </StickyActions>
+        </fieldset>
+        {save.error ? <Notice>{save.error}</Notice> : null}
+        {save.recovery}
+      </form>
+      <section className="rp-card" aria-label="Remove group">
+        <button
+          type="button"
+          className={buttonClass()}
+          disabled={working || removing}
+          onClick={() => setOpen(true)}
+        >
+          Remove group
+        </button>
+        <Sheet
+          open={open}
+          onClose={() => setOpen(false)}
+          title="Remove this group?"
+        >
+          <p>
+            It disappears for everyone in it. Past sessions and badges stay.
+          </p>
+          <div className="fee-actions">
+            <button
+              type="button"
+              className={buttonClass()}
+              disabled={removing}
+              onClick={() => setOpen(false)}
+            >
+              Keep it
+            </button>
+            <button
+              type="button"
+              className={buttonClass({ variant: "primary" })}
+              disabled={removing}
+              onClick={() => remove.run(`/api/groups/${group.id}/archive`, {})}
+            >
+              {remove.busy ? "Removing…" : "Remove group"}
+            </button>
+          </div>
+          {remove.error ? <Notice>{remove.error}</Notice> : null}
+          {remove.recovery}
+        </Sheet>
+        {!open && remove.error ? <Notice>{remove.error}</Notice> : null}
+        {!open ? remove.recovery : null}
+      </section>
+    </>
   );
 }
 export function NotFound() {

@@ -220,6 +220,9 @@
   max-width: var(--layout-form);
   margin: 0 auto;
 }
+.form-page > .rp-card + .rp-card {
+  margin-top: var(--space-4);
+}
 .share-panel {
   display: grid;
   gap: var(--space-3);

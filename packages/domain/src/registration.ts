@@ -174,6 +174,11 @@ export interface RegistrationView {
   rosterAllowed: boolean;
   counts: Counts;
   split?: SplitSummary;
+  /**
+   * The viewer's own earlier bookings in this session (withdrawn or removed)
+   * whose retained fee is still owed; empty when there are none.
+   */
+  earlierFees?: Array<{ currency: string; totalMinor: number }>;
   /** Organizers/co-hosts only. */
   emailSummary?: EmailSummary;
   roster: Array<{

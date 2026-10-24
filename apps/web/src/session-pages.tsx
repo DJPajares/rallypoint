@@ -274,6 +274,7 @@ function Editor({
     [error, setError] = useState<string | null>(null);
   const [copy, setCopy] = useState("");
   const [cancelling, setCancelling] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [pendingEdit, setPendingEdit] = useState<Record<
     string,
     unknown
@@ -372,7 +373,7 @@ function Editor({
   // Custom controls aren't all native form elements, so the fieldset's
   // disabled state is passed to them as well.
   const disabledFields =
-    mutation.busy || mutation.uncertain || cancelling || locked;
+    mutation.busy || mutation.uncertain || cancelling || deleting || locked;
   const url =
     record &&
     (record.state === "published" ||
@@ -480,7 +481,13 @@ function Editor({
         }
       >
         <fieldset
-          disabled={mutation.busy || mutation.uncertain || cancelling || locked}
+          disabled={
+            mutation.busy ||
+            mutation.uncertain ||
+            cancelling ||
+            deleting ||
+            locked
+          }
         >
           <legend>Session details</legend>
           <Field id="title" label="Session title">
@@ -713,7 +720,7 @@ function Editor({
       {record && !terminal ? (
         <CancelSession
           record={record}
-          saving={mutation.busy || mutation.uncertain}
+          saving={mutation.busy || mutation.uncertain || deleting}
           onPending={setCancelling}
           onDone={(value) => {
             setRecord(value);
@@ -722,6 +729,13 @@ function Editor({
             setCancelling(false);
             requestAnimationFrame(() => header.current?.focus());
           }}
+        />
+      ) : null}
+      {record?.state === "draft" ? (
+        <DeleteDraft
+          record={record}
+          disabled={mutation.busy || mutation.uncertain || cancelling}
+          onPending={setDeleting}
         />
       ) : null}
       {record?.state === "cancelled" ? (
@@ -738,6 +752,67 @@ function Editor({
         </>
       ) : null}
     </DetailPage>
+  );
+}
+/** A draft can be thrown away; anything published is cancelled instead. */
+function DeleteDraft({
+  record,
+  disabled,
+  onPending,
+}: {
+  record: SessionRecord;
+  disabled: boolean;
+  onPending: (pending: boolean) => void;
+}) {
+  const router = useRouter(),
+    [open, setOpen] = useState(false);
+  const remove = useMutation<Result>((result) =>
+    router.push(`/groups/${result.groupId ?? record.groupId}`),
+  );
+  const working = remove.busy || remove.uncertain;
+  useEffect(() => {
+    onPending(working);
+  }, [working, onPending]);
+  return (
+    <section className="rp-card" aria-label="Delete draft">
+      <button
+        type="button"
+        className={buttonClass()}
+        disabled={disabled || working}
+        onClick={() => setOpen(true)}
+      >
+        Delete draft
+      </button>
+      <Sheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Delete this draft?"
+      >
+        <p>It can&apos;t be undone.</p>
+        <div className="fee-actions">
+          <button
+            type="button"
+            className={buttonClass()}
+            disabled={working}
+            onClick={() => setOpen(false)}
+          >
+            Keep it
+          </button>
+          <button
+            type="button"
+            className={buttonClass({ variant: "primary" })}
+            disabled={working}
+            onClick={() => remove.run(`/api/sessions/${record.id}/delete`, {})}
+          >
+            {remove.busy ? "Deleting…" : "Delete draft"}
+          </button>
+        </div>
+        {remove.error ? <Notice>{remove.error}</Notice> : null}
+        {remove.recovery}
+      </Sheet>
+      {!open && remove.error ? <Notice>{remove.error}</Notice> : null}
+      {!open ? remove.recovery : null}
+    </section>
   );
 }
 // Times read in the session's own local time, never with a zone label (D-13).

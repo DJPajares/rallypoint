@@ -35,7 +35,7 @@
 ## Task 1: Transactional owner-only co-host API
 
 **Files:**
-- Create: `supabase/migrations/20261024110000_cohost_management.sql` (choose a later unused timestamp if execution reveals newer migrations).
+- Create: `supabase/migrations/20261024121000_cohost_management.sql` (choose a later unused timestamp if execution reveals newer migrations).
 - Create: `apps/api/src/cohosts.ts`.
 - Modify: `apps/api/src/index.ts`, `packages/database/src/functions.ts`, `packages/domain/src/contracts.ts`.
 - Create: `tests/cohosts.test.mjs`.

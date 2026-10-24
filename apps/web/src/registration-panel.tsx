@@ -245,6 +245,9 @@ export function RegistrationPanel({
   // Not tracked here has no fee, cutoff or payment terms to show. A session
   // saved before payment modes behaves as Pay the organizer.
   const tracked = (d.paymentMode ?? "organizer") === "organizer";
+  // A fee kept from an earlier booking in this session (withdrawn after the
+  // cutoff) stays due after rejoining, until the organizer waives it.
+  const earlierFees = tracked ? (view.earlierFees ?? []) : [];
   const released =
     own?.state === "removed" && own.fee?.liabilityState === "released_unpaid";
   // "I've sent it" is offered to a booked player who still owes the organizer
@@ -285,8 +288,10 @@ export function RegistrationPanel({
     ) : (
       <LockSimpleIcon size={22} />
     );
-  // A player whose unpaid spot went to the waitlist can join again.
-  const canJoin = event.registrationWindow === "open" && (!own || released);
+  // A player whose unpaid spot went to the waitlist, or who withdrew, can join again.
+  const canJoin =
+    event.registrationWindow === "open" &&
+    (!own || released || own.state === "withdrawn");
   const hasAction = own
     ? ((own.state === "confirmed" || own.state === "waitlisted") &&
         event.registrationWindow !== "closed") ||
@@ -413,6 +418,14 @@ export function RegistrationPanel({
                     : ""}
         </p>
       ) : null}
+      {earlierFees.map((fee, i) => (
+        <p key={i}>
+          <strong>
+            Still due from your earlier booking:{" "}
+            {feeLabel({ currency: fee.currency, feeMinor: fee.totalMinor })}
+          </strong>
+        </p>
+      ))}
       {tracked && view.paymentInstructions ? (
         <HowToPay
           slug={event.slug}
@@ -534,7 +547,8 @@ export function RegistrationPanel({
     // A waitlisted party owes nothing until it moves in.
     const showFee =
       tracked &&
-      !(own.state === "waitlisted" && !own.fee && !own.splitClaim);
+      (earlierFees.length > 0 ||
+        !(own.state === "waitlisted" && !own.fee && !own.splitClaim));
     return (
       <section
         className="registration-panel game-day-panel"

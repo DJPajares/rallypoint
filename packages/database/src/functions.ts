@@ -29,6 +29,13 @@ export const functions: Record<string, Record<string, string>> = {
     p_revision: "text",
   },
   create_group: { ...actor, p_key: "uuid", p_name: "text" },
+  rename_group: {
+    ...actor,
+    p_key: "uuid",
+    p_group_id: "uuid",
+    p_name: "text",
+  },
+  archive_group: { ...actor, p_key: "uuid", p_group_id: "uuid" },
   list_group_sessions: { ...actor, p_group_id: "uuid" },
   read_managed_session: { ...actor, p_session_id: "uuid" },
   read_shared_session: { p_slug: "uuid" },
@@ -48,6 +55,7 @@ export const functions: Record<string, Record<string, string>> = {
     p_key: "uuid",
     p_session_id: "uuid",
   },
+  delete_draft: { ...actor, p_key: "uuid", p_session_id: "uuid" },
   read_registration: slug,
   join_session: {
     ...slug,

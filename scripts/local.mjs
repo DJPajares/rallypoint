@@ -148,13 +148,18 @@ try {
       "--exclude",
       "realtime,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor",
     );
-    cli("migration", "up", "--local");
     configure();
+    execFileSync("pnpm", ["db:migrate:local"], {
+      stdio: "inherit",
+    });
     await seed();
   } else if (command === "reset") {
     console.log("Resetting only the synthetic local RallyPoint database…");
     cli("db", "reset", "--local", "--yes", "--network-id", "rallypoint-local");
     configure();
+    execFileSync("pnpm", ["db:migrate:local"], {
+      stdio: "inherit",
+    });
     await seed();
   } else if (command === "stop") {
     cli("stop");

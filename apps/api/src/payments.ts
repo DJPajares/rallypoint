@@ -105,6 +105,18 @@ async function cleanUp(
   }
 }
 
+/** Best effort: remove every payment image saved under a deleted session. */
+export async function removeSessionImages(c: Context<ApiEnv>, session: string) {
+  const files = c.var.storage.from(c.env.PAYMENT_QR_BUCKET ?? bucket);
+  try {
+    const { data } = await files.list(session);
+    const paths = (data ?? []).map((o) => `${session}/${o.name}`);
+    if (paths.length) await files.remove(paths);
+  } catch {
+    // The session is gone, so the objects are unreadable; nothing to retry.
+  }
+}
+
 async function readImage(request: Request) {
   const type =
     request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() ??

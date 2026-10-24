@@ -32,6 +32,7 @@ In [Environment Variables](https://vercel.com/djpajares-projects/rallypoint/sett
 | `SUPABASE_URL`                 | `https://zqidfkofbzusvpikftdf.supabase.co`                            |
 | `SUPABASE_PUBLISHABLE_KEY`     | Existing wProject publishable key; owner enters through the dashboard |
 | `SUPABASE_SECRET_KEY`          | Existing wProject server key; owner enters as Secret/Sensitive        |
+| `DATABASE_URL`                 | Existing wProject Postgres connection string; owner enters as Secret/Sensitive, with the existing database password |
 | `SUPABASE_API_SCHEMA`          | `rallypoint_api`                                                      |
 | `PAYMENT_QR_BUCKET`            | `rallypoint-payment-qr`                                               |
 | `EMAIL_AUTH_ENABLED`           | `true`                                                                |
@@ -41,6 +42,27 @@ In [Environment Variables](https://vercel.com/djpajares-projects/rallypoint/sett
 | `ENABLE_EXPERIMENTAL_COREPACK` | `1`                                                                   |
 
 Use the names shown; never add `NEXT_PUBLIC_` to the server key. Credentials are dashboard-managed and must not be copied into source, chat, local upload files or review artifacts. The owner elected to enter Vercel credentials themselves. Existing preview deployments are not configured with staging database credentials.
+
+Prisma requires `DATABASE_URL` in addition to the Supabase API keys. Obtain the
+existing project's connection string from [wProject Connect](https://supabase.com/dashboard/project/zqidfkofbzusvpikftdf?showConnect=true&method=session),
+use its Session pooler endpoint for IPv4 connectivity, and fill the password
+placeholder only inside secure credential storage. Preserve the shared database
+password and all other apps' configuration. This adapter sets `service_role`
+inside each operation's transaction; the login must be allowed to assume that role.
+After saving the variable, redeploy: existing deployments retain their original
+environment. A READY build and `/api/health` do not prove database connectivity.
+With the configured `rallypoint_api` schema, a public session/profile read using
+a nonexistent synthetic UUID must return the expected not-found response, not
+503, before proceeding to authenticated participant actions. Preview credentials
+remain a separate owner-managed setup.
+
+For local development, keep the generated local configuration together:
+`DATABASE_URL` points to local Postgres on 54322, while Supabase Auth/Storage use
+54321 and the default API schema is `api`. A hosted database URL cannot be added
+to that configuration by itself: local Auth identities and the local schema do
+not belong to the hosted `rallypoint_api` database. `pnpm db:start` writes the
+matching local values. Preserve custom ignored environment files before replacing
+them, and keep any hosted credentials only in supported secret storage.
 
 Project build settings: Root Directory `apps/web`, include workspace source outside that directory, Node `24.x`, install `corepack pnpm install --frozen-lockfile`, build `pnpm build` (Prisma Node-client generation followed by the normal Next.js build), framework `nextjs`, Functions region `sin1`. Generation is part of the app build because a cached install can skip `postinstall`. This path does not use OpenNext or the Cloudflare deploy script. Supabase credentials are server environment variables; the public `/api/config` exposes only the publishable sign-in configuration.
 
@@ -66,7 +88,7 @@ Local credentials and development mail settings never belong in the uploaded art
 
 Cloud migration names are `rallypoint_staging_bootstrap` and `rallypoint_staging_api_exposure`. The second preserves `public, graphql_public` and adds `rallypoint_api` to the authenticator's PostgREST schema list. Browser roles have no schema/function grants; all app tables have RLS.
 
-Do not link this local development project to wProject and run `db push`, `db reset` or seed commands. Those operations target different migration namespaces and could affect shared services. Future cloud changes need reviewed, namespaced incremental migrations with the `rallypoint_` prefix. Do not re-render/reapply the bootstrap as an upgrade.
+Do not link this local development project to wProject and run `db push`, `db reset` or seed commands. Those operations target different migration namespaces and could affect shared services. Future changes use reviewed incremental SQL and the isolated `rallypoint_migrations` Prisma history; preserve older `rallypoint_`-prefixed Supabase entries. Do not re-render/reapply the bootstrap as an upgrade.
 
 ## Upgrade the existing 2026-10-23 bootstrap
 
@@ -84,16 +106,48 @@ For this one-time transition, require a verified recovery copy and apply using o
 
 The scoped recovery copy was verified and restored locally before application. Immediately after application, data hashes/counts across all 19 pre-existing RallyPoint tables were unchanged (excluding only the intended new `material=false` field from the comparison). All 95 function definitions matched the rehearsal individually. A fingerprint of 3,009 unrelated schema objects, function definitions, constraints, indexes, triggers, policies, permissions and role settings was unchanged before and after. All 26 RallyPoint tables retain RLS and no RallyPoint function is executable by browser roles. See the [live verification evidence](../verification/2026-10-23-p08-session-loop.md#2026-10-24-live-deployment-gap-resolved).
 
+## Sessions/Profile repair (applied 2026-10-24)
+
+**Applied through Prisma Migrate after the owner's explicit local/production
+request.** The baseline `0_rallypoint_baseline_20261023144000` was marked applied,
+then `20261024100000_sessions_profiles` committed the five source migrations in
+one transaction. Prisma history is in `rallypoint_migrations`; old Supabase and
+other apps' histories were preserved. Do not reapply this repair via Supabase.
+Use `pnpm db:migrate:local` or, with a securely supplied
+`RALLYPOINT_MIGRATION_DATABASE_URL`, `pnpm db:migrate:production` for later runs.
+The runner validates the known target and applied SQL checksums, and deploys
+pending SQL with Prisma. No participant-data export was performed. See the
+[actual application evidence](../verification/2026-10-24-prisma-runtime-configuration.md#prisma-migrate-applied-locally-and-to-production).
+
+The transition included exactly the five source migrations after
+`20261023144000` through `20261024100000_profile_fixes.sql`. Production now has
+101 functions (fingerprint `151b1745055dd6be3f5c4336ff60f503`) and 27 application
+tables with RLS. Existing seat/payment/attendance/notification states and
+unrelated schema metadata were preserved. The Profile migration intentionally
+refreshes seven stored-name fields.
+
+The earlier renderer artifact and scoped-export proposal are retained as
+historical evidence; they are not the current deployment command. Do not edit
+applied migration SQL or replay the old bootstrap/upgrade. A recovery approach
+must match the change: explicit transactions handle migration failure, while a
+committed backfill needs a reviewed forward repair or an existing authorized
+recovery source to recover old values. Prisma migration history does not store
+old row values. Routine migrations do not require exporting participant data.
+
+Reproduce the actual Prisma rollback/deploy/repeat/checksum checks locally with
+`node scripts/rehearse-prisma-migrations.mjs`. It creates and removes disposable
+synthetic databases and never contacts production.
+
 ### Database-before-application release check
 
 For changes with database migrations, apply and verify the reviewed RallyPoint-only database migration **before merging the dependent application code to main**. Vercel's Git deployment remains enabled; database migration is an explicit owner/reviewer release step, not part of the Vercel build or preview deployment.
 
 1. Record the deployed application commit, installed RallyPoint migration checkpoint and exact pending source files in the change's review. Compare the installed definitions with that baseline; stop on drift. Exclude other apps' migration history from the pending set.
-2. Reuse the pending source SQL with the established RallyPoint namespace/bucket mapping, review its exact targets, and rehearse it against the installed baseline with existing synthetic records. Do not replay the bootstrap or this completed one-time upgrade. Take and verify an appropriately scoped recovery copy.
-3. Apply only that reviewed incremental SQL in one transaction, with one new `rallypoint_`-prefixed migration-history entry. Preserve existing history, shared Auth/settings and other apps' schemas/buckets. Verify record preservation, expected definitions, grants/RLS and the affected RPCs.
+2. Reuse the pending source SQL with the established RallyPoint namespace/bucket mapping, review its exact targets, and rehearse it against the installed baseline with existing synthetic records. Do not replay the bootstrap or this completed one-time upgrade. Choose a recovery approach appropriate to the actual writes and rehearse transactional rollback. For changes that overwrite/delete data, identify an existing recovery source or an explicitly accepted forward-repair approach; do not assume a participant-data export is required for every migration.
+3. Apply only the reviewed incremental SQL with Prisma Migrate, using explicit transactions and its isolated `rallypoint_migrations` history. Preserve existing history, shared Auth/settings and other apps' schemas/buckets. Verify record preservation, expected definitions, grants/RLS and the affected RPCs.
 4. Once the database supports the new code and the current deployed code, complete human review/merge, let Vercel deploy main, then verify the stable host. If a future migration is incompatible with the current code, split it into compatible add/change/remove releases rather than applying a breaking migration to a running app.
 
-This closes the current schema gap and makes the release dependency explicit. It does not introduce automatic cloud migrations, rename schemas or replace the current migration tooling. Full phone/email evidence and the broader P-13 pilot recovery prerequisites remain separate.
+This makes the release dependency explicit; each later database-dependent release still needs its own migration verification. It does not introduce automatic cloud migrations, rename schemas or replace the current migration tooling. Full phone/email evidence and the broader P-13 pilot recovery prerequisites remain separate.
 
 ## Recovery
 

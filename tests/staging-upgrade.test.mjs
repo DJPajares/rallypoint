@@ -59,3 +59,20 @@ test("initial installs retain their guard and invalid renderer modes emit no SQL
     assert.equal(r.stdout, "");
   }
 });
+
+test("Sessions/Profile repair includes only the five missing migrations and refuses drift", () => {
+  const r = render("--upgrade-sessions-profiles");
+  assert.equal(r.status, 0, r.stderr);
+  assert.deepEqual(
+    [...r.stdout.matchAll(/^-- Source: (.+)$/gm)].map((m) => m[1]),
+    source.filter(
+      (n) =>
+        n > "20261023144000_email_attempting_is_ambiguous.sql" &&
+        n <= "20261024100000_profile_fixes.sql",
+    ),
+  );
+  assert.match(r.stdout, /53b0a936b162b0555bf193e879cd1761/);
+  assert.match(r.stdout, /pg_get_functiondef/);
+  assert.match(r.stdout, /already upgraded or partially upgraded/);
+  assert.ok(!/\b(?:app|api)\./.test(r.stdout));
+});
