@@ -40,7 +40,7 @@ const asLevel = (level: SkillLevel | null): Level => level ?? "";
 
 function startingDraft(profile: MyProfile): Draft {
   const draft: Draft = {
-    name: profile.nameIsCustom ? profile.name : "",
+    name: profile.name,
     presets: Object.fromEntries(
       presetActivities.map((name) => [name, { on: false, level: "" as Level }]),
     ),
@@ -78,17 +78,6 @@ function activitiesOf(draft: Draft): ProfileActivity[] {
 // What the form would save, so "changed" means changed and not merely touched.
 const snapshot = (draft: Draft) =>
   JSON.stringify({ name: draft.name, activities: activitiesOf(draft) });
-
-// The name an account shows when no profile name is set; mirrors the server.
-function accountNameOf(
-  user: { email?: string; user_metadata: Record<string, unknown> } | undefined,
-) {
-  return (
-    String(
-      user?.user_metadata.full_name ?? user?.email?.split("@")[0] ?? "",
-    ).trim() || "Participant"
-  );
-}
 
 function LevelSelect({
   label,
@@ -153,7 +142,6 @@ function EditForm({ profile }: { profile: MyProfile }) {
   const dirty = snapshot(draft) !== snapshot(initial);
   const nameError = errors.find((e) => e.field === "name")?.message;
   const activityError = errors.find((e) => e.field === "activities")?.message;
-  const accountName = accountNameOf(session?.user);
 
   // Focus lands after the render that makes its target exist.
   useEffect(() => {
@@ -185,6 +173,8 @@ function EditForm({ profile }: { profile: MyProfile }) {
   async function save(event: FormEvent) {
     event.preventDefault();
     setProblem(null);
+    if (!draft.name.trim())
+      return showErrors([{ field: "name", message: "Enter your name." }]);
     const result = normalizeProfile({
       name: draft.name,
       activities: activitiesOf(draft),
@@ -202,7 +192,12 @@ function EditForm({ profile }: { profile: MyProfile }) {
           Authorization: `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({
-          name: result.value.name ?? "",
+          // An untouched sign-in name stays linked to the account, so a later
+          // change to it still shows; anything else becomes the saved name.
+          name:
+            !profile.nameIsCustom && result.value.name === profile.name
+              ? ""
+              : (result.value.name ?? ""),
           activities: result.value.activities,
         }),
         signal: AbortSignal.timeout(10000),
@@ -274,11 +269,7 @@ function EditForm({ profile }: { profile: MyProfile }) {
       </div>
       <form className="rp-card" noValidate onSubmit={save}>
         <fieldset disabled={busy}>
-          <Field
-            id="profile-name"
-            label="Name"
-            help={`Leave blank to use ${accountName}.`}
-          >
+          <Field id="profile-name" label="Name">
             <input
               ref={nameInput}
               id="profile-name"
@@ -286,11 +277,7 @@ function EditForm({ profile }: { profile: MyProfile }) {
               onChange={(e) => setDraft({ ...draft, name: e.target.value })}
               autoComplete="nickname"
               aria-invalid={nameError ? true : undefined}
-              aria-describedby={
-                nameError
-                  ? "profile-name-error profile-name-help"
-                  : "profile-name-help"
-              }
+              aria-describedby={nameError ? "profile-name-error" : undefined}
             />
             {nameError ? (
               <p id="profile-name-error" className="profile-error">
