@@ -1,8 +1,10 @@
 "use client";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
 import { SignOutIcon } from "@phosphor-icons/react/dist/csr/SignOut";
 import {
   badgeCatalog,
@@ -20,9 +22,16 @@ import type {
   RosterTitle,
 } from "@rallypoint/domain/badges";
 import type { Identity } from "@rallypoint/domain/contracts";
+import { levelLabel } from "@rallypoint/domain/profile";
+import type {
+  MyProfile,
+  ProfileActivity,
+  PublicProfile,
+} from "@rallypoint/domain/profile";
 import {
   buttonClass,
   cx,
+  EmptyState,
   Notice,
   Pending,
   Sheet,
@@ -31,6 +40,7 @@ import {
 import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
 import { useSignOut } from "./sign-out";
+import { ShareButton } from "./share-button";
 
 // Medallions are drawn, not loaded: one gradient disc, a thin inner ring, a
 // glint and a single glyph (PRD D-15). Locked ones are a dashed outline.
@@ -224,6 +234,23 @@ export function Medallion({
   );
 }
 
+/** An account holder's name; opens their public profile once they have one. */
+export function PersonName({
+  name,
+  profileId,
+}: {
+  name: string;
+  profileId?: string | null;
+}) {
+  return profileId ? (
+    <Link className="person-link" href={`/people/${profileId}`}>
+      {name}
+    </Link>
+  ) : (
+    <>{name}</>
+  );
+}
+
 export function TitlePill({ title }: { title: RosterTitle }) {
   return (
     <span className="title-pill">
@@ -389,10 +416,136 @@ export function RingAvatar({
   );
 }
 
+/** Owner and visitors read the same line: each level is marked as the person's own rating. */
+const playsLineSelfRated = (activities: ProfileActivity[]) =>
+  activities.length === 0
+    ? ""
+    : `Plays: ${activities
+        .map((a) =>
+          a.level ? `${a.name} (${levelLabel[a.level]} · self-rated)` : a.name,
+        )
+        .join(", ")}`;
+
+interface ViewBadge {
+  key: BadgeKey;
+  /** Only the owner's own view names the group. */
+  groupName?: string | null;
+}
+
+/** Only the owner's view has these: the controls, locked badges and account. */
+interface OwnerParts {
+  /** Unknown until the account loads; there is no link to share before then. */
+  profileId: string | null;
+  /** Stands in for the stats and badges while they load or fail to load. */
+  status?: ReactNode;
+  titleControl?: ReactNode;
+  locked: BadgeDefinition[];
+  footer: ReactNode;
+}
+
+/**
+ * One profile, for its owner and for anyone with the link. The public view
+ * carries no group names and no controls; the owner's adds both.
+ */
+function ProfileView({
+  name,
+  title,
+  badges,
+  stats,
+  activities,
+  owner,
+}: {
+  name: string;
+  title: RosterTitle | null;
+  badges: ViewBadge[];
+  stats: BadgesView["stats"];
+  activities: ProfileActivity[];
+  owner?: OwnerParts;
+}) {
+  const plays = playsLineSelfRated(activities);
+  return (
+    <section className="page profile-page">
+      <div className="profile-head">
+        <RingAvatar name={name} size="lg" />
+        <h1>{name || "Your profile"}</h1>
+        {title ? <TitlePill title={title} /> : null}
+        {plays ? <p className="profile-plays">{plays}</p> : null}
+        {owner ? (
+          <div className="profile-actions">
+            <Link
+              className={buttonClass({ variant: "secondary" })}
+              href="/profile/edit"
+            >
+              <PencilSimpleIcon size={18} aria-hidden="true" />
+              Edit profile
+            </Link>
+            {owner.profileId ? (
+              <ShareButton
+                title={`${name} on RallyPoint`}
+                label="Share profile"
+                url={
+                  typeof window === "undefined"
+                    ? undefined
+                    : `${window.location.origin}/people/${owner.profileId}`
+                }
+              />
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+      {owner?.status ?? (
+        <>
+          <StatRow
+            items={[
+              { label: "played", value: stats.played },
+              { label: "hosted", value: stats.hosted },
+              {
+                label: stats.groups === 1 ? "group" : "groups",
+                value: stats.groups,
+              },
+            ]}
+          />
+          {owner || badges.length ? (
+            <div className="section-head">
+              <h2>Badges</h2>
+              {owner?.titleControl}
+            </div>
+          ) : null}
+          {owner && !badges.length ? (
+            <p className="rp-help">
+              Your first badge comes with your first check-in.
+            </p>
+          ) : null}
+          <ul className="badge-shelf">
+            {badges.map((b, index) => (
+              <li key={`${b.key}-${index}`}>
+                <Medallion badge={b.key} size={64} decorative />
+                <span>{badgeDefinition(b.key).name}</span>
+                {b.groupName ? <small>{b.groupName}</small> : null}
+              </li>
+            ))}
+            {owner?.locked.map((b) => (
+              <li key={b.key} className="badge-shelf__locked">
+                <Medallion badge={b.key} size={64} locked decorative />
+                <span>
+                  {b.name}
+                  <span className="rp-sr-only">, not earned yet</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {owner?.footer}
+    </section>
+  );
+}
+
 export function ProfilePage() {
   const { session } = useAuth();
   const account = useSignOut();
   const identity = useApi<Identity>("/api/me");
+  const profile = useApi<{ profile: MyProfile }>("/api/me/profile");
   const badges = useApi<BadgesView>("/api/me/badges");
   const write = useBadgeWrites();
   const [saved, setSaved] = useState<BadgesView | null>(null);
@@ -421,137 +574,181 @@ export function ProfilePage() {
       setBusy(false);
     }
   }
+  const status =
+    badges.loading && !view ? (
+      <Pending>Loading your badges…</Pending>
+    ) : badges.error && !view ? (
+      <Notice retry={badges.retry}>{badges.error}</Notice>
+    ) : undefined;
   return (
-    <section className="page profile-page">
-      <div className="profile-head">
-        <RingAvatar name={name} size="lg" />
-        <h1>{name || "Your profile"}</h1>
-        {view?.title ? <TitlePill title={view.title} /> : null}
-      </div>
+    <>
       {identity.error ? (
         <Notice retry={identity.retry}>{identity.error}</Notice>
       ) : null}
-      {badges.loading && !view ? (
-        <Pending>Loading your badges…</Pending>
-      ) : badges.error && !view ? (
-        <Notice retry={badges.retry}>{badges.error}</Notice>
-      ) : view ? (
-        <>
-          <StatRow
-            items={[
-              { label: "played", value: view.stats.played },
-              { label: "hosted", value: view.stats.hosted },
-              {
-                label: view.stats.groups === 1 ? "group" : "groups",
-                value: view.stats.groups,
-              },
-            ]}
-          />
-          <div className="section-head">
-            <h2>Badges</h2>
-            {earned.length ? (
-              <button
-                type="button"
-                className={buttonClass({ variant: "link" })}
-                onClick={() => {
-                  setChoice(view.title?.id ?? "");
-                  setError(null);
-                  setChoosing(true);
-                }}
-              >
-                Choose title
-              </button>
-            ) : null}
-          </div>
-          {earned.length ? null : (
-            <p className="rp-help">
-              Your first badge comes with your first check-in.
-            </p>
-          )}
-          <ul className="badge-shelf">
-            {earned.map((b) => (
-              <li key={b.id}>
-                <Medallion badge={b.key} size={64} decorative />
-                <span>{badgeDefinition(b.key).name}</span>
-                {b.groupName ? <small>{b.groupName}</small> : null}
-              </li>
-            ))}
-            {locked.map((b) => (
-              <li key={b.key} className="badge-shelf__locked">
-                <Medallion badge={b.key} size={64} locked decorative />
-                <span>
-                  {b.name}
-                  <span className="rp-sr-only">, not earned yet</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-          <Sheet
-            open={choosing}
-            onClose={() => setChoosing(false)}
-            title="Your title"
-          >
-            <form className="title-choice" onSubmit={saveTitle}>
-              <p className="rp-help">
-                Shown next to your name on session lists.
-              </p>
-              <fieldset>
-                <legend className="rp-sr-only">Title</legend>
-                <label>
-                  <input
-                    type="radio"
-                    name="title"
-                    value=""
-                    checked={choice === ""}
-                    onChange={() => setChoice("")}
-                  />
-                  <span>No title</span>
-                </label>
-                {earned.map((b) => (
-                  <label key={b.id}>
-                    <input
-                      type="radio"
-                      name="title"
-                      value={b.id}
-                      checked={choice === b.id}
-                      onChange={() => setChoice(b.id)}
-                    />
-                    <TitlePill title={b} />
-                  </label>
-                ))}
-              </fieldset>
-              {error ? <Notice>{error}</Notice> : null}
-              <button
-                type="submit"
-                className={buttonClass({ variant: "primary", wide: true })}
-                disabled={busy}
-              >
-                {busy ? "Saving…" : "Save"}
-              </button>
-            </form>
-          </Sheet>
-        </>
+      {profile.error && !profile.data ? (
+        <Notice retry={profile.retry}>{profile.error}</Notice>
       ) : null}
-      <div className="section-head">
-        <h2>Account</h2>
-      </div>
-      <div className="profile-account">
-        <p>
-          Signed in as
-          <br />
-          <strong>{session?.user.email ?? "your account"}</strong>
-        </p>
-        {account.error ? <Notice>{account.error}</Notice> : null}
-        <button
-          type="button"
-          className={buttonClass({ wide: true })}
-          onClick={() => void account.signOut()}
-          disabled={account.leaving}
-        >
-          <SignOutIcon size={20} aria-hidden="true" />
-          {account.leaving ? "Signing out…" : "Sign out"}
-        </button>
-      </div>
-    </section>
+      <ProfileView
+        name={name}
+        title={view?.title ?? null}
+        badges={earned}
+        stats={view?.stats ?? { played: 0, hosted: 0, groups: 0 }}
+        activities={profile.data?.profile.activities ?? []}
+        owner={{
+          profileId: identity.data?.profileId ?? null,
+          status,
+          titleControl: earned.length ? (
+            <button
+              type="button"
+              className={buttonClass({ variant: "link" })}
+              onClick={() => {
+                setChoice(view?.title?.id ?? "");
+                setError(null);
+                setChoosing(true);
+              }}
+            >
+              Choose title
+            </button>
+          ) : null,
+          locked,
+          footer: (
+            <>
+              <div className="section-head">
+                <h2>Account</h2>
+              </div>
+              <div className="profile-account">
+                <p>
+                  Signed in as
+                  <br />
+                  <strong>{session?.user.email ?? "your account"}</strong>
+                </p>
+                {account.error ? <Notice>{account.error}</Notice> : null}
+                <button
+                  type="button"
+                  className={buttonClass({ wide: true })}
+                  onClick={() => void account.signOut()}
+                  disabled={account.leaving}
+                >
+                  <SignOutIcon size={20} aria-hidden="true" />
+                  {account.leaving ? "Signing out…" : "Sign out"}
+                </button>
+              </div>
+            </>
+          ),
+        }}
+      />
+      <Sheet
+        open={choosing}
+        onClose={() => setChoosing(false)}
+        title="Your title"
+      >
+        <form className="title-choice" onSubmit={saveTitle}>
+          <p className="rp-help">Shown next to your name on session lists.</p>
+          <fieldset>
+            <legend className="rp-sr-only">Title</legend>
+            <label>
+              <input
+                type="radio"
+                name="title"
+                value=""
+                checked={choice === ""}
+                onChange={() => setChoice("")}
+              />
+              <span>No title</span>
+            </label>
+            {earned.map((b) => (
+              <label key={b.id}>
+                <input
+                  type="radio"
+                  name="title"
+                  value={b.id}
+                  checked={choice === b.id}
+                  onChange={() => setChoice(b.id)}
+                />
+                <TitlePill title={b} />
+              </label>
+            ))}
+          </fieldset>
+          {error ? <Notice>{error}</Notice> : null}
+          <button
+            type="submit"
+            className={buttonClass({ variant: "primary", wide: true })}
+            disabled={busy}
+          >
+            {busy ? "Saving…" : "Save"}
+          </button>
+        </form>
+      </Sheet>
+    </>
   );
+}
+
+/** Someone else's profile, open to anyone with the link, signed in or not. */
+export function PersonProfilePage() {
+  const { id } = useParams<{ id: string }>();
+  const { session } = useAuth();
+  const result = useApi<{ profile: PublicProfile }>(`/api/people/${id}`, true);
+  const profile = result.data?.profile;
+  if (result.loading)
+    return (
+      <section className="page profile-page">
+        <Pending>Opening the profile…</Pending>
+      </section>
+    );
+  if (!profile)
+    return (
+      <section className="page profile-page">
+        {result.error === "Profile not found" ? (
+          <EmptyState
+            headingLevel={1}
+            icon={<span className="rp-nums">404</span>}
+            title="Profile not found"
+            action={
+              <Link className={buttonClass({ variant: "primary" })} href="/">
+                Home
+              </Link>
+            }
+          >
+            The link may be incomplete.
+          </EmptyState>
+        ) : (
+          <Notice retry={result.retry}>
+            {result.error ?? "Please try again."}
+          </Notice>
+        )}
+      </section>
+    );
+  // Each badge once, in catalog order.
+  const earned = new Set(profile.badges.map((b) => b.key));
+  const badges = badgeCatalog
+    .filter((b) => earned.has(b.key))
+    .map((b) => ({ key: b.key }));
+  const title = profile.title ? (profile.title.key as BadgeKey) : null;
+  return (
+    <>
+      {session ? <OwnProfileRedirect profileId={profile.profileId} /> : null}
+      <ProfileView
+        name={profile.name}
+        title={
+          title && badgeCatalog.some((c) => c.key === title)
+            ? { key: title, groupName: null }
+            : null
+        }
+        badges={badges}
+        stats={profile.stats}
+        activities={profile.activities}
+      />
+    </>
+  );
+}
+
+/** Your own link opens your own profile, with its controls. */
+function OwnProfileRedirect({ profileId }: { profileId: string }) {
+  const router = useRouter();
+  const identity = useApi<Identity>("/api/me");
+  const own = identity.data?.profileId === profileId;
+  useEffect(() => {
+    if (own) router.replace("/profile");
+  }, [own, router]);
+  return null;
 }

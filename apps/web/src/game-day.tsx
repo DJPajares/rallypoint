@@ -36,7 +36,7 @@ import { useMutation } from "./use-mutation";
 import { FeeControls } from "./fee-controls";
 import { PendingSplitControls } from "./split-controls";
 import { SeatAttendanceControls } from "./attendance-controls";
-import { TitlePill } from "./badges";
+import { PersonName, TitlePill } from "./badges";
 
 // The organizer's view on the day (PRD D-17, R2): big numbers, one round
 // check per party, money as a quiet line. Everything else about a person
@@ -542,7 +542,16 @@ export function GameDay({
       <Sheet
         open={!!open}
         onClose={() => setOpenId(null)}
-        title={open ? partyName(open) : "Details"}
+        title={
+          open ? (
+            <>
+              <PersonName name={open.primaryName} profileId={open.profileId} />
+              {open.seats === 2 ? ` + ${open.guestName || "guest"}` : ""}
+            </>
+          ) : (
+            "Details"
+          )
+        }
       >
         {open ? (
           <PartyDetails

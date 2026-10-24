@@ -8,6 +8,7 @@ import { feeStanding } from "@rallypoint/domain/registration";
 import type { RegistrationView } from "@rallypoint/domain/registration";
 import { useMutation } from "./use-mutation";
 import { useApi } from "./use-api";
+import { PersonName } from "./badges";
 
 export function CancelSession({
   record,
@@ -103,7 +104,7 @@ export function CancelledRoster({ slug }: { slug: string }) {
           {roster.map((p) => (
             <li key={p.id}>
               <strong>
-                {p.primaryName}
+                <PersonName name={p.primaryName} profileId={p.profileId} />
                 {p.seats === 2 ? ` + ${p.guestName || "guest"}` : ""}
               </strong>
               <span>

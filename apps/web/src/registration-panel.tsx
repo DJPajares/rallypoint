@@ -25,7 +25,7 @@ import {
   StatusBanner,
 } from "@rallypoint/ui";
 import { StickyActions } from "./ui";
-import { TitlePill } from "./badges";
+import { PersonName, TitlePill } from "./badges";
 import type { Tone } from "@rallypoint/ui";
 import { feeLabel } from "@rallypoint/domain/session";
 import type { SharedSession } from "@rallypoint/domain/session";
@@ -494,7 +494,9 @@ export function RegistrationPanel({
       {view.roster.map((p, i) => (
         <li key={p.id ?? i}>
           <div id={p.id ? `party-${p.id}` : undefined}>
-            <strong>{p.primaryName}</strong>
+            <strong>
+              <PersonName name={p.primaryName} profileId={p.profileId} />
+            </strong>
             {p.seats === 2 ? ` + ${p.guestName || "one guest"}` : ""}
             {p.title ? <TitlePill title={p.title} /> : null}
           </div>

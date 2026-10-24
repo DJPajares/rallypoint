@@ -1,5 +1,5 @@
 "use client";
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeftIcon } from "@phosphor-icons/react/dist/csr/ArrowLeft";
 import { useDetailChrome } from "./frame";
@@ -14,16 +14,19 @@ export function DetailPage({
   backLabel,
   children,
   className = "",
+  onBack,
 }: {
   back: string;
   backLabel: string;
   children: ReactNode;
   className?: string;
+  /** Called first; preventDefault keeps the page, e.g. to confirm leaving. */
+  onBack?: (event: MouseEvent<HTMLAnchorElement>) => void;
 }) {
   useDetailChrome();
   return (
     <section className={`page detail-page ${className}`}>
-      <Link className="back-chip" href={back}>
+      <Link className="back-chip" href={back} onClick={onBack}>
         <ArrowLeftIcon size={20} aria-hidden="true" />
         <span>{backLabel}</span>
       </Link>

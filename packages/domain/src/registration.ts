@@ -178,6 +178,8 @@ export interface RegistrationView {
   emailSummary?: EmailSummary;
   roster: Array<{
     primaryName: string;
+    /** The public profile to open from this name; null until they have one. */
+    profileId?: string | null;
     guestName: string;
     seats: number;
     id?: string;
