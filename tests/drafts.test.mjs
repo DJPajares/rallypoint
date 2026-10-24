@@ -236,3 +236,26 @@ test("retrying a delete returns the same result", async (t) => {
   // A new key for a session that is already gone is unavailable, not a success.
   assert.equal((await del(f, f.organizer, session.id)).status, 403);
 });
+
+test("the backend role can't delete history tables directly", async (t) => {
+  const f = await fixture(t);
+  for (const table of [
+    "sessions",
+    "session_changes",
+    "operation_receipts",
+    "payment_instructions",
+    "payment_instruction_notices",
+  ])
+    assert.equal(
+      f.sql(
+        `select has_table_privilege('service_role','app.${table}','DELETE');`,
+      ),
+      "f",
+      table,
+    );
+  // The narrow helper refuses anything that isn't a draft, deleting nothing.
+  const refused = f.sql(
+    `do $$ begin perform app.delete_draft_rows('${f.session.id}'); exception when sqlstate 'P0001' then raise notice 'refused'; end $$; select count(*) from app.sessions where id='${f.session.id}';`,
+  );
+  assert.equal(refused, "1");
+});

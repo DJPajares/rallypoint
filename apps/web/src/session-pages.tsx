@@ -274,6 +274,7 @@ function Editor({
     [error, setError] = useState<string | null>(null);
   const [copy, setCopy] = useState("");
   const [cancelling, setCancelling] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [pendingEdit, setPendingEdit] = useState<Record<
     string,
     unknown
@@ -372,7 +373,7 @@ function Editor({
   // Custom controls aren't all native form elements, so the fieldset's
   // disabled state is passed to them as well.
   const disabledFields =
-    mutation.busy || mutation.uncertain || cancelling || locked;
+    mutation.busy || mutation.uncertain || cancelling || deleting || locked;
   const url =
     record &&
     (record.state === "published" ||
@@ -480,7 +481,13 @@ function Editor({
         }
       >
         <fieldset
-          disabled={mutation.busy || mutation.uncertain || cancelling || locked}
+          disabled={
+            mutation.busy ||
+            mutation.uncertain ||
+            cancelling ||
+            deleting ||
+            locked
+          }
         >
           <legend>Session details</legend>
           <Field id="title" label="Session title">
@@ -713,7 +720,7 @@ function Editor({
       {record && !terminal ? (
         <CancelSession
           record={record}
-          saving={mutation.busy || mutation.uncertain}
+          saving={mutation.busy || mutation.uncertain || deleting}
           onPending={setCancelling}
           onDone={(value) => {
             setRecord(value);
@@ -727,7 +734,8 @@ function Editor({
       {record?.state === "draft" ? (
         <DeleteDraft
           record={record}
-          disabled={mutation.busy || mutation.uncertain}
+          disabled={mutation.busy || mutation.uncertain || cancelling}
+          onPending={setDeleting}
         />
       ) : null}
       {record?.state === "cancelled" ? (
@@ -750,9 +758,11 @@ function Editor({
 function DeleteDraft({
   record,
   disabled,
+  onPending,
 }: {
   record: SessionRecord;
   disabled: boolean;
+  onPending: (pending: boolean) => void;
 }) {
   const router = useRouter(),
     [open, setOpen] = useState(false);
@@ -760,6 +770,9 @@ function DeleteDraft({
     router.push(`/groups/${result.groupId ?? record.groupId}`),
   );
   const working = remove.busy || remove.uncertain;
+  useEffect(() => {
+    onPending(working);
+  }, [working, onPending]);
   return (
     <section className="rp-card" aria-label="Delete draft">
       <button
