@@ -20,3 +20,16 @@ export interface GroupSummary {
   name: string;
   role: "owner" | "organizer" | "cohost" | "member";
 }
+
+export interface CohostPerson {
+  profileId: string;
+  name: string;
+}
+
+export interface GroupCohosts {
+  group: GroupSummary;
+  revision: string;
+  assigned: CohostPerson[];
+  candidates: CohostPerson[];
+  nextCursor: string | null;
+}

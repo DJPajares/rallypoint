@@ -9,6 +9,12 @@ import { connection, actorName, notAvailable, requireUser } from "./identity";
 async function rpc(db: Database, name: string, args: Record<string, unknown>) {
   const { data, error } = await db.rpc(name, args);
   if (error) {
+    if (error.code === "42501" && error.message === "group_owner_required")
+      throw new ApiError(
+        403,
+        "group_owner_required",
+        "Only the group owner can manage co-hosts.",
+      );
     if (error.code === "42501")
       throw new ApiError(
         403,
