@@ -273,3 +273,52 @@ test("a removed group can't be renamed or removed again with a new key", async (
   assert.equal((await rename(f, owner, g.group.id, "Back again")).status, 403);
   assert.equal((await archive(f, owner, g.group.id)).status, 403);
 });
+
+const moveTimes = (f, id, startsAgo, endsIn) =>
+  f.sql(
+    `begin;alter table app.sessions disable trigger protect_booked_session;update app.sessions set details=jsonb_set(jsonb_set(details,'{startsAt}',to_jsonb((clock_timestamp()-interval '${startsAgo} minutes')::text)),'{endsAt}',to_jsonb((clock_timestamp()+interval '${endsIn} minutes')::text)) where id='${id}';alter table app.sessions enable trigger protect_booked_session;commit;`,
+  );
+
+test("after removing a group, the owner can still settle its past sessions", async (t) => {
+  const f = await fixture(t);
+  const [owner, player] = f.actors;
+  const g = await ownGroup(t, f, owner);
+  const session = await g.save("publish", { ...g.base, fee: "10.00" });
+  const joined = await f.post(player, `/api/registrations/${session.slug}`, {
+    operationKey: crypto.randomUUID(),
+    version: session.version,
+    seats: 1,
+    guestName: "",
+    consent: true,
+  });
+  assert.equal(joined.status, 200);
+  const party = (await joined.json()).registration.own;
+  moveTimes(f, session.id, 180, -60);
+
+  assert.equal((await archive(f, owner, g.group.id)).status, 200);
+  const paid = await f.post(
+    owner,
+    `/api/registrations/${session.slug}/payments`,
+    {
+      operationKey: crypto.randomUUID(),
+      partyId: party.id,
+      action: "mark_paid",
+      revision: 1,
+    },
+  );
+  assert.equal(paid.status, 200, "the owner can still mark a fee paid");
+  assert.equal((await f.get(owner, `/api/sessions/${session.id}`)).status, 200);
+});
+
+test("a session in progress blocks removal", async (t) => {
+  const f = await fixture(t);
+  const [owner] = f.actors;
+  const g = await ownGroup(t, f, owner);
+  const session = await g.save("publish");
+  moveTimes(f, session.id, 30, 30);
+  const refused = await archive(f, owner, g.group.id);
+  assert.equal(refused.status, 409);
+  assert.equal((await refused.json()).error.message, KEEP);
+  moveTimes(f, session.id, 120, -30);
+  assert.equal((await archive(f, owner, g.group.id)).status, 200);
+});
