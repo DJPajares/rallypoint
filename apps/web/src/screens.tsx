@@ -142,7 +142,9 @@ function GroupCard({ group }: { group: GroupSummary }) {
           <ArrowRightIcon size={18} aria-hidden="true" />
         </Link>
       ) : (
-        <p className="rp-help">Organizers share session links with members.</p>
+        <p className="rp-help">
+          Sessions from this group show on your Sessions tab.
+        </p>
       )}
     </article>
   );
@@ -216,8 +218,8 @@ export function HomeDashboard() {
         </div>
       ) : (
         <p className="rp-help">
-          No groups yet. When an organizer adds you to a group, you’ll find it
-          here.
+          No groups yet. Start one to run sessions — sessions you join are on
+          the Sessions tab.
         </p>
       )}
     </section>
@@ -707,8 +709,8 @@ export function Workspace() {
             </Link>
           }
         >
-          When an organizer adds you to a group, you’ll find it here. Joining a
-          session does not automatically make you a group member.
+          Start a group to run sessions. Sessions you join are on the Sessions
+          tab.
         </EmptyState>
       )}
     </section>
