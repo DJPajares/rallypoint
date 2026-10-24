@@ -79,6 +79,28 @@ lookups and the combined Next/Workers configuration.
 
 ## Recovery, notes and review status
 
+### Vercel cached-install build follow-up
+
+Vercel preview `dpl_AZhEUBvrvrRZy6sDaE2RCa7d6Ee8` at `538f5969e1f0` failed:
+its restored cache made `corepack pnpm install --frozen-lockfile` report
+"Already up to date" without rerunning root `postinstall`; the build then ran
+`pnpm build` from `apps/web`, whose script invoked Next directly. The ignored
+Prisma client was absent. The earlier root-level local build did not cover this
+entry point.
+
+Reproduction: remove only ignored `packages/database/generated`, then run
+`pnpm --filter @rallypoint/web build` without reinstalling. Before the fix this
+failed with the same missing `../generated/prisma/client.ts` error; after the fix
+the same command generated the Node client and built successfully. The app build
+now explicitly generates Prisma. OpenNext uses a separate custom build command
+that generates the Workers client and invokes Next directly, preserving the
+target-specific WASM loader. A focused read-only review found no actionable
+issues in these changes. Hosted follow-up status belongs in the PR description.
+Lint and type checks passed, the OpenNext build/environment-isolation guard
+passed with the Workers client, and the local Workers API smoke test passed
+10/10. These are build-entry-point checks; the unchanged application behavior's
+314/314 result above is from the preceding implementation commit.
+
 No persistent schema change needs rollback. Reverting the code/configuration
 conversion restores the earlier REST transport while retaining all SQL history.
 No product user note is needed: this is internal database infrastructure with an

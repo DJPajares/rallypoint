@@ -154,6 +154,10 @@ The Node and Workers clients have different WASM loaders. `pnpm dev`, `pnpm buil
 targets concurrently. Each request or scheduled drain closes its own Prisma
 connection; no database sockets are shared across Workers requests.
 
+The app-level `pnpm build` in `apps/web` also generates the Node client explicitly,
+so Vercel builds work when a cached install skips `postinstall`. OpenNext uses its
+own build command to generate the Workers client before compiling Next.js.
+
 The shell works without configuration; sign-in explains the missing setup rather
 than claiming a connection succeeded. All private API responses are uncached.
 
