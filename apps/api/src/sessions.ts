@@ -4,7 +4,7 @@ import { InputError, normalizeSession } from "@rallypoint/domain/session";
 import type { Database } from "@rallypoint/database";
 import { ApiError, json, parse, readBody, uuid, uuidParam } from "./http";
 import type { ApiEnv } from "./identity";
-import { connection, displayName, notAvailable, requireUser } from "./identity";
+import { connection, actorName, notAvailable, requireUser } from "./identity";
 
 async function rpc(db: Database, name: string, args: Record<string, unknown>) {
   const { data, error } = await db.rpc(name, args);
@@ -169,7 +169,7 @@ export const sessions = new Hono<ApiEnv>()
     return json(
       await rpc(c.var.db, "cancel_session", {
         p_actor_id: c.var.user.id,
-        p_actor_name: displayName(c.var.user, "Organizer"),
+        p_actor_name: (await actorName(c, "Organizer")).name,
         p_key: operationKey,
         p_session_id: c.req.param("id"),
       }),

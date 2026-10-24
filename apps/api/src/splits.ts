@@ -3,7 +3,7 @@ import type { Context } from "hono";
 import { z } from "zod";
 import { ApiError, json, parse, readBody, uuid, uuidParam } from "./http";
 import type { ApiEnv } from "./identity";
-import { displayName, notAvailable, requireUser } from "./identity";
+import { actorName, notAvailable, requireUser } from "./identity";
 
 const conflicts: Record<string, string> = {
   split_not_finalized: "Finalize the split before changing amounts.",
@@ -71,10 +71,10 @@ const correction = z.object({
   reason: z.string().trim().min(1).max(300),
   undoWaiverPartyId: party,
 });
-const writeArgs = (c: Context<ApiEnv>, b: z.infer<typeof write>) => ({
+const writeArgs = async (c: Context<ApiEnv>, b: z.infer<typeof write>) => ({
   p_key: b.operationKey,
   p_basis: b.basis,
-  p_actor_name: displayName(c.var.user, "Organizer"),
+  p_actor_name: (await actorName(c, "Organizer")).name,
 });
 
 const base = `/splits/:slug{${uuidParam}}`;
@@ -112,7 +112,7 @@ export const splits = new Hono<ApiEnv>()
   .all(`${base}/preview`, requireUser, () => notAvailable(action))
   .post(`${base}/finalize`, requireUser, async (c) => {
     const b = parse(write, await readBody(c.req.raw), "invalid_split", review);
-    return call(c, "finalize_split", writeArgs(c, b));
+    return call(c, "finalize_split", await writeArgs(c, b));
   })
   .all(`${base}/finalize`, requireUser, () => notAvailable(action))
   .post(`${base}/correct`, requireUser, async (c) => {
@@ -125,7 +125,7 @@ export const splits = new Hono<ApiEnv>()
       "Enter the corrected cost and a short reason.",
     );
     return call(c, "correct_split", {
-      ...writeArgs(c, b),
+      ...(await writeArgs(c, b)),
       p_total_minor: k.totalMinor,
       p_reason: k.reason,
       p_undo_party: k.undoWaiverPartyId ?? null,

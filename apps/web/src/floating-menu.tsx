@@ -8,18 +8,39 @@ import { MoonIcon } from "@phosphor-icons/react/dist/csr/Moon";
 import { SignInIcon } from "@phosphor-icons/react/dist/csr/SignIn";
 import { SunIcon } from "@phosphor-icons/react/dist/csr/Sun";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
+import type { Identity } from "@rallypoint/domain/contracts";
 import { useAuth } from "./auth-context";
 import { RingAvatar } from "./badges";
 import { useScrollingDown } from "./frame";
 import { toggleAppearance, useAppearance } from "./theme";
+import { useApi } from "./use-api";
 import { EmptyState, iconButtonClass, Sheet } from "@rallypoint/ui";
+/**
+ * Initials of the name people see, which the profile can change. Loaded when
+ * the menu opens, so it is never stale; the account name fills in meanwhile.
+ */
+function MenuAvatar() {
+  const { session } = useAuth();
+  const identity = useApi<Identity>("/api/me");
+  return (
+    <RingAvatar
+      name={
+        identity.data?.displayName ??
+        String(
+          session?.user.user_metadata.full_name ?? session?.user.email ?? "",
+        )
+      }
+      size="sm"
+    />
+  );
+}
+
 /**
  * The everyday controls, floating in the upper right at every size — the same
  * trigger RallyPoint shares with Trove. The burger unfolds downwards and turns
  * into an X in the same place, so the way out is where the way in was.
  */
 export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
-  const { session } = useAuth();
   const pathname = usePathname();
   // Remembering where it was opened closes it on navigation without an effect:
   // a new route simply no longer matches.
@@ -108,14 +129,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
             className={`${iconButtonClass()} fab-avatar`}
             aria-hidden="true"
           >
-            <RingAvatar
-              name={String(
-                session?.user.user_metadata.full_name ??
-                  session?.user.email ??
-                  "",
-              )}
-              size="sm"
-            />
+            <MenuAvatar />
           </span>
         </Link>,
       ]

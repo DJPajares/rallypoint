@@ -3,7 +3,7 @@ import type { Context } from "hono";
 import { z } from "zod";
 import { ApiError, json, parse, readBody, uuid, uuidParam } from "./http";
 import type { ApiEnv } from "./identity";
-import { displayName, notAvailable, requireUser } from "./identity";
+import { actorName, notAvailable, requireUser } from "./identity";
 
 const bucket = "payment-qr";
 const maxBytes = 1024 * 1024;
@@ -179,7 +179,7 @@ export const payments = new Hono<ApiEnv>()
       "Enter payment instructions of 1 to 1,000 characters.",
     );
     const result = await rpc<Result>(c, "update_payment_instructions", {
-      p_actor_name: displayName(c.var.user, "Organizer"),
+      p_actor_name: (await actorName(c, "Organizer")).name,
       p_key: b.operationKey,
       p_session_id: c.req.param("id"),
       p_revision: b.revision,
@@ -245,7 +245,7 @@ export const payments = new Hono<ApiEnv>()
     let result: Result;
     try {
       result = await rpc<Result>(c, "update_payment_instructions", {
-        p_actor_name: displayName(c.var.user, "Organizer"),
+        p_actor_name: (await actorName(c, "Organizer")).name,
         p_key: q.operationKey,
         p_session_id: session,
         p_revision: q.revision,

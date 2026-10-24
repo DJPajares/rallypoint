@@ -389,6 +389,8 @@ test("registration ordering, integrity, fee and privacy contract", async (t) => 
           assert.deepEqual(Object.keys(person).sort(), [
             "guestName",
             "primaryName",
+            // The public link to their profile; null until they have one.
+            "profileId",
             "seats",
             // The badge a person chose to show (D-16); null when none.
             "title",

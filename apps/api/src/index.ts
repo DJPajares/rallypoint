@@ -3,8 +3,9 @@ import { badges } from "./badges";
 import type { AppEnv } from "./env";
 import { ApiError, discardRejectedBody, errorJson, json, uuid } from "./http";
 import type { ApiEnv } from "./identity";
-import { connection, databaseScope, requireUser } from "./identity";
+import { actorName, connection, databaseScope, requireUser } from "./identity";
 import { payments } from "./payments";
+import { profiles } from "./profiles";
 import { registrations } from "./registrations";
 import { sessions } from "./sessions";
 import { splits } from "./splits";
@@ -48,15 +49,16 @@ app.get("/config", (c) => {
   }
 });
 
-app.get("/me", requireUser, (c) => {
+app.get("/me", requireUser, async (c) => {
   const user = c.var.user;
+  const { name, profileId } = await actorName(c, "Participant");
   return json({
     id: user.id,
     email: user.email,
-    // Editable metadata is display-only, never role authority.
-    displayName: String(
-      user.user_metadata.full_name ?? user.email?.split("@")[0],
-    ).slice(0, 80),
+    profileId,
+    // The name they chose to show, else their account name. Display-only,
+    // never role authority.
+    displayName: name,
   });
 });
 app.get("/workspace", requireUser, async (c) => {
@@ -94,6 +96,18 @@ app.get("/dues", requireUser, async (c) => {
     );
   return json({ dues, splitClaims });
 });
+app.get("/me/sessions", requireUser, async (c) => {
+  const { data, error } = await c.var.db.rpc("list_my_sessions", {
+    p_actor_id: c.var.user.id,
+  });
+  if (error)
+    throw new ApiError(
+      503,
+      "service_unavailable",
+      "Your sessions could not be loaded. Please try again.",
+    );
+  return json(data);
+});
 app.get("/groups/:id{[0-9a-f-]+}/setup", requireUser, async (c) => {
   const id = c.req.param("id");
   if (!uuid.test(id))
@@ -122,6 +136,7 @@ app.route("/", registrations);
 app.route("/", splits);
 app.route("/", payments);
 app.route("/", badges);
+app.route("/", profiles);
 
 // Unknown reads are missing pages; any other unknown method is refused.
 app.notFound(async (c) => {

@@ -3,7 +3,7 @@ import type { Context } from "hono";
 import { z } from "zod";
 import { ApiError, json, parse, readBody, uuid, uuidParam } from "./http";
 import type { ApiEnv } from "./identity";
-import { displayName, notAvailable, requireUser } from "./identity";
+import { actorName, notAvailable, requireUser } from "./identity";
 
 type Action =
   "read" | "join" | "withdraw" | "payment" | "attendance" | "release" | "note";
@@ -172,7 +172,7 @@ export const registrations = new Hono<ApiEnv>()
       p_version: b.version,
       p_seats: b.seats,
       p_guest_name: b.guestName.trim(),
-      p_primary_name: displayName(c.var.user, "Participant"),
+      p_primary_name: (await actorName(c, "Participant")).name,
       p_consent: true,
     });
   })
@@ -193,7 +193,7 @@ export const registrations = new Hono<ApiEnv>()
   .post(`${base}/payments`, requireUser, async (c) => {
     const b = parse(payment, await readBody(c.req.raw), ...invalid.payment);
     return call(c, "payment", "update_payment", {
-      p_actor_name: displayName(c.var.user, "Participant"),
+      p_actor_name: (await actorName(c, "Participant")).name,
       p_key: b.operationKey,
       p_party_id: b.partyId,
       p_action: b.action,
@@ -204,7 +204,7 @@ export const registrations = new Hono<ApiEnv>()
   .post(`${base}/release`, requireUser, async (c) => {
     const b = parse(release, await readBody(c.req.raw), ...invalid.release);
     return call(c, "release", "release_unpaid_party", {
-      p_actor_name: displayName(c.var.user, "Participant"),
+      p_actor_name: (await actorName(c, "Participant")).name,
       p_key: b.operationKey,
       p_party_id: b.partyId,
       p_revision: b.revision,
@@ -229,7 +229,7 @@ export const registrations = new Hono<ApiEnv>()
       ...invalid.attendance,
     );
     return call(c, "attendance", "record_attendance", {
-      p_actor_name: displayName(c.var.user, "Participant"),
+      p_actor_name: (await actorName(c, "Participant")).name,
       p_key: b.operationKey,
       p_party_id: b.partyId,
       p_seat: b.seat,

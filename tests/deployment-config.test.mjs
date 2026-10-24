@@ -63,6 +63,7 @@ test("Prisma uses the deployment schema; Supabase serves only Auth and private S
     fixture.sql(`
       create function ${fixture.schema}.list_my_groups(p_actor_id uuid) returns jsonb language sql as $$ select jsonb_build_array(jsonb_build_object('id',p_actor_id)) $$;
       create function ${fixture.schema}.read_shared_session(p_slug uuid) returns jsonb language sql as $$ select null::jsonb $$;
+      create function ${fixture.schema}.read_profile(p_profile_id uuid) returns jsonb language sql as $$ select jsonb_build_object('id',p_profile_id,'name','Synthetic') $$;
       create function ${fixture.schema}.read_payment_qr(p_actor_id uuid,p_slug uuid) returns jsonb language sql as $$ select '{"path":"probe.png","type":"image/png"}'::jsonb $$;
       revoke all on all functions in schema ${fixture.schema} from public;
       grant execute on all functions in schema ${fixture.schema} to service_role;
@@ -89,6 +90,19 @@ test("Prisma uses the deployment schema; Supabase serves only Auth and private S
       env,
     );
     assert.equal(shared.status, 404, await shared.clone().text());
+    const profile = await app.fetch(
+      new Request(
+        "https://staging.example.test/api/people/11111111-1111-4111-8111-111111111111",
+      ),
+      env,
+    );
+    assert.equal(profile.status, 200, await profile.clone().text());
+    assert.deepEqual(await profile.json(), {
+      profile: {
+        id: "11111111-1111-4111-8111-111111111111",
+        name: "Synthetic",
+      },
+    });
     const image = await app.fetch(
       new Request(
         "https://staging.example.test/api/registrations/11111111-1111-4111-8111-111111111111/payment-qr",

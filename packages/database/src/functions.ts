@@ -5,6 +5,16 @@ const slug = { ...actor, p_slug: "uuid" };
 const write = { ...slug, p_actor_name: "text", p_key: "uuid" };
 export const functions: Record<string, Record<string, string>> = {
   list_my_groups: actor,
+  list_my_sessions: actor,
+  ensure_my_profile: { ...actor, p_account_name: "text" },
+  read_my_profile: { ...actor, p_account_name: "text" },
+  save_my_profile: {
+    ...actor,
+    p_account_name: "text",
+    p_name: "text",
+    p_activities: "jsonb",
+  },
+  read_profile: { p_profile_id: "uuid" },
   list_my_dues: actor,
   list_my_split_claims: actor,
   read_my_badges: actor,

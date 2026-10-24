@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 const config: NextConfig = {
-  transpilePackages: ["@rallypoint/domain", "@rallypoint/api", "@rallypoint/ui"],
+  devIndicators: false,
+  transpilePackages: [
+    "@rallypoint/domain",
+    "@rallypoint/api",
+    "@rallypoint/ui",
+  ],
   poweredByHeader: false,
   // Keep the target-specific Prisma WASM imports for OpenNext/Wrangler to bundle.
   serverExternalPackages: ["@rallypoint/database"],

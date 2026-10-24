@@ -36,7 +36,7 @@ Bound JSON, arrays, nulls and exact bigint amounts; preserve SQLSTATE conflict h
 
 - [x] Update configuration regression tests to require Prisma database connectivity and preserve Auth/Storage behavior.
 - [x] Wire DATABASE_URL into local setup, Next runtime and scheduled Workers. Replace every backend REST database call and close clients in finally blocks.
-- [x] Run meaningful API integration tests, including permissions, concurrency, queue/fees, retries, QR and email dispatch. Record the identical pre-existing roster assertion failure without altering newer local schema work.
+- [x] Run meaningful API integration tests, including permissions, concurrency, queue/fees, retries, QR and email dispatch. Record the initial roster mismatch, then resolve checkout alignment by merging current main without altering database history; the final full suite passes 314/314.
 
 ### Task 3: Documentation and verification
 
@@ -47,3 +47,5 @@ Bound JSON, arrays, nulls and exact bigint amounts; preserve SQLSTATE conflict h
 - [x] Review the full diff, fix the independent review's role-override finding with a failing-then-passing regression, record versions/environment/date/coverage/gaps, and leave the isolated change for human review without merging or deploying.
 
 Validation and remaining limitations: [review record](../reviews/2026-10-24-prisma-backend-validation.md).
+
+PR delivery: [PR #34](https://github.com/DJPajares/rallypoint/pull/34). Current-main Sessions/profile API calls also use Prisma; their transport/behavior regressions passed after the merge adaptations.

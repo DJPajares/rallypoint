@@ -23,6 +23,9 @@ import type {
   SplitClaimDuesItem,
 } from "@rallypoint/domain/registration";
 import { feeLabel } from "@rallypoint/domain/session";
+import { sessionHref, statusLabel } from "@rallypoint/domain/my-sessions";
+import type { MySessionRow, MySessions } from "@rallypoint/domain/my-sessions";
+import { fromLocal } from "./dates";
 import { useCreateTarget, useFrame } from "./frame";
 import {
   Badge,
@@ -220,24 +223,99 @@ export function HomeDashboard() {
     </section>
   );
 }
+function MySessionLink({ row, past }: { row: MySessionRow; past: boolean }) {
+  const date = fromLocal(row.startLocal);
+  return (
+    <Link className="session-link" href={sessionHref(row)}>
+      <Ticket date={date}>
+        <span className="rp-badge">{statusLabel(row, past)}</span>
+        <h3>{row.title || "Untitled session"}</h3>
+        <p className="rp-ticket__meta rp-nums">
+          {date?.time ?? "Date to be decided"} · {row.groupName}
+        </p>
+      </Ticket>
+    </Link>
+  );
+}
 export function SessionsPage() {
+  const sessions = useApi<MySessions>("/api/me/sessions");
+  const workspace = useApi<{ groups: GroupSummary[] }>("/api/workspace");
+  const { openCreate } = useFrame();
+  const [showPast, setShowPast] = useState(false);
+  const canCreate = (workspace.data?.groups ?? []).some(
+    (group) => group.role !== "member",
+  );
+  const upcoming = sessions.data?.upcoming ?? [];
+  const past = sessions.data?.past ?? [];
+  const pastTotal = sessions.data?.pastTotal ?? 0;
   return (
     <section className="page">
       <div className="page-head">
         <h1>Sessions</h1>
       </div>
-      <EmptyState
-        icon={<CalendarDotsIcon size={34} />}
-        title="Your sessions, all in one place"
-        action={
-          <Link className={buttonClass()} href="/workspace">
-            Go to your groups
-          </Link>
-        }
-      >
-        Sessions you’ve joined or host across every group will gather here in a
-        later release. For now, find them in each group or open a shared link.
-      </EmptyState>
+      {sessions.loading ? (
+        <Pending>Finding your sessions…</Pending>
+      ) : sessions.error ? (
+        <Notice retry={sessions.retry}>{sessions.error}</Notice>
+      ) : !upcoming.length && !pastTotal ? (
+        <EmptyState
+          icon={<CalendarDotsIcon size={34} />}
+          title="Nothing coming up"
+          action={
+            canCreate ? (
+              <button
+                type="button"
+                className={buttonClass({ variant: "primary" })}
+                onClick={openCreate}
+              >
+                <PlusIcon size={20} weight="bold" aria-hidden="true" />
+                New session
+              </button>
+            ) : undefined
+          }
+        >
+          Sessions you join or run will show here.
+        </EmptyState>
+      ) : (
+        <>
+          <div className="section-head">
+            <h2>Coming up</h2>
+          </div>
+          {upcoming.length ? (
+            <div className="session-list">
+              {upcoming.map((row) => (
+                <MySessionLink
+                  key={row.id ?? row.slug}
+                  row={row}
+                  past={false}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="rp-help">Nothing coming up.</p>
+          )}
+          {pastTotal > 0 ? (
+            <div className="past-sessions">
+              <button
+                type="button"
+                className={buttonClass({ variant: "secondary" })}
+                aria-expanded={showPast}
+                aria-controls="past-sessions-list"
+                onClick={() => setShowPast((open) => !open)}
+              >
+                Past sessions ({pastTotal})
+              </button>
+              {showPast ? (
+                <div id="past-sessions-list" className="session-list">
+                  {past.map((row) => (
+                    <MySessionLink key={row.id ?? row.slug} row={row} past />
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </>
+      )}
     </section>
   );
 }
