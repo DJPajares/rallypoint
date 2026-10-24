@@ -5,6 +5,7 @@ import type { Database } from "@rallypoint/database";
 import { ApiError, json, parse, readBody, uuid, uuidParam } from "./http";
 import type { ApiEnv } from "./identity";
 import { connection, actorName, notAvailable, requireUser } from "./identity";
+import { removeSessionImages } from "./payments";
 
 async function rpc(db: Database, name: string, args: Record<string, unknown>) {
   const { data, error } = await db.rpc(name, args);
@@ -31,6 +32,8 @@ async function rpc(db: Database, name: string, args: Record<string, unknown>) {
       session_closed:
         "This session is cancelled or completed and cannot be edited.",
       group_has_upcoming: "Cancel its upcoming sessions first.",
+      not_a_draft:
+        "Only a draft can be deleted. Cancel a published session instead.",
     };
     if (conflicts[error.message])
       throw new ApiError(409, error.message, conflicts[error.message]);
@@ -217,6 +220,23 @@ export const sessions = new Hono<ApiEnv>()
     );
   })
   .all(`/sessions/${id}/cancel`, requireUser, () => notAvailable())
+  .post(`/sessions/${id}/delete`, requireUser, async (c) => {
+    const { operationKey } = parse(
+      key,
+      await readBody(c.req.raw),
+      "invalid_input",
+      "A valid request key is required.",
+    );
+    const result = await rpc(c.var.db, "delete_draft", {
+      p_actor_id: c.var.user.id,
+      p_key: operationKey,
+      p_session_id: c.req.param("id"),
+    });
+    // Already committed; images are cleaned up best-effort afterwards.
+    await removeSessionImages(c, c.req.param("id"));
+    return json(result);
+  })
+  .all(`/sessions/${id}/delete`, requireUser, () => notAvailable())
   .get(`/sessions/${id}`, requireUser, async (c) =>
     json({
       session: await rpc(c.var.db, "read_managed_session", {

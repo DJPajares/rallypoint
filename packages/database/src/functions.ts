@@ -46,6 +46,7 @@ export const functions: Record<string, Record<string, string>> = {
     p_key: "uuid",
     p_session_id: "uuid",
   },
+  delete_draft: { ...actor, p_key: "uuid", p_session_id: "uuid" },
   read_registration: slug,
   join_session: {
     ...slug,

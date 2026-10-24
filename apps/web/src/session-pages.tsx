@@ -724,6 +724,12 @@ function Editor({
           }}
         />
       ) : null}
+      {record?.state === "draft" ? (
+        <DeleteDraft
+          record={record}
+          disabled={mutation.busy || mutation.uncertain}
+        />
+      ) : null}
       {record?.state === "cancelled" ? (
         <>
           {(record.details.paymentMode ?? "organizer") === "organizer" ? (
@@ -738,6 +744,62 @@ function Editor({
         </>
       ) : null}
     </DetailPage>
+  );
+}
+/** A draft can be thrown away; anything published is cancelled instead. */
+function DeleteDraft({
+  record,
+  disabled,
+}: {
+  record: SessionRecord;
+  disabled: boolean;
+}) {
+  const router = useRouter(),
+    [open, setOpen] = useState(false);
+  const remove = useMutation<Result>((result) =>
+    router.push(`/groups/${result.groupId ?? record.groupId}`),
+  );
+  const working = remove.busy || remove.uncertain;
+  return (
+    <section className="rp-card" aria-label="Delete draft">
+      <button
+        type="button"
+        className={buttonClass()}
+        disabled={disabled || working}
+        onClick={() => setOpen(true)}
+      >
+        Delete draft
+      </button>
+      <Sheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Delete this draft?"
+      >
+        <p>It can&apos;t be undone.</p>
+        <div className="fee-actions">
+          <button
+            type="button"
+            className={buttonClass()}
+            disabled={working}
+            onClick={() => setOpen(false)}
+          >
+            Keep it
+          </button>
+          <button
+            type="button"
+            className={buttonClass({ variant: "primary" })}
+            disabled={working}
+            onClick={() => remove.run(`/api/sessions/${record.id}/delete`, {})}
+          >
+            {remove.busy ? "Deleting…" : "Delete draft"}
+          </button>
+        </div>
+        {remove.error ? <Notice>{remove.error}</Notice> : null}
+        {remove.recovery}
+      </Sheet>
+      {!open && remove.error ? <Notice>{remove.error}</Notice> : null}
+      {!open ? remove.recovery : null}
+    </section>
   );
 }
 // Times read in the session's own local time, never with a zone label (D-13).
