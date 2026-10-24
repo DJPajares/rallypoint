@@ -5,7 +5,9 @@ Fresh review covered `814629b`, including `origin/main` at `0db3fdd`.
 The verified review-fix code is `522e20d`; documentation updates follow it. Branch:
 `djpajares/wdl-390-p-15-let-a-group-owner-make-someone-a-co-host`.
 No release version is assigned. This is implementation and local validation,
-not human acceptance, merge or deployment.
+not human acceptance, merge or live-flow verification.
+Review: [PR #37](https://github.com/DJPajares/rallypoint/pull/37), open against
+`main`, linked to WDL-390 in **In Review**. Auto-merge is disabled.
 
 ## User note
 
@@ -115,8 +117,10 @@ not published artifacts or actual-device certification.
   frozen installation with the pinned pnpm 12.15.0 and was left outside this task.
 - Browser probes intended to discard an already committed HTTP response failed
   in the CLI routing harness with “Route is already handled”; those probes do
-  not count as passing evidence. Real API tests verify committed-receipt replay
-  and current-state recovery; the browser verifies actual offline uncertainty.
+  not count as passing evidence. The later review regression used a CLI-managed
+  503 interruption and actual API commits of the submitted operation and its
+  opposite before **Check result**. Both inverses passed with current-state
+  feedback; actual offline uncertainty also passed.
 - Actual phones, assistive technologies and live Google/provider integrations
   were not tested. Hosted migration, deployment and live recovery remain unverified.
 
@@ -164,7 +168,9 @@ recovery. Do not drop real audit history as a code rollback. During local
 development only, task-created fixtures and empty unrecorded probe objects were
 removed before the final migration was applied through the adopted runner.
 No unrelated data/history was reset. Hosted backups and recovery require their
-own authorized verification.
+own authorized verification. The configured GitHub Vercel preview status
+reported Success at PR head `0d4a21a`; this is a provider check result, not
+verification of hosted database behavior or live user flows.
 
 ## Human verification
 
