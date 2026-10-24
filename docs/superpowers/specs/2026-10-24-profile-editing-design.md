@@ -68,7 +68,7 @@ So a profile is the person's public face in RallyPoint. They choose what goes on
 - **Name:**
   - The field is trimmed, can't be empty, and takes up to 80 characters.
   - Any script or emoji is fine.
-  - Saving an empty field removes the saved name and returns to the fallback.
+  - It's one field, filled in with the person's current name. It can't be saved empty: "Enter your name." *(Owner, 2026-10-24: "why is the edit name separate from the original name? it should just be one".)* Saving an untouched Google name keeps it linked to the account, so a later Google change still shows.
 - **Activities:**
   - Pick from the preset activities, plus up to 3 of your own (up to 40 characters each).
   - At most 10 in total, with no duplicates (ignoring case and spaces).
@@ -120,7 +120,7 @@ The table and function shapes, how names are resolved in SQL (for example, one s
 
 - Visitors see the same profile content as the owner, including stats and earned badges, without the editing controls.
 - Profile links use a new random id, never the account id.
-- Saving an empty name returns to the Google name.
+- An untouched Google name stays linked to the account rather than being saved as a copy.
 - Up to 3 custom activities (40 characters each) and 10 in total. The levels are Beginner, Intermediate and Advanced, and are optional.
 - The last save wins. There's no edit-conflict warning between two devices.
 - Guests keep plain-text names, with no profile.
