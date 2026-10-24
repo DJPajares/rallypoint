@@ -21,11 +21,20 @@ function configure() {
   const url = s.API_URL ?? s.api_url;
   const key = s.PUBLISHABLE_KEY ?? s.ANON_KEY ?? s.publishable_key;
   const secret = s.SECRET_KEY ?? s.SERVICE_ROLE_KEY ?? s.secret_key;
-  if (!url || !key || !secret || new URL(url).hostname !== "127.0.0.1")
+  const databaseUrl = s.DB_URL ?? s.db_url;
+  if (
+    !url ||
+    !key ||
+    !secret ||
+    !databaseUrl ||
+    new URL(url).hostname !== "127.0.0.1" ||
+    new URL(databaseUrl).hostname !== "127.0.0.1" ||
+    new URL(databaseUrl).port !== "54322"
+  )
     throw new Error("Local configuration could not be read safely.");
   writeFileSync(
     "apps/web/.env.local",
-    `SUPABASE_URL=${url}\nSUPABASE_PUBLISHABLE_KEY=${key}\nSUPABASE_SECRET_KEY=${secret}\nLOCAL_AUTH_ENABLED=true\nGOOGLE_AUTH_ENABLED=false\n`,
+    `DATABASE_URL=${databaseUrl}\nSUPABASE_URL=${url}\nSUPABASE_PUBLISHABLE_KEY=${key}\nSUPABASE_SECRET_KEY=${secret}\nLOCAL_AUTH_ENABLED=true\nGOOGLE_AUTH_ENABLED=false\n`,
     { mode: 0o600 },
   );
   chmodSync("apps/web/.env.local", 0o600);

@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.pnpm-store/
 dist
 dist-ssr
 *.local
@@ -40,4 +41,6 @@ supabase/.branches/
 .superpowers/
 *.tsbuildinfo
 **/next-env.d.ts
+packages/database/generated/
+packages/database/prisma/.runtime.prisma
 !**/.env.example

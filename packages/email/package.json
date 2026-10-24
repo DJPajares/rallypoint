@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@rallypoint/database": "workspace:*",
     "@supabase/supabase-js": "2.118.0"
   }
 }

@@ -3,7 +3,7 @@ import { badges } from "./badges";
 import type { AppEnv } from "./env";
 import { ApiError, discardRejectedBody, errorJson, json, uuid } from "./http";
 import type { ApiEnv } from "./identity";
-import { connection, requireUser } from "./identity";
+import { connection, databaseScope, requireUser } from "./identity";
 import { payments } from "./payments";
 import { registrations } from "./registrations";
 import { sessions } from "./sessions";
@@ -11,6 +11,7 @@ import { splits } from "./splits";
 
 const loopback = ["127.0.0.1", "localhost"];
 const app = new Hono<ApiEnv>().basePath("/api");
+app.use(databaseScope);
 
 // Hono answers HEAD from GET routes; this API has never offered HEAD.
 app.use(async (c, next) => {

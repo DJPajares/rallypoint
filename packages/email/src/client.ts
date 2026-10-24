@@ -1,8 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
+import { createDatabase } from "@rallypoint/database";
 import { DEFAULT_FROM, type DrainOptions } from "./drain.ts";
 import { mailpitProvider, resendProvider, type Provider } from "./provider.ts";
 
 export interface EmailEnv {
+  DATABASE_URL?: string;
   SUPABASE_URL?: string;
   SUPABASE_SECRET_KEY?: string;
   SUPABASE_API_SCHEMA?: string;
@@ -30,16 +32,20 @@ function chooseProvider(env: EmailEnv): Provider | null {
  * configured. Delivery is off (provider null) unless it is enabled, a provider is
  * named with what it needs, and the app origin for links is known.
  */
-export function deliveryFromEnv(env: EmailEnv): DrainOptions | null {
-  if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY) return null;
-  const db = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
+export function deliveryFromEnv(
+  env: EmailEnv,
+): (DrainOptions & { close(): Promise<void> }) | null {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY || !env.DATABASE_URL)
+    return null;
+  const auth = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
-    db: { schema: env.SUPABASE_API_SCHEMA || "api" },
   });
+  const db = createDatabase(env);
   const appOrigin = env.APP_ORIGIN ?? "";
   return {
     db,
-    admin: db.auth.admin,
+    admin: auth.auth.admin,
+    close: () => db.close(),
     provider: appOrigin === "" ? null : chooseProvider(env),
     from: env.EMAIL_FROM || DEFAULT_FROM,
     appOrigin,

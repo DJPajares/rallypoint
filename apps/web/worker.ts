@@ -15,7 +15,13 @@ interface ExecutionContext {
 async function run(env: EmailEnv): Promise<void> {
   try {
     const options = deliveryFromEnv(env);
-    if (options) await drainEmail(options);
+    if (options) {
+      try {
+        await drainEmail(options);
+      } finally {
+        await options.close();
+      }
+    }
   } catch {
     // Never log the error: it can carry provider or database detail.
     console.error("email drain failed");

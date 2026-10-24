@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@rallypoint/database";
 import { renderEmail, type EmailContext, type EmailKind } from "./render.ts";
 import type { Provider, SendResult } from "./provider.ts";
 
@@ -6,8 +7,8 @@ export const DEFAULT_FROM = "RallyPoint <no-reply@auth.wndrhive.com>";
 const BATCH = 5;
 
 export interface DrainOptions {
-  /** A service-role client already pointed at the API schema. */
-  db: SupabaseClient<any, any, any>;
+  /** Only the SQL function interface is required, including by test fixtures. */
+  db: Pick<Database, "rpc">;
   admin: SupabaseClient<any, any, any>["auth"]["admin"];
   provider: Provider | null;
   from: string;

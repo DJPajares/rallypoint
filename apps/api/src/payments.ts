@@ -85,7 +85,7 @@ async function cleanUp(
   keep: string | null,
   remove: Array<string | null | undefined>,
 ) {
-  const files = c.var.db.storage.from(c.env.PAYMENT_QR_BUCKET ?? bucket);
+  const files = c.var.storage.from(c.env.PAYMENT_QR_BUCKET ?? bucket);
   try {
     const paths = remove.filter((p): p is string => !!p && p !== keep);
     if (paths.length) await files.remove(paths);
@@ -231,7 +231,7 @@ export const payments = new Hono<ApiEnv>()
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
     const path = `${session}/${crypto.randomUUID()}`;
-    const files = c.var.db.storage.from(c.env.PAYMENT_QR_BUCKET ?? bucket);
+    const files = c.var.storage.from(c.env.PAYMENT_QR_BUCKET ?? bucket);
     const stored = await files.upload(path, image.bytes, {
       contentType: image.type,
       upsert: false,
@@ -285,7 +285,7 @@ export const payments = new Hono<ApiEnv>()
         "There is no payment QR image. Use the written instructions.",
       );
       if (!image) throw missing;
-      const { data, error } = await c.var.db.storage
+      const { data, error } = await c.var.storage
         .from(c.env.PAYMENT_QR_BUCKET ?? bucket)
         .download(image.path);
       if (error || !data) throw missing;

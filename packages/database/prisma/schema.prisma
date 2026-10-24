@@ -1,0 +1,14 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../generated/prisma"
+  runtime             = "nodejs"
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Transactional functions, constraints, RLS, grants and triggers are maintained
+// by supabase/migrations. This client executes their API through bound raw SQL;
+// it deliberately exposes no model writes that could bypass those invariants.
