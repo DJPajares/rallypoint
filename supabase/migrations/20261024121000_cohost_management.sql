@@ -67,7 +67,10 @@ begin
     case when count(*) > 50 then (array_agg(profile_id order by profile_id))[50] else null end
     into candidates, next_cursor from numbered;
 
-  return jsonb_build_object('group', api.read_group_setup(p_actor_id, p_group_id),
+  -- Removed groups retain session history and manager access. Owner role
+  -- administration remains available so that access can still be revoked.
+  return jsonb_build_object('group', (select jsonb_build_object('id', id, 'name', name, 'role', 'owner')
+      from app.groups where id = p_group_id),
     'revision', revision, 'assigned', assigned, 'candidates', candidates, 'nextCursor', next_cursor);
 end;
 $$;

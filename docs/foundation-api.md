@@ -75,6 +75,11 @@ another audit record. Missing sign-in is 401, non-owner access is 403
 failure is 503, and unsupported methods are 405. All responses are `no-store`.
 Invitations, general membership entry and ownership transfer remain excluded.
 
+An owner can still use this owner-only operation for a removed group: removal
+keeps past sessions and their manager permissions, so co-host access to that
+retained history must remain revocable. It does not restore the group to lists
+or allow new sessions.
+
 ## Session operations
 
 The owner accepted creator-as-owner bootstrap and the pre-booking edit boundary

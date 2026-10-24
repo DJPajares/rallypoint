@@ -516,6 +516,41 @@ function baseURL(path) {
   return (process.env.RALLYPOINT_TEST_URL ?? "http://127.0.0.1:3000") + path;
 }
 
+test("an owner can revoke co-host access to retained session history after removing the group", async (t) => {
+  const f = await cohostFixture(t);
+  assert.equal(
+    (await f.change(f.owner, f.member.profileId, "add", "0")).status,
+    200,
+  );
+  const granted = await f.read();
+  f.sql(
+    `update app.sessions set state='completed' where id='${f.session.id}';`,
+  );
+  assert.equal(
+    (
+      await request(`/api/groups/${f.group.id}/archive`, f.owner, {
+        operationKey: crypto.randomUUID(),
+      })
+    ).status,
+    200,
+  );
+  const removed = await f.change(
+    f.owner,
+    f.member.profileId,
+    "remove",
+    granted.revision,
+  );
+  assert.equal(removed.status, 200);
+  const view = (
+    await (
+      await request(`/api/registrations/${f.session.slug}`, f.member)
+    ).json()
+  ).registration;
+  assert.equal(view.canManage, false);
+  assert.ok(view.own);
+  assert.equal((await f.read()).assigned.length, 0);
+});
+
 test("a manager mutation waiting behind removal rechecks the co-host role under the shared group lock", async (t) => {
   const f = await cohostFixture(t);
   assert.equal(
