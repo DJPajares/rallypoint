@@ -27,7 +27,9 @@
     "db:stop": "node scripts/local.mjs stop",
     "db:lint": "supabase db lint --local",
     "build:staging": "node scripts/build-staging.mjs",
-    "deploy:staging": "pnpm build:staging && pnpm --filter @rallypoint/web exec wrangler deploy --config wrangler.staging.jsonc --upload-source-maps=false"
+    "deploy:staging": "pnpm build:staging && pnpm --filter @rallypoint/web exec wrangler deploy --config wrangler.staging.jsonc --upload-source-maps=false",
+    "db:migrate:local": "pnpm db:generate && pnpm --filter @rallypoint/database migrate local",
+    "db:migrate:production": "pnpm db:generate && pnpm --filter @rallypoint/database migrate production"
   },
   "devDependencies": {
     "@rallypoint/domain": "workspace:*",

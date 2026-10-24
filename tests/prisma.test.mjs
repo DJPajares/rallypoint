@@ -1,10 +1,57 @@
-import { test } from "node:test";
+import { test, mock } from "node:test";
 import assert from "node:assert/strict";
 import { createDatabase } from "../packages/database/src/index.ts";
 import { localEnv } from "../scripts/local-env.mjs";
 import { prismaFixture } from "./helpers/prisma-fixtures.mjs";
+import { createRequire } from "node:module";
 
 const env = localEnv();
+
+test("pooled connections enforce role and timeout even when startup settings are ignored", async () => {
+  const fixture = prismaFixture();
+  const require = createRequire(
+    new URL("../packages/database/package.json", import.meta.url),
+  );
+  const { Pool } = createRequire(require.resolve("@prisma/adapter-pg"))("pg");
+  const original = Pool.prototype.connect;
+  // Reproduce the observed pooler behavior on real local PostgreSQL: the
+  // acquired connection retains its login role and ignores startup GUCs.
+  const reset = mock.method(Pool.prototype, "connect", function (callback) {
+    const acquired = original.call(this).then(async (client) => {
+      await client.query("SET ROLE postgres");
+      await client.query("SET statement_timeout = 0");
+      return client;
+    });
+    if (callback) {
+      acquired.then(
+        (client) => callback(null, client, client.release),
+        (error) => callback(error),
+      );
+      return;
+    }
+    return acquired;
+  });
+  const db = createDatabase(fixture.env);
+  try {
+    fixture.sql(`
+      create function ${fixture.schema}.read_shared_session(p_slug uuid) returns jsonb language sql as $$ select jsonb_build_object('role',current_user,'timeout',current_setting('statement_timeout')) $$;
+      revoke all on all functions in schema ${fixture.schema} from public;
+      grant execute on all functions in schema ${fixture.schema} to service_role;
+    `);
+    const result = await db.rpc("read_shared_session", {
+      p_slug: crypto.randomUUID(),
+    });
+    assert.deepEqual(result, {
+      data: { role: "service_role", timeout: "5s" },
+      error: null,
+    });
+  } finally {
+    await db.close();
+    reset.mock.restore();
+    fixture.close();
+  }
+});
+
 test("Prisma preserves function results, SQLSTATE and bound values", async () => {
   const db = createDatabase(env);
   try {
@@ -107,7 +154,13 @@ test("Prisma binds JSON, nulls, arrays and bigint and assumes only service_role"
       p_actor_id: null,
     });
     assert.deepEqual(json, {
-      data: { role: "service_role", timeout: "5s", input, actor: null, slug: null },
+      data: {
+        role: "service_role",
+        timeout: "5s",
+        input,
+        actor: null,
+        slug: null,
+      },
       error: null,
     });
     assert.deepEqual(
