@@ -33,6 +33,24 @@
   display: grid;
   gap: var(--space-3);
 }
+.cohost-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cohost-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.cohost-row .person-link {
+  flex: 1 1 10rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 
 /* Landing */
 .landing-hero {

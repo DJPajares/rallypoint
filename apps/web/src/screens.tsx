@@ -746,12 +746,22 @@ export function GroupSetup() {
         </>
       ) : result.data ? (
         <>
-          <div className="page-head">
-            <h1>{result.data.group.name}</h1>
+          <div className="page-head-row">
+            <div>
+              <span className="rp-badge">
+                {roleName(result.data.group.role)}
+              </span>
+              <h1>{result.data.group.name}</h1>
+            </div>
             {result.data.group.role === "owner" ? (
-              <Link className={buttonClass()} href={`/groups/${id}/edit`}>
-                Edit group
-              </Link>
+              <div className="fee-actions">
+                <Link className={buttonClass()} href={`/groups/${id}/edit`}>
+                  Edit group
+                </Link>
+                <Link className={buttonClass()} href={`/groups/${id}/cohosts`}>
+                  Co-hosts
+                </Link>
+              </div>
             ) : null}
           </div>
           <GroupSessions group={result.data.group} />

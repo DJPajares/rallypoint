@@ -32,6 +32,63 @@ have no table or backend-RPC grants. The server-only service principal calls
 security-invoker functions with explicit actor/target filters. RLS is enabled as
 defense in depth. Role checks read current data rather than cached JWT metadata.
 
+## Co-host management (P-15)
+
+Only the group's current **owner** can read or change co-host assignments.
+The bearer identity supplies the actor; caller actor/role fields are refused.
+
+| Method and path | Input / result |
+| --- | --- |
+| GET `/api/groups/:id/cohosts?after=<profileId>` | `{ cohosts: { group, revision, assigned, candidates, nextCursor } }` |
+| POST `/api/groups/:id/cohosts` | `{ operationKey, profileId, action: "add" or "remove", revision }`; `{ operationKey, cohosts }` |
+| GET `/api/operations/:key` | Same actor's committed operation with the **current** co-host state; current owner access required |
+
+`group` includes the acting role. Each person is only `{ profileId, name }`,
+using the current profile name and its public handle, never contact details or
+the account ID. Candidates are distinct account holders who have registered
+for a session in this group, including waiting or historical registrations;
+guests are not separate accounts. Owners, organizers and existing co-hosts are
+excluded from candidates. `assigned` lists current co-hosts, including legacy
+ones without registration history. Candidates are ordered by profile handle,
+50 per page; pass `nextCursor` as `after` to continue. A null cursor ends the list.
+Reload after a change to obtain a coherent new revision and candidate list.
+
+The opaque `revision` string identifies the latest co-host change in this
+group (`"0"` initially); submit it unchanged. A grant accepts only a nonmember
+or ordinary member who has registered for this group's sessions. Removal
+accepts only a current co-host. It restores the ordinary membership recorded
+before that grant, or removes the role entirely if there was no membership.
+Legacy co-hosts without a recorded grant return to no role; membership is not
+inferred. Owners and organizers cannot be changed through these operations.
+Registrations, seats, fees, attendance and notification state remain unchanged.
+
+Writes lock the actor/key and then the group, check current owner authority,
+and commit the role, append-only actor/target/before/after/time audit and
+operation receipt together. The group lock serializes revocation with existing
+manager mutations. The next request checks the role again even when the browser
+has a cached page or earlier receipt. Same-key/same-payload replay and recovery
+return current state without reapplying an old grant. Different payloads return
+409 `idempotency_conflict`; an old revision returns 409 `stale_cohosts`; an
+ineligible target/action returns 409 `cohost_not_eligible`. No-ops do not create
+another audit record. Missing sign-in is 401, non-owner access is 403
+`group_owner_required`, malformed input is 422 `invalid_input`, infrastructure
+failure is 503, and unsupported methods are 405. All responses are `no-store`.
+Invitations, general membership entry and ownership transfer remain excluded.
+
+An owner can still use this owner-only operation for a removed group: removal
+keeps past sessions and their manager permissions, so co-host access to that
+retained history must remain revocable. It does not restore the group to lists
+or allow new sessions.
+
+Draft-deletion POST replays and operation lookups also recheck current manager
+access using the group retained in the deletion receipt. Revocation denies
+those responses even though the draft itself is already gone. This guard is
+added by `20261024135449_cohost_recovery.sql`; historical migrations are unchanged.
+
+The screen compares a recovered result's current assigned list with the submitted
+profile handle/action. If another change reversed it, feedback asks the owner to
+review current access rather than announcing the old action as the current state.
+
 ## Session operations
 
 The owner accepted creator-as-owner bootstrap and the pre-booking edit boundary

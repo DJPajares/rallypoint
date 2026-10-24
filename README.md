@@ -187,6 +187,34 @@ the provider is configured. The local email-code exercise is enabled only for a
 loopback request with a loopback Auth service and `LOCAL_AUTH_ENABLED=true`.
 It does not prove live Google OAuth.
 
+## Share organizing with a co-host
+
+As a group owner, open the group and select **Co-hosts**. Choose **Make co-host**
+beside someone who has registered for one of the group's sessions. Current and
+historical registrations qualify, including waitlisted people; guests have no
+separate account to select. Only display names and profile links appear.
+Use **Load more** for another page of candidates.
+
+A co-host can manage the group's sessions, payments and check-in. Only the owner
+can change co-host assignments. **Remove co-host** asks for confirmation and
+revokes management access on the next request, including from an open page.
+Their registrations, payments and attendance stay intact. Removal restores
+their prior ordinary membership, or removes the group role if they were a
+nonmember. A legacy co-host without a recorded grant returns to no role.
+Invitations, general membership entry and ownership transfer are not included.
+
+An interrupted change stays unconfirmed. Keep the page open and use **Check
+result** or **Retry same request**; the original key and details are retained.
+If another owner changed the list, reload it before choosing the action again.
+
+The additive `20261024121000_cohost_management.sql` migration records role changes
+with actor/time and preserves membership restoration history. Apply it through
+the normal migration workflow after review. Rolling application code back keeps
+the authoritative roles and audit history; it does not revoke grants. Revoke
+unwanted co-hosts through the owner flow before removing that flow, or use a
+reviewed operator recovery procedure. Do not drop the audit to roll back code.
+Hosted migration, backup/recovery verification and deployment remain separate.
+
 ## Publish a session
 
 Sign in, select **Start a group**, and enter a name. You become its owner.

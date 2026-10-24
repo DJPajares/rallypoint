@@ -19,6 +19,15 @@ export const functions: Record<string, Record<string, string>> = {
   list_my_split_claims: actor,
   read_my_badges: actor,
   read_group_setup: { ...actor, p_group_id: "uuid" },
+  read_group_cohosts: { ...actor, p_group_id: "uuid", p_after: "uuid" },
+  update_group_cohost: {
+    ...actor,
+    p_key: "uuid",
+    p_group_id: "uuid",
+    p_profile_id: "uuid",
+    p_action: "text",
+    p_revision: "text",
+  },
   create_group: { ...actor, p_key: "uuid", p_name: "text" },
   rename_group: {
     ...actor,
