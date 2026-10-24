@@ -233,10 +233,11 @@ test("a removed group disappears but keeps its history", async (t) => {
     "1",
     "the draft row itself is not deleted",
   );
+  const publish = await g.saveAs(owner, "publish");
+  assert.equal(publish.status, 403, "no new sessions");
   assert.equal(
-    (await g.saveAs(owner, "publish")).status,
-    403,
-    "no new sessions",
+    (await publish.json()).error.message,
+    "This group was removed, so it can't take new sessions.",
   );
   assert.equal((await g.saveAs(owner, "draft")).status, 403, "no new drafts");
 });

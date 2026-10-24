@@ -826,7 +826,21 @@ function EditGroupForm({ group }: { group: GroupSummary }) {
             />
           </Field>
           <StickyActions>
-            <Link className={buttonClass()} href={`/groups/${group.id}`}>
+            {/* A disabled fieldset doesn't stop links, so hold this one still while saving. */}
+            <Link
+              className={buttonClass()}
+              href={`/groups/${group.id}`}
+              aria-disabled={working || removing || undefined}
+              tabIndex={working || removing ? -1 : undefined}
+              style={
+                working || removing
+                  ? { opacity: 0.6, cursor: "not-allowed" }
+                  : undefined
+              }
+              onClick={(e) => {
+                if (working || removing) e.preventDefault();
+              }}
+            >
               Cancel
             </Link>
             <button className={buttonClass({ variant: "primary" })}>

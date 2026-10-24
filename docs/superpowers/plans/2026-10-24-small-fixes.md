@@ -215,6 +215,10 @@
 
 ## Recovery
 
-- **What changes:** the migrations add a nullable column and new functions, and replace four functions with the same bodies plus archived-group checks.
-- **Rollback:** revert the app. The old code ignores `archived_at`. To restore an archived group, run `update app.groups set archived_at = null where id = …`.
+- **What changes:** the migrations add a nullable column and new functions, replace four functions with the same bodies plus archived-group checks, and wrap two existing ones by renaming them (rename-and-wrap).
+  - `api.read_operation` is wrapped as `app.read_operation_before_delete_draft` (stacked on the earlier wrappers) so a replayed draft deletion returns its stored result.
+  - `app.registration_view` is wrapped as `app.registration_view_before_earlier_fees` and now adds `earlierFees`: the viewer's other withdrawn or removed bookings in the session whose retained fee is still owed. It is empty when none, and read only for the viewer's own bookings.
+  - Deleting a draft goes through the definer helper `app.delete_draft_rows(session)`. It refuses anything that is not a draft, and `service_role`'s table-wide DELETE grants on the five draft tables were revoked again, so history tables stay append-only.
+  - `api.save_session` now refuses a removed group with its own message, `group_removed`.
+- **Rollback:** reverting the app is safe, but removed groups stay hidden, because the SQL filters on `archived_at` remain in place. The old code simply never writes it. To restore a removed group, run `update app.groups set archived_at = null where id = …`. Under Prisma Migrate there is no down migration: undoing any SQL change (the wrappers, the revoked grants, the helper) is a new forward migration that restores the previous bodies.
 - **What can't be undone:** deleted drafts are gone for good. They hold no registrations, payments or attendance by construction, because joining a draft is refused.

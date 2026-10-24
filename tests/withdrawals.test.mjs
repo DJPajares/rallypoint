@@ -475,6 +475,45 @@ test("whole-party withdrawal and promotion contract", async (t) => {
       },
     );
     await t.test(
+      "a fee kept after a late withdrawal stays visible after rejoining, to that player only, until waived",
+      async () => {
+        const s = await event("4", local(Date.now() - 300000)),
+          old = await join(s, actors[4]);
+        assert.equal((await withdraw(s, actors[4], old)).status, 200);
+        assert.equal((await view(s, actors[4])).own.fee.liabilityState, "due");
+        const fresh = await join(s, actors[4]);
+        assert.notEqual(fresh.id, old.id);
+        const rejoined = await view(s, actors[4]);
+        assert.equal(rejoined.own.id, fresh.id);
+        assert.deepEqual(rejoined.earlierFees, [
+          { currency: "SGD", totalMinor: 1250 },
+        ]);
+        assert.deepEqual((await view(s, actors[5])).earlierFees, []);
+        assert.deepEqual(
+          (await view(s, organizer)).earlierFees,
+          [],
+          "a manager's own view is theirs alone",
+        );
+        const { revision } = row(
+          `select revision from app.fee_obligations where party_id='${old.id}'`,
+        );
+        const waived = await request(
+          `/api/registrations/${s.slug}/payments`,
+          organizer,
+          {
+            operationKey: crypto.randomUUID(),
+            partyId: old.id,
+            action: "waive",
+            revision,
+          },
+        );
+        assert.equal(waived.status, 200);
+        const after = await view(s, actors[4]);
+        assert.equal(after.own.id, fresh.id);
+        assert.deepEqual(after.earlierFees, []);
+      },
+    );
+    await t.test(
       "paid declarations and their actor/time survive withdrawal on both sides of cutoff",
       async () => {
         for (const late of [false, true]) {

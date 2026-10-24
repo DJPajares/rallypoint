@@ -10,6 +10,12 @@ import { removeSessionImages } from "./payments";
 async function rpc(db: Database, name: string, args: Record<string, unknown>) {
   const { data, error } = await db.rpc(name, args);
   if (error) {
+    if (error.code === "42501" && error.message === "group_removed")
+      throw new ApiError(
+        403,
+        "group_removed",
+        "This group was removed, so it can't take new sessions.",
+      );
     if (error.code === "42501")
       throw new ApiError(
         403,
