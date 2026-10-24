@@ -144,11 +144,21 @@ function Editor({
   const path = `/api/groups/${groupId}/cohosts`;
   const read = useApi<{ cohosts: GroupCohosts }>(path);
   const [remove, setRemove] = useState<CohostPerson | null>(null);
-  const action = useRef<Action>("add");
+  const submitted = useRef<{ action: Action; profileId: string } | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const status = useRef<HTMLParagraphElement>(null);
-  const mutation = useMutation<Response>(() => {
-    saved(action.current === "add" ? "Co-host added." : "Co-host removed.");
+  const mutation = useMutation<Response>((result) => {
+    const request = submitted.current;
+    const assigned = result.cohosts.assigned.some(
+      (person) => person.profileId === request?.profileId,
+    );
+    saved(
+      request && assigned === (request.action === "add")
+        ? request.action === "add"
+          ? "Co-host added."
+          : "Co-host removed."
+        : "Co-host access changed again. Review the current list.",
+    );
   });
   const locked = mutation.busy || mutation.uncertain;
   const state = read.data?.cohosts;
@@ -160,7 +170,7 @@ function Editor({
   }, [read.loading, message, state]);
   function change(person: CohostPerson, chosen: Action) {
     if (!state || locked) return;
-    action.current = chosen;
+    submitted.current = { action: chosen, profileId: person.profileId };
     mutation.run(path, {
       profileId: person.profileId,
       action: chosen,

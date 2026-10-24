@@ -53,7 +53,7 @@ export async function cohostFixture(t, { join = true } = {}) {
   t.after(() => {
     // Only this test's group and its dependent records; no shared fixture roles.
     sql(`begin;
-      delete from app.operation_receipts where resource_id='${group.id}' or resource_id in
+      delete from app.operation_receipts where resource_id='${group.id}' or payload->>'groupId'='${group.id}' or resource_id in
         (select id from app.sessions where group_id='${group.id}') or resource_id in
         (select id from app.parties where session_id in(select id from app.sessions where group_id='${group.id}'));
       delete from app.email_jobs where session_id in(select id from app.sessions where group_id='${group.id}');

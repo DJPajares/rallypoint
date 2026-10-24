@@ -80,6 +80,15 @@ keeps past sessions and their manager permissions, so co-host access to that
 retained history must remain revocable. It does not restore the group to lists
 or allow new sessions.
 
+Draft-deletion POST replays and operation lookups also recheck current manager
+access using the group retained in the deletion receipt. Revocation denies
+those responses even though the draft itself is already gone. This guard is
+added by `20261024135449_cohost_recovery.sql`; historical migrations are unchanged.
+
+The screen compares a recovered result's current assigned list with the submitted
+profile handle/action. If another change reversed it, feedback asks the owner to
+review current access rather than announcing the old action as the current state.
+
 ## Session operations
 
 The owner accepted creator-as-owner bootstrap and the pre-booking edit boundary

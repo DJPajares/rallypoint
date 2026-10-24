@@ -516,6 +516,54 @@ function baseURL(path) {
   return (process.env.RALLYPOINT_TEST_URL ?? "http://127.0.0.1:3000") + path;
 }
 
+test("revoking a co-host also denies deleted-draft receipt recovery and same-key POST replay", async (t) => {
+  const f = await cohostFixture(t);
+  assert.equal(
+    (await f.change(f.owner, f.member.profileId, "add", "0")).status,
+    200,
+  );
+  const draftResponse = await request(
+    `/api/groups/${f.group.id}/sessions`,
+    f.member,
+    {
+      operationKey: crypto.randomUUID(),
+      groupId: f.group.id,
+      intent: "draft",
+      details: { ...f.session.details, title: "Synthetic draft to delete" },
+    },
+  );
+  assert.equal(draftResponse.status, 200);
+  const draft = (await draftResponse.json()).session;
+  const operationKey = crypto.randomUUID();
+  const path = `/api/sessions/${draft.id}/delete`;
+  assert.equal((await request(path, f.member, { operationKey })).status, 200);
+  assert.equal(
+    (await request(`/api/operations/${operationKey}`, f.member)).status,
+    200,
+  );
+  assert.equal((await request(path, f.member, { operationKey })).status, 200);
+  assert.equal(
+    (
+      await f.change(
+        f.owner,
+        f.member.profileId,
+        "remove",
+        (await f.read()).revision,
+      )
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await request(`/api/operations/${operationKey}`, f.member)).status,
+    403,
+  );
+  assert.equal((await request(path, f.member, { operationKey })).status, 403);
+  assert.equal(
+    f.sql(`select count(*) from app.sessions where id='${draft.id}';`),
+    "0",
+  );
+});
+
 test("an owner can revoke co-host access to retained session history after removing the group", async (t) => {
   const f = await cohostFixture(t);
   assert.equal(
