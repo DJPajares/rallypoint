@@ -88,7 +88,7 @@ Local credentials and development mail settings never belong in the uploaded art
 
 Cloud migration names are `rallypoint_staging_bootstrap` and `rallypoint_staging_api_exposure`. The second preserves `public, graphql_public` and adds `rallypoint_api` to the authenticator's PostgREST schema list. Browser roles have no schema/function grants; all app tables have RLS.
 
-Do not link this local development project to wProject and run `db push`, `db reset` or seed commands. Those operations target different migration namespaces and could affect shared services. Future cloud changes need reviewed, namespaced incremental migrations with the `rallypoint_` prefix. Do not re-render/reapply the bootstrap as an upgrade.
+Do not link this local development project to wProject and run `db push`, `db reset` or seed commands. Those operations target different migration namespaces and could affect shared services. Future changes use reviewed incremental SQL and the isolated `rallypoint_migrations` Prisma history; preserve older `rallypoint_`-prefixed Supabase entries. Do not re-render/reapply the bootstrap as an upgrade.
 
 ## Upgrade the existing 2026-10-23 bootstrap
 
@@ -106,51 +106,45 @@ For this one-time transition, require a verified recovery copy and apply using o
 
 The scoped recovery copy was verified and restored locally before application. Immediately after application, data hashes/counts across all 19 pre-existing RallyPoint tables were unchanged (excluding only the intended new `material=false` field from the comparison). All 95 function definitions matched the rehearsal individually. A fingerprint of 3,009 unrelated schema objects, function definitions, constraints, indexes, triggers, policies, permissions and role settings was unchanged before and after. All 26 RallyPoint tables retain RLS and no RallyPoint function is executable by browser roles. See the [live verification evidence](../verification/2026-10-23-p08-session-loop.md#2026-10-24-live-deployment-gap-resolved).
 
-## Pending Sessions/Profile repair (2026-10-24)
+## Sessions/Profile repair (applied 2026-10-24)
 
-The deployed application also needs the five source migrations after
-`20261023144000` through `20261024100000_profile_fixes.sql`. They are absent from
-the shared database. A configured connection string alone cannot repair missing
-functions/tables. Render this specific incremental transition with:
+**Applied through Prisma Migrate after the owner's explicit local/production
+request.** The baseline `0_rallypoint_baseline_20261023144000` was marked applied,
+then `20261024100000_sessions_profiles` committed the five source migrations in
+one transaction. Prisma history is in `rallypoint_migrations`; old Supabase and
+other apps' histories were preserved. Do not reapply this repair via Supabase.
+Use `pnpm db:migrate:local` or, with a securely supplied
+`RALLYPOINT_MIGRATION_DATABASE_URL`, `pnpm db:migrate:production` for later runs.
+The runner validates the known target and applied SQL checksums, and deploys
+pending SQL with Prisma. No participant-data export was performed. See the
+[actual application evidence](../verification/2026-10-24-prisma-runtime-configuration.md#prisma-migrate-applied-locally-and-to-production).
 
-```sh
-node scripts/render-staging-schema.mjs --upgrade-sessions-profiles > /private/tmp/rallypoint-sessions-profiles.sql
-node scripts/rehearse-sessions-profiles.mjs
-```
+The transition included exactly the five source migrations after
+`20261023144000` through `20261024100000_profile_fixes.sql`. Production now has
+101 functions (fingerprint `151b1745055dd6be3f5c4336ff60f503`) and 27 application
+tables with RLS. Existing seat/payment/attendance/notification states and
+unrelated schema metadata were preserved. The Profile migration intentionally
+refreshes seven stored-name fields.
 
-The second command creates/removes disposable synthetic databases on local
-Docker only. The reviewed rendered SQL has SHA-256
-`35e4f03d4b336a2ee99c913473fc6ec2b92c2a8db8bc9944c4824c5f971cbd0e`.
-Guards require the exact installed 95-function/26-table checkpoint, expected
-schema shapes, RLS and role permissions, and reject partial/repeated application.
-Use a single atomic migration named `rallypoint_sessions_profiles_20261024` after
-separate owner authorization. Never apply the old `--upgrade` again.
+The earlier renderer artifact and scoped-export proposal are retained as
+historical evidence; they are not the current deployment command. Do not edit
+applied migration SQL or replay the old bootstrap/upgrade. A recovery approach
+must match the change: explicit transactions handle migration failure, while a
+committed backfill needs a reviewed forward repair or an existing authorized
+recovery source to recover old values. Prisma migration history does not store
+old row values. Routine migrations do not require exporting participant data.
 
-Before applying, securely snapshot only the affected stored-name fields and
-primary keys in `parties`, `fee_changes`, `attendance_changes`,
-`split_claim_changes`, `split_runs`, `session_cancellations` and
-`payment_instructions`, plus the existing
-`rallypoint.registration_view_before_split` definition. Verify the private
-recovery copy without printing names/IDs. Record counts/hashes of existing
-RallyPoint records and unrelated schema metadata for before/after comparison.
-The accepted Profile backfill refreshes these seven name fields; all other
-existing values must remain unchanged. An error must roll the whole migration
-back. After a successful commit, preserve new profile IDs/history on application
-rollback and use a separately reviewed forward repair for any defect.
-
-After application, verify 101 function definitions, all 38 named API signatures,
-27 RLS tables, browser denial, data preservation, and authenticated me/profile/
-Sessions reads plus surrounding organizer/registration paths. The expected
-function fingerprint is `151b1745055dd6be3f5c4336ff60f503`. Do not infer success
-from health/config alone. See the [diagnosis and rehearsal evidence](../verification/2026-10-24-prisma-runtime-configuration.md#continued-failure-deployed-application-ahead-of-the-database).
+Reproduce the actual Prisma rollback/deploy/repeat/checksum checks locally with
+`node scripts/rehearse-prisma-migrations.mjs`. It creates and removes disposable
+synthetic databases and never contacts production.
 
 ### Database-before-application release check
 
 For changes with database migrations, apply and verify the reviewed RallyPoint-only database migration **before merging the dependent application code to main**. Vercel's Git deployment remains enabled; database migration is an explicit owner/reviewer release step, not part of the Vercel build or preview deployment.
 
 1. Record the deployed application commit, installed RallyPoint migration checkpoint and exact pending source files in the change's review. Compare the installed definitions with that baseline; stop on drift. Exclude other apps' migration history from the pending set.
-2. Reuse the pending source SQL with the established RallyPoint namespace/bucket mapping, review its exact targets, and rehearse it against the installed baseline with existing synthetic records. Do not replay the bootstrap or this completed one-time upgrade. Take and verify an appropriately scoped recovery copy.
-3. Apply only that reviewed incremental SQL in one transaction, with one new `rallypoint_`-prefixed migration-history entry. Preserve existing history, shared Auth/settings and other apps' schemas/buckets. Verify record preservation, expected definitions, grants/RLS and the affected RPCs.
+2. Reuse the pending source SQL with the established RallyPoint namespace/bucket mapping, review its exact targets, and rehearse it against the installed baseline with existing synthetic records. Do not replay the bootstrap or this completed one-time upgrade. Choose a recovery approach appropriate to the actual writes and rehearse transactional rollback. For changes that overwrite/delete data, identify an existing recovery source or an explicitly accepted forward-repair approach; do not assume a participant-data export is required for every migration.
+3. Apply only the reviewed incremental SQL with Prisma Migrate, using explicit transactions and its isolated `rallypoint_migrations` history. Preserve existing history, shared Auth/settings and other apps' schemas/buckets. Verify record preservation, expected definitions, grants/RLS and the affected RPCs.
 4. Once the database supports the new code and the current deployed code, complete human review/merge, let Vercel deploy main, then verify the stable host. If a future migration is incompatible with the current code, split it into compatible add/change/remove releases rather than applying a breaking migration to a running app.
 
 This makes the release dependency explicit; each later database-dependent release still needs its own migration verification. It does not introduce automatic cloud migrations, rename schemas or replace the current migration tooling. Full phone/email evidence and the broader P-13 pilot recovery prerequisites remain separate.

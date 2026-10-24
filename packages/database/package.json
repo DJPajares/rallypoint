@@ -11,7 +11,8 @@
     "generate:cloudflare": "node generate.mjs cloudflare",
     "validate": "prisma validate",
     "lint": "oxlint src",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "migrate": "node migrate.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.1",

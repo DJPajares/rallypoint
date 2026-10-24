@@ -138,15 +138,32 @@ session pooler) with verified TLS and a dedicated login allowed to assume
 and its query timeout on the same connection, preserving the existing SQL grants
 even when a pooler ignores startup options. Both settings are transaction-local.
 Use supported secret storage for this URL; never put it in `NEXT_PUBLIC_*`, logs,
-client code, or committed config. Hosted credential provisioning and direct
-connectivity remain unverified and require their own authorized setup.
+client code, or committed config. Hosted credential setup remains owner-managed; the authorized migration connection and production database application were verified on 2026-10-24.
 
 Prisma calls the existing SQL functions; it does not expose model writes. SQL
-migrations under `supabase/migrations` remain the sole schema/function/grant/RLS
-authority. Do not run Prisma `db push`, `migrate dev`, reset or baselining against
-this database. This conversion changes no persistent schema, so recovery is a
-code/configuration rollback to the earlier REST adapter, retaining all database
-history. Future persistent changes still require SQL migrations and recovery plans.
+files under `supabase/migrations` remain the schema/function/grant/RLS authority.
+Prisma Migrate now applies them through deterministic local/hosted namespace
+mapping; generated migration directories are temporary, not another source copy.
+Its history is isolated in `rallypoint_migrations._prisma_migrations`, preserving
+other applications' migration histories and the original Supabase ledger.
+
+Run `pnpm db:migrate:local` for the loopback database. For the existing hosted
+RallyPoint target, securely supply `RALLYPOINT_MIGRATION_DATABASE_URL` in the
+process environment and run `pnpm db:migrate:production`. The runner validates
+the target, adopts the verified existing baseline once, checks applied SQL
+checksums and executes `prisma migrate deploy`. It never resets the database.
+Each generated SQL migration has explicit `BEGIN`/`COMMIT`; the five
+Sessions/Profile source changes are one atomic migration. Subsequent SQL files
+are separate transactional Prisma migrations. Run migrations before deploying
+application code that needs them.
+
+`pnpm db:start` uses Prisma for subsequent local migrations; the existing Supabase
+initialization/reset still supplies the initial synthetic SQL/seed and is adopted
+without replay. Local changes from newer branches are preserved. Do not run
+Prisma `db push`, `migrate dev` or reset against shared hosted data. A routine
+migration does not export participant records. Recovery plans must match actual
+data writes; a committed data backfill cannot be reversed from migration history
+alone. Keep successful schema/history on an application rollback.
 
 The Node and Workers clients have different WASM loaders. `pnpm dev`, `pnpm build`,
 `pnpm start` and `pnpm test:api` generate for Node; `pnpm build:cloudflare` and
@@ -668,4 +685,4 @@ failure statuses.
 
 The owner selected shared wProject with RallyPoint-specific schemas and verified email codes for staging on 2026-10-23. The current test address is [rallypoint.wndrhive.com](https://rallypoint.wndrhive.com), hosted in the Vercel project `rallypoint`. The original Cloudflare Worker `rallypoint-staging` remains running. See [staging deployment and recovery](docs/deployment/staging.md) for the exact boundaries, clean-build commands and runtime configuration. Local development stays isolated.
 
-Database changes have a separate release step: apply and verify the reviewed RallyPoint-only migration before merging dependent code to `main`. Vercel deploys the application automatically; it does not run SQL migrations. See the [database-before-application release check](docs/deployment/staging.md#database-before-application-release-check). The installed staging database currently stops at source migration `20261023144000`; Sessions/Profile code also requires the five pending migrations through `20261024100000`. See the [scoped repair and rehearsal](docs/verification/2026-10-24-prisma-runtime-configuration.md#continued-failure-deployed-application-ahead-of-the-database).
+Database changes have a separate release step: apply and verify the reviewed RallyPoint-only migration before merging dependent code to `main`. Vercel deploys the application automatically; it does not run SQL migrations. See the [database-before-application release check](docs/deployment/staging.md#database-before-application-release-check). The owner-authorized Prisma deployment on 2026-10-24 applied the five Sessions/Profile source migrations through `20261024100000`. Both local and hosted databases now have isolated Prisma migration history. See the [live application evidence](docs/verification/2026-10-24-prisma-runtime-configuration.md#prisma-migrate-applied-locally-and-to-production).

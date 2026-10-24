@@ -164,3 +164,79 @@ the shared-database migration. This is still a prepared repair, not restored
 hosted API evidence. User note: once the missing migration is applied, account,
 Profile and Sessions reads regain their required database functions; current
 names are refreshed consistently across existing RallyPoint records.
+
+## Prisma Migrate applied locally and to production
+
+The owner subsequently requested: “Apply this prisma migration script. For both
+local and prod.” This explicitly authorized the database application. The owner
+preferred applying migrations rather than the proposed participant-data export;
+no real names, account IDs or credentials were exported into a recovery file.
+
+Prisma 7.10.1 now deploys deterministic SQL migrations rendered from the existing
+`supabase/migrations` sources. Source SQL/functions remain authoritative; the
+runner maps `app`/`api` to `rallypoint`/`rallypoint_api` for production and isolates
+its ledger in `rallypoint_migrations._prisma_migrations`. Other applications'
+history and the original Supabase ledger are untouched. Every migration has
+explicit `BEGIN`/`COMMIT`. Applied checksums are verified before deployment.
+Connection query parameters cannot override the validated host/port/credentials.
+Commands regenerate the Node client before Node-side migration work.
+
+Observed 2026-10-24 (Asia/Singapore):
+
+- **Local:** all 37 source migrations were already present. Prisma adopted
+  `0_rallypoint_baseline_20261023144000` and
+  `20261024100000_sessions_profiles` without replaying SQL. A newer local
+  `group_edit` migration from another branch was preserved, including its extra
+  functions; it was not copied to production or undone.
+- **Production:** Prisma marked the verified existing 95-function baseline
+  applied, then `prisma migrate deploy` successfully committed the five pending
+  Sessions/Profile source changes as `20261024100000_sessions_profiles`.
+  Baseline checksum:
+  `4dcbc5ee5868b17b5a5a1d03107d1fed97efee28b2bf5be197c8c2f478a31297`.
+  Repair checksum:
+  `9fc8fb238d5d0b3331a8703e74499d9044b20cdeb37025917f07d6bf8f661d80`.
+  Both Prisma rows are finished, with no failed migration.
+- The resulting 101 function definitions match expected fingerprint
+  `151b1745055dd6be3f5c4336ff60f503`; all 38 API signatures and service-role
+  execute permissions match. All 27 application tables retain RLS, no browser
+  role can execute an application function, and browser roles cannot access the
+  migration-history schema.
+- Counts and hashes across all 26 pre-existing RallyPoint tables are unchanged
+  after excluding only the seven intended current-name fields. A fingerprint of
+  1,357 unrelated schema/relation/function/constraint/index/trigger/policy metadata
+  records is unchanged (`5ea879bdb8102ddf6a7b7f8a04bf969f`). This is aggregate
+  preservation evidence, not a row-data backup.
+- Production my-profile, Sessions and public-profile SQL reads succeeded under
+  `service_role` for existing profile records. An existing public profile
+  returned HTTP 200. Synthetic missing profile and shared-session reads return
+  HTTP 404 / `not_found` instead of database-unavailable errors. Health/config
+  return 200; signed-out private endpoints correctly return 401.
+- Synthetic authenticated local reads of me, my profile, Sessions, workspace,
+  dues and badges all return 200. The full adopted API suite passed **318/318**
+  against the local running app on port 3000. `pnpm check` passed lint, types and
+  Next production build; lint retains the existing render-time `Date.now()`
+  warning, zero errors.
+- `node scripts/rehearse-prisma-migrations.mjs` passed actual Prisma deployment,
+  injected-failure rollback, explicit failed-migration resolution, successful
+  retry and repeat/no-op for both namespace mappings in disposable synthetic
+  databases. It also covers a fresh Prisma-only database without legacy history
+  and rejects an altered applied checksum. The earlier data-preservation
+  rehearsal remains applicable because the same source SQL was reused.
+- Review found URL query-override and Node/Workers-client lifecycle problems.
+  Both were fixed and checked; final read-only review found no remaining
+  material finding. New target-validation cases failed before the guard and
+  passed after it. Focused renderer/migration tests passed 5/5.
+
+Local and production repeat runs are safe no-ops for application SQL. The
+production app was not redeployed or merged during this database operation;
+Vercel remains on its existing application build. The pooled-runtime code in
+PR #35 still requires human review/merge. A signed-in production browser session
+was unavailable, so authenticated production HTTP checks of me/profile/Sessions
+remain a gap; successful service-role function reads and public HTTP reads are
+separate evidence. No email/OTP was sent and no shared Auth user was created.
+
+User note: the live database now supports account names, Profile and Sessions.
+Existing records use the accepted current-name backfill; seat, fee, payment,
+attendance and notification states were preserved. Successful data backfills
+cannot be reversed from Prisma migration history alone; use a reviewed forward
+repair or an existing authorized recovery source rather than dropping schemas.
