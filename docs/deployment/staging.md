@@ -47,14 +47,22 @@ Prisma requires `DATABASE_URL` in addition to the Supabase API keys. Obtain the
 existing project's connection string from [wProject Connect](https://supabase.com/dashboard/project/zqidfkofbzusvpikftdf?showConnect=true&method=session),
 use its Session pooler endpoint for IPv4 connectivity, and fill the password
 placeholder only inside secure credential storage. Preserve the shared database
-password and all other apps' configuration. This adapter assumes `service_role`
-on each connection; the configured login must be allowed to assume that role.
+password and all other apps' configuration. This adapter sets `service_role`
+inside each operation's transaction; the login must be allowed to assume that role.
 After saving the variable, redeploy: existing deployments retain their original
 environment. A READY build and `/api/health` do not prove database connectivity.
 With the configured `rallypoint_api` schema, a public session/profile read using
 a nonexistent synthetic UUID must return the expected not-found response, not
 503, before proceeding to authenticated participant actions. Preview credentials
 remain a separate owner-managed setup.
+
+For local development, keep the generated local configuration together:
+`DATABASE_URL` points to local Postgres on 54322, while Supabase Auth/Storage use
+54321 and the default API schema is `api`. A hosted database URL cannot be added
+to that configuration by itself: local Auth identities and the local schema do
+not belong to the hosted `rallypoint_api` database. `pnpm db:start` writes the
+matching local values. Preserve custom ignored environment files before replacing
+them, and keep any hosted credentials only in supported secret storage.
 
 Project build settings: Root Directory `apps/web`, include workspace source outside that directory, Node `24.x`, install `corepack pnpm install --frozen-lockfile`, build `pnpm build` (Prisma Node-client generation followed by the normal Next.js build), framework `nextjs`, Functions region `sin1`. Generation is part of the app build because a cached install can skip `postinstall`. This path does not use OpenNext or the Cloudflare deploy script. Supabase credentials are server environment variables; the public `/api/config` exposes only the publishable sign-in configuration.
 

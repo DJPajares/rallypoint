@@ -78,9 +78,9 @@ export function createDatabase(env: DatabaseEnv): Database {
               max: 1,
               connectionTimeoutMillis: 5000,
               idleTimeoutMillis: 5000,
-              statement_timeout: 5000,
-              // Apply on every connection, never as a session mutation in a pool.
-              options: "-c role=service_role",
+              // Poolers may discard startup GUCs. Enforce trusted settings in
+              // the same transaction as the operation instead.
+              options: "",
             }),
             log: [],
           });
@@ -92,8 +92,14 @@ export function createDatabase(env: DatabaseEnv): Database {
           return Prisma.sql`${Prisma.raw(`"${key}"`)} => ${bound}::${Prisma.raw(type)}`;
         });
         // Both identifiers are validated above; only values become placeholders.
-        const rows = await client.$queryRaw<{ result: unknown }[]>(
-          Prisma.sql`select to_jsonb(${Prisma.raw(`"${schema}"."${name}"`)}(${Prisma.join(parameters)})) as result`,
+        const query = Prisma.sql`select to_jsonb(${Prisma.raw(`"${schema}"."${name}"`)}(${Prisma.join(parameters)})) as result`;
+        const rows = await client.$transaction(
+          async (tx) => {
+            await tx.$executeRaw`SET LOCAL ROLE service_role`;
+            await tx.$executeRaw`SET LOCAL statement_timeout = '5s'`;
+            return tx.$queryRaw<{ result: unknown }[]>(query);
+          },
+          { maxWait: 5000, timeout: 7000 },
         );
         return { data: rows[0]?.result ?? null, error: null };
       } catch (error) {

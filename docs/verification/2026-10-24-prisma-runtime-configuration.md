@@ -26,3 +26,44 @@ source, logs and review artifacts. See the [deployment guide](../deployment/stag
 
 Status at diagnosis: unresolved pending secure credential entry. This record does
 not claim restored API behavior, a new deployment, or live authenticated testing.
+
+## Local failure and recovery
+
+The owner's running local checkout used local Supabase Auth/Storage and the
+default `api` schema, but its newly entered `DATABASE_URL` selected a hosted
+Supabase Session pooler. A read-only metadata query connected successfully and
+confirmed that database has `rallypoint_api`, not `api`. This was a configuration
+mismatch, independent of the missing Vercel variable above.
+
+Only `DATABASE_URL` was restored to the matching local synthetic database in
+the running checkout's `.env.local` and `.dev.vars`. Original files were retained
+in ignored mode-600 backups; no credential value was logged or committed. The
+running app reloaded without a restart. Both public synthetic missing-record reads
+now return 404; synthetic authenticated reads of `/api/me`, `/api/workspace`,
+`/api/dues`, `/api/me/sessions`, `/api/me/profile` and `/api/me/badges` returned 200.
+
+## Pooled-role correction
+
+The hosted metadata check also showed `current_user=postgres`: the Session pooler
+ignored the startup role option. The adapter now starts a Prisma transaction,
+executes fixed `SET LOCAL ROLE service_role` and `SET LOCAL statement_timeout='5s'`
+commands, then runs the allowlisted function on the same connection. The settings
+end with the transaction. Existing SQL locks, receipts and function definitions
+remain unchanged.
+
+A local real-Postgres regression models a pooler returning a connection as its
+login role with timeout zero. Old code returned `postgres`/`0`; fixed code returned
+`service_role`/`5s`. All six focused adapter tests passed. A read-only review found
+no actionable issue in the transaction/cleanup/error behavior. A separate attempt
+to use certificate-verified TLS with the hosted URL failed certificate validation;
+no TLS bypass was introduced. Hosted rollout still needs its trusted CA/connection
+configuration and the owner-managed Vercel secret. Local recovery above is observed
+and does not claim those hosted prerequisites are complete.
+
+Local branch validation: the complete adopted API suite passed 315/315 on loopback
+port 3197 after the transaction change. Lint, type checks and the Next production
+build passed. This includes role denial/revocation, simultaneous joins, queue and
+withdrawal races, retries, fees, attendance, profiles and email dispatch behavior.
+The OpenNext Workers build and environment-isolation guard passed, followed by
+23/23 local Workers authorization and withdrawal/queue checks. No hosted data,
+credential, schema or deployment changes were made during these checks.

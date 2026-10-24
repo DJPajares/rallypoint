@@ -134,8 +134,9 @@ service when the direct connection is missing or fails.
 
 Hosted deployments need a reviewed direct PostgreSQL connection (or a compatible
 session pooler) with verified TLS and a dedicated login allowed to assume
-`service_role`. Each connection explicitly assumes that role, preserving the
-existing SQL grants rather than running operations as the login's broader role.
+`service_role`. Each operation opens a transaction and explicitly sets that role
+and its query timeout on the same connection, preserving the existing SQL grants
+even when a pooler ignores startup options. Both settings are transaction-local.
 Use supported secret storage for this URL; never put it in `NEXT_PUBLIC_*`, logs,
 client code, or committed config. Hosted credential provisioning and direct
 connectivity remain unverified and require their own authorized setup.
