@@ -143,7 +143,7 @@ function GroupCard({ group }: { group: GroupSummary }) {
         </Link>
       ) : (
         <p className="rp-help">
-          Sessions from this group show on your Sessions tab.
+          Sessions you join in this group show on your Sessions tab.
         </p>
       )}
     </article>
