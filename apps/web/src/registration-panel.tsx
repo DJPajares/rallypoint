@@ -285,8 +285,10 @@ export function RegistrationPanel({
     ) : (
       <LockSimpleIcon size={22} />
     );
-  // A player whose unpaid spot went to the waitlist can join again.
-  const canJoin = event.registrationWindow === "open" && (!own || released);
+  // A player whose unpaid spot went to the waitlist, or who withdrew, can join again.
+  const canJoin =
+    event.registrationWindow === "open" &&
+    (!own || released || own.state === "withdrawn");
   const hasAction = own
     ? ((own.state === "confirmed" || own.state === "waitlisted") &&
         event.registrationWindow !== "closed") ||
