@@ -85,7 +85,10 @@ test("a link-only change is material, an equal or both-missing link is not", () 
     session.hasMaterialSessionChange(withLink, { ...withLink }),
     false,
   );
-  assert.equal(session.hasMaterialSessionChange(without, { ...without }), false);
+  assert.equal(
+    session.hasMaterialSessionChange(without, { ...without }),
+    false,
+  );
 });
 
 test("run again copies the link", () => {
