@@ -106,6 +106,44 @@ For this one-time transition, require a verified recovery copy and apply using o
 
 The scoped recovery copy was verified and restored locally before application. Immediately after application, data hashes/counts across all 19 pre-existing RallyPoint tables were unchanged (excluding only the intended new `material=false` field from the comparison). All 95 function definitions matched the rehearsal individually. A fingerprint of 3,009 unrelated schema objects, function definitions, constraints, indexes, triggers, policies, permissions and role settings was unchanged before and after. All 26 RallyPoint tables retain RLS and no RallyPoint function is executable by browser roles. See the [live verification evidence](../verification/2026-10-23-p08-session-loop.md#2026-10-24-live-deployment-gap-resolved).
 
+## Pending Sessions/Profile repair (2026-10-24)
+
+The deployed application also needs the five source migrations after
+`20261023144000` through `20261024100000_profile_fixes.sql`. They are absent from
+the shared database. A configured connection string alone cannot repair missing
+functions/tables. Render this specific incremental transition with:
+
+```sh
+node scripts/render-staging-schema.mjs --upgrade-sessions-profiles > /private/tmp/rallypoint-sessions-profiles.sql
+node scripts/rehearse-sessions-profiles.mjs
+```
+
+The second command creates/removes disposable synthetic databases on local
+Docker only. The reviewed rendered SQL has SHA-256
+`35e4f03d4b336a2ee99c913473fc6ec2b92c2a8db8bc9944c4824c5f971cbd0e`.
+Guards require the exact installed 95-function/26-table checkpoint, expected
+schema shapes, RLS and role permissions, and reject partial/repeated application.
+Use a single atomic migration named `rallypoint_sessions_profiles_20261024` after
+separate owner authorization. Never apply the old `--upgrade` again.
+
+Before applying, securely snapshot only the affected stored-name fields and
+primary keys in `parties`, `fee_changes`, `attendance_changes`,
+`split_claim_changes`, `split_runs`, `session_cancellations` and
+`payment_instructions`, plus the existing
+`rallypoint.registration_view_before_split` definition. Verify the private
+recovery copy without printing names/IDs. Record counts/hashes of existing
+RallyPoint records and unrelated schema metadata for before/after comparison.
+The accepted Profile backfill refreshes these seven name fields; all other
+existing values must remain unchanged. An error must roll the whole migration
+back. After a successful commit, preserve new profile IDs/history on application
+rollback and use a separately reviewed forward repair for any defect.
+
+After application, verify 101 function definitions, all 38 named API signatures,
+27 RLS tables, browser denial, data preservation, and authenticated me/profile/
+Sessions reads plus surrounding organizer/registration paths. The expected
+function fingerprint is `151b1745055dd6be3f5c4336ff60f503`. Do not infer success
+from health/config alone. See the [diagnosis and rehearsal evidence](../verification/2026-10-24-prisma-runtime-configuration.md#continued-failure-deployed-application-ahead-of-the-database).
+
 ### Database-before-application release check
 
 For changes with database migrations, apply and verify the reviewed RallyPoint-only database migration **before merging the dependent application code to main**. Vercel's Git deployment remains enabled; database migration is an explicit owner/reviewer release step, not part of the Vercel build or preview deployment.
@@ -115,7 +153,7 @@ For changes with database migrations, apply and verify the reviewed RallyPoint-o
 3. Apply only that reviewed incremental SQL in one transaction, with one new `rallypoint_`-prefixed migration-history entry. Preserve existing history, shared Auth/settings and other apps' schemas/buckets. Verify record preservation, expected definitions, grants/RLS and the affected RPCs.
 4. Once the database supports the new code and the current deployed code, complete human review/merge, let Vercel deploy main, then verify the stable host. If a future migration is incompatible with the current code, split it into compatible add/change/remove releases rather than applying a breaking migration to a running app.
 
-This closes the current schema gap and makes the release dependency explicit. It does not introduce automatic cloud migrations, rename schemas or replace the current migration tooling. Full phone/email evidence and the broader P-13 pilot recovery prerequisites remain separate.
+This makes the release dependency explicit; each later database-dependent release still needs its own migration verification. It does not introduce automatic cloud migrations, rename schemas or replace the current migration tooling. Full phone/email evidence and the broader P-13 pilot recovery prerequisites remain separate.
 
 ## Recovery
 

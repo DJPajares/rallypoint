@@ -67,3 +67,100 @@ withdrawal races, retries, fees, attendance, profiles and email dispatch behavio
 The OpenNext Workers build and environment-isolation guard passed, followed by
 23/23 local Workers authorization and withdrawal/queue checks. No hosted data,
 credential, schema or deployment changes were made during these checks.
+
+## Continued failure: deployed application ahead of the database
+
+Follow-up on 2026-10-24: the owner has now supplied Production `DATABASE_URL`.
+The active Vercel deployment is `dpl_4DWheLhrwP9FarjAuMPkrPsUNUnB`, from
+`main` at `55b8c36d6a78`. Read-only stable-host probes returned health/config 200,
+correct signed-out 401 responses for me/profile/sessions, a missing synthetic
+session 404, and a missing synthetic public profile 503. This establishes a
+working database connection, but not a complete application database contract.
+
+Catalog inspection found only 33 of the 38 allowlisted API functions. All 33
+existing functions have the expected named arguments/types and service-role
+execute permission. The missing functions are `list_my_sessions`,
+`ensure_my_profile`, `read_my_profile`, `save_my_profile`, and `read_profile`;
+`rallypoint.profiles` is also absent. `/api/me` calls `ensure_my_profile` to resolve
+the displayed name. Joining and organizer actions that resolve an actor name
+(payment, attendance, split finalization/correction, cancellation and payment
+instructions) are affected by the same missing dependency. Auth success and a
+healthy `/api/health` response cannot establish those paths work.
+
+The hosted migration history stops at `rallypoint_staging_upgrade_20261023`.
+Its 95 function definitions exactly match the local source baseline through
+`20261023144000` (MD5 `53b0a936b162b0555bf193e879cd1761`). Its columns,
+constraints, indexes, triggers and policies also match that baseline (MD5
+`bd23e4157e2c634a18be9ea48d7ed772`). All 26 existing application tables retain
+RLS; no application table or function is accessible to browser roles. No
+additional signature/grant mismatch was found in the broader function audit.
+
+### Prepared repair and observed rehearsal
+
+`node scripts/render-staging-schema.mjs --upgrade-sessions-profiles` emits only
+these pending source migrations, with the established namespace mapping:
+
+- `20261023150000_my_sessions.sql`
+- `20261023151000_my_sessions_cancelled_drafts.sql`
+- `20261024090000_profiles.sql`
+- `20261024091000_one_name.sql`
+- `20261024100000_profile_fixes.sql`
+
+Rendered SQL SHA-256:
+`35e4f03d4b336a2ee99c913473fc6ec2b92c2a8db8bc9944c4824c5f971cbd0e`.
+It requires an atomic transaction and refuses function/table/security drift,
+partial installations and repeats. The historical `--upgrade` artifact's hash
+is unchanged. This adds profiles and the five missing API functions, updates one
+existing roster function, and carries the accepted current account name onto
+seven stored-name columns. It does not change seat, fee, payment, attendance or
+notification states. The name backfill is an intentional persistent change.
+
+Reproduce with `node scripts/rehearse-sessions-profiles.mjs` against the local
+Docker Supabase database. It creates and removes isolated synthetic databases;
+it never reads a hosted URL or existing application records. Observed:
+
+- All 26 existing tables' records preserved byte-for-byte after omitting only
+  the seven intended stored-name columns; all seven populated columns refreshed.
+- 101 resulting function definitions (MD5 `151b1745055dd6be3f5c4336ff60f503`);
+  all 38 API functions match named arguments/types and allow service-role use.
+- All 27 application tables have RLS; zero browser-executable functions.
+- Profile creation/read, public profile and Sessions functions execute under
+  `service_role`; the public profile has no account ID.
+- Failure injected after the final migration rolls back functions, profiles and
+  existing name writes together. Function, table, column, RLS and permission
+  drift are rejected, as is a second application.
+- A synthetic baseline backup restores into a separate database with identical
+  existing records and function definitions. An unrelated schema sentinel survives.
+
+A reviewer identified the initial function-only drift guard as incomplete; the
+repair now checks table shape, RLS and browser/service function privileges too,
+with negative rehearsal cases. No hosted migration or deployment was performed.
+The shared-database application requires separate owner authorization under
+AGENTS.md, then a verified private recovery copy of affected names/keys and the
+replaced function definition, atomic application with one RallyPoint migration
+entry, and post-application checks. Retain successful database changes on a code
+rollback; any data restoration or schema reversal requires a reviewed scoped
+repair. Live authenticated browser verification remains outstanding.
+
+Final prepared-repair checks on 2026-10-24: `pnpm test:api` passed 316/316
+against local synthetic Auth/Postgres and loopback app port 3000; migration
+renderer tests passed 3/3; the isolated migration/rollback/recovery rehearsal
+passed. `pnpm lint`, `pnpm typecheck`, `pnpm build`, direct lint of the changed
+scripts/tests, and `git diff --check` passed. Workspace lint retains the existing
+React render-time `Date.now()` warning in `session-pages.tsx`; zero lint errors.
+No application UI behavior was changed by this migration-preparation addition.
+
+The reviewer's security-drift finding was addressed and exercised locally.
+A second subagent review could not run because its account usage limit was
+reached; the final guard was self-reviewed and tested with the negative cases
+above. The earlier transaction-runtime review remains separate evidence.
+
+Automatic approval review rejected preparation of a hosted recovery copy because
+exporting real participant names/IDs into a persistent encrypted local file had
+not been explicitly authorized. No export or hosted write was performed, and
+no alternative export was attempted. Owner approval must cover that narrow
+seven-table field/key backup and its private recovery verification as well as
+the shared-database migration. This is still a prepared repair, not restored
+hosted API evidence. User note: once the missing migration is applied, account,
+Profile and Sessions reads regain their required database functions; current
+names are refreshed consistently across existing RallyPoint records.
