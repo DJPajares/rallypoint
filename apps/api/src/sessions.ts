@@ -30,6 +30,7 @@ async function rpc(db: Database, name: string, args: Record<string, unknown>) {
         "This session is already published. Reload it to edit.",
       session_closed:
         "This session is cancelled or completed and cannot be edited.",
+      group_has_upcoming: "Cancel its upcoming sessions first.",
     };
     if (conflicts[error.message])
       throw new ApiError(409, error.message, conflicts[error.message]);
@@ -130,6 +131,46 @@ export const sessions = new Hono<ApiEnv>()
     );
   })
   .all("/groups", requireUser, () => notAvailable())
+  .post(`/groups/${id}/rename`, requireUser, async (c) => {
+    const b = await readBody(c.req.raw);
+    const { operationKey } = parse(
+      key,
+      b,
+      "invalid_input",
+      "A valid request key is required.",
+    );
+    const { name } = parse(
+      groupName,
+      b,
+      "invalid_input",
+      "Use a group name of 1 to 100 characters.",
+    );
+    return json(
+      await rpc(c.var.db, "rename_group", {
+        p_actor_id: c.var.user.id,
+        p_key: operationKey,
+        p_group_id: c.req.param("id"),
+        p_name: name,
+      }),
+    );
+  })
+  .all(`/groups/${id}/rename`, requireUser, () => notAvailable())
+  .post(`/groups/${id}/archive`, requireUser, async (c) => {
+    const { operationKey } = parse(
+      key,
+      await readBody(c.req.raw),
+      "invalid_input",
+      "A valid request key is required.",
+    );
+    return json(
+      await rpc(c.var.db, "archive_group", {
+        p_actor_id: c.var.user.id,
+        p_key: operationKey,
+        p_group_id: c.req.param("id"),
+      }),
+    );
+  })
+  .all(`/groups/${id}/archive`, requireUser, () => notAvailable())
   .get(`/groups/${id}/sessions`, requireUser, async (c) =>
     json({
       sessions: await rpc(c.var.db, "list_group_sessions", {
