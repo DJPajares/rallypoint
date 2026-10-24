@@ -18,6 +18,10 @@ Requirements: Node 24+ (verified with 24.16.0), pnpm 11.14.0 (pinned in
 daemon. The first database start downloads local images. No cloud account, paid
 resource or real participant data is needed for this setup.
 
+Installation generates the Prisma 7.10.1 client locally; generated files are
+ignored. Application and email database calls use Prisma's PostgreSQL adapter.
+Supabase continues to supply Postgres, Auth and private file Storage.
+
 ```sh
 pnpm install --frozen-lockfile
 pnpm db:start
@@ -65,6 +69,8 @@ email provider is enabled only to exercise existing synthetic identities.
 | `pnpm build:cloudflare` | Build the local OpenNext Cloudflare Worker artifact                              |
 | `pnpm preview`          | Serve that artifact locally on Workers at port 3000                              |
 | `pnpm db:lint`          | Check local SQL/function typing                                                  |
+| `pnpm db:generate`      | Generate the Prisma client for Node development/start and direct tests           |
+| `pnpm db:validate`      | Validate the Prisma schema without database credentials                           |
 | `pnpm test:api`         | Real local Auth/API and page/navigation regression tests; app/DB must be running |
 | `pnpm db:start`         | Start/reuse local services, apply pending migrations and refresh synthetic setup |
 | `pnpm db:reset`         | Recreate only the local synthetic DB and seed identities/roles                   |
@@ -81,11 +87,13 @@ preview; it points Wrangler at the old build directory.
 - `apps/web`: Next.js App Router pages, client Auth/UI and dynamic API routes.
 - `packages/domain`: browser-safe contracts, session validation, exact money formatting and auth return-path validation.
 - `apps/api`: the API as a Hono app with Zod-validated requests: verified identity
-  and explicit Supabase RPC calls. The web app mounts it at `/api` on the same
+  and explicit transactional SQL function calls through Prisma. The web app mounts it at `/api` on the same
   port, so there is one deployment and one URL. It must stay free of Next.js and
   host-specific code (`tests/api-boundary.test.mjs` enforces this) so it can run
   on its own later without a rewrite.
 - `supabase`: unchanged local project identity and migration history.
+- `packages/database`: server-only Prisma client and allowlisted, parameter-bound
+  PostgreSQL function access shared by the API and scheduled email sender.
 - `scripts` / `tests`: root local lifecycle and meaningful integration checks.
 
 Workspace dependencies use `workspace:*`. Turbo orders package checks and caches
@@ -116,6 +124,39 @@ Never expose the server key through `NEXT_PUBLIC_*`, Next config `env`, source,
 logs or client caches. API configuration is read at runtime; private responses
 and mutation result lookups stay `no-store`. Production runtime secrets are a
 separate setup step.
+
+Prisma additionally requires a server-only `DATABASE_URL` pointing to the same
+database as Supabase Auth/Storage. `db:start` writes the local connection into both
+ignored runtime files. Existing setups must refresh those files before using
+this backend. The API has no REST database fallback. Auth/configuration can still
+be read without a database connection; data operations report an unavailable
+service when the direct connection is missing or fails.
+
+Hosted deployments need a reviewed direct PostgreSQL connection (or a compatible
+session pooler) with verified TLS and a dedicated login allowed to assume
+`service_role`. Each connection explicitly assumes that role, preserving the
+existing SQL grants rather than running operations as the login's broader role.
+Use supported secret storage for this URL; never put it in `NEXT_PUBLIC_*`, logs,
+client code, or committed config. Hosted credential provisioning and direct
+connectivity remain unverified and require their own authorized setup.
+
+Prisma calls the existing SQL functions; it does not expose model writes. SQL
+migrations under `supabase/migrations` remain the sole schema/function/grant/RLS
+authority. Do not run Prisma `db push`, `migrate dev`, reset or baselining against
+this database. This conversion changes no persistent schema, so recovery is a
+code/configuration rollback to the earlier REST adapter, retaining all database
+history. Future persistent changes still require SQL migrations and recovery plans.
+
+The Node and Workers clients have different WASM loaders. `pnpm dev`, `pnpm build`,
+`pnpm start` and `pnpm test:api` generate for Node; `pnpm build:cloudflare` and
+`pnpm preview` generate for Workers. After building for Workers, run
+`pnpm db:generate` before direct `node --test` invocations. Do not build for both
+targets concurrently. Each request or scheduled drain closes its own Prisma
+connection; no database sockets are shared across Workers requests.
+
+The app-level `pnpm build` in `apps/web` also generates the Node client explicitly,
+so Vercel builds work when a cached install skips `postinstall`. OpenNext uses its
+own build command to generate the Workers client before compiling Next.js.
 
 The shell works without configuration; sign-in explains the missing setup rather
 than claiming a connection succeeded. All private API responses are uncached.

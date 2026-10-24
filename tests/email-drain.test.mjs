@@ -1,4 +1,4 @@
-import { test } from "node:test";
+import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
@@ -10,6 +10,7 @@ import {
 import { drainEmail } from "../packages/email/src/drain.ts";
 import { deliveryFromEnv } from "../packages/email/src/client.ts";
 import { mailpitProvider } from "../packages/email/src/provider.ts";
+import { createDatabase } from "../packages/database/src/index.ts";
 
 const env = localEnv(),
   base = process.env.RALLYPOINT_TEST_URL ?? "http://127.0.0.1:3000",
@@ -37,10 +38,8 @@ const authOptions = { persistSession: false, autoRefreshToken: false };
 const admin = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
   auth: authOptions,
 });
-const db = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
-  auth: authOptions,
-  db: { schema: "api" },
-});
+const db = createDatabase(env);
+after(() => db.close());
 const publicClient = () =>
   createClient(env.SUPABASE_URL, env.SUPABASE_PUBLISHABLE_KEY, {
     auth: authOptions,
@@ -120,7 +119,7 @@ function stub() {
 }
 
 test("deliveryFromEnv picks a provider from the environment alone", () => {
-  const keys = { SUPABASE_URL: env.SUPABASE_URL, SUPABASE_SECRET_KEY: "x" };
+  const keys = { DATABASE_URL: env.DATABASE_URL, SUPABASE_URL: env.SUPABASE_URL, SUPABASE_SECRET_KEY: "x" };
   assert.equal(deliveryFromEnv({}), null);
   assert.equal(deliveryFromEnv({ SUPABASE_URL: env.SUPABASE_URL }), null);
   assert.equal(deliveryFromEnv({ SUPABASE_SECRET_KEY: "x" }), null);
@@ -145,13 +144,17 @@ test("deliveryFromEnv picks a provider from the environment alone", () => {
   );
 });
 
-test("an empty API schema setting falls back to the default schema", () => {
-  const keys = { SUPABASE_URL: env.SUPABASE_URL, SUPABASE_SECRET_KEY: "x" };
-  const schemaOf = (extra) =>
-    deliveryFromEnv({ ...keys, ...extra }).db.rest.schemaName;
-  assert.equal(schemaOf({ SUPABASE_API_SCHEMA: "" }), "api");
-  assert.equal(schemaOf({}), "api");
-  assert.equal(schemaOf({ SUPABASE_API_SCHEMA: "other_api" }), "other_api");
+test("email database access uses Prisma and defaults an empty API schema", async () => {
+  const keys = { DATABASE_URL: env.DATABASE_URL, SUPABASE_URL: env.SUPABASE_URL, SUPABASE_SECRET_KEY: "x" };
+  assert.equal(deliveryFromEnv({ SUPABASE_URL: env.SUPABASE_URL, SUPABASE_SECRET_KEY: "x" }), null);
+  for (const value of [undefined, "", "missing_synthetic_api"]) {
+    const options = deliveryFromEnv({ ...keys, SUPABASE_API_SCHEMA: value });
+    try {
+      const result = await options.db.rpc("list_my_groups", { p_actor_id: crypto.randomUUID() });
+      if (value === "missing_synthetic_api") assert.equal(result.error.code, "3F000");
+      else assert.deepEqual(result, { data: [], error: null });
+    } finally { await options.close(); }
+  }
 });
 
 test("the drain sends each due email once, within the ceilings", async (t) => {

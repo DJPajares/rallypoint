@@ -4,13 +4,7 @@ import { z } from "zod";
 import { normalizeProfile, skillLevels } from "@rallypoint/domain/profile";
 import { ApiError, json, readBody, uuidParam } from "./http";
 import type { ApiEnv } from "./identity";
-import {
-  client,
-  connection,
-  displayName,
-  notAvailable,
-  requireUser,
-} from "./identity";
+import { connection, displayName, notAvailable, requireUser } from "./identity";
 
 const unavailable = () =>
   new ApiError(
@@ -89,12 +83,10 @@ export const profiles = new Hono<ApiEnv>()
   .all("/me/profile", requireUser, () => notAvailable())
   // Public: anyone holding the link can read the page's own fields, nothing else.
   .get(`/people/${id}`, async (c) => {
-    const conn = connection(c.env);
-    const { data, error } = await client(
-      conn.url,
-      conn.secret,
-      c.env.SUPABASE_API_SCHEMA ?? "api",
-    ).rpc("read_profile", { p_profile_id: c.req.param("profileId") });
+    connection(c.env);
+    const { data, error } = await c.var.db.rpc("read_profile", {
+      p_profile_id: c.req.param("profileId"),
+    });
     if (error?.message === "profile_not_found")
       throw new ApiError(404, "not_found", "Profile not found");
     if (error) throw unavailable();

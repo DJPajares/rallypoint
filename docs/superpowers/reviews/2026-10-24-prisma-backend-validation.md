@@ -1,0 +1,113 @@
+# Prisma backend validation
+
+Date: 2026-10-24 (Asia/Singapore). Review: [PR #34](https://github.com/DJPajares/rallypoint/pull/34).
+Version: `codex/prisma-backend`, including integration baseline `b46c4685ca29`
+and initial conversion `04cedba381a6`. Initial-checkout results below are labeled
+separately from current-main validation. This is local synthetic evidence,
+not acceptance, integration, deployment or live-provider verification.
+
+## Change and selected scope
+
+The owner selected Prisma database access with transactional SQL retained (PRD
+D-20). API and scheduled-email database calls now use Prisma 7.10.1 with the
+PostgreSQL adapter. Supabase Auth and private Storage retain their roles. SQL
+functions, migrations, grants, RLS, locks, receipts and financial history remain
+unchanged. The generated client exposes bound function calls, not direct model
+writes. Database clients close after each request or scheduled drain.
+
+Environment: macOS, Node 24.16.0, pnpm 11.14.0, Next.js 16.4.2, OpenNext Cloudflare
+1.20.13, Wrangler 4.151.3, Supabase CLI 2.121.0 and local PostgreSQL 17.11. Synthetic
+Auth/Storage/mail and database services bind to loopback; the Node app used port
+3197 to preserve already-running local servers.
+
+## Observed checks
+
+| Check | Observed result | Coverage / limitation |
+| --- | --- | --- |
+| `pnpm install --frozen-lockfile` | Passed | Final workspace dependency declarations and lockfile agree. |
+| `pnpm check` | Passed after final source changes | Workspace lint, type checks and Next production build. One existing `Date.now()` React purity warning in `session-pages.tsx:368`; no lint errors. |
+| `pnpm db:validate` | Passed | Prisma configuration/schema validation without database credentials. |
+| `pnpm db:lint` | Passed, no schema errors | Existing local SQL/function typing; no migrations or grants changed. |
+| Current-main full API run (`RALLYPOINT_TEST_URL=http://127.0.0.1:3197 pnpm test:api`) | 314/314 passed | Includes accepted Sessions/profile endpoints, roster privacy, all existing authorization/concurrency/financial/retry and email behavior. |
+| Current-main focused deployment/profile/Sessions run | 31/31 passed | Includes a failing-then-passing public-profile transport regression proving it uses Prisma and the selected deployment schema. |
+| `pnpm db:start` on current-main branch | Passed | Adopted local configuration and seed path; existing database preserved. |
+| Initial checkout full API run (before current-main update) | 270 reported tests: 268 passed; one leaf assertion and its parent failed | Auth/roles/revocation, direct operation denial, session publication/edit/cancellation, seats/guests/queue races, post-lock time boundaries, request replay/recovery, payment/attendance/split corrections, QR privacy, email dispatch and navigation. Failure is the baseline mismatch below. |
+| Focused Prisma/deployment/email checks | 25/25 passed | SQLSTATE fidelity, SQL identifier/injection denial, named/nullable/JSON/array/bigint parameters, deployment schema selection, Auth/Storage separation and email sender limits/retries/local inbox. |
+| `pnpm build:staging` | Passed | OpenNext Workers artifact built; the existing guard confirmed no embedded `.env` values. Next tracing explicitly includes the driver's Workers socket adapter. No deployment occurred. |
+| Current-main Workers HTTP run on port 3199 | 37/37 passed | Real Workers runtime against synthetic Auth/Postgres: auth/current roles, profile read/save and privacy, current names/Unicode, and own-Sessions filtering/history. Current-main Workers build and environment-isolation guard passed before this run. |
+| Initial conversion Workers HTTP run on port 3199 | 39/39 passed | Real Workers TCP access to synthetic Postgres/Auth/Storage: identity/current roles, session publication/retries, withdrawal and queue races, private payment QR access. Commands used the existing `api`, `sessions`, `withdrawals` and `payment-instructions` test files with `RALLYPOINT_TEST_URL` set to the preview. |
+| Local Workers scheduled handler on port 3200 | Passed | Invoked once using Wrangler's `--test-scheduled` against temporary test functions. Claim, disabled-delivery settlement and lease release each ran exactly once as `service_role` with `5s` timeout. Existing email jobs were untouched; no messages were sent. Fixture schema was removed afterward. |
+| Public asset credential scan | Passed for 29 current-main Next static assets | Neither configured database URL nor server key appeared in those public assets. |
+| `git diff --check` | Passed | No whitespace errors. |
+
+Node and Workers generation/builds were run sequentially. Test servers were
+stopped after verification; the generated client was restored for Node
+development. The local Workers HTTP tests use the shared synthetic database and
+now use the migration-aligned current-main schema. Initial-checkout results are
+retained below only as historical diagnostics. The scheduled check
+used only isolated synthetic functions; external provider delivery was not tested.
+
+## Initial alignment diagnosis (resolved)
+
+The initial checkout lacked five migrations already present in the shared local
+synthetic database. Its roster includes `profileId`; the initial checkout's registration privacy
+test expects only `guestName`, `primaryName`, `seats` and `title`. The assertion
+fails identically against the unchanged backend from `d12d46d6bc94`, served
+separately on loopback port 3198 (7/9 reported tests passed, same leaf and parent
+failed). The Prisma conversion preserves that existing response.
+
+The database was not reset or downgraded. On the initial checkout, `pnpm db:start`
+refused that newer migration history. After bringing current main `b46c4685ca29`
+into the feature branch, its accepted Sessions/profile migrations and roster test
+are aligned with the local database, and `pnpm db:start` passed using its adopted
+configuration/seed path. No new migration was introduced by the conversion. A
+fresh empty-database reset was not run; existing synthetic data was preserved.
+
+## Fresh review and correction
+
+The Superpowers reviewer found one P1: `pg` lets URL query options override
+explicit adapter settings. A real-database regression reproduced operations
+running as `postgres` with timeout `0`. The adapter now removes URL `options` and
+`statement_timeout` overrides before enforcing `service_role` and five seconds.
+The same regression then passed with `service_role` and `5s`, followed by the
+focused checks, adopted Node checks and full API suite reported above. No other
+actionable findings were reported. The reviewer verified pool disposal on
+ordinary query/connection failures. A separate review of the current-main merge
+adaptations reported no new actionable findings: it checked all five added SQL
+signatures, public-profile privacy/transport, Unicode names, awaited actor-name
+lookups and the combined Next/Workers configuration.
+
+## Recovery, notes and review status
+
+### Vercel cached-install build follow-up
+
+Vercel preview `dpl_AZhEUBvrvrRZy6sDaE2RCa7d6Ee8` at `538f5969e1f0` failed:
+its restored cache made `corepack pnpm install --frozen-lockfile` report
+"Already up to date" without rerunning root `postinstall`; the build then ran
+`pnpm build` from `apps/web`, whose script invoked Next directly. The ignored
+Prisma client was absent. The earlier root-level local build did not cover this
+entry point.
+
+Reproduction: remove only ignored `packages/database/generated`, then run
+`pnpm --filter @rallypoint/web build` without reinstalling. Before the fix this
+failed with the same missing `../generated/prisma/client.ts` error; after the fix
+the same command generated the Node client and built successfully. The app build
+now explicitly generates Prisma. OpenNext uses a separate custom build command
+that generates the Workers client and invokes Next directly, preserving the
+target-specific WASM loader. A focused read-only review found no actionable
+issues in these changes. Hosted follow-up status belongs in the PR description.
+Lint and type checks passed, the OpenNext build/environment-isolation guard
+passed with the Workers client, and the local Workers API smoke test passed
+10/10. These are build-entry-point checks; the unchanged application behavior's
+314/314 result above is from the preceding implementation commit.
+
+No persistent schema change needs rollback. Reverting the code/configuration
+conversion restores the earlier REST transport while retaining all SQL history.
+No product user note is needed: this is internal database infrastructure with an
+unchanged user-facing contract. Human review and integration remain separate.
+PR #34 is the authorized review artifact. No tracker state changed for this
+direct chat request; no merge into main or explicit deployment was performed.
+
+Hosted database credential provisioning, verified TLS/connectivity, deployed
+Workers/Vercel behavior, live Google OAuth and external email delivery remain
+unverified and outside this local conversion's authorization.

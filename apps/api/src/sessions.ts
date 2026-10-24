@@ -1,21 +1,12 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { InputError, normalizeSession } from "@rallypoint/domain/session";
+import type { Database } from "@rallypoint/database";
 import { ApiError, json, parse, readBody, uuid, uuidParam } from "./http";
 import type { ApiEnv } from "./identity";
-import {
-  client,
-  connection,
-  actorName,
-  notAvailable,
-  requireUser,
-} from "./identity";
+import { connection, actorName, notAvailable, requireUser } from "./identity";
 
-async function rpc(
-  db: ReturnType<typeof client>,
-  name: string,
-  args: Record<string, unknown>,
-) {
+async function rpc(db: Database, name: string, args: Record<string, unknown>) {
   const { data, error } = await db.rpc(name, args);
   if (error) {
     if (error.code === "42501")
@@ -104,14 +95,10 @@ const id = `:id{${uuidParam}}`;
 export const sessions = new Hono<ApiEnv>()
   // Public projection of a published session; no identity involved.
   .get(`/shared/${id}`, async (c) => {
-    const conn = connection(c.env);
-    const session = await rpc(
-      client(conn.url, conn.secret, c.env.SUPABASE_API_SCHEMA ?? "api"),
-      "read_shared_session",
-      {
-        p_slug: c.req.param("id"),
-      },
-    );
+    connection(c.env);
+    const session = await rpc(c.var.db, "read_shared_session", {
+      p_slug: c.req.param("id"),
+    });
     if (!session)
       throw new ApiError(404, "not_found", "That session is not available.");
     return json({ session });

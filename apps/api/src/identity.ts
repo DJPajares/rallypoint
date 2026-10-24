@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
+import { createDatabase, type Database } from "@rallypoint/database";
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import type { AppEnv } from "./env";
@@ -10,8 +11,8 @@ export interface ApiEnv {
   Bindings: AppEnv;
   Variables: {
     user: User;
-    /** Server-key client for the `api` schema; never reaches a browser. */
-    db: ReturnType<typeof client>;
+    db: Database;
+    storage: ReturnType<typeof client>["storage"];
   };
 }
 
@@ -61,6 +62,18 @@ export const client = (url: string, key: string, schema = "api") =>
     },
   });
 
+/** Lazy connection: health/config/auth-only routes do not need Postgres. */
+export const databaseScope = createMiddleware<ApiEnv>(async (c, next) => {
+  const db = createDatabase(c.env);
+  c.set("db", db);
+  try {
+    await next();
+  } finally {
+    // Cleanup must never replace a committed response with an ambiguous failure.
+    await db.close().catch(() => {});
+  }
+});
+
 /**
  * A verified, non-anonymous Supabase user from the bearer token. Roles are
  * never read from the token or metadata; each database operation checks them.
@@ -95,10 +108,7 @@ export const requireUser = createMiddleware<ApiEnv>(async (c, next) => {
       "Verify your email before continuing.",
     );
   c.set("user", data.user);
-  c.set(
-    "db",
-    client(conn.url, conn.secret, c.env.SUPABASE_API_SCHEMA ?? "api"),
-  );
+  c.set("storage", client(conn.url, conn.secret).storage);
   await next();
 });
 

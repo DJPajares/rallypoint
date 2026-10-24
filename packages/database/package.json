@@ -1,0 +1,24 @@
+{
+  "name": "@rallypoint/database",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "node generate.mjs",
+    "generate:cloudflare": "node generate.mjs cloudflare",
+    "validate": "prisma validate",
+    "lint": "oxlint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "pg-cloudflare": "1.4.1"
+  },
+  "devDependencies": {
+    "prisma": "7.10.1"
+  }
+}

@@ -30,7 +30,7 @@ try {
   const env = { ...process.env };
   for (const key of Object.keys(env))
     if (
-      /^(SUPABASE_|LOCAL_AUTH_|GOOGLE_AUTH_|EMAIL_AUTH_|EMAIL_OTP_|PAYMENT_QR_)/.test(
+      /^(DATABASE_URL$|SUPABASE_|LOCAL_AUTH_|GOOGLE_AUTH_|EMAIL_AUTH_|EMAIL_OTP_|PAYMENT_QR_)/.test(
         key,
       )
     )

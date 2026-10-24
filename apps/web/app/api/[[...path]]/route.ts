@@ -7,6 +7,7 @@ function environment(): AppEnv {
   // Normal Next dev/start uses runtime .env.local; OpenNext supplies bindings.
   if (process.env.SUPABASE_URL)
     return {
+      DATABASE_URL: process.env.DATABASE_URL,
       SUPABASE_URL: process.env.SUPABASE_URL,
       SUPABASE_PUBLISHABLE_KEY: process.env.SUPABASE_PUBLISHABLE_KEY,
       SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
