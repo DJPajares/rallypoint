@@ -42,6 +42,7 @@ import {
   blankSession,
   currencies,
   feeLabel,
+  mapsLinkError,
   normalizeSession,
   sessionEditNeedsConfirmation,
 } from "@rallypoint/domain/session";
@@ -280,6 +281,7 @@ function Editor({
     unknown
   > | null>(null);
   const header = useRef<HTMLHeadingElement>(null);
+  const mapsInput = useRef<HTMLInputElement>(null);
   // Sessions saved before payment modes behave as Pay the organizer.
   const tracked = (form.paymentMode ?? "organizer") === "organizer",
     fixedFee = (form.feeMode ?? "fixed") === "fixed";
@@ -328,6 +330,8 @@ function Editor({
       normalized = normalizeSession(details, intent !== "draft");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Check the details.");
+      if (e instanceof Error && e.message === mapsLinkError)
+        mapsInput.current?.focus();
       return;
     }
     const body = {
@@ -368,6 +372,8 @@ function Editor({
     !!record.details.startsAt &&
     Date.now() >= Date.parse(record.details.startsAt);
   const locked = terminal || started;
+  // A rejected link is shown on its own field, from the form or the server.
+  const mapsError = (error ?? mutation.error) === mapsLinkError;
   // A changed local start uses the saved session zone; never the device zone.
   const startChanged = booked && form.startLocal !== record?.details.startLocal;
   // Custom controls aren't all native form elements, so the fieldset's
@@ -528,6 +534,35 @@ function Editor({
             })}
           </Field>
           <Field
+            id="mapsLink"
+            label="Google Maps link (optional)"
+            help="Paste a share link from Google Maps."
+          >
+            <input
+              ref={mapsInput}
+              id="mapsLink"
+              type="url"
+              inputMode="url"
+              autoComplete="off"
+              maxLength={2048}
+              value={form.mapsLink ?? ""}
+              onChange={(e) => {
+                if (mapsError) setError(null);
+                setForm({ ...form, mapsLink: e.target.value });
+              }}
+              disabled={disabledFields}
+              aria-invalid={mapsError ? true : undefined}
+              aria-describedby={
+                mapsError ? "mapsLink-error mapsLink-help" : "mapsLink-help"
+              }
+            />
+            {mapsError ? (
+              <p id="mapsLink-error" className="field-error">
+                {mapsLinkError}
+              </p>
+            ) : null}
+          </Field>
+          <Field
             id="instructions"
             label="Instructions (optional)"
             help="Anyone with the link can read this."
@@ -674,7 +709,7 @@ function Editor({
             </StickyActions>
           ) : null}
         </fieldset>
-        {error || mutation.error ? (
+        {(error || mutation.error) && !mapsError ? (
           <Notice>{error ?? mutation.error}</Notice>
         ) : null}
         {mutation.recovery}
@@ -833,7 +868,8 @@ function SessionTicket({ shared }: { shared: SharedSession }) {
   const d = shared.details;
   const start = fromInstant(d.startsAt, d.timeZone);
   const end = fromInstant(d.endsAt, d.timeZone);
-  const mapHref = mapsUrl(d.location);
+  // The organizer's pasted place wins; otherwise search for the venue text.
+  const mapHref = d.mapsLink || mapsUrl(d.location);
   return (
     <Ticket date={start}>
       <div className="rp-ticket__time">
@@ -848,7 +884,7 @@ function SessionTicket({ shared }: { shared: SharedSession }) {
           rel="noopener noreferrer"
         >
           <MapPinIcon size={18} aria-hidden="true" />
-          Open in Maps
+          Open in Google Maps
         </a>
       ) : null}
     </Ticket>
@@ -906,8 +942,8 @@ function Availability({
       {shared.state === "published" && counts.waitingParties > 0 ? (
         <p className="rp-help">
           {counts.waitingParties}{" "}
-          {counts.waitingParties === 1 ? "party is" : "parties are"}{" "}
-          waiting and will get the next places, in order.
+          {counts.waitingParties === 1 ? "party is" : "parties are"} waiting and
+          will get the next places, in order.
         </p>
       ) : null}
       {onRefresh ? (
