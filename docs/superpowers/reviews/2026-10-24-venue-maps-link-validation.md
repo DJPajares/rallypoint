@@ -2,7 +2,7 @@
 
 Date: 2026-10-24, Asia/Singapore. Task: [WDL-392](https://linear.app/wwonderland/issue/WDL-392).
 Branch: `djpajares/wdl-392-p-17-link-a-session-venue-to-google-maps-without-google`,
-cut from `main` at `ac9b105`. Verified code: `d295f43`; documentation follows it.
+cut from `main` at `ac9b105`. Verified code: `efc6b77` (after review fixes); documentation follows it.
 No release version is assigned. This is implementation and local validation,
 not human acceptance, merge or live-flow verification.
 
@@ -66,6 +66,28 @@ Browser, 375×812, keyboard and DOM inspection on `:3001`:
 - Editing a session saved without a link: the field is empty.
 - Booked session, link-only change: "Change the time or place?" sheet; confirming
   stored the link with a material change and signal `{"mapsLink": …}`.
+
+## Fresh review
+
+A fresh reviewer read `ac9b105..7899d30` against the plan and WDL-392: no
+critical findings. It confirmed the copied SQL functions change only the
+intended lines and that all five review-focus cases hold. Two important
+findings were fixed in `efc6b77` and checked in the browser before and after:
+
+- The link error was not announced to screen readers. It now uses
+  `role="alert"` with `aria-invalid` and focus on the field.
+- The field's `maxLength` silently cut pasted links over 2,048 characters.
+  A 2,134-character link is now kept and rejected with the field error;
+  nothing is saved.
+
+The same commit restores formatting outside P-17 that an earlier format pass
+had changed. After the fixes: `pnpm check` passes and `pnpm test:api` is
+355/355. Deferred minor findings: doubled-slash share links pass the form
+but fail the database check with the generic message; `mapsLink: null` from a
+direct API client is refused rather than clearing the link; a server-returned
+link error stays shown while retyping; no test re-saves a booked session with
+an unchanged link. Country Google domains such as `google.com.ph/maps` are
+refused because the accepted host list is exact.
 
 ## Gaps
 
