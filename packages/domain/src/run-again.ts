@@ -47,6 +47,7 @@ export function nextWeekForm(d: SessionDetails, now: number): SessionForm {
     endLocal: shift(d.endLocal),
     timeZone: zone,
     location: d.location,
+    mapsLink: d.mapsLink ?? "",
     instructions: d.instructions,
     capacity: d.capacity,
     openLocal,

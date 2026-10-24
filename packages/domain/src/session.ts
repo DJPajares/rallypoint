@@ -90,6 +90,8 @@ export interface SessionForm {
   endLocal: string;
   timeZone: string;
   location: string;
+  /** An optional place link pasted from Google Maps; never looked up. */
+  mapsLink?: string;
   instructions: string;
   capacity: string;
   openLocal: string;
@@ -138,6 +140,7 @@ export const blankSession = (): SessionForm => {
     endLocal: "",
     timeZone,
     location: "",
+    mapsLink: "",
     instructions: "",
     capacity: "12",
     openLocal: "",
@@ -153,6 +156,40 @@ export const blankSession = (): SessionForm => {
   };
 };
 export class InputError extends Error {}
+export const mapsLinkError = "Use a link copied from Google Maps.";
+/**
+ * A Google Maps place or share link, kept as pasted (parsed) and opened as a
+ * plain link: RallyPoint never fetches, expands or looks it up. Blank means
+ * no link. Hosts and paths are matched exactly, so lookalikes fail.
+ */
+export function normalizeMapsLink(value: unknown): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string" || value.length > 2048)
+    throw new InputError(mapsLinkError);
+  const text = value.trim();
+  if (!text) return undefined;
+  let url: URL;
+  try {
+    url = new URL(text);
+  } catch {
+    throw new InputError(mapsLinkError);
+  }
+  const path = url.pathname;
+  const allowed =
+    url.protocol === "https:" &&
+    !url.username &&
+    !url.password &&
+    !url.port &&
+    ((url.hostname === "www.google.com" &&
+      (path === "/maps" || path.startsWith("/maps/"))) ||
+      url.hostname === "maps.google.com" ||
+      (url.hostname === "maps.app.goo.gl" && path.length > 1) ||
+      (url.hostname === "goo.gl" &&
+        path.startsWith("/maps/") &&
+        path.length > "/maps/".length));
+  if (!allowed || url.href.length > 2048) throw new InputError(mapsLinkError);
+  return url.href;
+}
 export function normalizeSession(
   value: unknown,
   publish: boolean,
@@ -197,6 +234,9 @@ export function normalizeSession(
   if (raw.releaseUnpaid !== undefined && typeof raw.releaseUnpaid !== "boolean")
     throw new InputError("Choose whether unpaid spots can be released.");
   form.releaseUnpaid = raw.releaseUnpaid === true;
+  // A blank link is left out, so sessions saved before links stay unchanged.
+  const mapsLink = normalizeMapsLink(raw.mapsLink);
+  if (mapsLink) form.mapsLink = mapsLink;
   if (!publish) return form;
   if (!form.title || !form.activity || !form.location)
     throw new InputError(
@@ -304,7 +344,8 @@ export function hasMaterialSessionChange(
   return (
     !sameInstant(before.startsAt, after.startsAt) ||
     !sameInstant(before.endsAt, after.endsAt) ||
-    before.location !== after.location
+    before.location !== after.location ||
+    (before.mapsLink ?? "") !== (after.mapsLink ?? "")
   );
 }
 
