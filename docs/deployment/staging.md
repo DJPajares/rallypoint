@@ -32,6 +32,7 @@ In [Environment Variables](https://vercel.com/djpajares-projects/rallypoint/sett
 | `SUPABASE_URL`                 | `https://zqidfkofbzusvpikftdf.supabase.co`                            |
 | `SUPABASE_PUBLISHABLE_KEY`     | Existing wProject publishable key; owner enters through the dashboard |
 | `SUPABASE_SECRET_KEY`          | Existing wProject server key; owner enters as Secret/Sensitive        |
+| `DATABASE_URL`                 | Existing wProject Postgres connection string; owner enters as Secret/Sensitive, with the existing database password |
 | `SUPABASE_API_SCHEMA`          | `rallypoint_api`                                                      |
 | `PAYMENT_QR_BUCKET`            | `rallypoint-payment-qr`                                               |
 | `EMAIL_AUTH_ENABLED`           | `true`                                                                |
@@ -41,6 +42,19 @@ In [Environment Variables](https://vercel.com/djpajares-projects/rallypoint/sett
 | `ENABLE_EXPERIMENTAL_COREPACK` | `1`                                                                   |
 
 Use the names shown; never add `NEXT_PUBLIC_` to the server key. Credentials are dashboard-managed and must not be copied into source, chat, local upload files or review artifacts. The owner elected to enter Vercel credentials themselves. Existing preview deployments are not configured with staging database credentials.
+
+Prisma requires `DATABASE_URL` in addition to the Supabase API keys. Obtain the
+existing project's connection string from [wProject Connect](https://supabase.com/dashboard/project/zqidfkofbzusvpikftdf?showConnect=true&method=session),
+use its Session pooler endpoint for IPv4 connectivity, and fill the password
+placeholder only inside secure credential storage. Preserve the shared database
+password and all other apps' configuration. This adapter assumes `service_role`
+on each connection; the configured login must be allowed to assume that role.
+After saving the variable, redeploy: existing deployments retain their original
+environment. A READY build and `/api/health` do not prove database connectivity.
+With the configured `rallypoint_api` schema, a public session/profile read using
+a nonexistent synthetic UUID must return the expected not-found response, not
+503, before proceeding to authenticated participant actions. Preview credentials
+remain a separate owner-managed setup.
 
 Project build settings: Root Directory `apps/web`, include workspace source outside that directory, Node `24.x`, install `corepack pnpm install --frozen-lockfile`, build `pnpm build` (Prisma Node-client generation followed by the normal Next.js build), framework `nextjs`, Functions region `sin1`. Generation is part of the app build because a cached install can skip `postinstall`. This path does not use OpenNext or the Cloudflare deploy script. Supabase credentials are server environment variables; the public `/api/config` exposes only the publishable sign-in configuration.
 
