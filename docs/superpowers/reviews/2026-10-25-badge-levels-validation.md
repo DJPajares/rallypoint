@@ -3,7 +3,7 @@
 - **Date:** 2026-10-25, Asia/Singapore.
 - **Task:** [WDL-394](https://linear.app/wwonderland/issue/WDL-394), In Progress.
 - **Branch:** `djpajares/wdl-394-p-19-build-a-distinctive-achievement-badge-system-with`, cut from `main` at `1b741f7`.
-- **Verified code:** REVIEWED_SHA (after review fixes); documentation follows it.
+- **Verified code:** `419958f` (after review fixes); documentation follows it.
 - **Status:** no release version is assigned. This is implementation and local validation, not human acceptance, merge or live-flow verification.
 - **Review:** no pull request yet; pushing and opening one waits for the owner.
 - **Design and plan:** the owner-approved [design](../specs/2026-10-25-badge-levels-design.md) and the [implementation plan](../plans/2026-10-25-badge-levels.md).
