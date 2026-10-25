@@ -112,7 +112,7 @@ One row per activity per level.
 | badminton  | Badminton  | 8 (2–24)                     | 120 min (30–240)              | yes    | 24 h   | null  |
 | tennis     | Tennis     | 4 (2–16)                     | 90 min (30–240)               | yes    | 24 h   | null  |
 | basketball | Basketball | 10 (6–30)                    | 90 min (30–240)               | no     | 24 h   | null  |
-| general    | Other      | 12 (2–50)                    | 120 min (15–480)              | no     | 24 h   | null  |
+| general    | Other      | 12 (1–200)                   | 120 min (15–480)              | no     | 24 h   | null  |
 
 - **`pro` limits:** double each free maximum for spots, and 480 min for length.
 - **Level descriptions:** one plain line per activity per level, for example Pickleball beginner "Learning the rules, serves and dinks". These are the builder's call within D-13, and the owner reviews them in the PR.

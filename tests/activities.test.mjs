@@ -156,11 +156,11 @@ test("session saves respect the activity's limits", async (t) => {
   });
 
   await t.test("a typed activity uses the common limits", async () => {
-    const refused = await publish({ activity: "Pottery", capacity: "60" });
+    const refused = await publish({ activity: "Pottery", capacity: "250" });
     assert.equal(refused.response.status, 422);
     assert.equal(
       refused.body.error.message,
-      "These sessions can have 1 to 50 spots.",
+      "These sessions can have 1 to 200 spots.",
     );
     const kept = await publish({ activity: "Pottery", capacity: "40" });
     assert.equal(kept.response.status, 200);

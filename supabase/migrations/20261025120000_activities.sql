@@ -61,7 +61,7 @@ from (values
   ('badminton', 2, 24, 30, 240),
   ('tennis', 2, 16, 30, 240),
   ('basketball', 6, 30, 30, 240),
-  ('general', 1, 50, 15, 480)
+  ('general', 1, 200, 15, 480)
 ) v(key, min_capacity, max_capacity, min_duration_minutes, max_duration_minutes)
 cross join (values ('free'), ('pro')) p(plan);
 
@@ -279,12 +279,14 @@ begin
 end;
 $$;
 
--- The save wrapper now also checks the activity limits, against the locked
--- row and only for a request not already committed (a replay returns its
--- original result). Everything else is unchanged.
+-- The save wrapper now also checks the activity limits against the locked
+-- row as it was before this save, and only for a request not already
+-- committed (a replay returns its original result). It runs after the save's
+-- own checks, so their messages keep priority; a refusal here rolls the whole
+-- save back. Everything else is unchanged.
 create or replace function api.save_session(p_actor_id uuid,p_key uuid,p_group_id uuid,p_session_id uuid,p_intent text,p_version integer,p_details jsonb) returns jsonb
 language plpgsql security invoker set search_path='' as $$
-declare s app.sessions; committed boolean;
+declare s app.sessions; committed boolean; previous jsonb; result jsonb;
 begin
   perform pg_advisory_xact_lock(hashtextextended(p_actor_id::text||p_key::text,0));
   perform app.require_manager(p_actor_id,p_group_id);
@@ -297,10 +299,12 @@ begin
     if s.state in ('cancelled','completed') and not committed then
       raise sqlstate 'P0001' using message='session_closed';end if;
   end if;
+  previous := case when s.state='published' then s.details end;
+  result := app.save_session_before_cancellation(p_actor_id,p_key,p_group_id,p_session_id,p_intent,p_version,p_details);
   if p_intent in ('publish','update') and not committed then
-    perform app.assert_activity_limits(case when s.state='published' then s.details end, p_details);
+    perform app.assert_activity_limits(previous, p_details);
   end if;
-  return app.save_session_before_cancellation(p_actor_id,p_key,p_group_id,p_session_id,p_intent,p_version,p_details);
+  return result;
 end;
 $$;
 

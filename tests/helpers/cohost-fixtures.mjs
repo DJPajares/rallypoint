@@ -80,7 +80,8 @@ export async function cohostFixture(t, { join = true } = {}) {
     intent: "publish",
     details: {
       title: "Synthetic co-host session",
-      activity: "Badminton",
+      // A typed activity: one seat is below any sport's minimum (D-23).
+      activity: "Synthetic practice",
       location: "Synthetic court",
       instructions: "",
       startLocal: local(86400000),
