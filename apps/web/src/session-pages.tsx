@@ -900,11 +900,14 @@ function SessionHead({
 }) {
   return (
     <div className="session-head">
-      <span className="rp-kicker">{shared.groupName}</span>
+      {/* Group and activity share one line, so the title stands alone. */}
+      <span className="rp-kicker">
+        {shared.groupName}
+        {shared.details.activity ? ` · ${shared.details.activity}` : ""}
+      </span>
       <h1 ref={heading} tabIndex={-1}>
         {shared.details.title}
       </h1>
-      <p className="rp-lede">{shared.details.activity}</p>
       {shared.state !== "published" ? (
         <Notice tone="warning">
           {shared.state === "cancelled"
@@ -941,8 +944,8 @@ function Availability({
       {shared.state === "published" && counts.waitingParties > 0 ? (
         <p className="rp-help">
           {counts.waitingParties}{" "}
-          {counts.waitingParties === 1 ? "party is" : "parties are"}{" "}
-          waiting and will get the next places, in order.
+          {counts.waitingParties === 1 ? "party is" : "parties are"} waiting and
+          will get the next places, in order.
         </p>
       ) : null}
       {onRefresh ? (
@@ -1178,13 +1181,14 @@ export function SharedSessionPage() {
           <aside className="session-side" aria-label="Places and registration">
             <Availability shared={shared} onRefresh={result.retry} />
             <div className="rp-card registration-note">
-              <h2>
-                {shared.registrationWindow === "open"
-                  ? "Come along."
-                  : shared.registrationWindow === "closed"
+              {/* Open needs no heading: the button says what to do. */}
+              {shared.registrationWindow === "open" ? null : (
+                <h2>
+                  {shared.registrationWindow === "closed"
                     ? "Registration is closed."
                     : "Registration opens soon."}
-              </h2>
+                </h2>
+              )}
               <p>
                 {shared.state === "cancelled"
                   ? "Sign in to view your registration record."
