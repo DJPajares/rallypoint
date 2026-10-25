@@ -17,6 +17,8 @@ export const levelLabel: Record<SkillLevel, string> = {
 export interface ProfileActivity {
   name: string;
   level: SkillLevel | null;
+  /** The catalog activity it is (D-23), or null for one typed in; read only. */
+  key?: string | null;
 }
 
 export interface ProfileInput {

@@ -6,6 +6,7 @@ import { ApiError, discardRejectedBody, errorJson, json, uuid } from "./http";
 import type { ApiEnv } from "./identity";
 import { actorName, connection, databaseScope, requireUser } from "./identity";
 import { payments } from "./payments";
+import { activities } from "./activities";
 import { profiles } from "./profiles";
 import { registrations } from "./registrations";
 import { sessions } from "./sessions";
@@ -137,6 +138,7 @@ app.route("/", splits);
 app.route("/", payments);
 app.route("/", badges);
 app.route("/", profiles);
+app.route("/", activities);
 app.route("/", cohosts);
 
 // Unknown reads are missing pages; any other unknown method is refused.

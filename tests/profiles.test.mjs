@@ -51,7 +51,7 @@ test("saving a name and activities", async (t) => {
   assert.equal(profile.name, "Sam 🏓");
   assert.equal(profile.nameIsCustom, true);
   assert.deepEqual(profile.activities, [
-    { name: "Pickleball", level: "advanced" },
+    { name: "Pickleball", level: "advanced", key: "pickleball" },
   ]);
   assert.deepEqual(await mine(f, actor), profile);
   const me = await (await f.get(actor, "/api/me")).json();
@@ -215,7 +215,9 @@ test("a public profile shows only its page fields", async (t) => {
     "title",
   ]);
   assert.equal(shown.name, "Sam");
-  assert.deepEqual(shown.activities, [{ name: "Tennis", level: null }]);
+  assert.deepEqual(shown.activities, [
+    { name: "Tennis", level: null, key: "tennis" },
+  ]);
   assert.equal(shown.title, null);
   // Started badges only, each once at its level: no dates, no progress.
   // Founder is retired from the shelf (P-19) but still works as a title.

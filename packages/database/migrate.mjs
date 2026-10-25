@@ -111,12 +111,14 @@ try {
     );
     for (const [name, args] of Object.entries(functions)) {
       const actual = catalog?.[name];
+      // A function without arguments reports null rather than an empty map.
+      const actualArgs = actual?.args ?? {};
       if (
         !actual?.allowed ||
-        Object.keys(actual.args).length !== Object.keys(args).length ||
+        Object.keys(actualArgs).length !== Object.keys(args).length ||
         Object.entries(args).some(
           ([key, type]) =>
-            actual.args[key] !==
+            actualArgs[key] !==
             (type === "timestamptz" ? "timestamp with time zone" : type),
         )
       )

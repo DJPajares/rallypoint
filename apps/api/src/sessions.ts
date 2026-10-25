@@ -1,11 +1,14 @@
 import { Hono } from "hono";
 import { z } from "zod";
+import { activityFor, limitProblem } from "@rallypoint/domain/activities";
 import { InputError, normalizeSession } from "@rallypoint/domain/session";
+import type { SessionDetails } from "@rallypoint/domain/session";
 import type { Database } from "@rallypoint/database";
 import { ApiError, json, parse, readBody, uuid, uuidParam } from "./http";
 import type { ApiEnv } from "./identity";
 import { connection, actorName, notAvailable, requireUser } from "./identity";
 import { removeSessionImages } from "./payments";
+import { readActivities } from "./activities";
 
 async function rpc(db: Database, name: string, args: Record<string, unknown>) {
   const { data, error } = await db.rpc(name, args);
@@ -43,6 +46,8 @@ async function rpc(db: Database, name: string, args: Record<string, unknown>) {
         "This session is already published. Reload it to edit.",
       session_closed:
         "This session is cancelled or completed and cannot be edited.",
+      activity_capacity_limit: "Check the spots for this activity.",
+      activity_duration_limit: "Check the times for this activity.",
       group_has_upcoming: "Cancel its upcoming sessions first.",
       not_a_draft:
         "Only a draft can be deleted. Cancel a published session instead.",
@@ -71,6 +76,44 @@ const groupName = z.object({
 const intent = z.object({ intent: z.enum(["draft", "publish", "update"]) });
 const version = z.object({ version: z.number().int().min(1) });
 const groupId = z.object({ groupId: z.string().regex(uuid) });
+
+const limitCodes = ["activity_capacity_limit", "activity_duration_limit"];
+
+/**
+ * Saves a session. The database is the authority on activity limits (it knows
+ * what changed); when it refuses one, the catalog names the range in words.
+ */
+async function saveSession(
+  db: Database,
+  args: Record<string, unknown> & { p_details: SessionDetails },
+) {
+  try {
+    return await rpc(db, "save_session", args);
+  } catch (e) {
+    if (!(e instanceof ApiError) || !limitCodes.includes(e.code)) throw e;
+    const details = args.p_details;
+    const catalog = await readActivities(db);
+    const minutes =
+      details.startsAt && details.endsAt
+        ? (Date.parse(details.endsAt) - Date.parse(details.startsAt)) / 60000
+        : null;
+    const message = catalog
+      ? limitProblem(
+          activityFor(catalog, details.activity),
+          { capacity: Number(details.capacity), durationMinutes: minutes },
+          {
+            capacity: e.code === "activity_capacity_limit",
+            duration: e.code === "activity_duration_limit",
+          },
+        )
+      : null;
+    throw new ApiError(
+      422,
+      e.code,
+      message ?? "Check the spots and times for this activity.",
+    );
+  }
+}
 
 /** Shared checks for saving a session; the order decides which message wins. */
 async function sessionSave(request: Request, editing: boolean) {
@@ -203,7 +246,7 @@ export const sessions = new Hono<ApiEnv>()
         "The group does not match this request.",
       );
     return json(
-      await rpc(c.var.db, "save_session", {
+      await saveSession(c.var.db, {
         p_actor_id: c.var.user.id,
         p_key: s.operationKey,
         p_group_id: s.group,
@@ -260,7 +303,7 @@ export const sessions = new Hono<ApiEnv>()
   .post(`/sessions/${id}`, requireUser, async (c) => {
     const s = await sessionSave(c.req.raw, true);
     return json(
-      await rpc(c.var.db, "save_session", {
+      await saveSession(c.var.db, {
         p_actor_id: c.var.user.id,
         p_key: s.operationKey,
         p_group_id: s.group,

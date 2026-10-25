@@ -1,11 +1,11 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { z } from "zod";
-import { presetCatalog } from "@rallypoint/domain/activities";
 import { normalizeProfile, skillLevels } from "@rallypoint/domain/profile";
 import { ApiError, json, readBody, uuidParam } from "./http";
 import type { ApiEnv } from "./identity";
 import { connection, displayName, notAvailable, requireUser } from "./identity";
+import { readActivities } from "./activities";
 
 const unavailable = () =>
   new ApiError(
@@ -62,7 +62,10 @@ export const profiles = new Hono<ApiEnv>()
         "invalid_input",
         "Check your profile. Nothing was saved.",
       );
-    const result = normalizeProfile(parsed.data, presetCatalog);
+    // Catalog activities keep their spelling and are not "your own".
+    const catalog = await readActivities(c.var.db);
+    if (!catalog) throw unavailable();
+    const result = normalizeProfile(parsed.data, catalog);
     if (!result.ok)
       return json(
         {
