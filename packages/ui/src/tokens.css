@@ -16,48 +16,50 @@
   color-scheme: light dark;
 
   /* 1. Palette */
-  --palette-navy-900: #0a1024;
-  --palette-navy-850: #0e1530;
-  --palette-navy-800: #121b36;
-  --palette-navy-700: #13235b;
-  --palette-navy-600: #22378a;
-  --palette-navy-500: #1d3aa8;
-  --palette-navy-400: #34426b;
-  --palette-navy-300: #243052;
-  --palette-ink: #0e1a3d;
-  --palette-neon-400: #c6f432;
-  --palette-neon-300: #c8ff3d;
-  --palette-neon-hover-light: #b6e620;
-  --palette-neon-hover-dark: #d8ff74;
-  --palette-paper: #f5f7f2;
-  --palette-paper-sunken: #eceee8;
+  --palette-graphite-950: #101113;
+  --palette-graphite-900: #141517;
+  --palette-graphite-850: #1a1b1e;
+  --palette-graphite-800: #25282d;
+  --palette-graphite-700: #2a2c30;
+  --palette-graphite-600: #33363c;
+  --palette-graphite-500: #3d4046;
+  --palette-ink: #1c1e21;
+  --palette-orange-700: #c2410c;
+  --palette-orange-500: #ff6b1a;
+  --palette-orange-400: #ff7a29;
+  --palette-orange-300: #ff8a3d;
+  --palette-orange-200: #ff9a57;
+  --palette-orange-hover-light: #f25c0a;
+  --palette-paper: #f6f5f3;
+  --palette-paper-sunken: #ecebe8;
   --palette-white: #ffffff;
-  --palette-slate-600: #545e73;
-  --palette-slate-300: #a2abc0;
-  --palette-slate-200: #c3c9d4;
-  --palette-slate-100: #dfe3ea;
-  --palette-mist: #eef1f8;
+  --palette-stone-600: #5c6067;
+  --palette-stone-300: #a7a9ad;
+  --palette-stone-200: #d3d1cc;
+  --palette-stone-100: #e4e2de;
+  --palette-mist: #efeeec;
   --palette-green-700: #146c43;
   --palette-green-100: #e2f4ea;
   --palette-green-300: #7bd6a4;
   --palette-green-900: #133527;
-  --palette-amber-700: #7f4d00;
-  --palette-amber-100: #fff1d6;
-  --palette-amber-300: #f5c46b;
-  --palette-amber-900: #3a2a0b;
-  --palette-grey-600: #4b5563;
-  --palette-grey-100: #eceef2;
-  --palette-grey-300: #b7c0d0;
-  --palette-grey-900: #1e2742;
+  /* Warning leans yellow so it never reads as the orange action. */
+  --palette-amber-700: #7a5600;
+  --palette-amber-100: #fbf0c9;
+  --palette-amber-300: #f2d06b;
+  --palette-amber-900: #352c0c;
+  --palette-grey-600: #55595f;
+  --palette-grey-100: #ececea;
+  --palette-grey-300: #b9bbbf;
+  --palette-grey-900: #26282c;
   --palette-red-700: #b42318;
   --palette-red-100: #fdecea;
   --palette-red-300: #ff9b8f;
   --palette-red-900: #3d1514;
 
   /* Brand constants: the mark looks the same in every theme. */
-  --brand-navy: var(--palette-navy-700);
-  --brand-neon: var(--palette-neon-400);
-  --brand-on-navy: var(--palette-white);
+  --brand-graphite: var(--palette-graphite-800);
+  --brand-orange: var(--palette-orange-500);
+  --brand-on-graphite: var(--palette-white);
   /* Badges (D-15/D-16): medallion ink and shine, the earned glow, the profile ring. */
   --badge-ink-dark: var(--palette-ink);
   --badge-ink-light: var(--palette-white);
@@ -74,42 +76,70 @@
   --avatar-6: linear-gradient(135deg, #ffc93d, #c2620a);
 
   /* 2. Semantic colours (light, dark) */
-  --color-bg: light-dark(var(--palette-paper), var(--palette-navy-900));
-  --color-surface: light-dark(var(--palette-white), var(--palette-navy-800));
+  --color-bg: light-dark(var(--palette-paper), var(--palette-graphite-950));
+  --color-surface: light-dark(
+    var(--palette-white),
+    var(--palette-graphite-850)
+  );
   --color-surface-sunken: light-dark(
     var(--palette-paper-sunken),
-    var(--palette-navy-850)
+    var(--palette-graphite-900)
   );
   --color-text: light-dark(var(--palette-ink), var(--palette-mist));
   --color-text-muted: light-dark(
-    var(--palette-slate-600),
-    var(--palette-slate-300)
+    var(--palette-stone-600),
+    var(--palette-stone-300)
   );
-  --color-border: light-dark(var(--palette-slate-100), var(--palette-navy-300));
+  --color-border: light-dark(
+    var(--palette-stone-100),
+    var(--palette-graphite-700)
+  );
   --color-border-strong: light-dark(
-    var(--palette-slate-200),
-    var(--palette-navy-400)
+    var(--palette-stone-200),
+    var(--palette-graphite-500)
   );
-  /* Chrome: active states, selected marks, filled seats. Navy on light, neon on dark. */
-  --color-accent: light-dark(var(--palette-navy-700), var(--palette-neon-300));
-  --color-on-accent: light-dark(var(--palette-white), var(--palette-navy-900));
-  /* The ticket stub and other navy blocks that stay navy in dark mode. */
-  --color-stub: light-dark(var(--palette-navy-700), var(--palette-navy-600));
+  /* Chrome: active states, selected marks, filled seats. Graphite on light, orange on dark. */
+  --color-accent: light-dark(
+    var(--palette-graphite-800),
+    var(--palette-orange-300)
+  );
+  --color-on-accent: light-dark(
+    var(--palette-white),
+    var(--palette-graphite-950)
+  );
+  /* The ticket stub and other graphite blocks that stay graphite in dark mode. */
+  --color-stub: light-dark(
+    var(--palette-graphite-800),
+    var(--palette-graphite-600)
+  );
   --color-on-stub: var(--palette-white);
   /* Behind uploaded QR codes: scanners need a light quiet zone in dark mode too. */
   --color-qr-backdrop: var(--palette-white);
-  /* The one primary action per screen. Neon fill, always with navy text. */
-  --color-action: light-dark(var(--palette-neon-400), var(--palette-neon-300));
-  --color-action-hover: light-dark(
-    var(--palette-neon-hover-light),
-    var(--palette-neon-hover-dark)
+  /* The one primary action per screen. Orange fill, always with dark text:
+     white on orange fails contrast. */
+  --color-action: light-dark(
+    var(--palette-orange-500),
+    var(--palette-orange-400)
   );
-  --color-on-action: light-dark(var(--palette-ink), var(--palette-navy-900));
-  --color-link: light-dark(var(--palette-navy-500), var(--palette-neon-300));
-  --color-focus: light-dark(var(--palette-navy-500), var(--palette-neon-300));
+  --color-action-hover: light-dark(
+    var(--palette-orange-hover-light),
+    var(--palette-orange-200)
+  );
+  --color-on-action: light-dark(
+    var(--palette-ink),
+    var(--palette-graphite-950)
+  );
+  --color-link: light-dark(
+    var(--palette-orange-700),
+    var(--palette-orange-300)
+  );
+  --color-focus: light-dark(
+    var(--palette-orange-700),
+    var(--palette-orange-300)
+  );
   /* The soft halo around a focused field. */
   --color-focus-ring: color-mix(in srgb, var(--color-focus) 22%, transparent);
-  --color-scrim: light-dark(rgb(10 16 36 / 0.45), rgb(0 0 0 / 0.6));
+  --color-scrim: light-dark(rgb(16 17 19 / 0.45), rgb(0 0 0 / 0.6));
   --color-success: light-dark(
     var(--palette-green-700),
     var(--palette-green-300)
@@ -186,7 +216,7 @@
   --focus-offset: 3px;
 
   /* Elevation: a contact shadow plus an ambient one. */
-  --shadow-color: light-dark(rgb(14 26 61 / 0.08), rgb(0 0 0 / 0.35));
+  --shadow-color: light-dark(rgb(28 30 33 / 0.08), rgb(0 0 0 / 0.35));
   --shadow-sm: 0 1px 2px var(--shadow-color), 0 8px 24px var(--shadow-color);
   --shadow-lg: 0 2px 6px var(--shadow-color), 0 12px 32px var(--shadow-color);
   --shadow-lift:

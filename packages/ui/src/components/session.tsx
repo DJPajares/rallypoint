@@ -20,7 +20,7 @@ export function TicketStub({ date }: { date: TicketDate | null }) {
     </span>
   );
 }
-/** A session's date on a navy stub, with whatever details sit beside it. */
+/** A session's date on a graphite stub, with whatever details sit beside it. */
 export function Ticket({
   date,
   children,

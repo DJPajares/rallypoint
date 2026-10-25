@@ -1,7 +1,7 @@
 import { cx } from "./cx";
 export type ButtonVariant = "primary" | "secondary" | "accent" | "link";
 export interface ButtonStyle {
-  /** primary is the neon call to action: use at most one per screen. */
+  /** primary is the orange call to action: use at most one per screen. */
   variant?: ButtonVariant;
   size?: "md" | "sm";
   wide?: boolean;

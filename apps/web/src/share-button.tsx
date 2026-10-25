@@ -10,7 +10,7 @@ export function ShareButton({
   label = "Share",
 }: {
   title: string;
-  /** The page's one neon action, for organizers whose main job is sharing. */
+  /** The page's one orange action, for organizers whose main job is sharing. */
   primary?: boolean;
   /** What to share; the current page when left out. */
   url?: string;
