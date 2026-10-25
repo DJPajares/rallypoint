@@ -254,3 +254,27 @@ test("level colours keep the white icon and the numeral readable", () => {
     assert.ok(contrast(white, rgb(dark)) >= 4.5, `${dark} numeral`);
   }
 });
+
+test("the SQL thresholds match the catalog", async () => {
+  const { readFileSync } = await import("node:fs");
+  const migration = readFileSync(
+    new URL(
+      "../supabase/migrations/20261025090000_badge_levels.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const body = migration.slice(migration.indexOf("app.badge_thresholds()"));
+  const rows = [
+    ...body
+      .slice(0, body.indexOf("$$;"))
+      .matchAll(/\('([a-z-]+)',(\d),(\d+)\)/g),
+  ];
+  const sqlThresholds = {};
+  for (const [, key, level, target] of rows)
+    (sqlThresholds[key] ??= [])[Number(level) - 1] = Number(target);
+  assert.deepEqual(
+    sqlThresholds,
+    Object.fromEntries(badgeCatalog.map((b) => [b.key, [...b.thresholds]])),
+  );
+});
