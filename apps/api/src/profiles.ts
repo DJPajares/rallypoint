@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { z } from "zod";
+import { presetCatalog } from "@rallypoint/domain/activities";
 import { normalizeProfile, skillLevels } from "@rallypoint/domain/profile";
 import { ApiError, json, readBody, uuidParam } from "./http";
 import type { ApiEnv } from "./identity";
@@ -61,7 +62,7 @@ export const profiles = new Hono<ApiEnv>()
         "invalid_input",
         "Check your profile. Nothing was saved.",
       );
-    const result = normalizeProfile(parsed.data);
+    const result = normalizeProfile(parsed.data, presetCatalog);
     if (!result.ok)
       return json(
         {

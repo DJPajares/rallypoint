@@ -2,10 +2,11 @@
 // their account name, and the activities they play with an optional
 // self-rated level. Pure rules; the API and screens import these names.
 
-import { presetFor } from "./activities.ts";
+import { matchActivity, skillLevels } from "./activities.ts";
+import type { Activity, SkillLevel } from "./activities.ts";
 
-export const skillLevels = ["beginner", "intermediate", "advanced"] as const;
-export type SkillLevel = (typeof skillLevels)[number];
+export { skillLevels };
+export type { SkillLevel };
 
 export const levelLabel: Record<SkillLevel, string> = {
   beginner: "Beginner",
@@ -63,11 +64,13 @@ function codePoints(text: string): number {
 
 /**
  * Checks and tidies a profile before it is saved. A blank name means "no
- * override" and is stored as null. A blank activity row is ignored. A preset
- * keeps its preset spelling and does not count toward the custom limit.
+ * override" and is stored as null. A blank activity row is ignored. An
+ * activity from the catalog keeps its catalog spelling and does not count
+ * toward the limit on your own activities.
  */
 export function normalizeProfile(
   input: ProfileInput,
+  catalog: readonly Pick<Activity, "key" | "name">[],
 ):
   | { ok: true; value: { name: string | null; activities: ProfileActivity[] } }
   | { ok: false; errors: ProfileError[] } {
@@ -111,9 +114,9 @@ export function normalizeProfile(
     if (seen.has(key)) fail("Each activity can be added once.");
     seen.add(key);
 
-    const preset = presetFor(text);
-    if (preset) {
-      activities.push({ name: preset, level: entry.level });
+    const listed = matchActivity(catalog, text);
+    if (listed) {
+      activities.push({ name: listed.name, level: entry.level });
       continue;
     }
 

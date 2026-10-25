@@ -3,7 +3,11 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
-import { presetActivities, presetFor } from "@rallypoint/domain/activities";
+import {
+  presetActivities,
+  presetCatalog,
+  presetFor,
+} from "@rallypoint/domain/activities";
 import {
   levelLabel,
   normalizeProfile,
@@ -175,10 +179,10 @@ function EditForm({ profile }: { profile: MyProfile }) {
     setProblem(null);
     if (!draft.name.trim())
       return showErrors([{ field: "name", message: "Enter your name." }]);
-    const result = normalizeProfile({
-      name: draft.name,
-      activities: activitiesOf(draft),
-    });
+    const result = normalizeProfile(
+      { name: draft.name, activities: activitiesOf(draft) },
+      presetCatalog,
+    );
     if (!result.ok) return showErrors(result.errors);
     setErrors([]);
     setBusy(true);
