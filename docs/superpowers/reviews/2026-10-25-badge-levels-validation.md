@@ -1,11 +1,11 @@
 # P-19 badges with shared levels — review evidence
 
 - **Date:** 2026-10-25, Asia/Singapore.
-- **Task:** [WDL-394](https://linear.app/wwonderland/issue/WDL-394), In Progress.
+- **Task:** [WDL-394](https://linear.app/wwonderland/issue/WDL-394), In Review.
 - **Branch:** `djpajares/wdl-394-p-19-build-a-distinctive-achievement-badge-system-with`, cut from `main` at `1b741f7`.
 - **Verified code:** `419958f` (after review fixes); documentation follows it.
 - **Status:** no release version is assigned. This is implementation and local validation, not human acceptance, merge or live-flow verification.
-- **Review:** no pull request yet; pushing and opening one waits for the owner.
+- **Review:** [PR #39](https://github.com/DJPajares/rallypoint/pull/39), open against `main` and linked to WDL-394. Auto-merge is disabled.
 - **Design and plan:** the owner-approved [design](../specs/2026-10-25-badge-levels-design.md) and the [implementation plan](../plans/2026-10-25-badge-levels.md).
 
 ## User note
