@@ -1,4 +1,4 @@
-import { AuthCallback } from "@/screens";
+import { AuthCallback } from "@/auth-pages";
 export default function Page() {
   return <AuthCallback />;
 }

@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./activities": "./src/activities.ts",
+    "./auth-links": "./src/auth-links.ts",
     "./contracts": "./src/contracts.ts",
     "./session": "./src/session.ts",
     "./registration": "./src/registration.ts",

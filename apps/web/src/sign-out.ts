@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useAuth } from "./auth-context";
+import { forgetReturnPath } from "./return-path";
 
 /** Ends this browser's session and leaves every protected page behind. */
 export function useSignOut() {
@@ -16,7 +17,7 @@ export function useSignOut() {
       setLeaving(false);
       return;
     }
-    sessionStorage.removeItem("rallypoint.returnTo");
+    forgetReturnPath();
     // Clear protected App Router trees as well as the managed Auth session.
     // A soft redirect can race the signed-out guard on the current private page.
     window.location.replace("/");

@@ -129,14 +129,13 @@ test("Prisma uses the deployment schema; Supabase serves only Auth and private S
   }
 });
 
-test("staging email sign-in is explicit and never enables local-only authentication", async () => {
+test("staging password sign-in is explicit and never enables local-only authentication", async () => {
   const env = {
     SUPABASE_URL: "https://synthetic.supabase.co",
     SUPABASE_PUBLISHABLE_KEY: "synthetic-public",
     SUPABASE_SECRET_KEY: "synthetic-secret",
     LOCAL_AUTH_ENABLED: "true",
-    EMAIL_AUTH_ENABLED: "true",
-    EMAIL_OTP_LENGTH: "8",
+    PASSWORD_AUTH_ENABLED: "true",
   };
   const read = async (value) =>
     (
@@ -146,12 +145,19 @@ test("staging email sign-in is explicit and never enables local-only authenticat
       )
     ).json();
   const enabled = await read(env);
-  assert.equal(enabled.auth.email, true);
-  assert.equal(enabled.auth.emailCodeLength, 8);
+  assert.equal(enabled.auth.password, true);
   assert.equal(enabled.auth.localEmail, false);
+  // One-time email codes are gone (D-22).
+  assert.ok(!("email" in enabled.auth) && !("emailCodeLength" in enabled.auth));
   assert.ok(!JSON.stringify(enabled).includes("synthetic-secret"));
-  delete env.EMAIL_AUTH_ENABLED;
-  assert.equal((await read(env)).auth.email, false);
+  delete env.PASSWORD_AUTH_ENABLED;
+  assert.equal((await read(env)).auth.password, false);
+});
+
+test("staging turns password sign-in on and carries no email-code settings", () => {
+  const vars = readWranglerConfig("wrangler.staging.jsonc").vars ?? {};
+  assert.equal(vars.PASSWORD_AUTH_ENABLED, "true");
+  assert.ok(!("EMAIL_AUTH_ENABLED" in vars) && !("EMAIL_OTP_LENGTH" in vars));
 });
 
 // Wrangler configs are JSONC: strip comments and trailing commas, then parse.

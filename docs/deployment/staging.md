@@ -10,16 +10,22 @@ Owner-authorized 2026-10-23. Primary test host: https://rallypoint.wndrhive.com 
 - App tables/functions: `rallypoint`; backend RPCs: `rallypoint_api`; private QR bucket: `rallypoint-payment-qr`.
 - Auth is shared at the Supabase-project level. It cannot have an independent RallyPoint user directory in this project. Use an existing wProject account for phone testing. Application groups, roles, sessions and badges remain in RallyPoint's schemas.
 - Existing Trove/watchlist schemas, users, storage buckets, provider settings, SMTP, templates and Trove site URL are preserved. Only the exact RallyPoint callbacks are appended to the existing redirect list.
-- The owner approved verified email codes for this staging environment. wProject uses eight digits; local synthetic Auth uses six. Google remains disabled here.
+- Sign-in is email and password through Supabase Auth (D-22, which replaces the earlier verified-email-code exception). RallyPoint's confirmation and reset emails use the shared templates' default `{{ .ConfirmationURL }}` branch (Trove branches only for its own redirects), sent through the shared Resend SMTP sender. Google remains disabled here.
 - This is test deployment work, not a production launch. Session notification delivery remains P-06; no new Resend key or notification sender is enabled here.
 
 ## Cloudflare runtime configuration
 
 Use `apps/web/wrangler.staging.jsonc`. Put `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY` in Cloudflare's runtime secret storage; never commit them or pass them as command-line values. The server key is project-wide: schema separation is application isolation, not independent project credentials.
 
-The tracked config sets `SUPABASE_API_SCHEMA=rallypoint_api`, `PAYMENT_QR_BUCKET=rallypoint-payment-qr`, `EMAIL_AUTH_ENABLED=true`, `EMAIL_OTP_LENGTH=8`, `GOOGLE_AUTH_ENABLED=false` and `LOCAL_AUTH_ENABLED=false`.
+The tracked config sets `SUPABASE_API_SCHEMA=rallypoint_api`, `PAYMENT_QR_BUCKET=rallypoint-payment-qr`, `PASSWORD_AUTH_ENABLED=true`, `GOOGLE_AUTH_ENABLED=false` and `LOCAL_AUTH_ENABLED=false`.
 
-The existing email form does not create new shared-project users. Enter the email of an existing wProject account and verify the code. Provider rate limits and shared email templates still apply. Real inbox delivery and phone installation must be checked on the user's device; API verification alone does not establish either.
+New players create an account at `/sign-up`; existing wProject accounts (including Trove's) sign in with their existing password, or set one through **Forgot password?**. Provider rate limits and shared email templates still apply.
+
+Owner checks before merging D-22 (shared with Trove, so not changed by code):
+
+1. Vercel has `PASSWORD_AUTH_ENABLED=true` (and no longer needs `EMAIL_AUTH_ENABLED` or `EMAIL_OTP_LENGTH`).
+2. **Authentication → Sign In / Providers**: "Allow new users to sign up" is on, and Email "Confirm email" stays on.
+3. The existing exact redirect `https://rallypoint.wndrhive.com/auth/callback` (and the Cloudflare one) stay in the allow list; no new entry is needed. Real inbox delivery and phone installation must be checked on the user's device; API verification alone does not establish either.
 
 ## Vercel configuration and deployment
 
@@ -35,8 +41,7 @@ In [Environment Variables](https://vercel.com/djpajares-projects/rallypoint/sett
 | `DATABASE_URL`                 | Existing wProject Postgres connection string; owner enters as Secret/Sensitive, with the existing database password |
 | `SUPABASE_API_SCHEMA`          | `rallypoint_api`                                                      |
 | `PAYMENT_QR_BUCKET`            | `rallypoint-payment-qr`                                               |
-| `EMAIL_AUTH_ENABLED`           | `true`                                                                |
-| `EMAIL_OTP_LENGTH`             | `8`                                                                   |
+| `PASSWORD_AUTH_ENABLED`        | `true`                                                                |
 | `GOOGLE_AUTH_ENABLED`          | `false`                                                               |
 | `LOCAL_AUTH_ENABLED`           | `false`                                                               |
 | `ENABLE_EXPERIMENTAL_COREPACK` | `1`                                                                   |

@@ -1,6 +1,6 @@
 "use client";
-import { Fragment, useEffect, useRef, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import { Fragment, useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   usePathname,
@@ -14,7 +14,7 @@ import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { ReceiptIcon } from "@phosphor-icons/react/dist/csr/Receipt";
 import { UsersThreeIcon } from "@phosphor-icons/react/dist/csr/UsersThree";
-import { safeReturnPath, useAuth } from "./auth-context";
+import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
 import type { GroupSummary, Identity } from "@rallypoint/domain/contracts";
 import { feeStanding } from "@rallypoint/domain/registration";
@@ -31,7 +31,6 @@ import { useCreateTarget, useFrame } from "./frame";
 import {
   Badge,
   buttonClass,
-  Divider,
   EmptyState,
   Field,
   ListGroup,
@@ -553,216 +552,6 @@ export function DuesPage() {
       )}
     </section>
   );
-}
-export function SignIn() {
-  const { config, client, session, loading, error: authError } = useAuth();
-  const params = useSearchParams();
-  const next = safeReturnPath(params.get("next"));
-  const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [sent, setSent] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const input = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (sent) input.current?.focus();
-  }, [sent]);
-  if (session) return <Redirect href={next} replace />;
-  async function google() {
-    if (!client) return;
-    setBusy(true);
-    setError(null);
-    sessionStorage.setItem("rallypoint.returnTo", next);
-    const { error } = await client.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-    if (error) {
-      setError("Google sign-in could not be started. Please try again.");
-      setBusy(false);
-    }
-  }
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    if (!client) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const { error } = sent
-        ? await client.auth.verifyOtp({ email, token: code, type: "email" })
-        : await client.auth.signInWithOtp({
-            email,
-            options: {
-              shouldCreateUser: false,
-              emailRedirectTo: `${window.location.origin}/auth/callback`,
-            },
-          });
-      if (error) throw error;
-      if (!sent) setSent(true);
-    } catch {
-      setError(
-        sent
-          ? "That code could not be verified. Check it and try again."
-          : "A code could not be sent. Check your email address and try again.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <section className="signin-page">
-      <div className="signin-intro">
-        <h1>
-          Your people.
-          <br />
-          Your next plan.
-        </h1>
-        <p className="rp-lede">
-          Sign in to find your groups and pick up where you left off.
-        </p>
-      </div>
-      <div className="rp-card signin-card">
-        <h2>Welcome to RallyPoint</h2>
-        <p className="rp-help">Good to have you here.</p>
-        {loading ? (
-          <Pending />
-        ) : authError ? (
-          <Notice>{authError}</Notice>
-        ) : !config?.configured ? (
-          <Notice>
-            Sign-in is not ready yet. Complete the local setup in the README,
-            then restart the app.
-          </Notice>
-        ) : (
-          <>
-            {config.auth?.google || !config.auth?.email ? (
-              <button
-                className={buttonClass({ variant: "accent", wide: true })}
-                onClick={() => void google()}
-                disabled={busy || !config.auth?.google}
-              >
-                Continue with Google
-                <ArrowRightIcon size={20} aria-hidden="true" />
-              </button>
-            ) : null}
-            {!config.auth?.google && !config.auth?.email ? (
-              <p className="rp-help">
-                Google sign-in has not been connected in this environment.
-              </p>
-            ) : null}
-            {config.auth?.localEmail || config.auth?.email ? (
-              <form
-                onSubmit={(event) => void submit(event)}
-                className="local-form"
-              >
-                {config.auth?.localEmail ? (
-                  <>
-                    <Divider>Local development</Divider>
-                    <p className="rp-help">
-                      Use a synthetic account. Your code stays in the local mail
-                      inbox.
-                    </p>
-                  </>
-                ) : (
-                  <p className="rp-help">
-                    Use your existing account’s email address.
-                  </p>
-                )}
-                <Field id="email" label="Email address">
-                  <input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    disabled={sent || busy}
-                    required
-                  />
-                </Field>
-                {sent ? (
-                  <>
-                    <Field id="code" label="One-time code">
-                      <input
-                        ref={input}
-                        id="code"
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
-                        pattern={`[0-9]{${config.auth?.emailCodeLength ?? 6}}`}
-                        maxLength={config.auth?.emailCodeLength ?? 6}
-                        value={code}
-                        onChange={(event) => setCode(event.target.value)}
-                        required
-                      />
-                    </Field>
-                    <p role="status" className="rp-help">
-                      {config.auth?.localEmail ? (
-                        <>
-                          Open the{" "}
-                          <a
-                            href="http://127.0.0.1:54324"
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            local mail inbox
-                          </a>{" "}
-                          for your code.
-                        </>
-                      ) : (
-                        "Check your email for the eight-digit code."
-                      )}
-                    </p>
-                  </>
-                ) : null}
-                <button
-                  className={buttonClass({ variant: "primary", wide: true })}
-                  disabled={busy}
-                >
-                  {busy
-                    ? "Please wait…"
-                    : sent
-                      ? "Verify and continue"
-                      : config.auth?.localEmail
-                        ? "Send local code"
-                        : "Send code"}
-                  <ArrowRightIcon size={18} aria-hidden="true" />
-                </button>
-                {sent ? (
-                  <button
-                    type="button"
-                    className={buttonClass({ variant: "link" })}
-                    onClick={() => {
-                      setSent(false);
-                      setCode("");
-                      setError(null);
-                    }}
-                  >
-                    Use a different email
-                  </button>
-                ) : null}
-              </form>
-            ) : null}
-          </>
-        )}
-        {error ? <Notice>{error}</Notice> : null}
-        <p className="rp-help signin-footnote">
-          Just looking around? <Link href="/">Back to home</Link>
-        </p>
-      </div>
-    </section>
-  );
-}
-export function AuthCallback() {
-  const { session, loading, error } = useAuth();
-  if (error || (!loading && !session))
-    return (
-      <Notice>
-        Sign-in did not finish.{" "}
-        <Link href="/sign-in">Try signing in again</Link>.
-      </Notice>
-    );
-  if (loading) return <Pending>Finishing sign-in…</Pending>;
-  const next = safeReturnPath(sessionStorage.getItem("rallypoint.returnTo"));
-  return <Redirect href={next} replace />;
 }
 export function Workspace() {
   const workspace = useApi<{ groups: GroupSummary[] }>("/api/workspace");

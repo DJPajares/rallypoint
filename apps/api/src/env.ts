@@ -6,7 +6,6 @@ export interface AppEnv {
   SUPABASE_API_SCHEMA?: string;
   PAYMENT_QR_BUCKET?: string;
   LOCAL_AUTH_ENABLED?: string;
-  EMAIL_AUTH_ENABLED?: string;
-  EMAIL_OTP_LENGTH?: string;
+  PASSWORD_AUTH_ENABLED?: string;
   GOOGLE_AUTH_ENABLED?: string;
 }

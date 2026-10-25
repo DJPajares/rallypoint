@@ -37,8 +37,7 @@ app.get("/config", (c) => {
         url: conn.url,
         publishableKey: conn.key,
         google: c.env.GOOGLE_AUTH_ENABLED === "true",
-        email: c.env.EMAIL_AUTH_ENABLED === "true",
-        emailCodeLength: c.env.EMAIL_OTP_LENGTH === "8" ? 8 : 6,
+        password: c.env.PASSWORD_AUTH_ENABLED === "true",
         localEmail:
           c.env.LOCAL_AUTH_ENABLED === "true" &&
           loopback.includes(new URL(c.req.url).hostname) &&

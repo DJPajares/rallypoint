@@ -34,7 +34,7 @@ function configure() {
     throw new Error("Local configuration could not be read safely.");
   writeFileSync(
     "apps/web/.env.local",
-    `DATABASE_URL=${databaseUrl}\nSUPABASE_URL=${url}\nSUPABASE_PUBLISHABLE_KEY=${key}\nSUPABASE_SECRET_KEY=${secret}\nLOCAL_AUTH_ENABLED=true\nGOOGLE_AUTH_ENABLED=false\n`,
+    `DATABASE_URL=${databaseUrl}\nSUPABASE_URL=${url}\nSUPABASE_PUBLISHABLE_KEY=${key}\nSUPABASE_SECRET_KEY=${secret}\nLOCAL_AUTH_ENABLED=true\nGOOGLE_AUTH_ENABLED=false\nPASSWORD_AUTH_ENABLED=true\n`,
     { mode: 0o600 },
   );
   chmodSync("apps/web/.env.local", 0o600);
