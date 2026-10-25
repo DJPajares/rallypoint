@@ -298,8 +298,47 @@
 .signin-card > .rp-button {
   margin-top: var(--space-4);
 }
-.local-form .rp-button--primary {
+.auth-form .rp-button--primary {
   margin-top: var(--space-4);
+}
+/* "Forgot password?" sits small under the password, at its edge. */
+.auth-aside {
+  display: block;
+  margin-top: calc(var(--space-2) * -1);
+  font-size: var(--text-sm);
+  text-align: right;
+}
+.auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+/* Show/hide sits inside the password box, a full touch target. */
+.password-control {
+  padding-right: 0;
+}
+.password-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--size-touch);
+  height: var(--size-touch);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.password-toggle:hover {
+  color: var(--color-text);
+}
+.password-toggle:focus-visible {
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: calc(var(--focus-width) * -1);
 }
 .signin-footnote {
   margin-top: var(--space-5);
