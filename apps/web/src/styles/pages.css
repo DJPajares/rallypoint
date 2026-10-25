@@ -181,34 +181,49 @@
 .session-row .rp-ticket__meta {
   margin-bottom: var(--space-3);
 }
-/* The Sessions tab: the whole ticket is one link */
-.session-link {
-  display: block;
-  border-radius: var(--radius-lg);
-  color: inherit;
-  text-decoration: none;
+/* The Sessions tab: one heading per day, then a quiet row per session with the
+   time leading, so the eye reads when, what, then where you stand. */
+/* A list reads best at form width, even on a wide screen. */
+.sessions-page {
+  max-width: var(--layout-form);
+  margin-inline: auto;
 }
-.session-link:hover .rp-ticket {
-  border-color: var(--color-border-strong);
+.sessions-page .rp-segmented {
+  max-width: calc(var(--space-16) * 5);
 }
-.session-link:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-focus);
+.session-day {
+  margin-top: var(--space-6);
 }
-.session-link h3 {
-  margin: var(--space-2) 0 var(--space-0);
-  overflow-wrap: anywhere;
+.session-day h2 {
+  margin: 0 0 var(--space-2) var(--space-1);
+  font-size: var(--text-lg);
 }
-.session-link .rp-ticket__meta {
-  margin: 0;
+/* The whole row is the link, so its hover fills the row edge to edge. */
+.session-day .rp-row__line {
+  padding-right: 0;
 }
-.past-sessions {
-  display: grid;
-  gap: var(--space-3);
-  margin-top: var(--space-5);
+.my-session {
+  padding-right: var(--space-3);
 }
-.past-sessions > .rp-button {
-  justify-self: start;
+.my-session__time {
+  flex: none;
+  width: calc(var(--space-16) + var(--space-2));
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+.my-session .rp-row__text {
+  flex: 1;
+}
+.my-session .rp-row__sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.my-session .rp-row__trail {
+  color: var(--color-text-muted);
+}
+.session-empty {
+  margin-top: var(--space-6);
 }
 .empty-inline p {
   margin: 0;

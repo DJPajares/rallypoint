@@ -495,10 +495,14 @@
 button.rp-row__main {
   cursor: pointer;
 }
-button.rp-row__main:hover {
+/* A row can also be a link to its own page. */
+a.rp-row__main {
+  text-decoration: none;
+}
+:is(a, button).rp-row__main:hover {
   background: var(--color-surface-sunken);
 }
-button.rp-row__main:focus-visible {
+:is(a, button).rp-row__main:focus-visible {
   outline: var(--focus-width) solid var(--color-focus);
   outline-offset: calc(var(--focus-width) * -1);
 }
