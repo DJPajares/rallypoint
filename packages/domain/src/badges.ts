@@ -16,6 +16,8 @@ export interface BadgeDefinition {
   glyph: BadgeGlyph;
   /** What each level needs, level 1 first. Mirrors app.badge_thresholds. */
   thresholds: readonly [number, number, number, number, number];
+  /** The title each level gives the person showing this badge (WDL-405). */
+  titles: readonly [string, string, string, string, string];
 }
 export interface EarnedLevel {
   level: Level;
@@ -28,33 +30,17 @@ export interface BadgeState {
   levels: EarnedLevel[];
 }
 
-/** The badges a title can still name until WDL-405 replaces titles. */
-export type LegacyBadgeKey =
-  | "first-rally"
-  | "regular"
-  | "sessions-10"
-  | "sessions-25"
-  | "sessions-50"
-  | "sessions-100"
-  | "off-the-bench"
-  | "plus-one"
-  | "new-faces-10"
-  | "new-faces-25"
-  | "new-faces-50"
-  | "host"
-  | "hosted-10"
-  | "full-house"
-  | "founder";
+/**
+ * A title is a badge you chose to show, at its current level; it reads that
+ * level's title ("Mainstay"). It names no group, date or count.
+ */
 export interface RosterTitle {
-  key: LegacyBadgeKey;
-  groupName: string | null;
+  key: BadgeKey;
+  level: Level;
 }
-export type TitleOption = RosterTitle & { id: string; groupId: string | null };
 export interface BadgesView {
   badges: BadgeState[];
-  /** Old badges you have earned, which you may show as your title. */
-  titles: TitleOption[];
-  title: (RosterTitle & { id: string }) | null;
+  title: RosterTitle | null;
   stats: { played: number; hosted: number; groups: number };
 }
 
@@ -64,10 +50,18 @@ export const badgeStates = (
   view: { badges?: unknown } | null | undefined,
 ): BadgeState[] =>
   Array.isArray(view?.badges) ? (view.badges as BadgeState[]) : [];
-export const titleOptions = (
-  view: { titles?: unknown } | null | undefined,
-): TitleOption[] =>
-  Array.isArray(view?.titles) ? (view.titles as TitleOption[]) : [];
+/** A title from any source, or null when it isn't a badge at level 1 to 5. */
+export function rosterTitle(value: unknown): RosterTitle | null {
+  if (!value || typeof value !== "object") return null;
+  const { key, level } = value as { key?: unknown; level?: unknown };
+  return isBadgeKey(key) &&
+    typeof level === "number" &&
+    Number.isInteger(level) &&
+    level >= 1 &&
+    level <= 5
+    ? { key, level: level as Level }
+    : null;
+}
 
 /** Disc gradients by level, light stop first; white icons read on all. */
 export const levelColors: readonly (readonly [string, string])[] = [
@@ -85,6 +79,7 @@ export const badgeCatalog: readonly BadgeDefinition[] = [
     family: "playing",
     glyph: "rally",
     thresholds: [1, 10, 25, 50, 100],
+    titles: ["Rookie", "Regular", "Mainstay", "Veteran", "Rally Master"],
   },
   {
     key: "steady",
@@ -92,6 +87,7 @@ export const badgeCatalog: readonly BadgeDefinition[] = [
     family: "playing",
     glyph: "calendar",
     thresholds: [2, 3, 6, 12, 24],
+    titles: ["Returner", "Familiar Face", "Fixture", "Year-Rounder", "Lifer"],
   },
   {
     key: "new-faces",
@@ -99,6 +95,13 @@ export const badgeCatalog: readonly BadgeDefinition[] = [
     family: "people",
     glyph: "faces",
     thresholds: [5, 10, 25, 50, 100],
+    titles: [
+      "Friendly Face",
+      "Mixer",
+      "Connector",
+      "Social Butterfly",
+      "Super Connector",
+    ],
   },
   {
     key: "plus-one",
@@ -106,6 +109,13 @@ export const badgeCatalog: readonly BadgeDefinition[] = [
     family: "people",
     glyph: "plus",
     thresholds: [1, 3, 5, 10, 20],
+    titles: [
+      "Good Company",
+      "Recruiter",
+      "Talent Scout",
+      "Ambassador",
+      "Grand Ambassador",
+    ],
   },
   {
     key: "host",
@@ -113,6 +123,13 @@ export const badgeCatalog: readonly BadgeDefinition[] = [
     family: "hosting",
     glyph: "host",
     thresholds: [1, 5, 10, 25, 50],
+    titles: [
+      "Organizer",
+      "Game Runner",
+      "Ringleader",
+      "Club Captain",
+      "Community Pillar",
+    ],
   },
   {
     key: "full-house",
@@ -120,12 +137,21 @@ export const badgeCatalog: readonly BadgeDefinition[] = [
     family: "hosting",
     glyph: "full",
     thresholds: [1, 3, 10, 25, 50],
+    titles: [
+      "Crowd Puller",
+      "Crowd Favourite",
+      "Headliner",
+      "Sell-Out Star",
+      "Main Event",
+    ],
   },
 ];
 
 const byKey = new Map(badgeCatalog.map((badge) => [badge.key, badge]));
 const order = new Map(badgeCatalog.map((badge, i) => [badge.key, i]));
-const groupId = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
+
+export const isBadgeKey = (value: unknown): value is BadgeKey =>
+  typeof value === "string" && byKey.has(value as BadgeKey);
 
 export function badgeDefinition(key: BadgeKey): BadgeDefinition {
   const badge = byKey.get(key);
@@ -161,15 +187,20 @@ const unseenTop = (state: BadgeState) =>
       null,
     );
 
-/** The newest new level, one per badge, and how many other badges have one. */
+/**
+ * The newest new level, one per badge, and how many other badges have one.
+ * The badge shown as your title goes first, so its change is never folded away.
+ */
 export function newestUnseen(
   badges: BadgeState[],
+  prefer?: BadgeKey | null,
 ): { key: BadgeKey; level: Level; earnedAt: string; more: number } | null {
   const moments = badges
     .map((b) => ({ key: b.key, top: unseenTop(b) }))
     .filter((m): m is { key: BadgeKey; top: EarnedLevel } => m.top !== null)
     .sort(
       (a, b) =>
+        Number(b.key === prefer) - Number(a.key === prefer) ||
         Date.parse(b.top.earnedAt) - Date.parse(a.top.earnedAt) ||
         order.get(a.key)! - order.get(b.key)!,
     );
@@ -292,105 +323,5 @@ export const levelLabel = (level: 0 | Level) =>
 export const medallionLabel = (key: BadgeKey, level: 0 | Level) =>
   `${badgeDefinition(key).name}, ${level ? `level ${level} of 5` : "not started"}`;
 
-/**
- * Titles still name the old badges until WDL-405. Each keeps its old name,
- * and shows the new badge at the level it became; retired ones show none.
- */
-export const legacyTitles: Record<
-  LegacyBadgeKey,
-  {
-    name: string;
-    perGroup: boolean;
-    shows: { key: BadgeKey; level: Level } | null;
-  }
-> = {
-  "first-rally": {
-    name: "First Rally",
-    perGroup: false,
-    shows: { key: "rally", level: 1 },
-  },
-  regular: { name: "Regular", perGroup: true, shows: null },
-  "sessions-10": {
-    name: "Ten",
-    perGroup: false,
-    shows: { key: "rally", level: 2 },
-  },
-  "sessions-25": {
-    name: "Twenty-Five",
-    perGroup: false,
-    shows: { key: "rally", level: 3 },
-  },
-  "sessions-50": {
-    name: "Fifty",
-    perGroup: false,
-    shows: { key: "rally", level: 4 },
-  },
-  "sessions-100": {
-    name: "Century",
-    perGroup: false,
-    shows: { key: "rally", level: 5 },
-  },
-  "off-the-bench": { name: "Off the Bench", perGroup: false, shows: null },
-  "plus-one": {
-    name: "Plus One",
-    perGroup: false,
-    shows: { key: "plus-one", level: 1 },
-  },
-  "new-faces-10": {
-    name: "New Faces",
-    perGroup: false,
-    shows: { key: "new-faces", level: 2 },
-  },
-  "new-faces-25": {
-    name: "Mixer",
-    perGroup: false,
-    shows: { key: "new-faces", level: 3 },
-  },
-  "new-faces-50": {
-    name: "Connector",
-    perGroup: false,
-    shows: { key: "new-faces", level: 4 },
-  },
-  host: { name: "Host", perGroup: false, shows: { key: "host", level: 1 } },
-  "hosted-10": {
-    name: "Seasoned Host",
-    perGroup: false,
-    shows: { key: "host", level: 3 },
-  },
-  "full-house": {
-    name: "Full House",
-    perGroup: false,
-    shows: { key: "full-house", level: 1 },
-  },
-  founder: { name: "Founder", perGroup: true, shows: null },
-};
-
-const isLegacy = (key: string): key is LegacyBadgeKey =>
-  Object.hasOwn(legacyTitles, key);
-
-/** An old badge id: `key`, or `key:<lowercase uuid>` for per-group ones. */
-export function parseTitleId(
-  id: string,
-): { key: LegacyBadgeKey; groupId: string | null } | null {
-  if (id.length > 80) return null;
-  const [key, group, extra] = id.split(":");
-  if (!isLegacy(key) || extra !== undefined) return null;
-  if (legacyTitles[key].perGroup)
-    return group && groupId.test(group) ? { key, groupId: group } : null;
-  return group === undefined ? { key, groupId: null } : null;
-}
-
-export const titleLabel = (title: RosterTitle) =>
-  legacyTitles[title.key].name +
-  (title.groupName ? ` · ${title.groupName}` : "");
-
-/** The old badge a new level stands for, so it can still be shown as a title. */
-export function titleForLevel(
-  key: BadgeKey,
-  level: Level,
-): LegacyBadgeKey | null {
-  for (const [legacy, entry] of Object.entries(legacyTitles))
-    if (entry.shows?.key === key && entry.shows.level === level)
-      return legacy as LegacyBadgeKey;
-  return null;
-}
+export const levelTitle = (key: BadgeKey, level: Level) =>
+  badgeDefinition(key).titles[level - 1];

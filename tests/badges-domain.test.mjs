@@ -3,22 +3,20 @@ import assert from "node:assert/strict";
 import {
   badgeCatalog,
   badgeStates,
-  legacyTitles,
+  isBadgeKey,
   levelColors,
   levelLabel,
   levelOf,
   levelSentence,
   levelTarget,
+  levelTitle,
   medallionLabel,
   newestUnseen,
   nextBadge,
   nextTarget,
   parseLevelId,
-  parseTitleId,
   progressLabel,
-  titleForLevel,
-  titleLabel,
-  titleOptions,
+  rosterTitle,
   unseenIds,
 } from "../packages/domain/src/badges.ts";
 
@@ -70,29 +68,6 @@ test("parseLevelId accepts only a catalog key and a level 1 to 5", () => {
     "x".repeat(81),
   ])
     assert.equal(parseLevelId(bad), null, bad);
-});
-
-test("parseTitleId keeps accepting old badge ids, plain and per group", () => {
-  assert.deepEqual(parseTitleId("first-rally"), {
-    key: "first-rally",
-    groupId: null,
-  });
-  assert.deepEqual(parseTitleId(`regular:${group}`), {
-    key: "regular",
-    groupId: group,
-  });
-  for (const bad of [
-    "regular",
-    `first-rally:${group}`,
-    `Regular:${group}`,
-    `regular:${group.toUpperCase()}`,
-    "regular:not-a-uuid",
-    "rally:1",
-    "",
-    "x".repeat(81),
-    "streak-7",
-  ])
-    assert.equal(parseTitleId(bad), null, bad);
 });
 
 test("levelOf and nextTarget follow the thresholds", () => {
@@ -208,32 +183,6 @@ test("level copy is plain and fixed", () => {
   assert.equal(medallionLabel("rally", 0), "Rally, not started");
 });
 
-test("old titles keep their names and map onto a level where one exists", () => {
-  assert.equal(Object.keys(legacyTitles).length, 15);
-  assert.equal(
-    titleLabel({ key: "regular", groupName: "Sunday Dink" }),
-    "Regular · Sunday Dink",
-  );
-  assert.equal(
-    titleLabel({ key: "sessions-25", groupName: null }),
-    "Twenty-Five",
-  );
-  assert.equal(titleForLevel("rally", 3), "sessions-25");
-  assert.equal(titleForLevel("rally", 1), "first-rally");
-  assert.equal(titleForLevel("new-faces", 4), "new-faces-50");
-  assert.equal(titleForLevel("host", 3), "hosted-10");
-  assert.equal(titleForLevel("steady", 1), null);
-  assert.equal(titleForLevel("host", 2), null);
-  assert.equal(legacyTitles.founder.shows, null);
-  assert.equal(legacyTitles.regular.shows, null);
-  assert.equal(legacyTitles["off-the-bench"].shows, null);
-  assert.deepEqual(legacyTitles["hosted-10"].shows, { key: "host", level: 3 });
-  assert.deepEqual(legacyTitles["sessions-100"].shows, {
-    key: "rally",
-    level: 5,
-  });
-});
-
 // WCAG relative luminance and contrast.
 const channel = (c) =>
   c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
@@ -301,12 +250,116 @@ test("levelTarget names what a level needs", () => {
 test("a badge response of another shape reads as empty, so pages keep working mid-rollout", () => {
   const old = { earned: [{ id: "first-rally" }], progress: [], title: null };
   assert.deepEqual(badgeStates(old), []);
-  assert.deepEqual(titleOptions(old), []);
   assert.deepEqual(badgeStates(null), []);
-  assert.deepEqual(titleOptions(undefined), []);
   const view = { badges: [state("rally", 1)], titles: [{ id: "first-rally" }] };
   assert.equal(badgeStates(view), view.badges);
-  assert.equal(titleOptions(view), view.titles);
   assert.equal(newestUnseen(badgeStates(old)), null);
   assert.equal(nextBadge(badgeStates(old)), null);
+});
+
+test("each badge has five level titles, none of them a badge name", () => {
+  assert.deepEqual(
+    badgeCatalog.map((b) => [b.key, b.titles]),
+    [
+      ["rally", ["Rookie", "Regular", "Mainstay", "Veteran", "Rally Master"]],
+      [
+        "steady",
+        ["Returner", "Familiar Face", "Fixture", "Year-Rounder", "Lifer"],
+      ],
+      [
+        "new-faces",
+        [
+          "Friendly Face",
+          "Mixer",
+          "Connector",
+          "Social Butterfly",
+          "Super Connector",
+        ],
+      ],
+      [
+        "plus-one",
+        [
+          "Good Company",
+          "Recruiter",
+          "Talent Scout",
+          "Ambassador",
+          "Grand Ambassador",
+        ],
+      ],
+      [
+        "host",
+        [
+          "Organizer",
+          "Game Runner",
+          "Ringleader",
+          "Club Captain",
+          "Community Pillar",
+        ],
+      ],
+      [
+        "full-house",
+        [
+          "Crowd Puller",
+          "Crowd Favourite",
+          "Headliner",
+          "Sell-Out Star",
+          "Main Event",
+        ],
+      ],
+    ],
+  );
+  const names = new Set(badgeCatalog.map((b) => b.name.toLowerCase()));
+  const titles = badgeCatalog.flatMap((b) => b.titles);
+  for (const title of titles) assert.ok(!names.has(title.toLowerCase()), title);
+  assert.equal(new Set(titles).size, 30);
+  assert.equal(levelTitle("rally", 5), "Rally Master");
+  assert.equal(levelTitle("host", 3), "Ringleader");
+});
+
+test("rosterTitle reads only a catalog badge at level 1 to 5", () => {
+  assert.deepEqual(rosterTitle({ key: "rally", level: 3 }), {
+    key: "rally",
+    level: 3,
+  });
+  for (const bad of [
+    { key: "first-rally", groupName: null },
+    { key: "rally", level: 0 },
+    { key: "rally", level: 6 },
+    { key: "rally", level: "3" },
+    { key: "rally", level: 2.5 },
+    { key: "rally" },
+    null,
+    undefined,
+    "rally",
+  ])
+    assert.equal(rosterTitle(bad), null, JSON.stringify(bad));
+  assert.equal(isBadgeKey("rally"), true);
+  assert.equal(isBadgeKey("sessions-25"), false);
+  assert.equal(isBadgeKey("rally:1"), false);
+});
+
+test("newestUnseen leads with the badge shown as your title", () => {
+  const badges = [
+    state("rally", 10, [
+      [1, "2026-10-01T00:00:00Z", true],
+      [2, "2026-10-02T00:00:00Z"],
+    ]),
+    state("host", 1, [[1, "2026-10-05T00:00:00Z"]]),
+  ];
+  const pick = (m) => ({ key: m.key, level: m.level, more: m.more });
+  assert.deepEqual(pick(newestUnseen(badges, "rally")), {
+    key: "rally",
+    level: 2,
+    more: 1,
+  });
+  assert.deepEqual(pick(newestUnseen(badges)), {
+    key: "host",
+    level: 1,
+    more: 1,
+  });
+  assert.deepEqual(pick(newestUnseen(badges, "steady")), {
+    key: "host",
+    level: 1,
+    more: 1,
+  });
 });
