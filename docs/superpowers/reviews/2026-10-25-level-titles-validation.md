@@ -1,11 +1,11 @@
 # WDL-405 level titles — review evidence
 
 - **Date:** 2026-10-25, Asia/Singapore.
-- **Task:** [WDL-405](https://linear.app/wwonderland/issue/WDL-405), In Progress.
+- **Task:** [WDL-405](https://linear.app/wwonderland/issue/WDL-405), In Review.
 - **Branch:** `djpajares/wdl-405-unlock-distinct-personal-profile-titles-from-earned-badge`, cut from `main` at `29600b3` (P-19 merged).
 - **Verified code:** `31a3663` (after the review fixes); documentation follows it.
 - **Status:** no release version. This is implementation and local validation, not acceptance, merge or live verification.
-- **Review:** no pull request yet; pushing and opening one waits for the owner.
+- **Review:** [PR #40](https://github.com/DJPajares/rallypoint/pull/40), open against `main` and linked to WDL-405. Auto-merge is disabled.
 - **Design and plan:** [design](../specs/2026-10-25-level-titles-design.md) and [plan](../plans/2026-10-25-level-titles.md).
 
 ## User note
