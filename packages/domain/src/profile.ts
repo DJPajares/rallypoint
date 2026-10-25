@@ -33,7 +33,8 @@ export interface PublicProfile {
   profileId: string;
   name: string;
   title: { key: string } | null;
-  badges: Array<{ key: string }>;
+  /** Started badges at their highest level, catalog order. */
+  badges: Array<{ key: string; level: number }>;
   stats: { played: number; hosted: number; groups: number };
   activities: ProfileActivity[];
 }

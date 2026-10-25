@@ -1,7 +1,35 @@
-// Badges recognise showing up, meeting people and hosting (PRD D-16). The
-// database decides what is earned from recorded check-ins; this catalog only
-// names and draws them. Nothing here reads payments, no-shows or reliability.
+// Badges recognise showing up, meeting people and hosting (PRD D-16, P-19).
+// The database decides what is earned from recorded check-ins; this catalog
+// only names and draws them. Nothing here reads payments, no-shows or
+// reliability. Each badge has five levels, and a level has the same colour on
+// every badge.
 export type BadgeKey =
+  "rally" | "steady" | "new-faces" | "plus-one" | "host" | "full-house";
+export type BadgeFamily = "playing" | "people" | "hosting";
+export type BadgeGlyph =
+  "rally" | "calendar" | "faces" | "plus" | "host" | "full";
+export type Level = 1 | 2 | 3 | 4 | 5;
+export interface BadgeDefinition {
+  key: BadgeKey;
+  name: string;
+  family: BadgeFamily;
+  glyph: BadgeGlyph;
+  /** What each level needs, level 1 first. Mirrors app.badge_thresholds. */
+  thresholds: readonly [number, number, number, number, number];
+}
+export interface EarnedLevel {
+  level: Level;
+  earnedAt: string;
+  seen: boolean;
+}
+export interface BadgeState {
+  key: BadgeKey;
+  current: number;
+  levels: EarnedLevel[];
+}
+
+/** The badges a title can still name until WDL-405 replaces titles. */
+export type LegacyBadgeKey =
   | "first-rally"
   | "regular"
   | "sessions-10"
@@ -17,215 +45,70 @@ export type BadgeKey =
   | "hosted-10"
   | "full-house"
   | "founder";
-export type BadgeFamily = "playing" | "people" | "hosting";
-export type BadgeGlyph =
-  | "rally"
-  | "regular"
-  | "number"
-  | "bench"
-  | "plus"
-  | "faces"
-  | "host"
-  | "full"
-  | "founder";
-export interface BadgeDefinition {
-  key: BadgeKey;
-  name: string;
-  family: BadgeFamily;
-  /** Earned once per group; its id carries the group (`regular:<uuid>`). */
-  perGroup: boolean;
-  glyph: BadgeGlyph;
-  /** The figure drawn by a "number" glyph. */
-  label?: string;
-  /** Medallion gradient, light stop first. */
-  colors: [string, string];
-  /** Navy glyph on light medallions, white otherwise. */
-  darkGlyph: boolean;
-  /** One plain sentence; `{group}` is the group's name. */
-  sentence: string;
-}
-export interface EarnedBadge {
-  id: string;
-  key: BadgeKey;
-  groupId: string | null;
-  groupName: string | null;
-  earnedAt: string;
-  seen: boolean;
-}
-export interface BadgeProgress {
-  key: BadgeKey;
-  groupId: string | null;
-  groupName: string | null;
-  current: number;
-  target: number;
-}
 export interface RosterTitle {
-  key: BadgeKey;
+  key: LegacyBadgeKey;
   groupName: string | null;
 }
+export type TitleOption = RosterTitle & { id: string; groupId: string | null };
 export interface BadgesView {
-  earned: EarnedBadge[];
-  progress: BadgeProgress[];
+  badges: BadgeState[];
+  /** Old badges you have earned, which you may show as your title. */
+  titles: TitleOption[];
   title: (RosterTitle & { id: string }) | null;
   stats: { played: number; hosted: number; groups: number };
 }
 
-const neon: [string, string] = ["#E4FF6E", "#5DBA2C"];
-const gold: [string, string] = ["#FFD15A", "#D96A0C"];
+/** Disc gradients by level, light stop first; white icons read on all. */
+export const levelColors: readonly (readonly [string, string])[] = [
+  ["#5CCBFF", "#2459E6"],
+  ["#33B8A2", "#0B6B66"],
+  ["#C08BFF", "#7A2BD6"],
+  ["#F7826A", "#BF3426"],
+  ["#EBAE40", "#A04E09"],
+];
+
 export const badgeCatalog: readonly BadgeDefinition[] = [
   {
-    key: "first-rally",
-    name: "First Rally",
+    key: "rally",
+    name: "Rally",
     family: "playing",
-    perGroup: false,
     glyph: "rally",
-    colors: ["#5CCBFF", "#2459E6"],
-    darkGlyph: false,
-    sentence: "Your first session, checked in.",
+    thresholds: [1, 10, 25, 50, 100],
   },
   {
-    key: "regular",
-    name: "Regular",
+    key: "steady",
+    name: "Steady",
     family: "playing",
-    perGroup: true,
-    glyph: "regular",
-    colors: ["#9A8BFF", "#4330C9"],
-    darkGlyph: false,
-    sentence: "Five sessions with {group}.",
+    glyph: "calendar",
+    thresholds: [2, 3, 6, 12, 24],
   },
   {
-    key: "sessions-10",
-    name: "Ten",
-    family: "playing",
-    perGroup: false,
-    glyph: "number",
-    label: "10",
-    colors: ["#4FE0C8", "#0E8F8A"],
-    darkGlyph: false,
-    sentence: "Ten sessions, checked in.",
-  },
-  {
-    key: "sessions-25",
-    name: "Twenty-Five",
-    family: "playing",
-    perGroup: false,
-    glyph: "number",
-    label: "25",
-    colors: ["#C08BFF", "#7A2BD6"],
-    darkGlyph: false,
-    sentence: "Twenty-five sessions, checked in.",
-  },
-  {
-    key: "sessions-50",
-    name: "Fifty",
-    family: "playing",
-    perGroup: false,
-    glyph: "number",
-    label: "50",
-    colors: ["#4B6BD6", "#13235B"],
-    darkGlyph: false,
-    sentence: "Fifty sessions, checked in.",
-  },
-  {
-    key: "sessions-100",
-    name: "Century",
-    family: "playing",
-    perGroup: false,
-    glyph: "number",
-    label: "100",
-    colors: gold,
-    darkGlyph: false,
-    sentence: "One hundred sessions, checked in.",
-  },
-  {
-    key: "off-the-bench",
-    name: "Off the Bench",
-    family: "playing",
-    perGroup: false,
-    glyph: "bench",
-    colors: neon,
-    darkGlyph: true,
-    sentence: "Moved up from the waitlist and showed up.",
+    key: "new-faces",
+    name: "New Faces",
+    family: "people",
+    glyph: "faces",
+    thresholds: [5, 10, 25, 50, 100],
   },
   {
     key: "plus-one",
     name: "Plus One",
     family: "people",
-    perGroup: false,
     glyph: "plus",
-    colors: ["#FF86B6", "#BE2470"],
-    darkGlyph: false,
-    sentence: "You brought a guest who showed up.",
-  },
-  {
-    key: "new-faces-10",
-    name: "New Faces",
-    family: "people",
-    perGroup: false,
-    glyph: "faces",
-    colors: ["#FF9A7A", "#E2483A"],
-    darkGlyph: false,
-    sentence: "You’ve played alongside 10 different people.",
-  },
-  {
-    key: "new-faces-25",
-    name: "Mixer",
-    family: "people",
-    perGroup: false,
-    glyph: "faces",
-    colors: ["#FF8FA8", "#D23A63"],
-    darkGlyph: false,
-    sentence: "You’ve played alongside 25 different people.",
-  },
-  {
-    key: "new-faces-50",
-    name: "Connector",
-    family: "people",
-    perGroup: false,
-    glyph: "faces",
-    colors: ["#F37BE0", "#A8238F"],
-    darkGlyph: false,
-    sentence: "You’ve played alongside 50 different people.",
+    thresholds: [1, 3, 5, 10, 20],
   },
   {
     key: "host",
     name: "Host",
     family: "hosting",
-    perGroup: false,
     glyph: "host",
-    colors: ["#FFAE52", "#E5402A"],
-    darkGlyph: false,
-    sentence: "You ran check-in at a session.",
-  },
-  {
-    key: "hosted-10",
-    name: "Seasoned Host",
-    family: "hosting",
-    perGroup: false,
-    glyph: "host",
-    colors: ["#FF8A4C", "#B8331C"],
-    darkGlyph: false,
-    sentence: "You’ve run check-in at 10 sessions.",
+    thresholds: [1, 5, 10, 25, 50],
   },
   {
     key: "full-house",
     name: "Full House",
     family: "hosting",
-    perGroup: false,
     glyph: "full",
-    colors: neon,
-    darkGlyph: true,
-    sentence: "You ran a session where every seat was taken.",
-  },
-  {
-    key: "founder",
-    name: "Founder",
-    family: "hosting",
-    perGroup: true,
-    glyph: "founder",
-    colors: gold,
-    darkGlyph: false,
-    sentence: "You started {group}.",
+    thresholds: [1, 3, 10, 25, 50],
   },
 ];
 
@@ -239,49 +122,83 @@ export function badgeDefinition(key: BadgeKey): BadgeDefinition {
   return badge;
 }
 
-/** `key` for personal badges, `key:<lowercase uuid>` for per-group ones. */
-export function parseBadgeId(
+export const levelId = (key: BadgeKey, level: Level) => `${key}:${level}`;
+
+/** `key:level`, the id a seen marker is stored under. */
+export function parseLevelId(
   id: string,
-): { key: BadgeKey; groupId: string | null } | null {
-  if (id.length > 80) return null;
-  const [key, group, extra] = id.split(":");
-  const badge = byKey.get(key as BadgeKey);
-  if (!badge || extra !== undefined) return null;
-  if (badge.perGroup)
-    return group && groupId.test(group)
-      ? { key: badge.key, groupId: group }
-      : null;
-  return group === undefined ? { key: badge.key, groupId: null } : null;
+): { key: BadgeKey; level: Level } | null {
+  const match = /^([a-z-]+):([1-5])$/.exec(id);
+  if (!match || !byKey.has(match[1] as BadgeKey)) return null;
+  return { key: match[1] as BadgeKey, level: Number(match[2]) as Level };
 }
 
-export const titleLabel = (title: RosterTitle) =>
-  badgeDefinition(title.key).name +
-  (title.groupName ? ` · ${title.groupName}` : "");
-
-export const earnedSentence = (badge: RosterTitle) =>
-  badgeDefinition(badge.key).sentence.replace(
-    "{group}",
-    badge.groupName ?? "your group",
+export const levelOf = (state: BadgeState): 0 | Level =>
+  state.levels.reduce<0 | Level>(
+    (top, l) => (l.level > top ? l.level : top),
+    0,
   );
 
-/** The newest badge not yet shown, and how many others wait behind it. */
+export const nextTarget = (key: BadgeKey, current: number): number | null =>
+  badgeDefinition(key).thresholds.find((t) => t > current) ?? null;
+
+const unseenTop = (state: BadgeState) =>
+  state.levels
+    .filter((l) => !l.seen)
+    .reduce<EarnedLevel | null>(
+      (top, l) => (!top || l.level > top.level ? l : top),
+      null,
+    );
+
+/** The newest new level, one per badge, and how many other badges have one. */
 export function newestUnseen(
-  earned: EarnedBadge[],
-): { badge: EarnedBadge; more: number } | null {
-  const unseen = earned
-    .filter((badge) => !badge.seen)
+  badges: BadgeState[],
+): { key: BadgeKey; level: Level; earnedAt: string; more: number } | null {
+  const moments = badges
+    .map((b) => ({ key: b.key, top: unseenTop(b) }))
+    .filter((m): m is { key: BadgeKey; top: EarnedLevel } => m.top !== null)
     .sort(
       (a, b) =>
-        Date.parse(b.earnedAt) - Date.parse(a.earnedAt) ||
+        Date.parse(b.top.earnedAt) - Date.parse(a.top.earnedAt) ||
         order.get(a.key)! - order.get(b.key)!,
     );
-  return unseen.length ? { badge: unseen[0], more: unseen.length - 1 } : null;
+  if (!moments.length) return null;
+  const { key, top } = moments[0];
+  return {
+    key,
+    level: top.level,
+    earnedAt: top.earnedAt,
+    more: moments.length - 1,
+  };
 }
 
-/** The started badge closest to done; nothing when none is under way. */
-export function nextBadge(progress: BadgeProgress[]): BadgeProgress | null {
-  const open = progress
-    .filter((p) => p.current > 0 && p.current < p.target)
+export const unseenIds = (badges: BadgeState[]) =>
+  badges.flatMap((b) =>
+    b.levels.filter((l) => !l.seen).map((l) => levelId(b.key, l.level)),
+  );
+
+/** The started badge closest to its next level; nothing when none is under way. */
+export function nextBadge(
+  badges: BadgeState[],
+): { key: BadgeKey; level: 0 | Level; current: number; target: number } | null {
+  const open = badges
+    .filter((b) => b.current > 0)
+    .map((b) => ({
+      key: b.key,
+      level: levelOf(b),
+      current: b.current,
+      target: nextTarget(b.key, b.current),
+    }))
+    .filter(
+      (
+        b,
+      ): b is {
+        key: BadgeKey;
+        level: 0 | Level;
+        current: number;
+        target: number;
+      } => b.target !== null,
+    )
     .sort(
       (a, b) =>
         b.current / b.target - a.current / a.target ||
@@ -291,12 +208,159 @@ export function nextBadge(progress: BadgeProgress[]): BadgeProgress | null {
   return open[0] ?? null;
 }
 
-export function progressLabel(progress: BadgeProgress): string {
-  const left = progress.target - progress.current;
-  const family = badgeDefinition(progress.key).family;
-  if (family === "people")
-    return `${left} more ${left === 1 ? "new person" : "new people"}`;
-  const sessions = `${left} more ${left === 1 ? "session" : "sessions"}`;
-  if (family === "hosting") return `${sessions} to run`;
-  return progress.groupName ? `${sessions} at ${progress.groupName}` : sessions;
+const plural = (n: number, one: string, many: string) =>
+  `${n} ${n === 1 ? one : many}`;
+
+/** One plain sentence for the moment a level is earned. */
+export function levelSentence(key: BadgeKey, level: Level): string {
+  const n = badgeDefinition(key).thresholds[level - 1];
+  switch (key) {
+    case "rally":
+      return level === 1
+        ? "Your first session, checked in."
+        : `${n} sessions, checked in.`;
+    case "steady":
+      return `Played in ${n} different months.`;
+    case "new-faces":
+      return `Played alongside ${n} different people.`;
+    case "plus-one":
+      return level === 1
+        ? "You brought a guest who showed up."
+        : `Guests you brought showed up ${n} times.`;
+    case "host":
+      return level === 1
+        ? "You ran check-in at a session."
+        : `You’ve run check-in at ${n} sessions.`;
+    case "full-house":
+      return level === 1
+        ? "You ran a session where every seat was taken."
+        : `${n} sessions you ran were full.`;
+  }
+}
+
+/** What is left before the next level, in plain words. */
+export function progressLabel(key: BadgeKey, left: number): string {
+  switch (key) {
+    case "rally":
+      return `${plural(left, "more session", "more sessions")}`;
+    case "steady":
+      return `${plural(left, "more month", "more months")}`;
+    case "new-faces":
+      return `${plural(left, "more new person", "more new people")}`;
+    case "plus-one":
+      return `${plural(left, "more session", "more sessions")} with a guest`;
+    case "host":
+      return `${plural(left, "more session", "more sessions")} to run`;
+    case "full-house":
+      return `${plural(left, "more full session", "more full sessions")} to run`;
+  }
+}
+
+export const levelLabel = (level: 0 | Level) =>
+  level === 0 ? "Not started" : level === 5 ? "Complete" : `Level ${level}`;
+
+export const medallionLabel = (key: BadgeKey, level: 0 | Level) =>
+  `${badgeDefinition(key).name}, ${level ? `level ${level} of 5` : "not started"}`;
+
+/**
+ * Titles still name the old badges until WDL-405. Each keeps its old name,
+ * and shows the new badge at the level it became; retired ones show none.
+ */
+export const legacyTitles: Record<
+  LegacyBadgeKey,
+  {
+    name: string;
+    perGroup: boolean;
+    shows: { key: BadgeKey; level: Level } | null;
+  }
+> = {
+  "first-rally": {
+    name: "First Rally",
+    perGroup: false,
+    shows: { key: "rally", level: 1 },
+  },
+  regular: { name: "Regular", perGroup: true, shows: null },
+  "sessions-10": {
+    name: "Ten",
+    perGroup: false,
+    shows: { key: "rally", level: 2 },
+  },
+  "sessions-25": {
+    name: "Twenty-Five",
+    perGroup: false,
+    shows: { key: "rally", level: 3 },
+  },
+  "sessions-50": {
+    name: "Fifty",
+    perGroup: false,
+    shows: { key: "rally", level: 4 },
+  },
+  "sessions-100": {
+    name: "Century",
+    perGroup: false,
+    shows: { key: "rally", level: 5 },
+  },
+  "off-the-bench": { name: "Off the Bench", perGroup: false, shows: null },
+  "plus-one": {
+    name: "Plus One",
+    perGroup: false,
+    shows: { key: "plus-one", level: 1 },
+  },
+  "new-faces-10": {
+    name: "New Faces",
+    perGroup: false,
+    shows: { key: "new-faces", level: 2 },
+  },
+  "new-faces-25": {
+    name: "Mixer",
+    perGroup: false,
+    shows: { key: "new-faces", level: 3 },
+  },
+  "new-faces-50": {
+    name: "Connector",
+    perGroup: false,
+    shows: { key: "new-faces", level: 4 },
+  },
+  host: { name: "Host", perGroup: false, shows: { key: "host", level: 1 } },
+  "hosted-10": {
+    name: "Seasoned Host",
+    perGroup: false,
+    shows: { key: "host", level: 3 },
+  },
+  "full-house": {
+    name: "Full House",
+    perGroup: false,
+    shows: { key: "full-house", level: 1 },
+  },
+  founder: { name: "Founder", perGroup: true, shows: null },
+};
+
+const isLegacy = (key: string): key is LegacyBadgeKey =>
+  Object.hasOwn(legacyTitles, key);
+
+/** An old badge id: `key`, or `key:<lowercase uuid>` for per-group ones. */
+export function parseTitleId(
+  id: string,
+): { key: LegacyBadgeKey; groupId: string | null } | null {
+  if (id.length > 80) return null;
+  const [key, group, extra] = id.split(":");
+  if (!isLegacy(key) || extra !== undefined) return null;
+  if (legacyTitles[key].perGroup)
+    return group && groupId.test(group) ? { key, groupId: group } : null;
+  return group === undefined ? { key, groupId: null } : null;
+}
+
+export const titleLabel = (title: RosterTitle) =>
+  legacyTitles[title.key].name +
+  (title.groupName ? ` · ${title.groupName}` : "");
+
+/** The old badge a new level stands for, so it can still be shown as a title. */
+export function titleForLevel(
+  key: BadgeKey,
+  level: Level,
+): LegacyBadgeKey | null {
+  for (const [legacy, entry] of Object.entries(legacyTitles))
+    if (entry.shows?.key === key && entry.shows.level === level)
+      return legacy as LegacyBadgeKey;
+  return null;
 }
