@@ -38,12 +38,12 @@ Three layers, used top to bottom:
 
 ### Colour roles
 
-- `--color-action`: neon. Use it for the one primary action on a screen, with
+- `--color-action`: orange. Use it for the one primary action on a screen, with
   `--color-on-action` text.
-- `--color-accent`: navy on light and neon on dark. Use it for active and
+- `--color-accent`: graphite on light and orange on dark. Use it for active and
   selected marks.
-- `--color-stub`: the navy ticket stub and other blocks that stay navy in both
-  themes.
+- `--color-stub`: the graphite ticket stub and other blocks that stay graphite
+  in both themes.
 - Status tones: `success`, `warning`, `neutral` and `danger`. Each has a `-bg`
   pair. Always show the status in words and an icon too, never by colour alone.
 

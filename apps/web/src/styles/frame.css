@@ -68,13 +68,13 @@
   height: var(--size-brand-mark);
   padding-bottom: var(--space-1);
   border-radius: var(--radius-sm);
-  background: var(--brand-navy);
-  color: var(--brand-on-navy);
+  background: var(--brand-graphite);
+  color: var(--brand-on-graphite);
   font-size: var(--text-2xl);
   line-height: 1;
 }
 .brand-mark span {
-  color: var(--brand-neon);
+  color: var(--brand-orange);
 }
 .topnav {
   display: flex;

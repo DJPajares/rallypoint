@@ -3,6 +3,6 @@
  * cannot reach). Keep them equal to --color-bg in tokens.css.
  */
 export const themeColor = {
-  light: "#f5f7f2",
-  dark: "#0a1024",
+  light: "#f6f5f3",
+  dark: "#101113",
 } as const;

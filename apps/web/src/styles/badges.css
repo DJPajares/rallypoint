@@ -199,10 +199,10 @@
   border-radius: var(--radius-full);
   background: conic-gradient(
     from 200deg,
-    var(--palette-neon-300),
+    var(--brand-orange),
     var(--badge-glow),
     var(--badge-ring-sky),
-    var(--palette-neon-300)
+    var(--brand-orange)
   );
 }
 .ring-avatar span {
