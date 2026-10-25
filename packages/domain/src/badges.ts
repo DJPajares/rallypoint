@@ -256,6 +256,25 @@ export function progressLabel(key: BadgeKey, left: number): string {
   }
 }
 
+/** What one level needs, for the list of levels: "25 sessions". */
+export function levelTarget(key: BadgeKey, level: Level): string {
+  const n = badgeDefinition(key).thresholds[level - 1];
+  switch (key) {
+    case "rally":
+      return plural(n, "session", "sessions");
+    case "steady":
+      return plural(n, "month", "months");
+    case "new-faces":
+      return plural(n, "person", "people");
+    case "plus-one":
+      return `${plural(n, "session", "sessions")} with a guest`;
+    case "host":
+      return `${plural(n, "session", "sessions")} run`;
+    case "full-house":
+      return plural(n, "full session", "full sessions");
+  }
+}
+
 export const levelLabel = (level: 0 | Level) =>
   level === 0 ? "Not started" : level === 5 ? "Complete" : `Level ${level}`;
 

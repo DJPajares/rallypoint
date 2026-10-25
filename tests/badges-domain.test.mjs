@@ -7,6 +7,7 @@ import {
   levelLabel,
   levelOf,
   levelSentence,
+  levelTarget,
   medallionLabel,
   newestUnseen,
   nextBadge,
@@ -277,4 +278,16 @@ test("the SQL thresholds match the catalog", async () => {
     sqlThresholds,
     Object.fromEntries(badgeCatalog.map((b) => [b.key, [...b.thresholds]])),
   );
+});
+
+test("levelTarget names what a level needs", () => {
+  assert.equal(levelTarget("rally", 1), "1 session");
+  assert.equal(levelTarget("rally", 3), "25 sessions");
+  assert.equal(levelTarget("steady", 1), "2 months");
+  assert.equal(levelTarget("new-faces", 5), "100 people");
+  assert.equal(levelTarget("plus-one", 1), "1 session with a guest");
+  assert.equal(levelTarget("plus-one", 2), "3 sessions with a guest");
+  assert.equal(levelTarget("host", 2), "5 sessions run");
+  assert.equal(levelTarget("full-house", 1), "1 full session");
+  assert.equal(levelTarget("full-house", 3), "10 full sessions");
 });
