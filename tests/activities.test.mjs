@@ -141,6 +141,29 @@ test("session saves respect the activity's limits", async (t) => {
     assert.equal(response.status, 200, await response.clone().text());
   });
 
+  await t.test(
+    "moving an old over-length session keeps its length and saves",
+    async () => {
+      const { body } = await publish({});
+      const session = body.session;
+      // Five hours, as a session saved before the 4-hour Pickleball limit.
+      sql(
+        `update app.sessions set details=jsonb_set(details,'{endsAt}',to_jsonb(((details->>'startsAt')::timestamptz + interval '5 hours')::text)) where id='${session.id}';`,
+      );
+      const start = Date.now() + 12 * day;
+      const response = await update(
+        organizer,
+        session,
+        form({
+          startLocal: local(start),
+          endLocal: local(start + 5 * 3600000),
+          cutoffLocal: local(start - day),
+        }),
+      );
+      assert.equal(response.status, 200, await response.clone().text());
+    },
+  );
+
   await t.test("switching sport rechecks spots", async () => {
     const { body } = await publish({ activity: "Basketball", capacity: "30" });
     const response = await update(

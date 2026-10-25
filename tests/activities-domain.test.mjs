@@ -217,3 +217,21 @@ test("a session save checks only what changed against what is published", () => 
     "Pickleball sessions can have 4 to 24 spots.",
   );
 });
+
+test("moving a session keeps its length, so an old long one still moves", () => {
+  const long = {
+    activity: "Pickleball",
+    capacity: 8,
+    startsAt: "2026-11-02T10:00:00Z",
+    endsAt: "2026-11-02T15:00:00Z",
+  };
+  const catalog = [pickleball, general];
+  assert.equal(
+    sessionLimitProblem(catalog, long, {
+      ...long,
+      startsAt: "2026-11-09T10:00:00Z",
+      endsAt: "2026-11-09T15:00:00Z",
+    }),
+    null,
+  );
+});

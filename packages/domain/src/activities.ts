@@ -157,27 +157,28 @@ type Saved = {
 /**
  * The same rule the database applies on save, for an early message: against
  * the published details (null when nothing is published yet), only changed
- * values are checked, and a new activity rechecks spots.
+ * values are checked (length, not position, so a moved session keeps its
+ * length), and a new activity rechecks spots.
  */
+const lengthOf = (s: Saved) =>
+  s.startsAt && s.endsAt
+    ? (Date.parse(s.endsAt) - Date.parse(s.startsAt)) / 60000
+    : null;
+
 export function sessionLimitProblem(
   catalog: readonly Activity[],
   published: Saved | null,
   next: Saved,
 ): string | null {
   const activity = activityFor(catalog, next.activity);
-  const minutes =
-    next.startsAt && next.endsAt
-      ? (Date.parse(next.endsAt) - Date.parse(next.startsAt)) / 60000
-      : null;
+  const minutes = lengthOf(next);
   const check = published
     ? {
         capacity:
           activityFor(catalog, published.activity).key !== activity.key ||
           Number(published.capacity) !== Number(next.capacity),
-        duration:
-          Date.parse(published.startsAt ?? "") !==
-            Date.parse(next.startsAt ?? "") ||
-          Date.parse(published.endsAt ?? "") !== Date.parse(next.endsAt ?? ""),
+        // Length, not position: moving a session keeps an older length valid.
+        duration: lengthOf(published) !== minutes,
       }
     : { capacity: true, duration: true };
   return limitProblem(

@@ -250,7 +250,7 @@ $$;
 
 -- A published session's spots and length stay inside its activity's free-plan
 -- limits. Only what changes against the stored published details is checked,
--- so an older session stays editable; a new session or a draft being published
+-- so an older session stays editable (moving it keeps its length); a new session or a draft being published
 -- (no previous) is checked in full. Changing the activity rechecks spots.
 create function app.assert_activity_limits(p_previous jsonb, p_next jsonb) returns void
 language plpgsql stable security invoker set search_path = '' as $$
@@ -265,8 +265,9 @@ begin
   else
     spots_changed := coalesce(app.activity_key_for(p_previous->>'activity'), 'general') <> v_key
       or (p_previous->>'capacity')::bigint is distinct from (p_next->>'capacity')::bigint;
-    length_changed := (p_previous->>'startsAt')::timestamptz is distinct from (p_next->>'startsAt')::timestamptz
-      or (p_previous->>'endsAt')::timestamptz is distinct from (p_next->>'endsAt')::timestamptz;
+    -- Length, not position: moving a session keeps an older length valid.
+    length_changed := ((p_previous->>'endsAt')::timestamptz - (p_previous->>'startsAt')::timestamptz)
+      is distinct from ((p_next->>'endsAt')::timestamptz - (p_next->>'startsAt')::timestamptz);
   end if;
   if spots_changed and (p_next->>'capacity')::bigint not between l.min_capacity and l.max_capacity then
     raise sqlstate 'P0001' using message = 'activity_capacity_limit';
