@@ -427,10 +427,7 @@ export function RegistrationPanel({
         </p>
       ))}
       {tracked && view.paymentInstructions ? (
-        <HowToPay
-          slug={event.slug}
-          instructions={view.paymentInstructions}
-        />
+        <HowToPay slug={event.slug} instructions={view.paymentInstructions} />
       ) : null}
       {canSaySent ? (
         <SentNote
@@ -446,8 +443,7 @@ export function RegistrationPanel({
   ) : null;
   // Withdraw or leave the waitlist, or say it can no longer happen here.
   const withdrawArea =
-    own &&
-    (own.state === "confirmed" || own.state === "waitlisted") ? (
+    own && (own.state === "confirmed" || own.state === "waitlisted") ? (
       event.registrationWindow !== "closed" ? (
         actionArea(
           own.state === "waitlisted" ? "Leave the waitlist" : "Withdraw",
@@ -535,14 +531,6 @@ export function RegistrationPanel({
   if (gameDay && own) {
     // Game day: where they stand, when and where, who's coming, their fee
     // and the organizer's notes. Everything else waits under More.
-    const date = d.startsAt
-      ? new Intl.DateTimeFormat("en", {
-          timeZone: d.timeZone,
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-        }).format(new Date(d.startsAt))
-      : "";
     const requestShowing = !!mutation.error || mutation.uncertain;
     // A waitlisted party owes nothing until it moves in.
     const showFee =
@@ -554,19 +542,17 @@ export function RegistrationPanel({
         className="registration-panel game-day-panel"
         aria-label="Your registration"
       >
+        {/* The headline already says where they stand, and the ticket below
+            carries the date, so the banner holds just the one line. */}
         <div className="own-status">
           <StatusBanner tone={ownTone} icon={ownIcon}>
-            <span className="rp-badge rp-badge--inherit">
-              {own.state === "confirmed" ? "Confirmed" : "Waitlisted"}
-            </span>
             <h2 ref={statusHeading} tabIndex={-1}>
               {gameDayHeadline(own)}
             </h2>
-            {date ? <p>{date}</p> : null}
           </StatusBanner>
         </div>
         {gameDay.details}
-        <div className="game-day-coming">
+        <div className="rp-card game-day-coming">
           <p>{comingLine(view.counts.confirmedSeats, Number(d.capacity))}</p>
           {view.rosterAllowed ? (
             <>
@@ -579,17 +565,15 @@ export function RegistrationPanel({
               >
                 {"See who's coming"}
               </button>
-              <div
-                id="game-day-roster"
-                className="roster"
-                hidden={!rosterOpen}
-              >
+              <div id="game-day-roster" className="roster" hidden={!rosterOpen}>
                 {rosterList}
               </div>
             </>
           ) : null}
         </div>
-        {showFee ? feeBlock : null}
+        {showFee ? (
+          <div className="rp-card game-day-fee">{feeBlock}</div>
+        ) : null}
         {gameDay.notes}
         {/* Held open while a request's error or recovery shows, so a
             collapsed More can't hide it. */}

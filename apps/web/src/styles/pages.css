@@ -350,7 +350,7 @@
 .session-head {
   grid-area: head;
 }
-.session-head .rp-lede {
+.session-head > h1 {
   margin-bottom: var(--space-4);
 }
 .session-side {
@@ -411,6 +411,10 @@
 }
 .own-status .rp-badge {
   margin-bottom: var(--space-1);
+}
+/* Refresh is a utility, not an action: it sits small at the edge. */
+.registration-panel > .rp-button--link {
+  justify-self: end;
 }
 .action-area p,
 .rp-sheet p {
@@ -687,7 +691,7 @@
 .session-layout--game-day .session-side {
   position: static;
 }
-.session-layout--game-day .session-head .rp-lede {
+.session-layout--game-day .session-head > h1 {
   margin-bottom: 0;
 }
 .game-day-panel {
@@ -708,6 +712,22 @@
 }
 .game-day-coming .roster {
   justify-self: stretch;
+}
+/* The count and its link share a row; the list opens underneath. */
+.game-day-coming.rp-card {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+.game-day-coming.rp-card .roster {
+  grid-column: 1 / -1;
+}
+/* What the player owes and how to say they sent it, as one block. */
+.game-day-fee {
+  display: grid;
+  gap: var(--space-3);
+}
+.game-day-fee > p {
+  margin: 0;
 }
 .game-day-more {
   border-top: var(--border-width) solid var(--color-border);
