@@ -11,20 +11,18 @@ import {
   badgeCatalog,
   badgeDefinition,
   badgeStates,
-  legacyTitles,
   levelColors,
   levelLabel as badgeLevelLabel,
   levelOf,
   levelSentence,
   levelTarget,
+  levelTitle,
   medallionLabel,
   newestUnseen,
   nextBadge,
   nextTarget,
   progressLabel,
-  titleForLevel,
-  titleLabel,
-  titleOptions,
+  rosterTitle,
   unseenIds,
 } from "@rallypoint/domain/badges";
 import type {
@@ -32,7 +30,6 @@ import type {
   BadgeKey,
   BadgeState,
   BadgesView,
-  LegacyBadgeKey,
   Level,
   RosterTitle,
 } from "@rallypoint/domain/badges";
@@ -257,15 +254,18 @@ export function PersonName({
   );
 }
 
-/** A title still names an old badge (WDL-405); it shows the level it became. */
-export function TitlePill({ title }: { title: RosterTitle }) {
-  const shows = legacyTitles[title.key].shows;
+/**
+ * The badge a person shows, as its current level title (WDL-405). Anything
+ * that isn't a badge at a level, such as an old-style title mid-rollout,
+ * shows nothing.
+ */
+export function TitlePill({ title }: { title: unknown }) {
+  const shown = rosterTitle(title);
+  if (!shown) return null;
   return (
-    <span className={cx("title-pill", !shows && "title-pill--plain")}>
-      {shows ? (
-        <Medallion badge={shows.key} level={shows.level} size={18} decorative />
-      ) : null}
-      {titleLabel(title)}
+    <span className="title-pill">
+      <Medallion badge={shown.key} level={shown.level} size={18} decorative />
+      {levelTitle(shown.key, shown.level)}
     </span>
   );
 }
@@ -298,15 +298,14 @@ export function EarnedBadgeSheet({ view }: { view: BadgesView | null }) {
   const [closed, setClosed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const moment = newestUnseen(badgeStates(view));
+  const shown = rosterTitle(view?.title);
+  // The badge you show goes first, so a change to your title is never folded away.
+  const moment = newestUnseen(badgeStates(view), shown?.key);
   if (!view || !moment) return null;
   const unseen = unseenIds(badgeStates(view));
   const { key, level, more } = moment;
-  // Until WDL-405, a level can be shown as a title only through its old badge.
-  const legacy = titleForLevel(key, level);
-  const title = legacy
-    ? titleOptions(view).find((t) => t.id === legacy)
-    : undefined;
+  const title = levelTitle(key, level);
+  const isShown = shown?.key === key;
   function close() {
     setClosed(true);
     // If this fails the level simply shows again next time; nothing is lost.
@@ -334,26 +333,29 @@ export function EarnedBadgeSheet({ view }: { view: BadgesView | null }) {
           {badgeDefinition(key).name} · Level {level}
         </p>
         <p className="earned-badge__line">{levelSentence(key, level)}</p>
+        {isShown ? (
+          <p className="earned-badge__line">Your title is now {title}.</p>
+        ) : null}
         {more ? (
           <Link className="earned-badge__more" href="/profile" onClick={close}>
             +{more} more on your profile
           </Link>
         ) : null}
         {error ? <Notice>{error}</Notice> : null}
-        {title ? (
+        {!isShown ? (
           <button
             type="button"
             className={buttonClass({ variant: "primary", wide: true })}
             disabled={busy}
-            onClick={() => showAsTitle(title.id)}
+            onClick={() => showAsTitle(key)}
           >
-            {busy ? "Saving…" : "Show as my title"}
+            {busy ? "Saving…" : `Show “${title}” as my title`}
           </button>
         ) : null}
         <button
           type="button"
           className={buttonClass({
-            variant: title ? "link" : "primary",
+            variant: isShown ? "primary" : "link",
             wide: true,
           })}
           disabled={busy}
@@ -499,7 +501,9 @@ function BadgeDetails({
                   />
                   <span className="badge-levels__text">
                     <strong>Level {step}</strong>
-                    <span>{levelTarget(key, step)}</span>
+                    <span>
+                      {levelTarget(key, step)} · “{levelTitle(key, step)}”
+                    </span>
                   </span>
                   {earned ? (
                     <span className="badge-levels__when">
@@ -662,7 +666,10 @@ export function ProfilePage() {
     const state = badgeStates(view).find((x) => x.key === b.key);
     return { key: b.key, level: state ? levelOf(state) : 0 } as ShelfBadge;
   });
-  const titles = titleOptions(view);
+  // A title is any started badge; it always reads the badge's current level.
+  const titles = shelf.filter(
+    (b): b is { key: BadgeKey; level: Level } => b.level > 0,
+  );
   async function saveTitle(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -692,7 +699,7 @@ export function ProfilePage() {
       ) : null}
       <ProfileView
         name={name}
-        title={view?.title ?? null}
+        title={rosterTitle(view?.title)}
         badges={shelf}
         stats={view?.stats ?? { played: 0, hosted: 0, groups: 0 }}
         activities={profile.data?.profile.activities ?? []}
@@ -705,7 +712,7 @@ export function ProfilePage() {
               type="button"
               className={buttonClass({ variant: "link" })}
               onClick={() => {
-                setChoice(view?.title?.id ?? "");
+                setChoice(rosterTitle(view?.title)?.key ?? "");
                 setError(null);
                 setChoosing(true);
               }}
@@ -763,15 +770,20 @@ export function ProfilePage() {
               <span>No title</span>
             </label>
             {titles.map((t) => (
-              <label key={t.id}>
+              <label key={t.key}>
                 <input
                   type="radio"
                   name="title"
-                  value={t.id}
-                  checked={choice === t.id}
-                  onChange={() => setChoice(t.id)}
+                  value={t.key}
+                  checked={choice === t.key}
+                  onChange={() => setChoice(t.key)}
                 />
-                <TitlePill title={t} />
+                <span className="title-choice__option">
+                  <TitlePill title={t} />
+                  <small>
+                    {badgeDefinition(t.key).name} · level {t.level}
+                  </small>
+                </span>
               </label>
             ))}
           </fieldset>
@@ -832,16 +844,12 @@ export function PersonProfilePage() {
     const level = profile.badges.find((x) => x.key === b.key)?.level ?? 0;
     return isLevel(level) ? [{ key: b.key, level }] : [];
   });
-  const title =
-    profile.title && Object.hasOwn(legacyTitles, profile.title.key)
-      ? { key: profile.title.key as LegacyBadgeKey, groupName: null }
-      : null;
   return (
     <>
       {session ? <OwnProfileRedirect profileId={profile.profileId} /> : null}
       <ProfileView
         name={profile.name}
-        title={title}
+        title={rosterTitle(profile.title)}
         badges={shelf}
         stats={profile.stats}
         activities={profile.activities}
