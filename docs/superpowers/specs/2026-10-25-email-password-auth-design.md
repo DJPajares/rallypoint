@@ -161,10 +161,11 @@ origin + "/auth/callback", data: { full_name } } })`.
   opening the email in a different browser is common: a chat app's browser, the
   mail app's browser, or an installed iPhone app with its own storage.
   - **The code verifier is missing** (the link opened on another browser or
-    device). For sign-up, Supabase has already confirmed the email before
-    redirecting, so say "Your email is confirmed. Sign in to continue." with
-    Sign in. For a reset, say "Open the reset link on the device where you
-    asked for it, or ask for a new one." with Send a new link.
+    device). That browser can't tell a sign-up link from a reset link, so the
+    page shows both lines. For sign-up, Supabase has already confirmed the
+    email before redirecting: "Your email is confirmed. Sign in to continue."
+    For a reset: "Open the reset link on the device where you asked for it, or
+    ask for a new one." Actions: Sign in, and Send a new link.
   - **The link expired or was already used** (the redirect carries an error
     such as `otp_expired`): "This link has expired or was already used." with
     Sign in and Send a new link.
