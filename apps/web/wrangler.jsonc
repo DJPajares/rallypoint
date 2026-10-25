@@ -14,6 +14,7 @@
   "vars": {
     "LOCAL_AUTH_ENABLED": "false",
     "GOOGLE_AUTH_ENABLED": "false",
+    "PASSWORD_AUTH_ENABLED": "false",
   },
   "observability": {
     "enabled": false,

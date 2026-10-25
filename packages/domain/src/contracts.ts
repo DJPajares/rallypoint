@@ -4,9 +4,8 @@ export interface PublicConfig {
     url: string;
     publishableKey: string;
     google: boolean;
+    password: boolean;
     localEmail: boolean;
-    email?: boolean;
-    emailCodeLength?: 6 | 8;
   } | null;
 }
 export interface Identity {

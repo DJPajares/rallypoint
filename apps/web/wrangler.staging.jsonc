@@ -9,8 +9,7 @@
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   "vars": {
     "LOCAL_AUTH_ENABLED": "false",
-    "EMAIL_AUTH_ENABLED": "true",
-    "EMAIL_OTP_LENGTH": "8",
+    "PASSWORD_AUTH_ENABLED": "true",
     "GOOGLE_AUTH_ENABLED": "false",
     "SUPABASE_API_SCHEMA": "rallypoint_api",
     "PAYMENT_QR_BUCKET": "rallypoint-payment-qr",

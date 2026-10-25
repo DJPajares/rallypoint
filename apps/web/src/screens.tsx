@@ -635,7 +635,7 @@ export function SignIn() {
           </Notice>
         ) : (
           <>
-            {config.auth?.google || !config.auth?.email ? (
+            {config.auth?.google || !config.auth?.password ? (
               <button
                 className={buttonClass({ variant: "accent", wide: true })}
                 onClick={() => void google()}
@@ -645,12 +645,12 @@ export function SignIn() {
                 <ArrowRightIcon size={20} aria-hidden="true" />
               </button>
             ) : null}
-            {!config.auth?.google && !config.auth?.email ? (
+            {!config.auth?.google && !config.auth?.password ? (
               <p className="rp-help">
                 Google sign-in has not been connected in this environment.
               </p>
             ) : null}
-            {config.auth?.localEmail || config.auth?.email ? (
+            {config.auth?.localEmail || config.auth?.password ? (
               <form
                 onSubmit={(event) => void submit(event)}
                 className="local-form"
@@ -687,8 +687,8 @@ export function SignIn() {
                         id="code"
                         inputMode="numeric"
                         autoComplete="one-time-code"
-                        pattern={`[0-9]{${config.auth?.emailCodeLength ?? 6}}`}
-                        maxLength={config.auth?.emailCodeLength ?? 6}
+                        pattern={`[0-9]{${6}}`}
+                        maxLength={6}
                         value={code}
                         onChange={(event) => setCode(event.target.value)}
                         required

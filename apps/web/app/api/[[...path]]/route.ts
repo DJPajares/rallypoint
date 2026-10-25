@@ -14,8 +14,7 @@ function environment(): AppEnv {
       SUPABASE_API_SCHEMA: process.env.SUPABASE_API_SCHEMA,
       PAYMENT_QR_BUCKET: process.env.PAYMENT_QR_BUCKET,
       LOCAL_AUTH_ENABLED: process.env.LOCAL_AUTH_ENABLED,
-      EMAIL_AUTH_ENABLED: process.env.EMAIL_AUTH_ENABLED,
-      EMAIL_OTP_LENGTH: process.env.EMAIL_OTP_LENGTH,
+      PASSWORD_AUTH_ENABLED: process.env.PASSWORD_AUTH_ENABLED,
       GOOGLE_AUTH_ENABLED: process.env.GOOGLE_AUTH_ENABLED,
     };
   try {
