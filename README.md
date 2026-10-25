@@ -44,8 +44,11 @@ services once so sign-in accepts the new address (your data is kept):
 `pnpm db:stop && pnpm db:start`. Supabase Auth reads its allowed addresses only
 when it starts.
 
-In the local sign-in form, request a code for one of these fixtures and read the
-message in the local inbox. No message is sent outside the local mail sink.
+Sign in with one of these fixtures and the fixed local password
+(`fixturePassword` in `scripts/local-env.mjs`). To try sign-up, create an account
+with any new synthetic address and open the confirmation link from the local
+inbox in the same browser; password reset links arrive there too. No message is
+sent outside the local mail sink.
 
 | Synthetic account         | Expected view                                    |
 | ------------------------- | ------------------------------------------------ |
@@ -55,8 +58,8 @@ message in the local inbox. No message is sent outside the local mail sink.
 | newcomer@rallypoint.test  | Empty group list                                 |
 
 The fixed password in `scripts/local-env.mjs` is for these local-only test users.
-Never reuse it for a real account. Global public signup is disabled; the local
-email provider is enabled only to exercise existing synthetic identities.
+Never reuse it for a real account. Local sign-up is enabled for synthetic
+addresses only, with email confirmation on (D-22).
 
 ## Commands
 
@@ -179,12 +182,16 @@ own build command to generate the Workers client before compiling Next.js.
 The shell works without configuration; sign-in explains the missing setup rather
 than claiming a connection succeeded. All private API responses are uncached.
 
-Google OAuth is the accepted live identity method. Its Supabase provider,
+Email and password through Supabase Auth is the current sign-in (D-22):
+sign-up and password reset send Supabase's confirmation links, which return to
+`/auth/callback` and finish in the browser that asked for them. Set
+`PASSWORD_AUTH_ENABLED=true` to show the forms. Google OAuth remains possible later. Its Supabase provider,
 Google client, allowed audience/origins and callback URL still need separate
 configuration and verification. The callback is `/auth/callback`; the app resumes
 only validated same-origin destinations. Set `GOOGLE_AUTH_ENABLED=true` only when
-the provider is configured. The local email-code exercise is enabled only for a
-loopback request with a loopback Auth service and `LOCAL_AUTH_ENABLED=true`.
+the provider is configured. The local-development note on the sign-in page
+shows only for a loopback request with a loopback Auth service and
+`LOCAL_AUTH_ENABLED=true`.
 It does not prove live Google OAuth.
 
 ## Share organizing with a co-host
@@ -711,6 +718,6 @@ failure statuses.
 
 ## Phone staging
 
-The owner selected shared wProject with RallyPoint-specific schemas and verified email codes for staging on 2026-10-23. The current test address is [rallypoint.wndrhive.com](https://rallypoint.wndrhive.com), hosted in the Vercel project `rallypoint`. The original Cloudflare Worker `rallypoint-staging` remains running. See [staging deployment and recovery](docs/deployment/staging.md) for the exact boundaries, clean-build commands and runtime configuration. Local development stays isolated.
+The owner selected shared wProject with RallyPoint-specific schemas for staging on 2026-10-23; sign-in there is email and password (D-22, replacing the earlier verified email codes). The current test address is [rallypoint.wndrhive.com](https://rallypoint.wndrhive.com), hosted in the Vercel project `rallypoint`. The original Cloudflare Worker `rallypoint-staging` remains running. See [staging deployment and recovery](docs/deployment/staging.md) for the exact boundaries, clean-build commands and runtime configuration. Local development stays isolated.
 
 Database changes have a separate release step: apply and verify the reviewed RallyPoint-only migration before merging dependent code to `main`. Vercel deploys the application automatically; it does not run SQL migrations. See the [database-before-application release check](docs/deployment/staging.md#database-before-application-release-check). The owner-authorized Prisma deployment on 2026-10-24 applied the five Sessions/Profile source migrations through `20261024100000`. Both local and hosted databases now have isolated Prisma migration history. See the [live application evidence](docs/verification/2026-10-24-prisma-runtime-configuration.md#prisma-migrate-applied-locally-and-to-production).

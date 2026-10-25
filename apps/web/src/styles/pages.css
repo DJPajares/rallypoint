@@ -301,6 +301,9 @@
 .auth-form .rp-button--primary {
   margin-top: var(--space-4);
 }
+.auth-form > .rp-help {
+  margin-bottom: var(--space-4);
+}
 /* "Forgot password?" sits small under the password, at its edge. */
 .auth-aside {
   display: block;
