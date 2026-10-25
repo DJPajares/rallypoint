@@ -204,10 +204,7 @@ test("badges and titles", async (t) => {
         assert.equal(badge(b, "steady").current, 1);
         assert.deepEqual(started(b), ["rally"]);
         assert.deepEqual(b.stats, { played: 1, hosted: 0, groups: 0 });
-        assert.deepEqual(
-          b.titles.map((x) => x.id),
-          ["first-rally"],
-        );
+        assert.equal("titles" in b, false);
         const r = await markSeen(p, ["rally:1"]);
         assert.equal(r.status, 200);
         assert.deepEqual(seenLevels(await r.json(), "rally"), [1]);
@@ -406,12 +403,10 @@ test("badges and titles", async (t) => {
               .schema(schema)
               .rpc("read_my_badges", { p_actor_id: p.id });
             assert.ok(read.error, `${schema}.read_my_badges must be refused`);
-            const write = await db
-              .schema(schema)
-              .rpc("mark_badges_seen", {
-                p_actor_id: p.id,
-                p_ids: ["rally:1"],
-              });
+            const write = await db.schema(schema).rpc("mark_badges_seen", {
+              p_actor_id: p.id,
+              p_ids: ["rally:1"],
+            });
             assert.ok(
               write.error,
               `${schema}.mark_badges_seen must be refused`,
@@ -421,55 +416,117 @@ test("badges and titles", async (t) => {
     );
 
     await t.test(
-      "old titles still work: earned ones only, rosters show them, corrections clear them",
+      "a title is a started badge: refused before, shown at its level on rosters",
       async () => {
         const p = await fresh("title-p"),
           q = await fresh("title-q"),
           s = await event();
         const pp = await join(s, p),
           pq = await join(s, q);
-        await mark(s, host, pp.id, 1, "checked_in", 0);
-        await mark(s, host, pq.id, 1, "checked_in", 0);
-        let r = await setTitle(p, "host");
+        let r = await setTitle(p, "rally");
         assert.equal(r.status, 422);
         assert.equal(await code(r), "title_not_earned");
-        for (const bad of ["nope", 5, `first-rally:${firstGroup}`, "rally:1"]) {
+        await mark(s, host, pp.id, 1, "checked_in", 0);
+        await mark(s, host, pq.id, 1, "checked_in", 0);
+        r = await setTitle(p, "host");
+        assert.equal(r.status, 422);
+        assert.equal(await code(r), "title_not_earned");
+        for (const bad of [
+          "nope",
+          5,
+          "sessions-25",
+          "first-rally",
+          "rally:1",
+          `founder:${firstGroup}`,
+        ]) {
           r = await setTitle(p, bad);
-          assert.equal(r.status, 422);
+          assert.equal(r.status, 422, String(bad));
           assert.equal(await code(r), "invalid_title");
         }
-        r = await setTitle(p, "first-rally");
+        r = await setTitle(p, "rally");
         assert.equal(r.status, 200);
-        assert.deepEqual((await r.json()).title, {
-          id: "first-rally",
-          key: "first-rally",
-          groupName: null,
-        });
+        assert.deepEqual((await r.json()).title, { key: "rally", level: 1 });
         for (const viewer of [q, organizer]) {
-          const entry = (await view(s, viewer)).roster.find(
-            (x) => x.primaryName === p.name,
-          );
-          assert.deepEqual(entry.title, {
-            key: "first-rally",
-            groupName: null,
+          const roster = (await view(s, viewer)).roster;
+          assert.deepEqual(roster.find((x) => x.primaryName === p.name).title, {
+            key: "rally",
+            level: 1,
           });
+          assert.equal(
+            roster.find((x) => x.primaryName === q.name).title,
+            null,
+          );
         }
-        await mark(s, host, pp.id, 1, "unrecorded", 1);
-        const b = await badges(p);
-        assert.equal(b.title, null);
-        assert.deepEqual(b.titles, []);
-        assert.equal(
-          (await view(s, q)).roster.find((x) => x.primaryName === p.name).title,
-          null,
-        );
-        r = await setTitle(q, null);
+        // The public profile carries the same two facts, nothing more.
+        const { profile } = await (await request("/api/me/profile", p)).json();
+        const shown = (
+          await (await request(`/api/people/${profile.profileId}`, null)).json()
+        ).profile;
+        assert.deepEqual(shown.title, { key: "rally", level: 1 });
+        r = await setTitle(p, null);
         assert.equal(r.status, 200);
         assert.equal((await r.json()).title, null);
+        assert.equal(
+          sql(`select count(*) from app.user_titles where user_id='${p.id}';`),
+          "0",
+        );
       },
     );
 
     await t.test(
-      "a retired badge still works as a title but is not a shelf badge",
+      "the title follows its badge's level, hides at level 0 and comes back",
+      async () => {
+        const p = await fresh("title-level"),
+          parties = [];
+        for (let i = 0; i < 10; i++) {
+          const s = await event();
+          parties.push([s, await join(s, p)]);
+        }
+        for (const [s, party] of parties.slice(0, 9))
+          await mark(s, host, party.id, 1, "checked_in", 0);
+        const both = await Promise.all([
+          setTitle(p, "rally"),
+          setTitle(p, "rally"),
+        ]);
+        assert.deepEqual(
+          both.map((x) => x.status),
+          [200, 200],
+        );
+        assert.equal(
+          sql(`select count(*) from app.user_titles where user_id='${p.id}';`),
+          "1",
+        );
+        const [last, lastParty] = parties[9];
+        await mark(last, host, lastParty.id, 1, "checked_in", 0);
+        assert.deepEqual((await badges(p)).title, { key: "rally", level: 2 });
+        assert.deepEqual(
+          (await view(last, organizer)).roster.find(
+            (x) => x.primaryName === p.name,
+          ).title,
+          { key: "rally", level: 2 },
+        );
+        await mark(last, host, lastParty.id, 1, "unrecorded", 1);
+        assert.deepEqual((await badges(p)).title, { key: "rally", level: 1 });
+        for (const [s, party] of parties.slice(0, 9))
+          await mark(s, host, party.id, 1, "unrecorded", 1);
+        assert.equal((await badges(p)).title, null);
+        assert.equal(
+          (await view(parties[0][0], organizer)).roster.find(
+            (x) => x.primaryName === p.name,
+          ).title,
+          null,
+        );
+        assert.equal(
+          sql(`select badge_id from app.user_titles where user_id='${p.id}';`),
+          "rally",
+        );
+        await mark(parties[0][0], host, parties[0][1].id, 1, "checked_in", 2);
+        assert.deepEqual((await badges(p)).title, { key: "rally", level: 1 });
+      },
+    );
+
+    await t.test(
+      "starting a group is not a badge and gives no title",
       async () => {
         const f = await fresh("founder");
         const r = await request("/api/groups", f, {
@@ -477,22 +534,12 @@ test("badges and titles", async (t) => {
           name: `Badge group ${nonce}`,
         });
         assert.equal(r.status, 200);
-        const group = (await r.json()).group;
-        groups.push(group.id);
-        let b = await badges(f);
-        assert.deepEqual(b.titles, [
-          {
-            id: `founder:${group.id}`,
-            key: "founder",
-            groupId: group.id,
-            groupName: `Badge group ${nonce}`,
-          },
-        ]);
+        groups.push((await r.json()).group.id);
+        const b = await badges(f);
         assert.deepEqual(started(b), []);
-        assert.equal((await setTitle(f, `founder:${group.id}`)).status, 200);
-        b = await badges(f);
-        assert.equal(b.title.key, "founder");
-        assert.ok(!b.badges.some((x) => x.key === "founder"));
+        const refused = await setTitle(f, "host");
+        assert.equal(refused.status, 422);
+        assert.equal(await code(refused), "title_not_earned");
       },
     );
   } finally {

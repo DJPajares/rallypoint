@@ -188,7 +188,7 @@ test("one person cannot change another person's profile", async (t) => {
 test("a public profile shows only its page fields", async (t) => {
   const f = await fixture(t);
   const [actor] = f.actors;
-  // Owning the seed group earns a badge that names it; choose it as the title.
+  // Owning the seed group gives a group count but no badge (WDL-405).
   f.sql(
     `insert into app.group_roles(group_id,user_id,role) values ('${f.firstGroup}','${actor.id}','owner') on conflict do nothing;`,
   );
@@ -198,9 +198,9 @@ test("a public profile shows only its page fields", async (t) => {
       activities: [{ name: "Tennis", level: null }],
     })
   ).json();
-  const badgeId = `founder:${f.firstGroup}`;
+  // A saved title whose badge isn't started shows nothing.
   f.sql(
-    `insert into app.user_titles(user_id,badge_id) values ('${actor.id}','${badgeId}');`,
+    `insert into app.user_titles(user_id,badge_id) values ('${actor.id}','rally');`,
   );
 
   const response = await f.get(null, `/api/people/${profile.profileId}`);
@@ -216,7 +216,7 @@ test("a public profile shows only its page fields", async (t) => {
   ]);
   assert.equal(shown.name, "Sam");
   assert.deepEqual(shown.activities, [{ name: "Tennis", level: null }]);
-  assert.deepEqual(shown.title, { key: "founder" });
+  assert.equal(shown.title, null);
   // Started badges only, each once at its level: no dates, no progress.
   // Founder is retired from the shelf (P-19) but still works as a title.
   for (const badge of shown.badges) {
