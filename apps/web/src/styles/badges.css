@@ -46,11 +46,6 @@
   text-overflow: ellipsis;
 }
 
-/* A retired badge's title has no medallion to sit beside. */
-.title-pill--plain {
-  padding-left: var(--space-2);
-}
-
 /* Home: one quiet nudge */
 .next-badge {
   display: flex;
@@ -444,6 +439,17 @@ button.badge-shelf__item:focus-visible {
 }
 .title-choice .title-pill {
   margin-left: 0;
+}
+/* Which badge a title comes from, under the pill. */
+.title-choice__option {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-0);
+  min-width: 0;
+}
+.title-choice__option small {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
 }
 
 @media (prefers-reduced-motion: reduce) {
