@@ -115,7 +115,7 @@ export function applyActivityDefaults(
 }
 
 /** "30 minutes", "1 hour", "4 hours": whole hours read as hours. */
-function duration(minutes: number) {
+export function durationText(minutes: number) {
   if (minutes % 60 !== 0) return `${minutes} minutes`;
   const hours = minutes / 60;
   return hours === 1 ? "1 hour" : `${hours} hours`;
@@ -143,28 +143,46 @@ export function limitProblem(
     (value.durationMinutes < l.minDurationMinutes ||
       value.durationMinutes > l.maxDurationMinutes)
   )
-    return `${name} sessions can run ${duration(l.minDurationMinutes)} to ${duration(l.maxDurationMinutes)}.`;
+    return `${name} sessions can run ${durationText(l.minDurationMinutes)} to ${durationText(l.maxDurationMinutes)}.`;
   return null;
 }
 
+type Saved = {
+  activity: string;
+  capacity: number | string;
+  startsAt?: string;
+  endsAt?: string;
+};
+
 /**
- * The four sports before the catalog moved to the database. Kept only until
- * the screens read the catalog; nothing new should use these.
+ * The same rule the database applies on save, for an early message: against
+ * the published details (null when nothing is published yet), only changed
+ * values are checked, and a new activity rechecks spots.
  */
-export const presetActivities = [
-  "Pickleball",
-  "Badminton",
-  "Tennis",
-  "Basketball",
-] as const;
-export type PresetActivity = (typeof presetActivities)[number];
-/** The presets in catalog shape, for callers not yet reading the catalog. */
-export const presetCatalog = presetActivities.map((name) => ({
-  key: name.toLowerCase(),
-  name,
-}));
-/** The preset an activity's text names, ignoring case and outer spaces. */
-export function presetFor(activity: string): PresetActivity | null {
-  const text = activity.trim().toLowerCase();
-  return presetActivities.find((a) => a.toLowerCase() === text) ?? null;
+export function sessionLimitProblem(
+  catalog: readonly Activity[],
+  published: Saved | null,
+  next: Saved,
+): string | null {
+  const activity = activityFor(catalog, next.activity);
+  const minutes =
+    next.startsAt && next.endsAt
+      ? (Date.parse(next.endsAt) - Date.parse(next.startsAt)) / 60000
+      : null;
+  const check = published
+    ? {
+        capacity:
+          activityFor(catalog, published.activity).key !== activity.key ||
+          Number(published.capacity) !== Number(next.capacity),
+        duration:
+          Date.parse(published.startsAt ?? "") !==
+            Date.parse(next.startsAt ?? "") ||
+          Date.parse(published.endsAt ?? "") !== Date.parse(next.endsAt ?? ""),
+      }
+    : { capacity: true, duration: true };
+  return limitProblem(
+    activity,
+    { capacity: Number(next.capacity), durationMinutes: minutes },
+    check,
+  );
 }

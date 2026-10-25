@@ -41,6 +41,7 @@ import type {
   PublicProfile,
 } from "@rallypoint/domain/profile";
 import {
+  ActivityIcon,
   buttonClass,
   cx,
   EmptyState,
@@ -51,6 +52,7 @@ import {
 } from "@rallypoint/ui";
 import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
+import { useActivities } from "./use-activities";
 import { useSignOut } from "./sign-out";
 import { ShareButton } from "./share-button";
 
@@ -439,15 +441,36 @@ export function RingAvatar({
   );
 }
 
-/** Owner and visitors read the same line: each level is marked as the person's own rating. */
-const playsLineSelfRated = (activities: ProfileActivity[]) =>
-  activities.length === 0
-    ? ""
-    : `Plays: ${activities
-        .map((a) =>
-          a.level ? `${a.name} (${levelLabel[a.level]} · self-rated)` : a.name,
-        )
-        .join(", ")}`;
+/**
+ * What the person plays, each with its activity's icon (D-23). Owner and
+ * visitors read the same words: each level is marked as their own rating.
+ */
+function Plays({ activities }: { activities: ProfileActivity[] }) {
+  const { catalog } = useActivities();
+  if (!activities.length) return null;
+  return (
+    <div className="profile-plays">
+      <span id="profile-plays-label">Plays:</span>
+      <ul aria-labelledby="profile-plays-label">
+        {activities.map((a) => (
+          <li key={a.name}>
+            <ActivityIcon
+              icon={
+                catalog?.find((c) => c.key === a.key)?.icon ??
+                a.key ??
+                "general"
+              }
+              size={16}
+            />
+            {a.level
+              ? `${a.name} (${levelLabel[a.level]} · self-rated)`
+              : a.name}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 interface ShelfBadge {
   key: BadgeKey;
@@ -549,7 +572,6 @@ function ProfileView({
   activities: ProfileActivity[];
   owner?: OwnerParts;
 }) {
-  const plays = playsLineSelfRated(activities);
   const shelf = owner ? badges : badges.filter((b) => b.level > 0);
   return (
     <section className="page profile-page">
@@ -557,7 +579,7 @@ function ProfileView({
         <RingAvatar name={name} size="lg" />
         <h1>{name || "Your profile"}</h1>
         {title ? <TitlePill title={title} /> : null}
-        {plays ? <p className="profile-plays">{plays}</p> : null}
+        <Plays activities={activities} />
         {owner ? (
           <div className="profile-actions">
             <Link

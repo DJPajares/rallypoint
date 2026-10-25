@@ -1,56 +1,52 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { BasketballIcon } from "@phosphor-icons/react/dist/csr/Basketball";
 import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
-import { PingPongIcon } from "@phosphor-icons/react/dist/csr/PingPong";
-import { RacquetIcon } from "@phosphor-icons/react/dist/csr/Racquet";
-import { TennisBallIcon } from "@phosphor-icons/react/dist/csr/TennisBall";
-import { ChoiceTiles } from "@rallypoint/ui";
+import { ActivityIcon, ChoiceTiles } from "@rallypoint/ui";
 import type { Tile } from "@rallypoint/ui";
-import { presetFor } from "@rallypoint/domain/activities";
-import type { PresetActivity } from "@rallypoint/domain/activities";
-const icons: Record<PresetActivity, Tile["icon"]> = {
-  Pickleball: <PingPongIcon size={30} />,
-  Badminton: <RacquetIcon size={30} />,
-  Tennis: <TennisBallIcon size={30} />,
-  Basketball: <BasketballIcon size={30} />,
-};
+import { matchActivity } from "@rallypoint/domain/activities";
+import type { Activity } from "@rallypoint/domain/activities";
 const OTHER = "other";
-const tiles: Tile[] = [
-  ...(Object.keys(icons) as PresetActivity[]).map((value) => ({
-    value,
-    label: value,
-    icon: icons[value],
-  })),
-  {
-    value: OTHER,
-    label: "Something else",
-    icon: <PencilSimpleIcon size={30} />,
-    wide: true,
-  },
-];
 /**
- * The session's activity as icon tiles. The value is still plain text: a
- * preset tile stores its name, and "Something else" opens a text box. Saved
- * text that names a preset (in any case) reopens on that preset's tile.
+ * The session's activity as icon tiles from the shared catalog (D-23). The
+ * value is still plain text: a tile stores the activity's name, and "Something
+ * else" opens a text box. Saved text that names a catalog activity (in any
+ * case) reopens on its tile. Without a catalog, the text box is all there is.
  */
 export function ActivityPicker({
   value,
   onChange,
+  catalog,
   disabled,
 }: {
   value: string;
   onChange: (value: string) => void;
+  catalog: readonly Activity[] | null;
   disabled?: boolean;
 }) {
-  const [other, setOther] = useState(
-    () => value.trim() !== "" && !presetFor(value),
-  );
+  const listed = (catalog ?? []).filter((a) => a.listed);
+  const named = matchActivity(listed, value);
+  // Chosen by tapping "Something else"; typed text the catalog doesn't name
+  // also opens the box, including once a slow catalog arrives.
+  const [other, setOther] = useState(false);
   const [focusOther, setFocusOther] = useState(false);
   const text = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (focusOther) text.current?.focus();
   }, [focusOther]);
+  const tiles: Tile[] = [
+    ...listed.map((a) => ({
+      value: a.name,
+      label: a.name,
+      icon: <ActivityIcon icon={a.icon} size={30} />,
+    })),
+    {
+      value: OTHER,
+      label: "Something else",
+      icon: <PencilSimpleIcon size={30} />,
+      wide: true,
+    },
+  ];
+  const typing = other || (!named && value.trim() !== "") || !listed.length;
   return (
     <div className="rp-field">
       <span id="activity-label" className="rp-field__label">
@@ -59,13 +55,13 @@ export function ActivityPicker({
       <ChoiceTiles
         name="activity"
         labelledBy="activity-label"
-        value={other ? OTHER : presetFor(value)}
+        value={typing ? OTHER : (named?.name ?? null)}
         onChange={(next) => {
           if (next === OTHER) {
             setOther(true);
             setFocusOther(true);
-            // Start the typed activity fresh rather than editing a preset name.
-            if (presetFor(value)) onChange("");
+            // Start the typed activity fresh rather than editing a listed name.
+            if (named) onChange("");
           } else {
             setOther(false);
             setFocusOther(false);
@@ -75,7 +71,7 @@ export function ActivityPicker({
         tiles={tiles}
         disabled={disabled}
       />
-      {other ? (
+      {typing ? (
         <input
           ref={text}
           id="activity"

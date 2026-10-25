@@ -43,5 +43,6 @@ export {
   Segmented,
   StatRow,
 } from "./components/list";
+export { ActivityIcon } from "./components/activity-icon";
 export { ChoiceTiles } from "./components/choice-tiles";
 export type { Tile } from "./components/choice-tiles";

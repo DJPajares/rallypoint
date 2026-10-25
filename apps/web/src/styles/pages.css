@@ -392,6 +392,19 @@
 .session-head {
   grid-area: head;
 }
+/* The activity's icon leads the group · activity line (D-23). */
+.session-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.level-choice {
+  display: grid;
+  gap: var(--space-1);
+}
+.level-choice__meaning {
+  margin: 0;
+}
 .session-head > h1 {
   margin-bottom: var(--space-4);
 }

@@ -181,9 +181,27 @@
   font-size: var(--text-sm);
 }
 .profile-plays {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-1) var(--space-2);
   margin: 0;
   color: var(--color-text-muted);
   font-size: var(--text-sm);
+}
+.profile-plays ul {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-1) var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.profile-plays li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 .profile-actions {
   display: flex;

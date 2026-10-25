@@ -5,6 +5,7 @@ import {
   applyActivityDefaults,
   limitProblem,
   matchActivity,
+  sessionLimitProblem,
 } from "../packages/domain/src/activities.ts";
 
 const levels = {
@@ -173,5 +174,46 @@ test("limit messages name the range in plain words", () => {
   assert.equal(
     limitProblem(general, { capacity: 12, durationMinutes: 600 }, both),
     "These sessions can run 15 minutes to 8 hours.",
+  );
+});
+
+test("a session save checks only what changed against what is published", () => {
+  const tennis = {
+    ...pickleball,
+    key: "tennis",
+    name: "Tennis",
+    limits: { ...pickleball.limits, minCapacity: 2, maxCapacity: 16 },
+  };
+  const all = [pickleball, tennis, general];
+  const published = {
+    activity: "Pickleball",
+    capacity: 30,
+    startsAt: "2026-11-02T10:00:00Z",
+    endsAt: "2026-11-02T12:00:00Z",
+  };
+  // An old session outside the range stays editable while spots are untouched.
+  assert.equal(sessionLimitProblem(all, published, { ...published }), null);
+  assert.equal(
+    sessionLimitProblem(all, published, { ...published, capacity: 31 }),
+    "Pickleball sessions can have 4 to 24 spots.",
+  );
+  // A new activity brings its own range.
+  assert.equal(
+    sessionLimitProblem(all, published, { ...published, activity: "Tennis" }),
+    "Tennis sessions can have 2 to 16 spots.",
+  );
+  // Moving the end rechecks the length.
+  assert.equal(
+    sessionLimitProblem(
+      all,
+      { ...published, capacity: 8 },
+      { ...published, capacity: 8, endsAt: "2026-11-02T16:00:00Z" },
+    ),
+    "Pickleball sessions can run 30 minutes to 4 hours.",
+  );
+  // Nothing published yet: everything is checked.
+  assert.equal(
+    sessionLimitProblem(all, null, { ...published }),
+    "Pickleball sessions can have 4 to 24 spots.",
   );
 });
