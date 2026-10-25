@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { z } from "zod";
-import { parseBadgeId } from "@rallypoint/domain/badges";
+import { parseLevelId, parseTitleId } from "@rallypoint/domain/badges";
 import { ApiError, json, parse, readBody } from "./http";
 import type { ApiEnv } from "./identity";
 import { notAvailable, requireUser } from "./identity";
@@ -33,9 +33,11 @@ async function call(
   return json(data);
 }
 
-const badgeId = z.string().refine((id) => parseBadgeId(id) !== null);
-const seen = z.object({ ids: z.array(badgeId).min(1).max(50) });
-const title = z.object({ badgeId: badgeId.nullable() });
+// Seen markers name a badge level (`rally:3`); titles still name an old badge.
+const levelId = z.string().refine((id) => parseLevelId(id) !== null);
+const titleId = z.string().refine((id) => parseTitleId(id) !== null);
+const seen = z.object({ ids: z.array(levelId).min(1).max(50) });
+const title = z.object({ badgeId: titleId.nullable() });
 
 export const badges = new Hono<ApiEnv>()
   .get("/me/badges", requireUser, (c) => call(c, "read_my_badges"))

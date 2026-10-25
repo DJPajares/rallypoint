@@ -4,21 +4,36 @@ import type { FormEvent, ReactNode } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
 import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
 import { SignOutIcon } from "@phosphor-icons/react/dist/csr/SignOut";
 import {
   badgeCatalog,
   badgeDefinition,
-  earnedSentence,
+  badgeStates,
+  legacyTitles,
+  levelColors,
+  levelLabel as badgeLevelLabel,
+  levelOf,
+  levelSentence,
+  levelTarget,
+  medallionLabel,
   newestUnseen,
   nextBadge,
+  nextTarget,
   progressLabel,
+  titleForLevel,
   titleLabel,
+  titleOptions,
+  unseenIds,
 } from "@rallypoint/domain/badges";
 import type {
-  BadgeDefinition,
+  BadgeGlyph,
   BadgeKey,
+  BadgeState,
   BadgesView,
+  LegacyBadgeKey,
+  Level,
   RosterTitle,
 } from "@rallypoint/domain/badges";
 import type { Identity } from "@rallypoint/domain/contracts";
@@ -43,8 +58,9 @@ import { useSignOut } from "./sign-out";
 import { ShareButton } from "./share-button";
 
 // Medallions are drawn, not loaded: one gradient disc, a thin inner ring, a
-// glint and a single glyph (PRD D-15). Locked ones are a dashed outline.
-function Glyph({ badge }: { badge: BadgeDefinition }) {
+// glint and a single glyph (PRD D-15). The glyph is the badge; the colour, the
+// rim and the numeral chip are the level (P-19). Not started is a dashed outline.
+function Glyph({ glyph }: { glyph: BadgeGlyph }) {
   const line = {
     fill: "none",
     stroke: "currentColor",
@@ -52,7 +68,7 @@ function Glyph({ badge }: { badge: BadgeDefinition }) {
     strokeLinecap: "round",
     strokeLinejoin: "round",
   } as const;
-  switch (badge.glyph) {
+  switch (glyph) {
     case "rally":
       return (
         <>
@@ -63,33 +79,12 @@ function Glyph({ badge }: { badge: BadgeDefinition }) {
           <circle cx="65" cy="45" r="2.2" fill="currentColor" />
         </>
       );
-    case "regular":
+    case "calendar":
       return (
         <>
           <rect x="29" y="32" width="42" height="39" rx="8" {...line} />
           <path d="M29 45 H71 M40 26 V36 M60 26 V36" {...line} />
           <path d="M40 58 L47 64 L61 51" {...line} />
-        </>
-      );
-    case "number":
-      return (
-        <text
-          x="50"
-          y={badge.label!.length > 2 ? 59 : 61}
-          textAnchor="middle"
-          fontFamily="var(--font-heading)"
-          fontWeight="800"
-          fontSize={badge.label!.length > 2 ? 26 : 31}
-          fill="currentColor"
-        >
-          {badge.label}
-        </text>
-      );
-    case "bench":
-      return (
-        <>
-          <path d="M50 66 V32 M37 45 L50 32 L63 45" {...line} />
-          <path d="M33 73 H67" {...line} />
         </>
       );
     case "plus":
@@ -135,71 +130,45 @@ function Glyph({ badge }: { badge: BadgeDefinition }) {
           )}
         </g>
       );
-    case "founder":
-      return (
-        <>
-          <path d="M50 73 V49 M35 74 H65" {...line} />
-          <path
-            d="M50 55 C39 55 31 47 31 36 C42 36 50 44 50 55 Z"
-            fill="currentColor"
-          />
-          <path
-            d="M50 49 C50 38 58 30 70 30 C70 42 62 49 50 49 Z"
-            fill="currentColor"
-          />
-        </>
-      );
   }
 }
 
 export function Medallion({
   badge,
+  level,
   size,
-  locked = false,
   decorative = false,
 }: {
   badge: BadgeKey;
+  /** 0 is not started: a dashed outline. */
+  level: 0 | Level;
   size: number;
-  locked?: boolean;
   /** Hide from assistive tech when a visible label already names it. */
   decorative?: boolean;
 }) {
   const definition = badgeDefinition(badge);
   const gradient = `medal-${useId().replace(/[^\w-]/g, "")}`;
+  const colors = level ? levelColors[level - 1] : null;
   return (
     <svg
-      className={cx("medallion", locked && "medallion--locked")}
+      className={cx("medallion", !colors && "medallion--locked")}
       width={size}
       height={size}
       viewBox="0 0 100 100"
       {...(decorative
         ? { "aria-hidden": true }
-        : {
-            role: "img",
-            "aria-label": locked
-              ? `${definition.name}, not earned yet`
-              : definition.name,
-          })}
+        : { role: "img", "aria-label": medallionLabel(badge, level) })}
     >
-      {locked ? (
-        <circle
-          cx="50"
-          cy="50"
-          r="45"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="3"
-          strokeDasharray="5 6"
-        />
-      ) : (
+      {colors ? (
         <>
           <defs>
             <linearGradient id={gradient} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor={definition.colors[0]} />
-              <stop offset="1" stopColor={definition.colors[1]} />
+              <stop offset="0" stopColor={colors[0]} />
+              <stop offset="1" stopColor={colors[1]} />
             </linearGradient>
           </defs>
           <circle cx="50" cy="50" r="47" fill={`url(#${gradient})`} />
+          {/* The rim firms up at level 3 and doubles at level 5; nothing else escalates. */}
           <circle
             cx="50"
             cy="50"
@@ -207,8 +176,19 @@ export function Medallion({
             fill="none"
             stroke="var(--badge-shine)"
             strokeOpacity=".38"
-            strokeWidth="1.6"
+            strokeWidth={level >= 3 ? 2.6 : 1.6}
           />
+          {level === 5 ? (
+            <circle
+              cx="50"
+              cy="50"
+              r="43"
+              fill="none"
+              stroke="var(--badge-shine)"
+              strokeOpacity=".5"
+              strokeWidth="1.2"
+            />
+          ) : null}
           <path
             d="M17 44 A34 34 0 0 1 56 15"
             fill="none"
@@ -218,18 +198,44 @@ export function Medallion({
             strokeLinecap="round"
           />
         </>
+      ) : (
+        <circle
+          cx="50"
+          cy="50"
+          r="45"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeDasharray="5 6"
+        />
       )}
-      <g
-        style={{
-          color: locked
-            ? "inherit"
-            : definition.darkGlyph
-              ? "var(--badge-ink-dark)"
-              : "var(--badge-ink-light)",
-        }}
-      >
-        <Glyph badge={definition} />
+      <g style={{ color: colors ? "var(--badge-ink-light)" : "inherit" }}>
+        <Glyph glyph={definition.glyph} />
       </g>
+      {/* The level without colour; too small to read under 32px, where text says it. */}
+      {colors && size >= 32 ? (
+        <g aria-hidden="true">
+          <circle
+            cx="81"
+            cy="81"
+            r="13"
+            fill="var(--palette-white)"
+            stroke={colors[1]}
+            strokeWidth="3"
+          />
+          <text
+            x="81"
+            y="86.5"
+            textAnchor="middle"
+            fontFamily="var(--font-heading)"
+            fontWeight="800"
+            fontSize="16"
+            fill={colors[1]}
+          >
+            {level}
+          </text>
+        </g>
+      ) : null}
     </svg>
   );
 }
@@ -251,10 +257,14 @@ export function PersonName({
   );
 }
 
+/** A title still names an old badge (WDL-405); it shows the level it became. */
 export function TitlePill({ title }: { title: RosterTitle }) {
+  const shows = legacyTitles[title.key].shows;
   return (
-    <span className="title-pill">
-      <Medallion badge={title.key} size={18} decorative />
+    <span className={cx("title-pill", !shows && "title-pill--plain")}>
+      {shows ? (
+        <Medallion badge={shows.key} level={shows.level} size={18} decorative />
+      ) : null}
       {titleLabel(title)}
     </span>
   );
@@ -280,28 +290,33 @@ function useBadgeWrites() {
 }
 
 /**
- * A new badge gets one moment: shown once, then marked seen whichever way the
- * sheet is closed. Nothing is pushed or emailed (PRD D-16).
+ * A new level gets one moment: shown once, then every new level is marked seen
+ * whichever way the sheet is closed. Nothing is pushed or emailed (PRD D-16).
  */
 export function EarnedBadgeSheet({ view }: { view: BadgesView | null }) {
   const write = useBadgeWrites();
   const [closed, setClosed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const moment = view ? newestUnseen(view.earned) : null;
+  const moment = newestUnseen(badgeStates(view));
   if (!view || !moment) return null;
-  const unseen = view.earned.filter((b) => !b.seen).map((b) => b.id);
-  const { badge, more } = moment;
+  const unseen = unseenIds(badgeStates(view));
+  const { key, level, more } = moment;
+  // Until WDL-405, a level can be shown as a title only through its old badge.
+  const legacy = titleForLevel(key, level);
+  const title = legacy
+    ? titleOptions(view).find((t) => t.id === legacy)
+    : undefined;
   function close() {
     setClosed(true);
-    // If this fails the badge simply shows again next time; nothing is lost.
+    // If this fails the level simply shows again next time; nothing is lost.
     write("/api/me/badges/seen", { ids: unseen.slice(0, 50) }).catch(() => {});
   }
-  async function showAsTitle() {
+  async function showAsTitle(id: string) {
     setBusy(true);
     setError(null);
     try {
-      await write("/api/me/title", { badgeId: badge.id });
+      await write("/api/me/title", { badgeId: id });
       close();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Please try again.");
@@ -313,28 +328,34 @@ export function EarnedBadgeSheet({ view }: { view: BadgesView | null }) {
     <Sheet open={!closed} onClose={close} title="New badge">
       <div className="earned-badge">
         <div className="earned-badge__halo">
-          <Medallion badge={badge.key} size={132} />
+          <Medallion badge={key} level={level} size={132} />
         </div>
-        {/* The sentence names the group, so the heading doesn't repeat it. */}
-        <p className="earned-badge__name">{badgeDefinition(badge.key).name}</p>
-        <p className="earned-badge__line">{earnedSentence(badge)}</p>
+        <p className="earned-badge__name">
+          {badgeDefinition(key).name} · Level {level}
+        </p>
+        <p className="earned-badge__line">{levelSentence(key, level)}</p>
         {more ? (
           <Link className="earned-badge__more" href="/profile" onClick={close}>
             +{more} more on your profile
           </Link>
         ) : null}
         {error ? <Notice>{error}</Notice> : null}
+        {title ? (
+          <button
+            type="button"
+            className={buttonClass({ variant: "primary", wide: true })}
+            disabled={busy}
+            onClick={() => showAsTitle(title.id)}
+          >
+            {busy ? "Saving…" : "Show as my title"}
+          </button>
+        ) : null}
         <button
           type="button"
-          className={buttonClass({ variant: "primary", wide: true })}
-          disabled={busy}
-          onClick={showAsTitle}
-        >
-          {busy ? "Saving…" : "Show as my title"}
-        </button>
-        <button
-          type="button"
-          className={buttonClass({ variant: "link", wide: true })}
+          className={buttonClass({
+            variant: title ? "link" : "primary",
+            wide: true,
+          })}
           disabled={busy}
           onClick={close}
         >
@@ -375,18 +396,18 @@ function Ring({ value, children }: { value: number; children: ReactNode }) {
   );
 }
 
-/** One quiet nudge toward the closest badge; nothing when none is under way. */
+/** One quiet nudge toward the closest next level; nothing when none is under way. */
 export function NextBadge({ view }: { view: BadgesView | null }) {
-  const next = view ? nextBadge(view.progress) : null;
+  const next = nextBadge(badgeStates(view));
   if (!next) return null;
   return (
     <Link className="next-badge" href="/profile">
       <Ring value={next.current / next.target}>
-        <Medallion badge={next.key} size={26} decorative />
+        <Medallion badge={next.key} level={next.level} size={26} decorative />
       </Ring>
       <span className="next-badge__text">
         <strong>{badgeDefinition(next.key).name}</strong>
-        <span>{progressLabel(next)}</span>
+        <span>{progressLabel(next.key, next.target - next.current)}</span>
       </span>
       <CaretRightIcon size={18} aria-hidden="true" />
     </Link>
@@ -426,26 +447,88 @@ const playsLineSelfRated = (activities: ProfileActivity[]) =>
         )
         .join(", ")}`;
 
-interface ViewBadge {
+interface ShelfBadge {
   key: BadgeKey;
-  /** Only the owner's own view names the group. */
-  groupName?: string | null;
+  level: 0 | Level;
 }
 
-/** Only the owner's view has these: the controls, locked badges and account. */
+/** Only the owner's view has these: the controls, details and account. */
 interface OwnerParts {
   /** Unknown until the account loads; there is no link to share before then. */
   profileId: string | null;
   /** Stands in for the stats and badges while they load or fail to load. */
   status?: ReactNode;
   titleControl?: ReactNode;
-  locked: BadgeDefinition[];
+  /** Opens a badge's levels; the public shelf is not interactive. */
+  onOpen: (key: BadgeKey) => void;
   footer: ReactNode;
+}
+
+const dateLabel = (value: string) =>
+  new Date(value).toLocaleDateString(undefined, { dateStyle: "medium" });
+
+/** One badge's five levels, what each needs, and what is next (owner only). */
+function BadgeDetails({
+  state,
+  onClose,
+}: {
+  state: BadgeState | null;
+  onClose: () => void;
+}) {
+  const key = state?.key ?? "rally";
+  const definition = badgeDefinition(key);
+  const level = state ? levelOf(state) : 0;
+  const target = state ? nextTarget(key, state.current) : null;
+  return (
+    <Sheet open={state !== null} onClose={onClose} title={definition.name}>
+      {state ? (
+        <div className="badge-details">
+          <Medallion badge={key} level={level} size={96} />
+          <p className="badge-details__status">{badgeLevelLabel(level)}</p>
+          <ol className="badge-levels">
+            {definition.thresholds.map((_, i) => {
+              const step = (i + 1) as Level;
+              const earned = state.levels.find((l) => l.level === step);
+              return (
+                <li key={step} className={cx(earned && "badge-levels__earned")}>
+                  <Medallion
+                    badge={key}
+                    level={earned ? step : 0}
+                    size={28}
+                    decorative
+                  />
+                  <span className="badge-levels__text">
+                    <strong>Level {step}</strong>
+                    <span>{levelTarget(key, step)}</span>
+                  </span>
+                  {earned ? (
+                    <span className="badge-levels__when">
+                      <CheckIcon size={16} weight="bold" aria-hidden="true" />
+                      <span className="rp-sr-only">Earned </span>
+                      {dateLabel(earned.earnedAt)}
+                    </span>
+                  ) : (
+                    <span className="rp-sr-only">Not yet</span>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+          {target !== null ? (
+            <p className="badge-details__next">
+              {progressLabel(key, target - state.current)} for level {level + 1}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </Sheet>
+  );
 }
 
 /**
  * One profile, for its owner and for anyone with the link. The public view
- * carries no group names and no controls; the owner's adds both.
+ * shows started badges at their level and nothing else about them; the
+ * owner's shows all six, each opening its levels.
  */
 function ProfileView({
   name,
@@ -457,12 +540,13 @@ function ProfileView({
 }: {
   name: string;
   title: RosterTitle | null;
-  badges: ViewBadge[];
+  badges: ShelfBadge[];
   stats: BadgesView["stats"];
   activities: ProfileActivity[];
   owner?: OwnerParts;
 }) {
   const plays = playsLineSelfRated(activities);
+  const shelf = owner ? badges : badges.filter((b) => b.level > 0);
   return (
     <section className="page profile-page">
       <div className="profile-head">
@@ -505,34 +589,52 @@ function ProfileView({
               },
             ]}
           />
-          {owner || badges.length ? (
+          {shelf.length ? (
             <div className="section-head">
               <h2>Badges</h2>
               {owner?.titleControl}
             </div>
           ) : null}
-          {owner && !badges.length ? (
+          {owner && !badges.some((b) => b.level > 0) ? (
             <p className="rp-help">
               Your first badge comes with your first check-in.
             </p>
           ) : null}
           <ul className="badge-shelf">
-            {badges.map((b, index) => (
-              <li key={`${b.key}-${index}`}>
-                <Medallion badge={b.key} size={64} decorative />
-                <span>{badgeDefinition(b.key).name}</span>
-                {b.groupName ? <small>{b.groupName}</small> : null}
-              </li>
-            ))}
-            {owner?.locked.map((b) => (
-              <li key={b.key} className="badge-shelf__locked">
-                <Medallion badge={b.key} size={64} locked decorative />
-                <span>
-                  {b.name}
-                  <span className="rp-sr-only">, not earned yet</span>
-                </span>
-              </li>
-            ))}
+            {shelf.map((b) => {
+              const content = (
+                <>
+                  <Medallion
+                    badge={b.key}
+                    level={b.level}
+                    size={64}
+                    decorative
+                  />
+                  <span>{badgeDefinition(b.key).name}</span>
+                  <small>{badgeLevelLabel(b.level)}</small>
+                </>
+              );
+              return (
+                <li
+                  key={b.key}
+                  className={cx(!b.level && "badge-shelf__locked")}
+                >
+                  {/* The visible name and level are the accessible name (WCAG 2.5.3). */}
+                  {owner ? (
+                    <button
+                      type="button"
+                      className="badge-shelf__item"
+                      aria-haspopup="dialog"
+                      onClick={() => owner.onOpen(b.key)}
+                    >
+                      {content}
+                    </button>
+                  ) : (
+                    <span className="badge-shelf__item">{content}</span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </>
       )}
@@ -551,16 +653,16 @@ export function ProfilePage() {
   const [saved, setSaved] = useState<BadgesView | null>(null);
   const [choosing, setChoosing] = useState(false);
   const [choice, setChoice] = useState("");
+  const [open, setOpen] = useState<BadgeKey | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const view = saved ?? badges.data;
   const name = identity.data?.displayName ?? "";
-  const earnedKeys = new Set(view?.earned.map((b) => b.key));
-  const order = new Map(badgeCatalog.map((b, i) => [b.key, i]));
-  const earned = [...(view?.earned ?? [])].sort(
-    (a, b) => order.get(a.key)! - order.get(b.key)!,
-  );
-  const locked = badgeCatalog.filter((b) => !earnedKeys.has(b.key));
+  const shelf = badgeCatalog.map((b) => {
+    const state = badgeStates(view).find((x) => x.key === b.key);
+    return { key: b.key, level: state ? levelOf(state) : 0 } as ShelfBadge;
+  });
+  const titles = titleOptions(view);
   async function saveTitle(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -591,13 +693,14 @@ export function ProfilePage() {
       <ProfileView
         name={name}
         title={view?.title ?? null}
-        badges={earned}
+        badges={shelf}
         stats={view?.stats ?? { played: 0, hosted: 0, groups: 0 }}
         activities={profile.data?.profile.activities ?? []}
         owner={{
           profileId: identity.data?.profileId ?? null,
           status,
-          titleControl: earned.length ? (
+          onOpen: setOpen,
+          titleControl: titles.length ? (
             <button
               type="button"
               className={buttonClass({ variant: "link" })}
@@ -610,7 +713,6 @@ export function ProfilePage() {
               Choose title
             </button>
           ) : null,
-          locked,
           footer: (
             <>
               <div className="section-head">
@@ -637,6 +739,10 @@ export function ProfilePage() {
           ),
         }}
       />
+      <BadgeDetails
+        state={(open && badgeStates(view).find((b) => b.key === open)) || null}
+        onClose={() => setOpen(null)}
+      />
       <Sheet
         open={choosing}
         onClose={() => setChoosing(false)}
@@ -656,16 +762,16 @@ export function ProfilePage() {
               />
               <span>No title</span>
             </label>
-            {earned.map((b) => (
-              <label key={b.id}>
+            {titles.map((t) => (
+              <label key={t.id}>
                 <input
                   type="radio"
                   name="title"
-                  value={b.id}
-                  checked={choice === b.id}
-                  onChange={() => setChoice(b.id)}
+                  value={t.id}
+                  checked={choice === t.id}
+                  onChange={() => setChoice(t.id)}
                 />
-                <TitlePill title={b} />
+                <TitlePill title={t} />
               </label>
             ))}
           </fieldset>
@@ -682,6 +788,9 @@ export function ProfilePage() {
     </>
   );
 }
+
+const isLevel = (n: number): n is Level =>
+  Number.isInteger(n) && n >= 1 && n <= 5;
 
 /** Someone else's profile, open to anyone with the link, signed in or not. */
 export function PersonProfilePage() {
@@ -718,23 +827,22 @@ export function PersonProfilePage() {
         )}
       </section>
     );
-  // Each badge once, in catalog order.
-  const earned = new Set(profile.badges.map((b) => b.key));
-  const badges = badgeCatalog
-    .filter((b) => earned.has(b.key))
-    .map((b) => ({ key: b.key }));
-  const title = profile.title ? (profile.title.key as BadgeKey) : null;
+  // Started badges at their level, in catalog order.
+  const shelf = badgeCatalog.flatMap((b) => {
+    const level = profile.badges.find((x) => x.key === b.key)?.level ?? 0;
+    return isLevel(level) ? [{ key: b.key, level }] : [];
+  });
+  const title =
+    profile.title && Object.hasOwn(legacyTitles, profile.title.key)
+      ? { key: profile.title.key as LegacyBadgeKey, groupName: null }
+      : null;
   return (
     <>
       {session ? <OwnProfileRedirect profileId={profile.profileId} /> : null}
       <ProfileView
         name={profile.name}
-        title={
-          title && badgeCatalog.some((c) => c.key === title)
-            ? { key: title, groupName: null }
-            : null
-        }
-        badges={badges}
+        title={title}
+        badges={shelf}
         stats={profile.stats}
         activities={profile.activities}
       />

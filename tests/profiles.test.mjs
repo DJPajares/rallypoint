@@ -217,13 +217,27 @@ test("a public profile shows only its page fields", async (t) => {
   assert.equal(shown.name, "Sam");
   assert.deepEqual(shown.activities, [{ name: "Tennis", level: null }]);
   assert.deepEqual(shown.title, { key: "founder" });
-  assert.ok(shown.badges.length >= 1);
-  // Badge keys only: no dates, and a repeatable badge appears once.
-  for (const badge of shown.badges)
-    assert.deepEqual(Object.keys(badge), ["key"]);
+  // Started badges only, each once at its level: no dates, no progress.
+  // Founder is retired from the shelf (P-19) but still works as a title.
+  for (const badge of shown.badges) {
+    assert.deepEqual(Object.keys(badge).sort(), ["key", "level"]);
+    assert.ok(badge.level >= 1 && badge.level <= 5);
+  }
   const keys = shown.badges.map((b) => b.key);
+  assert.ok(!keys.includes("founder"));
   assert.equal(new Set(keys).size, keys.length);
-  assert.deepEqual(keys, [...keys].sort());
+  const catalog = [
+    "rally",
+    "steady",
+    "new-faces",
+    "plus-one",
+    "host",
+    "full-house",
+  ];
+  assert.deepEqual(
+    keys,
+    catalog.filter((key) => keys.includes(key)),
+  );
   assert.deepEqual(Object.keys(shown.stats).sort(), [
     "groups",
     "hosted",
