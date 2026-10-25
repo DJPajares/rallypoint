@@ -10,6 +10,7 @@ import {
 } from "next/navigation";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/csr/ArrowRight";
 import { CalendarDotsIcon } from "@phosphor-icons/react/dist/csr/CalendarDots";
+import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { ReceiptIcon } from "@phosphor-icons/react/dist/csr/Receipt";
 import { UsersThreeIcon } from "@phosphor-icons/react/dist/csr/UsersThree";
@@ -33,12 +34,16 @@ import {
   Divider,
   EmptyState,
   Field,
+  ListGroup,
   Notice,
   Pending,
+  Pill,
+  Segmented,
   Sheet,
   SpotsMeter,
   Ticket,
 } from "@rallypoint/ui";
+import type { Tone } from "@rallypoint/ui";
 import { DetailPage, StickyActions } from "./ui";
 import { useMutation } from "./use-mutation";
 import { GroupSessions } from "./session-pages";
@@ -227,33 +232,128 @@ export function HomeDashboard() {
     </section>
   );
 }
-function MySessionLink({ row, past }: { row: MySessionRow; past: boolean }) {
-  const date = fromLocal(row.startLocal);
-  return (
-    <Link className="session-link" href={sessionHref(row)}>
-      <Ticket date={date}>
-        <span className="rp-badge">{statusLabel(row, past)}</span>
-        <h3>{row.title || "Untitled session"}</h3>
-        <p className="rp-ticket__meta rp-nums">
-          {date?.time ?? "Date to be decided"} · {row.groupName}
-        </p>
-      </Ticket>
-    </Link>
+// Only states that ask for attention get a pill; being in or organizing is the
+// normal case, so it reads quietly under the title instead.
+const statusTone: Partial<Record<MySessionRow["status"], Tone>> = {
+  waitlisted: "warning",
+  draft: "neutral",
+  cancelled: "danger",
+};
+/** A calendar day as "YYYY-MM-DD", the same shape as a row's startLocal. */
+const dayKey = (date: Date) =>
+  [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+/**
+ * "Today", "Tomorrow" (upcoming only), "Yesterday" (past only) or "Sun, Oct 25"
+ * for a session's own day. A session elsewhere can end on what is still
+ * tomorrow here, and "Tomorrow" under Past would read wrong.
+ */
+function dayLabel(key: string, today: string, past: boolean) {
+  if (!key) return "Date to be decided";
+  const [y, m, d] = key.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  const [ty, tm, td] = today.split("-").map(Number);
+  const offset = Math.round(
+    (date.getTime() - Date.UTC(ty, tm - 1, td)) / 86_400_000,
   );
+  if (offset === 0) return "Today";
+  if (offset === 1 && !past) return "Tomorrow";
+  if (offset === -1 && past) return "Yesterday";
+  return new Intl.DateTimeFormat("en", {
+    timeZone: "UTC",
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: y === ty ? undefined : "numeric",
+  }).format(date);
+}
+/**
+ * Rows gathered under one heading per day, in the wall-clock order the page
+ * shows: sessions in other timezones would otherwise interleave. Undecided
+ * dates go last.
+ */
+function byDay(rows: MySessionRow[], newestFirst: boolean) {
+  const sorted = [...rows].sort((a, b) =>
+    !a.startLocal || !b.startLocal
+      ? Number(!a.startLocal) - Number(!b.startLocal)
+      : a.startLocal.localeCompare(b.startLocal) * (newestFirst ? -1 : 1),
+  );
+  const days = new Map<string, MySessionRow[]>();
+  for (const row of sorted) {
+    const key = row.startLocal.slice(0, 10);
+    days.set(key, [...(days.get(key) ?? []), row]);
+  }
+  return [...days].map(([key, rows]) => ({ key, rows }));
+}
+function MySessionRowLink({ row, past }: { row: MySessionRow; past: boolean }) {
+  const time = fromLocal(row.startLocal)?.time;
+  const tone = statusTone[row.status];
+  const status = statusLabel(row, past);
+  return (
+    <li className="rp-row">
+      <div className="rp-row__line">
+        <Link className="rp-row__main my-session" href={sessionHref(row)}>
+          <span className="my-session__time rp-nums">{time ?? "TBD"}</span>
+          <span className="rp-row__text">
+            <span className="rp-row__title">
+              {row.title || "Untitled session"}
+            </span>
+            {/* Status first: a long group name is what gets cut short. */}
+            <span className="rp-row__sub">
+              {tone ? row.groupName : `${status} · ${row.groupName}`}
+            </span>
+          </span>
+          <span className="rp-row__trail">
+            {tone ? <Pill tone={tone}>{status}</Pill> : null}
+            <CaretRightIcon size={16} aria-hidden="true" />
+          </span>
+        </Link>
+      </div>
+    </li>
+  );
+}
+function SessionDays({
+  rows,
+  past,
+  today,
+}: {
+  rows: MySessionRow[];
+  past: boolean;
+  today: string;
+}) {
+  return byDay(rows, past).map((day) => {
+    const label = dayLabel(day.key, today, past);
+    return (
+      <section key={day.key || "undecided"} className="session-day">
+        <h2>{label}</h2>
+        <ListGroup>
+          {day.rows.map((row) => (
+            <MySessionRowLink key={row.id ?? row.slug} row={row} past={past} />
+          ))}
+        </ListGroup>
+      </section>
+    );
+  });
 }
 export function SessionsPage() {
   const sessions = useApi<MySessions>("/api/me/sessions");
   const workspace = useApi<{ groups: GroupSummary[] }>("/api/workspace");
   const { openCreate } = useFrame();
-  const [showPast, setShowPast] = useState(false);
+  const [view, setView] = useState<"upcoming" | "past">("upcoming");
+  // The device's own date, read once; it only decides "Today" and "Tomorrow".
+  const [today] = useState(() => dayKey(new Date()));
   const canCreate = (workspace.data?.groups ?? []).some(
     (group) => group.role !== "member",
   );
   const upcoming = sessions.data?.upcoming ?? [];
   const past = sessions.data?.past ?? [];
   const pastTotal = sessions.data?.pastTotal ?? 0;
+  const showing = pastTotal > 0 ? view : "upcoming";
   return (
-    <section className="page">
+    <section className="page sessions-page">
       <div className="page-head">
         <h1>Sessions</h1>
       </div>
@@ -282,42 +382,31 @@ export function SessionsPage() {
         </EmptyState>
       ) : (
         <>
-          <div className="section-head">
-            <h2>Coming up</h2>
-          </div>
-          {upcoming.length ? (
-            <div className="session-list">
-              {upcoming.map((row) => (
-                <MySessionLink
-                  key={row.id ?? row.slug}
-                  row={row}
-                  past={false}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="rp-help">Nothing coming up.</p>
-          )}
           {pastTotal > 0 ? (
-            <div className="past-sessions">
-              <button
-                type="button"
-                className={buttonClass({ variant: "secondary" })}
-                aria-expanded={showPast}
-                aria-controls="past-sessions-list"
-                onClick={() => setShowPast((open) => !open)}
-              >
-                Past sessions ({pastTotal})
-              </button>
-              {showPast ? (
-                <div id="past-sessions-list" className="session-list">
-                  {past.map((row) => (
-                    <MySessionLink key={row.id ?? row.slug} row={row} past />
-                  ))}
-                </div>
-              ) : null}
-            </div>
+            <Segmented
+              label="Show sessions"
+              options={[
+                { value: "upcoming", label: "Upcoming" },
+                { value: "past", label: "Past" },
+              ]}
+              value={showing}
+              onChange={setView}
+            />
           ) : null}
+          {showing === "past" ? (
+            <>
+              <SessionDays rows={past} past today={today} />
+              {past.length < pastTotal ? (
+                <p className="rp-help">
+                  Your latest {past.length} of {pastTotal}.
+                </p>
+              ) : null}
+            </>
+          ) : upcoming.length ? (
+            <SessionDays rows={upcoming} past={false} today={today} />
+          ) : (
+            <p className="rp-help session-empty">Nothing coming up.</p>
+          )}
         </>
       )}
     </section>
