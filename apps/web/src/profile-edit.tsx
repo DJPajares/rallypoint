@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
-import { presetActivities, presetFor } from "@rallypoint/domain/activities";
+import { activityFor, matchActivity } from "@rallypoint/domain/activities";
+import type { Activity } from "@rallypoint/domain/activities";
 import {
   levelLabel,
   normalizeProfile,
@@ -25,6 +26,7 @@ import {
 } from "@rallypoint/ui";
 import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
+import { useActivities } from "./use-activities";
 import { DetailPage, StickyActions } from "./ui";
 
 const maxCustom = 3;
@@ -38,18 +40,20 @@ interface Draft {
 
 const asLevel = (level: SkillLevel | null): Level => level ?? "";
 
-function startingDraft(profile: MyProfile): Draft {
+// The catalog's listed activities are the choices (D-23); anything else the
+// person plays is one of their own.
+function startingDraft(profile: MyProfile, listed: readonly Activity[]): Draft {
   const draft: Draft = {
     name: profile.name,
     presets: Object.fromEntries(
-      presetActivities.map((name) => [name, { on: false, level: "" as Level }]),
+      listed.map((a) => [a.name, { on: false, level: "" as Level }]),
     ),
     custom: [],
   };
   for (const activity of profile.activities) {
-    const preset = presetFor(activity.name);
+    const preset = matchActivity(listed, activity.name);
     if (preset)
-      draft.presets[preset] = { on: true, level: asLevel(activity.level) };
+      draft.presets[preset.name] = { on: true, level: asLevel(activity.level) };
     else
       draft.custom.push({
         id: draft.custom.length,
@@ -62,7 +66,7 @@ function startingDraft(profile: MyProfile): Draft {
 
 function activitiesOf(draft: Draft): ProfileActivity[] {
   return [
-    ...presetActivities
+    ...Object.keys(draft.presets)
       .filter((name) => draft.presets[name]!.on)
       .map((name) => ({
         name,
@@ -79,34 +83,49 @@ function activitiesOf(draft: Draft): ProfileActivity[] {
 const snapshot = (draft: Draft) =>
   JSON.stringify({ name: draft.name, activities: activitiesOf(draft) });
 
+/** A level choice, with what the chosen level means for this activity. */
 function LevelSelect({
+  id,
   label,
   value,
   onChange,
+  activity,
 }: {
+  id: string;
   label: string;
   value: Level;
   onChange: (value: Level) => void;
+  activity: Activity | null;
 }) {
+  const meaning = value && activity ? activity.levels[value] : "";
   return (
-    <select
-      aria-label={label}
-      value={value}
-      onChange={(event) => onChange(event.target.value as Level)}
-    >
-      <option value="">No level</option>
-      {skillLevels.map((level) => (
-        <option key={level} value={level}>
-          {levelLabel[level]}
-        </option>
-      ))}
-    </select>
+    <span className="level-choice">
+      <select
+        aria-label={label}
+        aria-describedby={meaning ? `${id}-meaning` : undefined}
+        value={value}
+        onChange={(event) => onChange(event.target.value as Level)}
+      >
+        <option value="">No level</option>
+        {skillLevels.map((level) => (
+          <option key={level} value={level}>
+            {levelLabel[level]}
+          </option>
+        ))}
+      </select>
+      {meaning ? (
+        <span id={`${id}-meaning`} className="rp-help level-choice__meaning">
+          {meaning}
+        </span>
+      ) : null}
+    </span>
   );
 }
 
 export function EditProfile() {
   const profile = useApi<{ profile: MyProfile }>("/api/me/profile");
-  if (profile.loading)
+  const activities = useActivities();
+  if (profile.loading || activities.loading)
     return (
       <DetailPage back="/profile" backLabel="Profile" className="form-page">
         <Pending>Opening your profile…</Pending>
@@ -120,13 +139,30 @@ export function EditProfile() {
         </Notice>
       </DetailPage>
     );
-  return <EditForm profile={profile.data.profile} />;
+  if (!activities.catalog)
+    return (
+      <DetailPage back="/profile" backLabel="Profile" className="form-page">
+        <Notice retry={activities.retry}>
+          {activities.error ?? "Activities could not be loaded."}
+        </Notice>
+      </DetailPage>
+    );
+  return (
+    <EditForm profile={profile.data.profile} catalog={activities.catalog} />
+  );
 }
 
-function EditForm({ profile }: { profile: MyProfile }) {
+function EditForm({
+  profile,
+  catalog,
+}: {
+  profile: MyProfile;
+  catalog: readonly Activity[];
+}) {
+  const listed = catalog.filter((a) => a.listed);
   const { session } = useAuth();
   const router = useRouter();
-  const [initial] = useState(() => startingDraft(profile));
+  const [initial] = useState(() => startingDraft(profile, listed));
   const [draft, setDraft] = useState(initial);
   const [errors, setErrors] = useState<ProfileError[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
@@ -175,10 +211,10 @@ function EditForm({ profile }: { profile: MyProfile }) {
     setProblem(null);
     if (!draft.name.trim())
       return showErrors([{ field: "name", message: "Enter your name." }]);
-    const result = normalizeProfile({
-      name: draft.name,
-      activities: activitiesOf(draft),
-    });
+    const result = normalizeProfile(
+      { name: draft.name, activities: activitiesOf(draft) },
+      catalog,
+    );
     if (!result.ok) return showErrors(result.errors);
     setErrors([]);
     setBusy(true);
@@ -294,7 +330,7 @@ function EditForm({ profile }: { profile: MyProfile }) {
             }
           >
             <legend className="rp-field__label">Activities</legend>
-            {presetActivities.map((name) => {
+            {listed.map(({ name, ...activity }) => {
               const preset = draft.presets[name]!;
               return (
                 <div key={name} className="activity-row">
@@ -306,9 +342,11 @@ function EditForm({ profile }: { profile: MyProfile }) {
                   </CheckField>
                   {preset.on ? (
                     <LevelSelect
+                      id={`level-${activity.key}`}
                       label={`${name} level`}
                       value={preset.level}
                       onChange={(level) => setPreset(name, { level })}
+                      activity={{ name, ...activity }}
                     />
                   ) : null}
                 </div>
@@ -327,9 +365,11 @@ function EditForm({ profile }: { profile: MyProfile }) {
                     }
                   />
                   <LevelSelect
+                    id={`level-custom-${row.id}`}
                     label={`${row.name.trim() || `Your own activity ${index + 1}`} level`}
                     value={row.level}
                     onChange={(level) => setCustom(row.id, { level })}
+                    activity={activityFor(catalog, row.name)}
                   />
                   <button
                     type="button"

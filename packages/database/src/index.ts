@@ -92,7 +92,9 @@ export function createDatabase(env: DatabaseEnv): Database {
           return Prisma.sql`${Prisma.raw(`"${key}"`)} => ${bound}::${Prisma.raw(type)}`;
         });
         // Both identifiers are validated above; only values become placeholders.
-        const query = Prisma.sql`select to_jsonb(${Prisma.raw(`"${schema}"."${name}"`)}(${Prisma.join(parameters)})) as result`;
+        // Prisma.join refuses an empty list, so a call without arguments is empty.
+        const list = parameters.length ? Prisma.join(parameters) : Prisma.empty;
+        const query = Prisma.sql`select to_jsonb(${Prisma.raw(`"${schema}"."${name}"`)}(${list})) as result`;
         const rows = await client.$transaction(
           async (tx) => {
             await tx.$executeRaw`SET LOCAL ROLE service_role`;

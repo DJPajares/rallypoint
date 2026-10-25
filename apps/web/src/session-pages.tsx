@@ -21,9 +21,11 @@ import { MapPinIcon } from "@phosphor-icons/react/dist/csr/MapPin";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { RepeatIcon } from "@phosphor-icons/react/dist/csr/Repeat";
 import { UserPlusIcon } from "@phosphor-icons/react/dist/csr/UserPlus";
-import { fromInstant, fromLocal } from "./dates";
+import { fromInstant, fromLocal, nowLocal } from "./dates";
+import { useActivities } from "./use-activities";
 import { ShareButton } from "./share-button";
 import {
+  ActivityIcon,
   AffixInput,
   buttonClass,
   DateTimeField,
@@ -55,6 +57,14 @@ import type {
 import type { GroupSummary } from "@rallypoint/domain/contracts";
 import type { RegistrationView } from "@rallypoint/domain/registration";
 import { nextWeekForm } from "@rallypoint/domain/run-again";
+import {
+  activityFor,
+  applyActivityDefaults,
+  durationText,
+  matchActivity,
+  sessionLimitProblem,
+} from "@rallypoint/domain/activities";
+import type { DefaultedField } from "@rallypoint/domain/activities";
 import { isGameDay, mapsUrl } from "@rallypoint/domain/my-sessions";
 import { copyPaymentDetails } from "./run-again";
 
@@ -282,6 +292,33 @@ function Editor({
   > | null>(null);
   const header = useRef<HTMLHeadingElement>(null);
   const mapsInput = useRef<HTMLInputElement>(null);
+  // The shared catalog (D-23). Only a brand-new session takes an activity's
+  // defaults; a field the organizer changed keeps what they set.
+  const { catalog } = useActivities();
+  const fresh = !initial && !prefill;
+  const [touched, setTouched] = useState<ReadonlySet<DefaultedField>>(
+    () => new Set(),
+  );
+  const activity =
+    catalog && form.activity.trim()
+      ? activityFor(catalog, form.activity)
+      : null;
+  function change(patch: Partial<SessionForm>, field?: DefaultedField) {
+    const marked = field ? new Set([...touched, field]) : touched;
+    if (field) setTouched(marked);
+    const next = { ...form, ...patch };
+    const follows = "activity" in patch || "startLocal" in patch;
+    setForm(
+      fresh && follows && catalog && next.activity.trim()
+        ? applyActivityDefaults(
+            next,
+            activityFor(catalog, next.activity),
+            marked,
+            nowLocal(next.timeZone),
+          )
+        : next,
+    );
+  }
   // Sessions saved before payment modes behave as Pay the organizer.
   const tracked = (form.paymentMode ?? "organizer") === "organizer",
     fixedFee = (form.feeMode ?? "fixed") === "fixed";
@@ -332,6 +369,19 @@ function Editor({
       setError(e instanceof Error ? e.message : "Check the details.");
       if (e instanceof Error && e.message === mapsLinkError)
         mapsInput.current?.focus();
+      return;
+    }
+    // The database decides; this names an out-of-range value before sending.
+    const limit =
+      catalog && intent !== "draft"
+        ? sessionLimitProblem(
+            catalog,
+            record?.state === "published" ? record.details : null,
+            normalized,
+          )
+        : null;
+    if (limit) {
+      setError(limit);
       return;
     }
     const body = {
@@ -504,7 +554,8 @@ function Editor({
           </Field>
           <ActivityPicker
             value={form.activity}
-            onChange={(activity) => setForm({ ...form, activity })}
+            onChange={(next) => change({ activity: next })}
+            catalog={catalog}
             disabled={disabledFields}
           />
           <div className="form-grid">
@@ -513,16 +564,24 @@ function Editor({
                 id="startLocal"
                 title="Starts"
                 value={form.startLocal}
-                onChange={(next) => setForm({ ...form, startLocal: next })}
+                onChange={(next) => change({ startLocal: next })}
                 disabled={disabledFields}
               />
             </Field>
-            <Field id="endLocal" label="Ends">
+            <Field
+              id="endLocal"
+              label="Ends"
+              help={
+                activity
+                  ? `Sessions run ${durationText(activity.limits.minDurationMinutes)} to ${durationText(activity.limits.maxDurationMinutes)}.`
+                  : undefined
+              }
+            >
               <DateTimeField
                 id="endLocal"
                 title="Ends"
                 value={form.endLocal}
-                onChange={(next) => setForm({ ...form, endLocal: next })}
+                onChange={(next) => change({ endLocal: next }, "endLocal")}
                 disabled={disabledFields}
               />
             </Field>
@@ -578,11 +637,19 @@ function Editor({
             />
           </Field>
           <div className="form-grid">
-            <Field id="capacity" label="Capacity, in seats">
+            <Field
+              id="capacity"
+              label="Capacity, in seats"
+              help={
+                activity
+                  ? `${activity.limits.minCapacity} to ${activity.limits.maxCapacity} seats${activity.key === "general" ? "" : ` for ${activity.name}`}.`
+                  : undefined
+              }
+            >
               <NumberStepper
                 id="capacity"
                 value={form.capacity}
-                onChange={(next) => setForm({ ...form, capacity: next })}
+                onChange={(next) => change({ capacity: next }, "capacity")}
                 min={1}
                 disabled={disabledFields}
               />
@@ -652,7 +719,7 @@ function Editor({
                 id="openLocal"
                 title="Registration opens"
                 value={form.openLocal}
-                onChange={(next) => setForm({ ...form, openLocal: next })}
+                onChange={(next) => change({ openLocal: next }, "openLocal")}
                 disabled={disabledFields || booked}
               />
             </Field>
@@ -662,7 +729,9 @@ function Editor({
                   id="cutoffLocal"
                   title="Cancellation fee cutoff"
                   value={form.cutoffLocal}
-                  onChange={(next) => setForm({ ...form, cutoffLocal: next })}
+                  onChange={(next) =>
+                    change({ cutoffLocal: next }, "cutoffLocal")
+                  }
                   disabled={disabledFields || (booked && !startChanged)}
                 />
               </Field>
@@ -681,7 +750,7 @@ function Editor({
           ) : null}
           <SwitchField
             checked={form.guests}
-            onCheckedChange={(guests) => setForm({ ...form, guests })}
+            onCheckedChange={(guests) => change({ guests }, "guests")}
             disabled={disabledFields || booked}
             description="Two seats that join, wait and withdraw together."
           >
@@ -898,10 +967,21 @@ function SessionHead({
   heading: RefObject<HTMLHeadingElement | null>;
   ticket?: boolean;
 }) {
+  const { catalog } = useActivities();
   return (
     <div className="session-head">
       {/* Group and activity share one line, so the title stands alone. */}
-      <span className="rp-kicker">
+      <span className="rp-kicker session-kicker">
+        {shared.details.activity ? (
+          <ActivityIcon
+            icon={
+              (catalog &&
+                matchActivity(catalog, shared.details.activity)?.icon) ??
+              "general"
+            }
+            size={16}
+          />
+        ) : null}
         {shared.groupName}
         {shared.details.activity ? ` · ${shared.details.activity}` : ""}
       </span>

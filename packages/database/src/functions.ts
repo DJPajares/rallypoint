@@ -15,6 +15,7 @@ export const functions: Record<string, Record<string, string>> = {
     p_activities: "jsonb",
   },
   read_profile: { p_profile_id: "uuid" },
+  read_activities: {},
   list_my_dues: actor,
   list_my_split_claims: actor,
   read_my_badges: actor,
