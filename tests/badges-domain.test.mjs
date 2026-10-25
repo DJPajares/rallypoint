@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   badgeCatalog,
+  badgeStates,
   legacyTitles,
   levelColors,
   levelLabel,
@@ -17,6 +18,7 @@ import {
   progressLabel,
   titleForLevel,
   titleLabel,
+  titleOptions,
   unseenIds,
 } from "../packages/domain/src/badges.ts";
 
@@ -250,8 +252,12 @@ test("level colours keep the white icon and the numeral readable", () => {
   assert.equal(levelColors.length, 5);
   assert.equal(new Set(levelColors.map(([a, b]) => a + b)).size, 5);
   for (const [light, dark] of levelColors) {
-    const mid = rgb(light).map((v, i) => (v + rgb(dark)[i]) / 2);
-    assert.ok(contrast(white, mid) >= 3, `${light}→${dark} icon`);
+    // The disc runs light (top-left) to dark; icons reach up to about a
+    // quarter of the way along it, so check there as well as the middle.
+    for (const t of [0.25, 0.5]) {
+      const at = rgb(light).map((v, i) => v + (rgb(dark)[i] - v) * t);
+      assert.ok(contrast(white, at) >= 3, `${light}→${dark} icon at ${t}`);
+    }
     assert.ok(contrast(white, rgb(dark)) >= 4.5, `${dark} numeral`);
   }
 });
@@ -290,4 +296,17 @@ test("levelTarget names what a level needs", () => {
   assert.equal(levelTarget("host", 2), "5 sessions run");
   assert.equal(levelTarget("full-house", 1), "1 full session");
   assert.equal(levelTarget("full-house", 3), "10 full sessions");
+});
+
+test("a badge response of another shape reads as empty, so pages keep working mid-rollout", () => {
+  const old = { earned: [{ id: "first-rally" }], progress: [], title: null };
+  assert.deepEqual(badgeStates(old), []);
+  assert.deepEqual(titleOptions(old), []);
+  assert.deepEqual(badgeStates(null), []);
+  assert.deepEqual(titleOptions(undefined), []);
+  const view = { badges: [state("rally", 1)], titles: [{ id: "first-rally" }] };
+  assert.equal(badgeStates(view), view.badges);
+  assert.equal(titleOptions(view), view.titles);
+  assert.equal(newestUnseen(badgeStates(old)), null);
+  assert.equal(nextBadge(badgeStates(old)), null);
 });

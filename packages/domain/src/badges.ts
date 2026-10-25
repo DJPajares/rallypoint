@@ -58,13 +58,24 @@ export interface BadgesView {
   stats: { played: number; hosted: number; groups: number };
 }
 
+// The app and its database can ship minutes apart; a response of the other
+// shape reads as no badges rather than breaking the page.
+export const badgeStates = (
+  view: { badges?: unknown } | null | undefined,
+): BadgeState[] =>
+  Array.isArray(view?.badges) ? (view.badges as BadgeState[]) : [];
+export const titleOptions = (
+  view: { titles?: unknown } | null | undefined,
+): TitleOption[] =>
+  Array.isArray(view?.titles) ? (view.titles as TitleOption[]) : [];
+
 /** Disc gradients by level, light stop first; white icons read on all. */
 export const levelColors: readonly (readonly [string, string])[] = [
-  ["#5CCBFF", "#2459E6"],
+  ["#3FA2F2", "#1E4FD6"],
   ["#33B8A2", "#0B6B66"],
   ["#C08BFF", "#7A2BD6"],
   ["#F7826A", "#BF3426"],
-  ["#EBAE40", "#A04E09"],
+  ["#D3962C", "#984606"],
 ];
 
 export const badgeCatalog: readonly BadgeDefinition[] = [

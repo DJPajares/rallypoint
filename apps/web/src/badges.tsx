@@ -10,6 +10,7 @@ import { SignOutIcon } from "@phosphor-icons/react/dist/csr/SignOut";
 import {
   badgeCatalog,
   badgeDefinition,
+  badgeStates,
   legacyTitles,
   levelColors,
   levelLabel as badgeLevelLabel,
@@ -23,6 +24,7 @@ import {
   progressLabel,
   titleForLevel,
   titleLabel,
+  titleOptions,
   unseenIds,
 } from "@rallypoint/domain/badges";
 import type {
@@ -296,13 +298,15 @@ export function EarnedBadgeSheet({ view }: { view: BadgesView | null }) {
   const [closed, setClosed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const moment = view ? newestUnseen(view.badges) : null;
+  const moment = newestUnseen(badgeStates(view));
   if (!view || !moment) return null;
-  const unseen = unseenIds(view.badges);
+  const unseen = unseenIds(badgeStates(view));
   const { key, level, more } = moment;
   // Until WDL-405, a level can be shown as a title only through its old badge.
   const legacy = titleForLevel(key, level);
-  const title = legacy ? view.titles.find((t) => t.id === legacy) : undefined;
+  const title = legacy
+    ? titleOptions(view).find((t) => t.id === legacy)
+    : undefined;
   function close() {
     setClosed(true);
     // If this fails the level simply shows again next time; nothing is lost.
@@ -394,7 +398,7 @@ function Ring({ value, children }: { value: number; children: ReactNode }) {
 
 /** One quiet nudge toward the closest next level; nothing when none is under way. */
 export function NextBadge({ view }: { view: BadgesView | null }) {
-  const next = view ? nextBadge(view.badges) : null;
+  const next = nextBadge(badgeStates(view));
   if (!next) return null;
   return (
     <Link className="next-badge" href="/profile">
@@ -615,23 +619,18 @@ function ProfileView({
                   key={b.key}
                   className={cx(!b.level && "badge-shelf__locked")}
                 >
+                  {/* The visible name and level are the accessible name (WCAG 2.5.3). */}
                   {owner ? (
                     <button
                       type="button"
                       className="badge-shelf__item"
-                      aria-label={`${medallionLabel(b.key, b.level)}. Show levels`}
+                      aria-haspopup="dialog"
                       onClick={() => owner.onOpen(b.key)}
                     >
                       {content}
                     </button>
                   ) : (
-                    <span
-                      className="badge-shelf__item"
-                      role="img"
-                      aria-label={medallionLabel(b.key, b.level)}
-                    >
-                      {content}
-                    </span>
+                    <span className="badge-shelf__item">{content}</span>
                   )}
                 </li>
               );
@@ -660,10 +659,10 @@ export function ProfilePage() {
   const view = saved ?? badges.data;
   const name = identity.data?.displayName ?? "";
   const shelf = badgeCatalog.map((b) => {
-    const state = view?.badges.find((x) => x.key === b.key);
+    const state = badgeStates(view).find((x) => x.key === b.key);
     return { key: b.key, level: state ? levelOf(state) : 0 } as ShelfBadge;
   });
-  const titles = view?.titles ?? [];
+  const titles = titleOptions(view);
   async function saveTitle(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -741,7 +740,7 @@ export function ProfilePage() {
         }}
       />
       <BadgeDetails
-        state={(open && view?.badges.find((b) => b.key === open)) || null}
+        state={(open && badgeStates(view).find((b) => b.key === open)) || null}
         onClose={() => setOpen(null)}
       />
       <Sheet
