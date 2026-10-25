@@ -5,6 +5,8 @@ Branch: `djpajares/wdl-392-p-17-link-a-session-venue-to-google-maps-without-goog
 cut from `main` at `ac9b105`. Verified code: `efc6b77` (after review fixes); documentation follows it.
 No release version is assigned. This is implementation and local validation,
 not human acceptance, merge or live-flow verification.
+Review: [PR #38](https://github.com/DJPajares/rallypoint/pull/38), open against
+`main`, linked to WDL-392 in **In Review**. Auto-merge is disabled.
 
 ## User note
 
