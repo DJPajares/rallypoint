@@ -29,7 +29,8 @@
     "build:staging": "node scripts/build-staging.mjs",
     "deploy:staging": "pnpm build:staging && pnpm --filter @rallypoint/web exec wrangler deploy --config wrangler.staging.jsonc --upload-source-maps=false",
     "db:migrate:local": "pnpm db:generate && pnpm --filter @rallypoint/database migrate local",
-    "db:migrate:production": "pnpm db:generate && pnpm --filter @rallypoint/database migrate production"
+    "db:migrate:production": "pnpm db:generate && pnpm --filter @rallypoint/database migrate production",
+    "db:migrate:prod": "pnpm db:migrate:production"
   },
   "devDependencies": {
     "@rallypoint/domain": "workspace:*",

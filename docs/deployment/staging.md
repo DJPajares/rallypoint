@@ -118,8 +118,9 @@ request.** The baseline `0_rallypoint_baseline_20261023144000` was marked applie
 then `20261024100000_sessions_profiles` committed the five source migrations in
 one transaction. Prisma history is in `rallypoint_migrations`; old Supabase and
 other apps' histories were preserved. Do not reapply this repair via Supabase.
-Use `pnpm db:migrate:local` or, with a securely supplied
-`RALLYPOINT_MIGRATION_DATABASE_URL`, `pnpm db:migrate:production` for later runs.
+Use `pnpm db:migrate:local` or, with `RALLYPOINT_MIGRATION_DATABASE_URL` in the
+gitignored root `.env.production` (see `.env.production.example`) or the
+environment, `pnpm db:migrate:prod` for later runs.
 The runner validates the known target and applied SQL checksums, and deploys
 pending SQL with Prisma. No participant-data export was performed. See the
 [actual application evidence](../verification/2026-10-24-prisma-runtime-configuration.md#prisma-migrate-applied-locally-and-to-production).
