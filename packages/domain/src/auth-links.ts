@@ -38,6 +38,29 @@ export function classifyLinkError(
 }
 
 /**
+ * What an email link on this page load amounts to, or null when it worked or
+ * there was none. A `?code=` with no stored verifier is another browser:
+ * auth-js skips the exchange then and reports nothing, so it is read here.
+ */
+export function linkOutcome(input: {
+  urlCode: string | null;
+  errorCode: string | undefined;
+  hasCode: boolean;
+  hasVerifier: boolean;
+}): LinkError | null {
+  if (input.urlCode || input.errorCode)
+    return classifyLinkError(input.urlCode, input.errorCode);
+  return input.hasCode && !input.hasVerifier ? "other_browser" : null;
+}
+
+/**
+ * Supabase limits sends per email only for addresses it would mail, so showing
+ * that limit would say an account exists. Such a reply reads as sent.
+ */
+export const hidesAccount = (code: string | undefined) =>
+  code === "over_email_send_rate_limit";
+
+/**
  * Whether this session came from a password reset link, read from the access
  * token's amr claim. Routing only: the token is not verified here, and the API
  * never trusts this.

@@ -2,10 +2,7 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { PublicConfig } from "@rallypoint/domain/contracts";
-import {
-  classifyLinkError,
-  linkErrorCode,
-} from "@rallypoint/domain/auth-links";
+import { linkErrorCode, linkOutcome } from "@rallypoint/domain/auth-links";
 import { AuthContext, initial } from "./auth-context";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -16,6 +13,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const controller = new AbortController();
     // Read before the client starts: it finishes the link and tidies the URL.
     const urlCode = linkErrorCode(window.location.search, window.location.hash);
+    // A link opened in another browser arrives with a code but no verifier.
+    const hasCode =
+      window.location.pathname === "/auth/callback" &&
+      new URLSearchParams(window.location.search).has("code");
+    let hasVerifier = false;
+    try {
+      hasVerifier = !!localStorage.getItem("rallypoint.auth-code-verifier");
+    } catch {
+      // Blocked storage holds no verifier either.
+    }
     void (async () => {
       try {
         const response = await fetch("/api/config", {
@@ -55,10 +62,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // A confirmation or reset link is finished during initialize; its
         // failure is reported here, not by getSession.
         const { error: linkFailure } = await client.auth.initialize();
-        const linkError =
-          urlCode || linkFailure
-            ? classifyLinkError(urlCode, linkFailure?.code)
-            : null;
+        const linkError = linkOutcome({
+          urlCode,
+          errorCode: linkFailure?.code,
+          hasCode,
+          hasVerifier,
+        });
         const {
           data: { session },
           error,

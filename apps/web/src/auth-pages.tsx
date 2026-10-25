@@ -10,7 +10,7 @@ import { ArrowRightIcon } from "@phosphor-icons/react/dist/csr/ArrowRight";
 import { EyeIcon } from "@phosphor-icons/react/dist/csr/Eye";
 import { EyeSlashIcon } from "@phosphor-icons/react/dist/csr/EyeSlash";
 import type { AuthError } from "@supabase/supabase-js";
-import { isRecoverySession } from "@rallypoint/domain/auth-links";
+import { hidesAccount, isRecoverySession } from "@rallypoint/domain/auth-links";
 import type { LinkError } from "@rallypoint/domain/auth-links";
 import { buttonClass, Divider, Field, Notice, Pending } from "@rallypoint/ui";
 import { safeReturnPath, useAuth } from "./auth-context";
@@ -356,7 +356,7 @@ export function SignUp() {
     });
     setBusy(false);
     // Supabase answers the same for new and existing emails, and so do we.
-    if (!error) {
+    if (!error || hidesAccount(error.code)) {
       setSent(true);
       startCooldown();
       return;
@@ -375,7 +375,7 @@ export function SignUp() {
       email,
       options: { emailRedirectTo: redirectUrl() },
     });
-    setProblem(error ? commonError(error) : null);
+    setProblem(error && !hidesAccount(error.code) ? commonError(error) : null);
   }
   if (sent)
     return (
@@ -486,7 +486,8 @@ export function ForgotPassword() {
     });
     setBusy(false);
     // Only a failure that reveals nothing about the account is shown.
-    const shown = error ? commonError(error) : null;
+    const shown =
+      error && !hidesAccount(error.code) ? commonError(error) : null;
     if (shown) setProblem(shown);
     else setSent(true);
   }

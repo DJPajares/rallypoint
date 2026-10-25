@@ -48,6 +48,26 @@ test("local identity and group authorization boundary", async (t) => {
       "Server secret must never be serialized.",
     );
     assert.equal(JSON.parse(text).auth.localEmail, true);
+    assert.equal(JSON.parse(text).auth.password, true);
+  });
+  // Sign-up is open (D-22), so unconfirmed accounts exist. The API stays the
+  // authority even if a project ever stops requiring confirmation.
+  await t.test("an unconfirmed email is denied directly", async () => {
+    sql(
+      `update auth.users set email_confirmed_at=null where id='${newcomer.id}';`,
+    );
+    try {
+      const response = await api("/api/workspace", newcomer);
+      assert.equal(response.status, 403);
+      assert.equal(
+        (await response.json()).error.code,
+        "verified_identity_required",
+      );
+    } finally {
+      sql(
+        `update auth.users set email_confirmed_at=now() where id='${newcomer.id}';`,
+      );
+    }
   });
   await t.test("missing and forged sessions are denied directly", async () => {
     assert.equal((await api("/api/workspace")).status, 401);
