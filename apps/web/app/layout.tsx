@@ -27,7 +27,6 @@ export const metadata: Metadata = {
   description:
     "Fill the spots, not the chat. Bring your people together with RallyPoint.",
   manifest: "/manifest.webmanifest",
-  icons: { icon: "/icons/icon-192.png", apple: "/icons/icon-192.png" },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
