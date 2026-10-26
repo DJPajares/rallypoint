@@ -8,6 +8,20 @@ export const sourceFiles = () =>
   readdirSync(resolve(root, "supabase/migrations"))
     .filter((n) => /^\d+_.+\.sql$/.test(n))
     .sort();
+/**
+ * One NAME=value line from a .env file, without surrounding quotes. Comments
+ * and other names are ignored; an empty value reads as missing.
+ */
+export function envValue(text, name) {
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    if (!line.startsWith(name + "=")) continue;
+    const value = line.slice(name.length + 1).trim();
+    const unquoted = /^(["'])(.*)\1$/.exec(value)?.[2] ?? value;
+    return unquoted || undefined;
+  }
+  return undefined;
+}
 export function migrationTarget(target, connectionString) {
   if (!["local", "production"].includes(target))
     throw new Error("Choose local or production explicitly.");

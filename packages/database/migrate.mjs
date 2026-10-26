@@ -12,6 +12,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "./generated/prisma/client.ts";
 import { functions } from "./src/functions.ts";
 import {
+  envValue,
   root,
   renderHistory,
   migrationTarget,
@@ -21,6 +22,23 @@ import {
 const target = process.argv[2];
 let database, folder;
 try {
+  // Production reads its own gitignored file at the repository root, once
+  // filled in, so `pnpm db:migrate:prod` needs nothing typed. A value already
+  // in the environment wins; only this one name is read from the file.
+  if (
+    target === "production" &&
+    !process.env.RALLYPOINT_MIGRATION_DATABASE_URL
+  ) {
+    let file = "";
+    try {
+      file = readFileSync(resolve(root, ".env.production"), "utf8");
+    } catch {
+      // No file: the environment variable is the only other source.
+    }
+    const url = envValue(file, "RALLYPOINT_MIGRATION_DATABASE_URL");
+    // process.env turns undefined into the text "undefined"; set only a value.
+    if (url) process.env.RALLYPOINT_MIGRATION_DATABASE_URL = url;
+  }
   if (target === "local" && !process.env.RALLYPOINT_MIGRATION_DATABASE_URL) {
     // Load only the local DB value; never replace inherited service credentials.
     const line = readFileSync(resolve(root, "apps/web/.env.local"), "utf8")
@@ -31,7 +49,11 @@ try {
     );
   }
   if (!process.env.RALLYPOINT_MIGRATION_DATABASE_URL)
-    throw new Error("RALLYPOINT_MIGRATION_DATABASE_URL is required.");
+    throw new Error(
+      target === "production"
+        ? "RALLYPOINT_MIGRATION_DATABASE_URL is required: set it in .env.production at the repository root (see .env.production.example)."
+        : "RALLYPOINT_MIGRATION_DATABASE_URL is required.",
+    );
   const config = migrationTarget(
     target,
     process.env.RALLYPOINT_MIGRATION_DATABASE_URL,

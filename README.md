@@ -151,8 +151,11 @@ Its history is isolated in `rallypoint_migrations._prisma_migrations`, preservin
 other applications' migration histories and the original Supabase ledger.
 
 Run `pnpm db:migrate:local` for the loopback database. For the existing hosted
-RallyPoint target, securely supply `RALLYPOINT_MIGRATION_DATABASE_URL` in the
-process environment and run `pnpm db:migrate:production`. The runner validates
+RallyPoint target, copy `.env.production.example` to the gitignored
+`.env.production` once, fill in `RALLYPOINT_MIGRATION_DATABASE_URL` (the
+wProject Session pooler URI), then run `pnpm db:migrate:prod` (the same as
+`pnpm db:migrate:production`). A value already in the process environment
+takes precedence over the file. The runner validates
 the target, adopts the verified existing baseline once, checks applied SQL
 checksums and executes `prisma migrate deploy`. It never resets the database.
 Each generated SQL migration has explicit `BEGIN`/`COMMIT`; the five

@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  envValue,
   renderHistory,
   migrationTarget,
 } from "../packages/database/migrations.mjs";
@@ -59,4 +60,22 @@ test("Prisma history separates the installed baseline from the pending five-file
     );
     assert.ok(!files[1].sql.includes("create table app.groups"));
   }
+});
+
+test("a migration URL is read from a .env file line, quoted or not", () => {
+  const file = [
+    "# RallyPoint production migration",
+    "OTHER=1",
+    'RALLYPOINT_MIGRATION_DATABASE_URL="postgresql://u:p%40ss@h:5432/postgres"',
+    "",
+  ].join("\n");
+  assert.equal(
+    envValue(file, "RALLYPOINT_MIGRATION_DATABASE_URL"),
+    "postgresql://u:p%40ss@h:5432/postgres",
+  );
+  assert.equal(envValue("A='x=y' \n", "A"), "x=y");
+  assert.equal(envValue("A=plain\r\n", "A"), "plain");
+  assert.equal(envValue("# A=commented\nB=2", "A"), undefined);
+  assert.equal(envValue("A=", "A"), undefined);
+  assert.equal(envValue("AB=1", "A"), undefined);
 });
