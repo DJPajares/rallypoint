@@ -29,6 +29,15 @@ export const functions: Record<string, Record<string, string>> = {
     p_action: "text",
     p_revision: "text",
   },
+  read_session_cohosts: { ...actor, p_session_id: "uuid", p_after: "uuid" },
+  update_session_cohost: {
+    ...actor,
+    p_key: "uuid",
+    p_session_id: "uuid",
+    p_profile_id: "uuid",
+    p_action: "text",
+    p_revision: "text",
+  },
   create_group: { ...actor, p_key: "uuid", p_name: "text" },
   rename_group: {
     ...actor,

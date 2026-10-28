@@ -114,7 +114,7 @@ test("grant and removal preserve previous membership and participation, while im
     'attendance',(select jsonb_agg(to_jsonb(a) order by party_id,seat) from app.seat_attendance a where party_id in(select id from app.parties where session_id='${f.session.id}')));`);
   const before = snapshot();
   for (const [actor, restored] of [
-    [f.member, "member"],
+    [f.member, ""],
     [f.newcomer, ""],
   ]) {
     const prior = await f.read();
@@ -407,6 +407,11 @@ test("candidates are scoped, historical, named from profiles, and existing co-ho
 
 test("candidate paging reaches each stable profile once, even when names match or change", async (t) => {
   const f = await cohostFixture(t, { join: false });
+  // Members of a group the organizer admins are candidates too (P-35); this
+  // test pages only through people who joined the session.
+  f.sql(
+    `delete from app.group_roles where group_id='${f.community.id}' and role='member';`,
+  );
   assert.deepEqual((await f.read()).candidates, []);
   const ids = Array.from({ length: 53 }, () => crypto.randomUUID());
   f.extraUsers.push(...ids);
@@ -522,18 +527,18 @@ test("revoking a co-host also denies deleted-draft receipt recovery and same-key
     (await f.change(f.owner, f.member.profileId, "add", "0")).status,
     200,
   );
-  const draftResponse = await request(
-    `/api/groups/${f.group.id}/sessions`,
-    f.member,
-    {
-      operationKey: crypto.randomUUID(),
-      groupId: f.group.id,
-      intent: "draft",
-      details: { ...f.session.details, title: "Synthetic draft to delete" },
-    },
-  );
+  const draftResponse = await request("/api/sessions", f.owner, {
+    operationKey: crypto.randomUUID(),
+    intent: "draft",
+    fromSession: f.session.id,
+    details: { ...f.session.details, title: "Synthetic draft to delete" },
+  });
   assert.equal(draftResponse.status, 200);
   const draft = (await draftResponse.json()).session;
+  // Run again copied the co-host; this draft's team is managed on its own.
+  const draftTeam = f.sql(
+    `select group_id from app.sessions where id='${draft.id}';`,
+  );
   const operationKey = crypto.randomUUID();
   const path = `/api/sessions/${draft.id}/delete`;
   assert.equal((await request(path, f.member, { operationKey })).status, 200);
@@ -542,14 +547,17 @@ test("revoking a co-host also denies deleted-draft receipt recovery and same-key
     200,
   );
   assert.equal((await request(path, f.member, { operationKey })).status, 200);
+  // The draft is gone, so its co-host is removed through its team.
+  const teamPath = `/api/groups/${draftTeam}/cohosts`;
+  const teamState = (await (await request(teamPath, f.owner)).json()).cohosts;
   assert.equal(
     (
-      await f.change(
-        f.owner,
-        f.member.profileId,
-        "remove",
-        (await f.read()).revision,
-      )
+      await request(teamPath, f.owner, {
+        operationKey: crypto.randomUUID(),
+        profileId: f.member.profileId,
+        action: "remove",
+        revision: teamState.revision,
+      })
     ).status,
     200,
   );
@@ -664,5 +672,66 @@ test("a manager mutation waiting behind removal rechecks the co-host role under 
     (await (await request(`/api/sessions/${f.session.id}`, f.owner)).json())
       .session.details.title,
     "Synthetic co-host session",
+  );
+});
+
+test("group roles grant nothing on new sessions; run again copies co-hosts; co-hosts can't add co-hosts", async (t) => {
+  const f = await cohostFixture(t);
+  const before = await f.read();
+  assert.equal(
+    (await f.change(f.owner, f.member.profileId, "add", before.revision))
+      .status,
+    200,
+  );
+  // A role in the group people belong to gives nothing on a session.
+  f.sql(
+    `update app.group_roles set role='cohost' where group_id='${f.community.id}' and user_id='${f.newcomer.id}';`,
+  );
+  assert.equal(
+    (await request(`/api/sessions/${f.session.id}`, f.newcomer)).status,
+    403,
+  );
+  assert.equal(
+    (await request(`/api/groups/${f.community.id}/cohosts`, f.owner)).status,
+    403,
+  );
+  // A co-host manages the session but can't change co-hosts.
+  assert.equal(
+    (await request(`/api/sessions/${f.session.id}`, f.member)).status,
+    200,
+  );
+  const current = await f.read();
+  assert.equal(
+    (await f.change(f.member, f.newcomer.profileId, "add", current.revision))
+      .status,
+    403,
+  );
+  // Run again copies the co-hosts, never the people booked.
+  const local = (offset) =>
+    new Date(Date.now() + offset).toISOString().slice(0, 16);
+  const again = await request("/api/sessions", f.owner, {
+    operationKey: crypto.randomUUID(),
+    intent: "publish",
+    fromSession: f.session.id,
+    details: {
+      ...f.session.details,
+      startLocal: local(172800000),
+      endLocal: local(180000000),
+      openLocal: local(-3600000),
+      cutoffLocal: local(129600000),
+    },
+  });
+  assert.equal(again.status, 200, await again.clone().text());
+  const next = (await again.json()).session;
+  assert.equal(
+    (await request(`/api/sessions/${next.id}`, f.member)).status,
+    200,
+  );
+  assert.equal(
+    f.sql(`select count(*) from app.parties where session_id='${next.id}';`),
+    "0",
+  );
+  f.sql(
+    `delete from app.group_roles where group_id=(select group_id from app.sessions where id='${next.id}');delete from app.operation_receipts where resource_id='${next.id}';delete from app.session_changes where session_id='${next.id}';delete from app.sessions where id='${next.id}';`,
   );
 });

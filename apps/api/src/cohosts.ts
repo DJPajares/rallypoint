@@ -21,12 +21,12 @@ async function rpc(db: Database, name: string, args: Record<string, unknown>) {
     throw new ApiError(
       403,
       "group_owner_required",
-      "Only the group owner can manage co-hosts.",
+      "Only the session's organizer can manage co-hosts.",
     );
   const conflicts: Record<string, string> = {
     stale_cohosts: "Co-hosts changed. Reload the list before trying again.",
     cohost_not_eligible:
-      "This person cannot be changed here. Reload the list and choose a current co-host or someone who registered for this group's sessions.",
+      "This person cannot be changed here. Reload the list and choose a current co-host, someone who joined one of your sessions, or a member of a group you admin.",
     idempotency_conflict:
       "This request key was already used for different details.",
   };
@@ -46,7 +46,47 @@ async function rpc(db: Database, name: string, args: Record<string, unknown>) {
 }
 
 const path = `/groups/:id{${uuidParam}}/cohosts`;
+const sessionPath = `/sessions/:id{${uuidParam}}/cohosts`;
+const readAfter = (after: string | undefined) => {
+  if (after !== undefined)
+    parse(
+      z.string().regex(uuid),
+      after,
+      "invalid_input",
+      "Reload the co-host list.",
+    );
+  return after ?? null;
+};
 export const cohosts = new Hono<ApiEnv>()
+  // Co-hosts belong to each session (P-35).
+  .get(sessionPath, requireUser, async (c) =>
+    json({
+      cohosts: await rpc(c.var.db, "read_session_cohosts", {
+        p_actor_id: c.var.user.id,
+        p_session_id: c.req.param("id"),
+        p_after: readAfter(c.req.query("after")),
+      }),
+    }),
+  )
+  .post(sessionPath, requireUser, async (c) => {
+    const input = parse(
+      change,
+      await readBody(c.req.raw),
+      "invalid_input",
+      "Choose a person and reload the co-host list before trying again.",
+    );
+    return json(
+      await rpc(c.var.db, "update_session_cohost", {
+        p_actor_id: c.var.user.id,
+        p_key: input.operationKey,
+        p_session_id: c.req.param("id"),
+        p_profile_id: input.profileId,
+        p_action: input.action,
+        p_revision: input.revision,
+      }),
+    );
+  })
+  .all(sessionPath, requireUser, () => notAvailable())
   .get(path, requireUser, async (c) => {
     const after = c.req.query("after");
     if (after !== undefined)
