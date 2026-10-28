@@ -163,26 +163,29 @@ test("standalone sessions", async (t) => {
     assert.equal((await r.json()).session.details.title, "Renamed standalone");
   });
 
-  await t.test("organizer still manages an older session", async () => {
-    const r = await request(`/api/groups/${firstGroup}/sessions`, organizer, {
-      operationKey: crypto.randomUUID(),
-      groupId: firstGroup,
-      intent: "publish",
-      details: details(),
-    });
-    assert.equal(r.status, 200, await r.clone().text());
-    const s = (await r.json()).session;
-    sessions.push(s.id);
-    assert.equal(kind(s.id), "host");
-    const edited = await request(`/api/sessions/${s.id}`, organizer, {
-      operationKey: crypto.randomUUID(),
-      groupId: firstGroup,
-      intent: "update",
-      version: s.version,
-      details: { ...s.details, title: "Still mine" },
-    });
-    assert.equal(edited.status, 200, await edited.clone().text());
-  });
+  await t.test(
+    "a session made through the old group route stands alone",
+    async () => {
+      const r = await request(`/api/groups/${firstGroup}/sessions`, organizer, {
+        operationKey: crypto.randomUUID(),
+        groupId: firstGroup,
+        intent: "publish",
+        details: details(),
+      });
+      assert.equal(r.status, 200, await r.clone().text());
+      const s = (await r.json()).session;
+      sessions.push(s.id);
+      assert.equal(kind(s.id), "host");
+      const edited = await request(`/api/sessions/${s.id}`, organizer, {
+        operationKey: crypto.randomUUID(),
+        groupId: firstGroup,
+        intent: "update",
+        version: s.version,
+        details: { ...s.details, title: "Still mine" },
+      });
+      assert.equal(edited.status, 200, await edited.clone().text());
+    },
+  );
 
   await t.test("migration left no session on a community group", () => {
     assert.equal(
@@ -224,4 +227,82 @@ test("standalone sessions", async (t) => {
       ),
     );
   });
+  await t.test(
+    "a session's hidden team can't be renamed or removed as a group",
+    async () => {
+      const s = (await (await create()).json()).session;
+      const team = sql(`select group_id from app.sessions where id='${s.id}';`);
+      const rename = await request(`/api/groups/${team}/rename`, organizer, {
+        operationKey: crypto.randomUUID(),
+        name: "Renamed team",
+      });
+      assert.equal(rename.status, 403);
+      const archive = await request(`/api/groups/${team}/archive`, organizer, {
+        operationKey: crypto.randomUUID(),
+      });
+      assert.equal(archive.status, 403);
+      assert.equal(
+        sql(`select archived_at is null from app.groups where id='${team}';`),
+        "t",
+      );
+    },
+  );
+
+  await t.test(
+    "run again copies co-hosts only for someone who manages the source",
+    async () => {
+      const s = (await (await create()).json()).session;
+      const newcomer = await login("newcomer@rallypoint.test");
+      sql(
+        `insert into app.group_roles(group_id,user_id,role) select group_id,'${newcomer.id}','cohost' from app.sessions where id='${s.id}';`,
+      );
+      const copy = async (who) => {
+        const r = await request("/api/sessions", who, {
+          operationKey: crypto.randomUUID(),
+          intent: "draft",
+          fromSession: s.id,
+          details: details(),
+        });
+        assert.equal(r.status, 200, await r.clone().text());
+        const id = (await r.json()).session.id;
+        sessions.push(id);
+        return sql(
+          `select count(*) from app.group_roles where group_id=(select group_id from app.sessions where id='${id}') and user_id='${newcomer.id}' and role='cohost';`,
+        );
+      };
+      assert.equal(await copy(organizer), "1");
+      assert.equal(await copy(member), "0");
+    },
+  );
+
+  await t.test(
+    "a former group co-host gains nothing on a new session",
+    async () => {
+      sql(
+        `insert into app.group_roles(group_id,user_id,role) values('${firstGroup}','${member.id}','cohost') on conflict(group_id,user_id) do update set role='cohost';`,
+      );
+      try {
+        const r = await request(
+          `/api/groups/${firstGroup}/sessions`,
+          organizer,
+          {
+            operationKey: crypto.randomUUID(),
+            groupId: firstGroup,
+            intent: "publish",
+            details: details(),
+          },
+        );
+        const s = (await r.json()).session;
+        sessions.push(s.id);
+        assert.equal(
+          (await request(`/api/sessions/${s.id}`, member)).status,
+          403,
+        );
+      } finally {
+        sql(
+          `update app.group_roles set role='member' where group_id='${firstGroup}' and user_id='${member.id}';`,
+        );
+      }
+    },
+  );
 });

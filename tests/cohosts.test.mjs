@@ -584,8 +584,9 @@ test("an owner can revoke co-host access to retained session history after remov
     `update app.sessions set state='completed' where id='${f.session.id}';`,
   );
   assert.equal(
+    // Removing the group its people belong to (P-35); the session keeps its own co-hosts.
     (
-      await request(`/api/groups/${f.group.id}/archive`, f.owner, {
+      await request(`/api/groups/${f.community.id}/archive`, f.owner, {
         operationKey: crypto.randomUUID(),
       })
     ).status,
