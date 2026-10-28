@@ -18,10 +18,9 @@ import { CoinsIcon } from "@phosphor-icons/react/dist/csr/Coins";
 import { CopyIcon } from "@phosphor-icons/react/dist/csr/Copy";
 import { DoorOpenIcon } from "@phosphor-icons/react/dist/csr/DoorOpen";
 import { MapPinIcon } from "@phosphor-icons/react/dist/csr/MapPin";
-import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { RepeatIcon } from "@phosphor-icons/react/dist/csr/Repeat";
 import { UserPlusIcon } from "@phosphor-icons/react/dist/csr/UserPlus";
-import { fromInstant, fromLocal, nowLocal } from "./dates";
+import { fromInstant, nowLocal } from "./dates";
 import { useActivities } from "./use-activities";
 import { ShareButton } from "./share-button";
 import {
@@ -40,6 +39,7 @@ import {
   Ticket,
 } from "@rallypoint/ui";
 import { DetailPage, StickyActions } from "./ui";
+import { visibilityHelp, visibilityOptions } from "./group-visibility";
 import {
   blankSession,
   currencies,
@@ -84,7 +84,8 @@ type Result = {
 };
 export function CreateGroup() {
   const router = useRouter(),
-    [name, setName] = useState("");
+    [name, setName] = useState(""),
+    [visibility, setVisibility] = useState("public");
   const mutation = useMutation<Result>((result) =>
     router.push(`/groups/${result.group?.id ?? result.groupId}`),
   );
@@ -97,7 +98,7 @@ export function CreateGroup() {
         className="rp-card"
         onSubmit={(e) => {
           e.preventDefault();
-          mutation.run("/api/groups", { name });
+          mutation.run("/api/groups", { name, visibility });
         }}
       >
         <fieldset disabled={mutation.busy || mutation.uncertain}>
@@ -111,6 +112,19 @@ export function CreateGroup() {
               autoComplete="organization"
             />
           </Field>
+          <Field
+            id="group-visibility"
+            label="Who can find it"
+            help={visibilityHelp(visibility)}
+          >
+            <SelectField
+              id="group-visibility"
+              aria-describedby="group-visibility-help"
+              value={visibility}
+              onChange={setVisibility}
+              options={visibilityOptions}
+            />
+          </Field>
           <StickyActions>
             <button className={buttonClass({ variant: "primary" })}>
               {mutation.busy ? "Creating…" : "Create group"}
@@ -121,64 +135,6 @@ export function CreateGroup() {
         {mutation.recovery}
       </form>
     </DetailPage>
-  );
-}
-export function GroupSessions({ group }: { group: GroupSummary }) {
-  const result = useApi<{ sessions: SessionRecord[] }>(
-    `/api/groups/${group.id}/sessions`,
-  );
-  return (
-    <section className="session-list-section">
-      <div className="section-head">
-        <h2>Sessions</h2>
-        <StickyActions>
-          <Link
-            className={buttonClass({ variant: "primary" })}
-            href={`/groups/${group.id}/sessions/new`}
-          >
-            <PlusIcon size={18} weight="bold" aria-hidden="true" />
-            Create session
-          </Link>
-        </StickyActions>
-      </div>
-      {result.loading ? (
-        <Pending>Finding your sessions…</Pending>
-      ) : result.error ? (
-        <Notice retry={result.retry}>{result.error}</Notice>
-      ) : result.data?.sessions.length ? (
-        <div className="session-list">
-          {result.data.sessions.map((s) => (
-            <article key={s.id} className="session-row">
-              <Ticket date={fromLocal(s.details.startLocal)}>
-                <span className="rp-badge">
-                  {
-                    {
-                      draft: "Draft",
-                      published: "Live",
-                      cancelled: "Cancelled",
-                      completed: "Completed",
-                    }[s.state]
-                  }
-                </span>
-                <h3>{s.details.title || "Untitled session"}</h3>
-                <p className="rp-ticket__meta rp-nums">
-                  {fromLocal(s.details.startLocal)?.time ??
-                    "Date to be decided"}
-                </p>
-                <Link className={buttonClass()} href={`/sessions/${s.id}/edit`}>
-                  {s.state === "draft" ? "Continue draft" : "Manage session"}
-                </Link>
-              </Ticket>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <div className="rp-card empty-inline">
-          <h3>Your next get-together starts here.</h3>
-          <p>Save a draft, then publish when the details are ready.</p>
-        </div>
-      )}
-    </section>
   );
 }
 export function SessionEditor() {

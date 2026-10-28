@@ -16,7 +16,12 @@ import { ReceiptIcon } from "@phosphor-icons/react/dist/csr/Receipt";
 import { UsersThreeIcon } from "@phosphor-icons/react/dist/csr/UsersThree";
 import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
-import type { GroupSummary, Identity } from "@rallypoint/domain/contracts";
+import type {
+  GroupSummary,
+  GroupVisibility,
+  Identity,
+} from "@rallypoint/domain/contracts";
+import { visibilityHelp, visibilityOptions } from "./group-visibility";
 import { feeStanding } from "@rallypoint/domain/registration";
 import { SplitFee } from "./split-fee";
 import type {
@@ -27,7 +32,7 @@ import { feeLabel } from "@rallypoint/domain/session";
 import { sessionHref, statusLabel } from "@rallypoint/domain/my-sessions";
 import type { MySessionRow, MySessions } from "@rallypoint/domain/my-sessions";
 import { fromLocal } from "./dates";
-import { useCreateTarget, useFrame } from "./frame";
+import { useFrame } from "./frame";
 import {
   Badge,
   buttonClass,
@@ -38,6 +43,7 @@ import {
   Pending,
   Pill,
   Segmented,
+  SelectField,
   Sheet,
   SpotsMeter,
   Ticket,
@@ -45,7 +51,6 @@ import {
 import type { Tone } from "@rallypoint/ui";
 import { DetailPage, StickyActions } from "./ui";
 import { useMutation } from "./use-mutation";
-import { GroupSessions } from "./session-pages";
 import { EarnedBadgeSheet, NextBadge } from "./badges";
 import type { BadgesView } from "@rallypoint/domain/badges";
 function Redirect({ href }: { href: string; replace?: boolean }) {
@@ -142,16 +147,10 @@ function GroupCard({ group }: { group: GroupSummary }) {
         <span className="rp-badge">{roleName(group.role)}</span>
         <h2>{group.name}</h2>
       </div>
-      {group.role !== "member" ? (
-        <Link href={`/groups/${group.id}`} className={buttonClass()}>
-          Open group
-          <ArrowRightIcon size={18} aria-hidden="true" />
-        </Link>
-      ) : (
-        <p className="rp-help">
-          Sessions you join in this group show on your Sessions tab.
-        </p>
-      )}
+      <Link href={`/groups/${group.id}`} className={buttonClass()}>
+        Open group
+        <ArrowRightIcon size={18} aria-hidden="true" />
+      </Link>
     </article>
   );
 }
@@ -161,7 +160,8 @@ export function HomeDashboard() {
   const badges = useApi<BadgesView>("/api/me/badges");
   const { openCreate } = useFrame();
   const groups = workspace.data?.groups ?? [];
-  const canCreate = groups.some((group) => group.role !== "member");
+  // Anyone can start a session; it no longer needs a group (P-35).
+  const canCreate = true;
   return (
     <section className="page home-page">
       <div className="page-head">
@@ -348,14 +348,12 @@ function SessionDays({
 }
 export function SessionsPage() {
   const sessions = useApi<MySessions>("/api/me/sessions");
-  const workspace = useApi<{ groups: GroupSummary[] }>("/api/workspace");
   const { openCreate } = useFrame();
   const [view, setView] = useState<"upcoming" | "past">("upcoming");
   // The device's own date, read once; it only decides "Today" and "Tomorrow".
   const [today] = useState(() => dayKey(new Date()));
-  const canCreate = (workspace.data?.groups ?? []).some(
-    (group) => group.role !== "member",
-  );
+  // Anyone can start a session; it no longer needs a group (P-35).
+  const canCreate = true;
   const upcoming = sessions.data?.upcoming ?? [];
   const past = sessions.data?.past ?? [];
   const pastTotal = sessions.data?.pastTotal ?? 0;
@@ -617,46 +615,6 @@ function useHeadingFocus(loading: boolean, data: unknown, error: unknown) {
     }
   }, [loading, data, error]);
 }
-export function GroupSetup() {
-  const { id } = useParams<{ id: string }>();
-  const result = useApi<{ group: GroupSummary }>(`/api/groups/${id}/setup`);
-  useCreateTarget(result.data ? "/sessions/new" : null);
-  useHeadingFocus(result.loading, result.data, result.error);
-  return (
-    <DetailPage back="/workspace" backLabel="Your groups">
-      {result.loading ? (
-        <Pending>Opening your group…</Pending>
-      ) : result.error ? (
-        <>
-          <h1>Group unavailable</h1>
-          <Notice retry={result.retry}>{result.error}</Notice>
-        </>
-      ) : result.data ? (
-        <>
-          <div className="page-head-row">
-            <div>
-              <span className="rp-badge">
-                {roleName(result.data.group.role)}
-              </span>
-              <h1>{result.data.group.name}</h1>
-            </div>
-            {result.data.group.role === "admin" ? (
-              <div className="fee-actions">
-                <Link className={buttonClass()} href={`/groups/${id}/edit`}>
-                  Edit group
-                </Link>
-                <Link className={buttonClass()} href={`/groups/${id}/cohosts`}>
-                  Co-hosts
-                </Link>
-              </div>
-            ) : null}
-          </div>
-          <GroupSessions group={result.data.group} />
-        </>
-      ) : null}
-    </DetailPage>
-  );
-}
 /** Owner only: rename the group or remove it. */
 export function EditGroup() {
   const { id } = useParams<{ id: string }>();
@@ -685,6 +643,48 @@ export function EditGroup() {
         <EditGroupForm group={group} />
       ) : null}
     </DetailPage>
+  );
+}
+/** Public or Private (P-35): who can find the group and ask to join. */
+function GroupVisibilityForm({ group }: { group: GroupSummary }) {
+  const [visibility, setVisibility] = useState(group.visibility ?? "public");
+  const [saved, setSaved] = useState("");
+  const save = useMutation<{ group: { visibility: string } }>(() =>
+    setSaved("Saved."),
+  );
+  return (
+    <form
+      className="rp-card"
+      onSubmit={(e) => {
+        e.preventDefault();
+        setSaved("");
+        save.run(`/api/groups/${group.id}/visibility`, { visibility });
+      }}
+    >
+      <fieldset disabled={save.busy || save.uncertain}>
+        <Field
+          id="group-visibility"
+          label="Who can find it"
+          help={visibilityHelp(visibility)}
+        >
+          <SelectField
+            id="group-visibility"
+            aria-describedby="group-visibility-help"
+            value={visibility}
+            onChange={(next) => setVisibility(next as GroupVisibility)}
+            options={visibilityOptions}
+          />
+        </Field>
+        <button className={buttonClass()}>
+          {save.busy ? "Saving…" : "Save"}
+        </button>
+        <p role="status" className="rp-help">
+          {saved}
+        </p>
+      </fieldset>
+      {save.error ? <Notice>{save.error}</Notice> : null}
+      {save.recovery}
+    </form>
   );
 }
 function EditGroupForm({ group }: { group: GroupSummary }) {
@@ -748,6 +748,7 @@ function EditGroupForm({ group }: { group: GroupSummary }) {
         {save.error ? <Notice>{save.error}</Notice> : null}
         {save.recovery}
       </form>
+      <GroupVisibilityForm group={group} />
       <section className="rp-card" aria-label="Remove group">
         <button
           type="button"

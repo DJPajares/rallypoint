@@ -1,11 +1,12 @@
 import { Suspense } from "react";
 import { Pending } from "@rallypoint/ui";
-import { GroupSetup, RequireAuth } from "@/screens";
+import { RequireAuth } from "@/screens";
+import { GroupPage } from "@/group-page";
 export default function Page() {
   return (
     <Suspense fallback={<Pending />}>
       <RequireAuth>
-        <GroupSetup />
+        <GroupPage />
       </RequireAuth>
     </Suspense>
   );
