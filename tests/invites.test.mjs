@@ -325,5 +325,86 @@ test("direct invites", async (t) => {
     const r = await send("group", g.id, org, d.profileId);
     assert.equal(r.status, 409);
     assert.equal((await r.json()).error.code, "invite_limit");
+    sql(
+      `delete from app.invites where inviter_id='${org.id}' and invitee_id in (${filler.map((id) => `'${id}'`).join(",")});`,
+    );
   });
+  await t.test("getting in another way settles the invite", async () => {
+    // Session: their Ask to join request is accepted instead.
+    const s = await session({ joinMode: "request" });
+    const asked = await request(`/api/registrations/${s.slug}/requests`, c, {
+      operationKey: crypto.randomUUID(),
+      version: s.version,
+      seats: 1,
+      guestName: "",
+      consent: true,
+    });
+    assert.equal(asked.status, 200, await asked.clone().text());
+    assert.equal((await send("session", s.id, org, c.profileId)).status, 200);
+    const requestId = sql(
+      `select id from app.join_requests where session_id='${s.id}' and user_id='${c.id}' and state='pending';`,
+    );
+    const accepted = await request(
+      `/api/registrations/${s.slug}/requests/accept`,
+      org,
+      { operationKey: crypto.randomUUID(), requestId },
+    );
+    assert.equal(accepted.status, 200, await accepted.clone().text());
+    assert.equal(
+      sql(
+        `select state from app.invites where session_id='${s.id}' and invitee_id='${c.id}';`,
+      ),
+      "accepted",
+    );
+    assert.ok(!(await mine(c)).some((x) => x.session?.slug === s.slug));
+    // Group: their request is accepted instead.
+    const pub = (
+      await (
+        await request("/api/groups", org, {
+          operationKey: crypto.randomUUID(),
+          name: "Synthetic public invite group",
+          visibility: "public",
+        })
+      ).json()
+    ).group;
+    groups.push(pub.id);
+    await request(`/api/groups/${pub.id}/requests`, d, {
+      operationKey: crypto.randomUUID(),
+    });
+    assert.equal((await send("group", pub.id, org, d.profileId)).status, 200);
+    const groupRequest = sql(
+      `select id from app.group_join_requests where group_id='${pub.id}' and user_id='${d.id}' and state='pending';`,
+    );
+    const answered = await request(
+      `/api/groups/${pub.id}/requests/answer`,
+      org,
+      {
+        operationKey: crypto.randomUUID(),
+        requestId: groupRequest,
+        action: "accept",
+      },
+    );
+    assert.equal(answered.status, 200, await answered.clone().text());
+    assert.equal(
+      sql(
+        `select state from app.invites where group_id='${pub.id}' and invitee_id='${d.id}';`,
+      ),
+      "accepted",
+    );
+  });
+
+  await t.test(
+    "joining a direct session still sends the usual join email",
+    async () => {
+      const s = await session();
+      await send("session", s.id, org, d.profileId);
+      assert.equal((await join(s, d)).status, 200);
+      assert.equal(
+        sql(
+          `select count(*) from app.email_jobs where session_id='${s.id}' and user_id='${d.id}' and kind='joined_confirmed';`,
+        ),
+        "1",
+      );
+    },
+  );
 });
