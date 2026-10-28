@@ -286,4 +286,51 @@ test("group membership", async (t) => {
     assert.equal(pending(g, a), id);
     assert.equal((await answer(g, owner, id, "accept")).status, 200);
   });
+  await t.test("someone asking before opening the app is named", async () => {
+    const g = await group("public");
+    const email = `p35-${nonce}-fresh@rallypoint.test`;
+    const { data } = await admin.auth.admin.createUser({
+      email,
+      password: fixturePassword,
+      email_confirm: true,
+      user_metadata: { full_name: "Synthetic fresh" },
+    });
+    users.push(data.user.id);
+    const client = createClient(
+      env.SUPABASE_URL,
+      env.SUPABASE_PUBLISHABLE_KEY,
+      { auth: { persistSession: false, autoRefreshToken: false } },
+    );
+    const signed = await client.auth.signInWithPassword({
+      email,
+      password: fixturePassword,
+    });
+    const fresh = { token: signed.data.session.access_token };
+    assert.equal((await ask(g, fresh)).status, 200);
+    assert.equal((await view(g, owner)).requests[0].name, "Synthetic fresh");
+  });
+  await t.test("anyone accepted can be removed by name", async () => {
+    const g = await group("public");
+    const { data } = await admin.auth.admin.createUser({
+      email: `p35-${nonce}-noprofile@rallypoint.test`,
+      password: fixturePassword,
+      email_confirm: true,
+      user_metadata: { full_name: "Synthetic no profile" },
+    });
+    users.push(data.user.id);
+    const id = sql(
+      `insert into app.group_join_requests(group_id,user_id) values('${g.id}','${data.user.id}') returning id;`,
+    );
+    const accepted = await answer(g, owner, id, "accept");
+    assert.equal(accepted.status, 200);
+    const joined = (await accepted.json()).group.members.find(
+      (m) => m.role === "member",
+    );
+    assert.ok(joined.profileId);
+    const removed = await request(`/api/groups/${g.id}/members/remove`, owner, {
+      operationKey: crypto.randomUUID(),
+      profileId: joined.profileId,
+    });
+    assert.equal(removed.status, 200, await removed.clone().text());
+  });
 });

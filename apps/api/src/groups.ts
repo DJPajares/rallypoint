@@ -3,7 +3,7 @@ import type { Context } from "hono";
 import { z } from "zod";
 import { ApiError, json, parse, readBody, uuid, uuidParam } from "./http";
 import type { ApiEnv } from "./identity";
-import { notAvailable, requireUser } from "./identity";
+import { actorName, notAvailable, requireUser } from "./identity";
 
 // P-35: groups are member lists people ask to join; the admin answers.
 const conflicts: Record<string, string> = {
@@ -86,6 +86,8 @@ export const groups = new Hono<ApiEnv>()
   })
   .post(`${base}/requests`, requireUser, async (c) => {
     const b = await body(c, ask);
+    // The admin sees who is asking, so their profile exists before they ask.
+    await actorName(c, "Participant");
     return call(c, "ask_to_join_group", {
       p_key: b.operationKey,
       p_invite: b.invite ?? null,
