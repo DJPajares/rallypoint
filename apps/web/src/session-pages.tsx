@@ -12,11 +12,13 @@ import { CancelSession, CancelledRoster } from "./cancellation-controls";
 import { RegistrationPanel } from "./registration-panel";
 import { PaymentInstructionsEditor } from "./payment-instructions";
 import { ActivityPicker } from "./activity-picker";
+import { AccessList } from "./session-access";
 import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import { ClockCountdownIcon } from "@phosphor-icons/react/dist/csr/ClockCountdown";
 import { CoinsIcon } from "@phosphor-icons/react/dist/csr/Coins";
 import { CopyIcon } from "@phosphor-icons/react/dist/csr/Copy";
 import { DoorOpenIcon } from "@phosphor-icons/react/dist/csr/DoorOpen";
+import { LockSimpleIcon } from "@phosphor-icons/react/dist/csr/LockSimple";
 import { MapPinIcon } from "@phosphor-icons/react/dist/csr/MapPin";
 import { RepeatIcon } from "@phosphor-icons/react/dist/csr/Repeat";
 import { UserPlusIcon } from "@phosphor-icons/react/dist/csr/UserPlus";
@@ -48,9 +50,12 @@ import {
   normalizeSession,
   sessionEditNeedsConfirmation,
 } from "@rallypoint/domain/session";
+import { isPrivateStub } from "@rallypoint/domain/session";
 import type {
   JoinMode,
   PaymentMode,
+  PrivateSession,
+  SessionAccess,
   SessionForm,
   SessionRecord,
   SharedSession,
@@ -219,6 +224,12 @@ function Editor({
     ),
     [error, setError] = useState<string | null>(null);
   const [copy, setCopy] = useState("");
+  // P-36: who can see a private session. Run again copies the source's list
+  // on the server unless the organizer changes it here.
+  const [accessList, setAccessList] = useState(
+    () => initial?.access ?? copyFrom?.access ?? { groups: [], people: [] },
+  );
+  const [accessTouched, setAccessTouched] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [pendingEdit, setPendingEdit] = useState<Record<
@@ -319,11 +330,21 @@ function Editor({
       setError(limit);
       return;
     }
+    const sendAccess =
+      normalized.access === "private" && (accessTouched || !copyFrom || record);
     const body = {
       ...(!record && copyFrom ? { fromSession: copyFrom.id } : {}),
       intent,
       version: record?.version,
       details,
+      ...(sendAccess
+        ? {
+            access: {
+              groups: accessList.groups.map((g) => g.id),
+              people: accessList.people.map((p) => p.profileId),
+            },
+          }
+        : {}),
     };
     if (record && sessionEditNeedsConfirmation(record, normalized)) {
       setPendingEdit(body);
@@ -691,28 +712,68 @@ function Editor({
             Allow each participant to bring one guest
           </SwitchField>
           <Field
-            id="joinMode"
-            label="Who can join"
+            id="access"
+            label="Who can see it"
             help={
-              (form.joinMode ?? "direct") === "request"
-                ? "You accept or decline each person."
-                : "Anyone with the link can take a spot."
+              (form.access ?? "public") === "private"
+                ? "Only people you add."
+                : "Anyone with the link."
             }
           >
             <SelectField
-              id="joinMode"
-              aria-describedby="joinMode-help"
-              value={form.joinMode ?? "direct"}
+              id="access"
+              aria-describedby="access-help"
+              value={form.access ?? "public"}
               onChange={(next) =>
-                setForm({ ...form, joinMode: next as JoinMode })
+                setForm({
+                  ...form,
+                  access: next as SessionAccess,
+                  // Ask to join is for public sessions only.
+                  ...(next === "private" ? { joinMode: "direct" } : {}),
+                })
               }
               options={[
-                { value: "direct", label: "Join directly" },
-                { value: "request", label: "Ask to join" },
+                { value: "public", label: "Public" },
+                { value: "private", label: "Private" },
               ]}
               disabled={disabledFields}
             />
           </Field>
+          {(form.access ?? "public") === "private" ? (
+            <AccessList
+              list={accessList}
+              disabled={disabledFields}
+              onChange={(next) => {
+                setAccessList(next);
+                setAccessTouched(true);
+              }}
+            />
+          ) : null}
+          {(form.access ?? "public") === "public" ? (
+            <Field
+              id="joinMode"
+              label="Who can join"
+              help={
+                (form.joinMode ?? "direct") === "request"
+                  ? "You accept or decline each person."
+                  : "Anyone with the link can take a spot."
+              }
+            >
+              <SelectField
+                id="joinMode"
+                aria-describedby="joinMode-help"
+                value={form.joinMode ?? "direct"}
+                onChange={(next) =>
+                  setForm({ ...form, joinMode: next as JoinMode })
+                }
+                options={[
+                  { value: "direct", label: "Join directly" },
+                  { value: "request", label: "Ask to join" },
+                ]}
+                disabled={disabledFields}
+              />
+            </Field>
+          ) : null}
           {!terminal ? (
             <StickyActions>
               {record?.state !== "published" ? (
@@ -939,6 +1000,13 @@ function SessionHead({
         ) : null}
         Hosted by {shared.groupName}
         {shared.details.activity ? ` · ${shared.details.activity}` : ""}
+        {shared.details.access === "private" ? (
+          <span className="session-private">
+            {" · "}
+            <LockSimpleIcon size={14} aria-hidden="true" />
+            Private
+          </span>
+        ) : null}
       </span>
       <h1 ref={heading} tabIndex={-1}>
         {shared.details.title}
@@ -1166,16 +1234,17 @@ function SignedInSession({
 }
 export function SharedSessionPage() {
   const { slug } = useParams<{ slug: string }>();
-  const result = useApi<{ session: SharedSession }>(
+  // Sent with sign-in (P-36): a private session shows only to its people.
+  const result = useApi<{ session: SharedSession | PrivateSession }>(
       `/api/shared/${slug}`,
-      true,
     ),
     { session } = useAuth();
   const heading = useRef<HTMLHeadingElement>(null);
   const focusedSlug = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (result.data) {
-      document.title = `${result.data.session.details.title} · RallyPoint`;
+      const shown = result.data.session;
+      document.title = `${isPrivateStub(shown) ? "Private session" : shown.details.title} · RallyPoint`;
       if (focusedSlug.current !== slug) {
         heading.current?.focus();
         focusedSlug.current = slug;
@@ -1199,6 +1268,27 @@ export function SharedSessionPage() {
     );
   if (!result.data) return null;
   const shared = result.data.session;
+  if (isPrivateStub(shared))
+    return (
+      <DetailPage back={back} backLabel="Home" className="shared-session">
+        <h1 ref={heading} tabIndex={-1}>
+          This session is private
+        </h1>
+        {session ? (
+          <p>Only people the organizer added can see it.</p>
+        ) : (
+          <>
+            <p>Sign in to see it if the organizer added you.</p>
+            <Link
+              className={buttonClass({ variant: "primary" })}
+              href={`/sign-in?next=${encodeURIComponent(`/s/${slug}`)}`}
+            >
+              Sign in
+            </Link>
+          </>
+        )}
+      </DetailPage>
+    );
   const d = shared.details;
   return (
     <DetailPage back={back} backLabel="Home" className="shared-session">

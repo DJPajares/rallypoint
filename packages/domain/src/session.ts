@@ -127,7 +127,21 @@ export interface SessionRecord {
   details: SessionDetails;
   bookingsStarted: boolean;
   cancelledFrom?: "draft" | "published" | null;
+  /** P-36: who is on a private session's list; managers only. */
+  access?: SessionAccessList;
 }
+export interface SessionAccessList {
+  groups: { id: string; name: string }[];
+  people: { profileId: string; name: string }[];
+}
+/** What someone without access to a private session gets (P-36). */
+export interface PrivateSession {
+  slug: string;
+  private: true;
+}
+export const isPrivateStub = (
+  s: SharedSession | PrivateSession,
+): s is PrivateSession => "private" in s && s.private === true;
 export interface SharedSession {
   slug: string;
   groupName: string;
