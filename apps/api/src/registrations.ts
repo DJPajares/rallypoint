@@ -6,7 +6,16 @@ import type { ApiEnv } from "./identity";
 import { actorName, notAvailable, requireUser } from "./identity";
 
 type Action =
-  "read" | "join" | "withdraw" | "payment" | "attendance" | "release" | "note";
+  | "read"
+  | "join"
+  | "withdraw"
+  | "payment"
+  | "attendance"
+  | "release"
+  | "note"
+  | "ask"
+  | "request"
+  | "answer";
 const conflicts: Record<string, string> = {
   split_undo_requires_review: "Review a new split before restoring this share.",
   split_not_finalized:
@@ -45,6 +54,19 @@ const conflicts: Record<string, string> = {
     "The session details changed. Refresh and review the current terms before joining.",
   idempotency_conflict:
     "This request key was already used for different details.",
+  request_required:
+    "The organizer accepts each person for this session. Ask to join instead.",
+  request_not_needed:
+    "You can join this session directly. Refresh to see the current options.",
+  request_declined: "The organizer didn’t accept your request for this session.",
+  request_cancel_limit:
+    "You’ve cancelled two requests for this session, so you can’t ask again.",
+  request_limit:
+    "You have 10 requests waiting. Cancel one or wait for an answer.",
+  request_not_pending:
+    "That request has already been answered or cancelled. Refresh to see the latest.",
+  request_needs_confirm:
+    "The details changed since they asked. They need to confirm the new details first.",
 };
 const invalid = {
   payment: ["invalid_payment", "Choose a fee and a payment action."],
@@ -59,6 +81,7 @@ const managingWords = {
   payment: "update payments",
   attendance: "update attendance",
   release: "release spots",
+  answer: "answer requests",
 } as const;
 
 async function call(
@@ -74,7 +97,10 @@ async function call(
   });
   if (error) {
     const managing =
-      action === "payment" || action === "attendance" || action === "release"
+      action === "payment" ||
+      action === "attendance" ||
+      action === "release" ||
+      action === "answer"
         ? action
         : null;
     if (error.code === "42501" && managing)
@@ -91,8 +117,12 @@ async function call(
       );
     if (conflicts[error.message])
       throw new ApiError(409, error.message, conflicts[error.message]);
-    if (error.code === "23514" && (managing || action === "note")) {
-      const [code, message] = invalid[managing ?? "note"];
+    if (error.code === "23514" && managing && managing !== "answer") {
+      const [code, message] = invalid[managing];
+      throw new ApiError(422, code, message);
+    }
+    if (error.code === "23514" && action === "note") {
+      const [code, message] = invalid.note;
       throw new ApiError(422, code, message);
     }
     if (error.code === "23514")
@@ -125,6 +155,10 @@ const join = z.object({
   guestName: z.string().max(80),
 });
 const withdraw = z.object({ operationKey: key, partyId: key });
+const ownRequest = z.object({ operationKey: key, requestId: key });
+const keepRequest = ownRequest.extend({ version: z.number().int().min(1) });
+const answerRequest = z.object({ operationKey: key, requestId: key });
+const answerRest = z.object({ operationKey: key });
 const payment = z.object({
   operationKey: key,
   partyId: key,
@@ -190,6 +224,93 @@ export const registrations = new Hono<ApiEnv>()
     });
   })
   .all(`${base}/withdraw`, requireUser, () => notAvailable(action))
+  .post(`${base}/requests`, requireUser, async (c) => {
+    const b = parse(
+      join,
+      await readBody(c.req.raw),
+      "invalid_registration",
+      "Choose one or two seats and explicitly accept the current joining and waitlist terms.",
+    );
+    return call(c, "ask", "ask_to_join", {
+      p_key: b.operationKey,
+      p_version: b.version,
+      p_seats: b.seats,
+      p_guest_name: b.guestName.trim(),
+      p_primary_name: (await actorName(c, "Participant")).name,
+      p_consent: true,
+    });
+  })
+  .all(`${base}/requests`, requireUser, () => notAvailable(action))
+  .post(`${base}/requests/cancel`, requireUser, async (c) => {
+    const b = parse(
+      ownRequest,
+      await readBody(c.req.raw),
+      "invalid_request",
+      "Choose your request to cancel.",
+    );
+    return call(c, "request", "cancel_join_request", {
+      p_key: b.operationKey,
+      p_request_id: b.requestId,
+    });
+  })
+  .all(`${base}/requests/cancel`, requireUser, () => notAvailable(action))
+  .post(`${base}/requests/keep`, requireUser, async (c) => {
+    const b = parse(
+      keepRequest,
+      await readBody(c.req.raw),
+      "invalid_request",
+      "Review the current details, then keep your request.",
+    );
+    return call(c, "request", "keep_join_request", {
+      p_key: b.operationKey,
+      p_request_id: b.requestId,
+      p_version: b.version,
+    });
+  })
+  .all(`${base}/requests/keep`, requireUser, () => notAvailable(action))
+  .post(`${base}/requests/accept`, requireUser, async (c) => {
+    const b = parse(
+      answerRequest,
+      await readBody(c.req.raw),
+      "invalid_request",
+      "Choose a request to accept.",
+    );
+    return call(c, "answer", "accept_join_request", {
+      p_actor_name: (await actorName(c, "Participant")).name,
+      p_key: b.operationKey,
+      p_request_id: b.requestId,
+    });
+  })
+  .all(`${base}/requests/accept`, requireUser, () => notAvailable(action))
+  .post(`${base}/requests/decline`, requireUser, async (c) => {
+    const b = parse(
+      answerRequest,
+      await readBody(c.req.raw),
+      "invalid_request",
+      "Choose a request to decline.",
+    );
+    return call(c, "answer", "decline_join_request", {
+      p_actor_name: (await actorName(c, "Participant")).name,
+      p_key: b.operationKey,
+      p_request_id: b.requestId,
+    });
+  })
+  .all(`${base}/requests/decline`, requireUser, () => notAvailable(action))
+  .post(`${base}/requests/decline-rest`, requireUser, async (c) => {
+    const b = parse(
+      answerRest,
+      await readBody(c.req.raw),
+      "invalid_request",
+      "Decline the requests still waiting.",
+    );
+    return call(c, "answer", "decline_pending_requests", {
+      p_actor_name: (await actorName(c, "Participant")).name,
+      p_key: b.operationKey,
+    });
+  })
+  .all(`${base}/requests/decline-rest`, requireUser, () =>
+    notAvailable(action),
+  )
   .post(`${base}/payments`, requireUser, async (c) => {
     const b = parse(payment, await readBody(c.req.raw), ...invalid.payment);
     return call(c, "payment", "update_payment", {
