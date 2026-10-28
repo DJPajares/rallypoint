@@ -368,6 +368,83 @@ test("private sessions", async (t) => {
     assert.equal(accepted.status, 200, await accepted.clone().text());
   });
 
+  await t.test("pending requester can't skip approval after switch to private", async () => {
+    const s = await create({ joinMode: "request" });
+    assert.equal((await ask(s, asker)).status, 200);
+    const r = await update(s, { access: "private" }, { groups: [], people: [] });
+    assert.equal(r.status, 200, await r.clone().text());
+    const j = await join(s, asker, r.version ?? (await managed(s)).version);
+    assert.equal(j.status, 409, await j.clone().text());
+    assert.equal((await j.json()).error.code, "request_required");
+  });
+
+  await t.test("declined requester sees nothing once private", async () => {
+    const s = await create({ joinMode: "request", title: "Synthetic secret title" });
+    const key = crypto.randomUUID();
+    const asked = await request(`/api/registrations/${s.slug}/requests`, stranger, {
+      operationKey: key,
+      version: s.version,
+      seats: 1,
+      guestName: "",
+      consent: true,
+    });
+    assert.equal(asked.status, 200, await asked.clone().text());
+    const view = (await (await registration(s, org)).json()).registration;
+    const declined = await request(`/api/registrations/${s.slug}/requests/decline`, org, {
+      operationKey: crypto.randomUUID(),
+      requestId: view.requests[0].id,
+    });
+    assert.equal(declined.status, 200, await declined.clone().text());
+    const r = await update(
+      s,
+      { access: "private", title: "Synthetic secret title" },
+      { groups: [], people: [] },
+    );
+    assert.equal(r.status, 200, await r.clone().text());
+    const op = await (await request(`/api/operations/${key}`, stranger)).text();
+    assert.ok(!op.includes("Synthetic secret title") && !op.includes("counts"), op);
+    const replay = await (
+      await request(`/api/registrations/${s.slug}/requests`, stranger, {
+        operationKey: key,
+        version: s.version,
+        seats: 1,
+        guestName: "",
+        consent: true,
+      })
+    ).text();
+    assert.ok(!replay.includes("Synthetic secret title") && !replay.includes("counts"), replay);
+    const tab = await (await request("/api/me/sessions", stranger)).text();
+    assert.ok(!tab.includes(s.slug), tab);
+    assert.ok(!tab.includes("Synthetic secret title"), tab);
+  });
+
+  await t.test("withdrawn holder off the list can see but not rejoin", async () => {
+    const s = await create(
+      { access: "private" },
+      { groups: [], people: [holder.profileId] },
+    );
+    assert.equal((await join(s, holder)).status, 200);
+    const reg = (await (await registration(s, holder)).json()).registration;
+    assert.equal(
+      (
+        await request(`/api/registrations/${s.slug}/withdraw`, holder, {
+          operationKey: crypto.randomUUID(),
+          partyId: reg.own.id,
+        })
+      ).status,
+      200,
+    );
+    const r = await update(s, { access: "private" }, { groups: [], people: [] });
+    assert.equal(r.status, 200, await r.clone().text());
+    assert.equal(
+      (await shared(s, holder)).details.title,
+      "Synthetic private session",
+    );
+    const again = await join(s, holder, (await managed(s)).version);
+    assert.equal(again.status, 403, await again.clone().text());
+    assert.equal((await again.json()).error.code, "session_private");
+  });
+
   await t.test("save checks", async () => {
     const bad = async (accessList, code, message) => {
       const r = await request("/api/sessions", org, {

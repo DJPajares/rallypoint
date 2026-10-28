@@ -62,7 +62,7 @@ test("Prisma uses the deployment schema; Supabase serves only Auth and private S
   try {
     fixture.sql(`
       create function ${fixture.schema}.list_my_groups(p_actor_id uuid) returns jsonb language sql as $$ select jsonb_build_array(jsonb_build_object('id',p_actor_id)) $$;
-      create function ${fixture.schema}.read_shared_session(p_slug uuid) returns jsonb language sql as $$ select null::jsonb $$;
+      create function ${fixture.schema}.read_shared_session(p_slug uuid,p_actor_id uuid default null) returns jsonb language sql as $$ select null::jsonb $$;
       create function ${fixture.schema}.read_profile(p_profile_id uuid) returns jsonb language sql as $$ select jsonb_build_object('id',p_profile_id,'name','Synthetic') $$;
       create function ${fixture.schema}.read_payment_qr(p_actor_id uuid,p_slug uuid) returns jsonb language sql as $$ select '{"path":"probe.png","type":"image/png"}'::jsonb $$;
       revoke all on all functions in schema ${fixture.schema} from public;
