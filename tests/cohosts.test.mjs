@@ -125,9 +125,10 @@ test("grant and removal preserve previous membership and participation, while im
       prior.revision,
     );
     assert.equal(granted.status, 200);
+    // Co-hosts run the session, not a group (P-35): no group setup access.
     assert.equal(
       (await request(`/api/groups/${f.group.id}/setup`, actor)).status,
-      200,
+      403,
     );
     assert.equal(
       (await request(`/api/groups/${secondGroup}/setup`, actor)).status,

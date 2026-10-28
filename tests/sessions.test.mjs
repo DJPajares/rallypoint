@@ -101,7 +101,7 @@ test("session publication and current-role boundary", async (t) => {
           b = await responses[1].json();
         groupId = a.group.id;
         assert.equal(groupId, b.group.id);
-        assert.equal(a.group.role, "owner");
+        assert.equal(a.group.role, "admin");
       },
     );
     let draft;
