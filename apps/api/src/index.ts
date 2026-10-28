@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { badges } from "./badges";
 import { cohosts } from "./cohosts";
 import { groups } from "./groups";
+import { invites } from "./invites";
 import type { AppEnv } from "./env";
 import { ApiError, discardRejectedBody, errorJson, json, uuid } from "./http";
 import type { ApiEnv } from "./identity";
@@ -142,6 +143,7 @@ app.route("/", profiles);
 app.route("/", activities);
 app.route("/", cohosts);
 app.route("/", groups);
+app.route("/", invites);
 
 // Unknown reads are missing pages; any other unknown method is refused.
 app.notFound(async (c) => {
