@@ -49,6 +49,7 @@ import {
   sessionEditNeedsConfirmation,
 } from "@rallypoint/domain/session";
 import type {
+  JoinMode,
   PaymentMode,
   SessionForm,
   SessionRecord,
@@ -756,6 +757,29 @@ function Editor({
           >
             Allow each participant to bring one guest
           </SwitchField>
+          <Field
+            id="joinMode"
+            label="Who can join"
+            help={
+              (form.joinMode ?? "direct") === "request"
+                ? "You accept or decline each person."
+                : "Anyone with the link can take a spot."
+            }
+          >
+            <SelectField
+              id="joinMode"
+              aria-describedby="joinMode-help"
+              value={form.joinMode ?? "direct"}
+              onChange={(next) =>
+                setForm({ ...form, joinMode: next as JoinMode })
+              }
+              options={[
+                { value: "direct", label: "Join directly" },
+                { value: "request", label: "Ask to join" },
+              ]}
+              disabled={disabledFields}
+            />
+          </Field>
           {!terminal ? (
             <StickyActions>
               {record?.state !== "published" ? (
