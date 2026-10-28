@@ -236,6 +236,8 @@ export function HomeDashboard() {
 const statusTone: Partial<Record<MySessionRow["status"], Tone>> = {
   waitlisted: "warning",
   requested: "neutral",
+  not_accepted: "neutral",
+  request_expired: "neutral",
   draft: "neutral",
   cancelled: "danger",
 };

@@ -343,6 +343,7 @@ test("ask to join contract", async (t) => {
     const rest = (who) =>
       request(path(s, "/requests/decline-rest"), who, {
         operationKey: crypto.randomUUID(),
+        expected: 1,
       });
     assert.equal((await rest(member)).status, 403);
     assert.equal((await rest(null)).status, 401);
@@ -458,6 +459,7 @@ test("ask to join contract", async (t) => {
       const rest = () =>
         request(path(s, "/requests/decline-rest"), organizer, {
           operationKey: key,
+          expected: 2,
         });
       const r = await rest();
       assert.equal(r.status, 200);
@@ -562,7 +564,14 @@ test("ask to join contract", async (t) => {
   });
 
   await t.test("the Sessions tab shows requests", async () => {
-    const s = await event();
+    // Starts soon, so it sorts ahead of older synthetic sessions in the
+    // Sessions tab's first 100 rows.
+    const soon = Date.now();
+    const s = await event({
+      startLocal: local(soon + 1200000),
+      endLocal: local(soon + 4800000),
+      cutoffLocal: local(soon + 600000),
+    });
     await ask(s, b);
     const mine = await (await request("/api/me/sessions", b)).json();
     const row = mine.upcoming.find((x) => x.slug === s.slug);
@@ -588,5 +597,135 @@ test("ask to join contract", async (t) => {
       (await request(`/api/operations/${acceptKey}`, a)).status,
       404,
     );
+  });
+  const edit = (s, changes) =>
+    request(`/api/sessions/${s.id}`, organizer, {
+      operationKey: crypto.randomUUID(),
+      groupId: firstGroup,
+      intent: "update",
+      version: s.version,
+      details: { ...s.details, ...changes },
+    });
+
+  await t.test(
+    "a fee change needs the requester to keep the request",
+    async () => {
+      const s = await event();
+      await ask(s, a);
+      assert.equal((await edit(s, { fee: "9.00" })).status, 200);
+      const r = await answer(s, organizer, "accept", pendingId(s, a));
+      assert.equal(r.status, 409);
+      assert.equal((await r.json()).error.code, "request_needs_confirm");
+      assert.equal((await view(s, a)).joinRequest.needsConfirm, true);
+    },
+  );
+
+  await t.test("a title change leaves the request acceptable", async () => {
+    const s = await event();
+    await ask(s, a);
+    assert.equal((await edit(s, { title: "Renamed workshop" })).status, 200);
+    assert.equal(
+      (await answer(s, organizer, "accept", pendingId(s, a))).status,
+      200,
+    );
+  });
+
+  await t.test("two managers accepting the same request at once", async () => {
+    const s = await event();
+    await ask(s, a);
+    const id = pendingId(s, a);
+    const cohost = await login("member@rallypoint.test");
+    sql(
+      `update app.group_roles set role='cohost' where group_id='${firstGroup}' and user_id='${cohost.id}';`,
+    );
+    try {
+      const results = await Promise.all([
+        answer(s, organizer, "accept", id),
+        answer(s, cohost, "accept", id),
+      ]);
+      assert.deepEqual(results.map((r) => r.status).sort(), [200, 409]);
+      assert.equal(
+        sql(
+          `select count(*) from app.parties where session_id='${s.id}' and user_id='${a.id}';`,
+        ),
+        "1",
+      );
+    } finally {
+      sql(
+        `update app.group_roles set role='member' where group_id='${firstGroup}' and user_id='${cohost.id}';`,
+      );
+    }
+  });
+
+  await t.test(
+    "accept racing the requester's cancel has one result",
+    async () => {
+      const s = await event();
+      await ask(s, a);
+      const id = pendingId(s, a);
+      const [accepted, cancelled] = await Promise.all([
+        answer(s, organizer, "accept", id),
+        request(path(s, "/requests/cancel"), a, {
+          operationKey: crypto.randomUUID(),
+          requestId: id,
+        }),
+      ]);
+      assert.deepEqual([accepted.status, cancelled.status].sort(), [200, 409]);
+      const parties = sql(
+        `select count(*) from app.parties where session_id='${s.id}' and user_id='${a.id}';`,
+      );
+      assert.equal(parties, accepted.status === 200 ? "1" : "0");
+    },
+  );
+
+  await t.test("accept racing a direct join for the last seat", async () => {
+    const s = await event({ capacity: "1" });
+    await ask(s, a);
+    const [x, y] = await Promise.all([
+      answer(s, organizer, "accept", pendingId(s, a)),
+      request(path(s), organizer, { ...party(), version: s.version }),
+    ]);
+    assert.equal(x.status, 200);
+    assert.equal(y.status, 200);
+    assert.equal(
+      sql(
+        `select sum(seats) from app.parties where session_id='${s.id}' and state='confirmed';`,
+      ),
+      "1",
+    );
+  });
+
+  await t.test("a booked person never sees a request", async () => {
+    const s = await event();
+    await ask(s, a);
+    const switched = await edit(s, { joinMode: "direct" });
+    const v = (await switched.json()).session.version;
+    assert.equal(
+      (await request(path(s), a, { ...party(), version: v })).status,
+      200,
+    );
+    assert.equal((await view(s, a)).joinRequest, null);
+  });
+
+  await t.test("decline the rest refuses when the list changed", async () => {
+    const s = await event();
+    await ask(s, a);
+    await ask(s, b);
+    const r = await request(path(s, "/requests/decline-rest"), organizer, {
+      operationKey: crypto.randomUUID(),
+      expected: 1,
+    });
+    assert.equal(r.status, 409);
+    assert.equal((await r.json()).error.code, "request_list_changed");
+    assert.ok(pendingId(s, a) && pendingId(s, b));
+  });
+
+  await t.test("the Sessions tab shows a declined request", async () => {
+    const s = await event();
+    await ask(s, b);
+    await answer(s, organizer, "decline", pendingId(s, b));
+    const mine = await (await request("/api/me/sessions", b)).json();
+    const row = mine.upcoming.find((x) => x.slug === s.slug);
+    assert.equal(row?.status, "not_accepted");
   });
 });

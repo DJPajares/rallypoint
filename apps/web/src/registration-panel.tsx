@@ -234,8 +234,14 @@ export function RegistrationPanel({
   // Ask to join (P-34): people who can't join directly ask instead, and see
   // their request until an organizer answers it.
   const asking = d.joinMode === "request" && !view.canManage;
-  const ownRequest = asking ? (view.joinRequest ?? null) : null;
-  const requestShown = !!ownRequest && ownRequest.state !== "cancelled";
+  // A request still waiting shows even after the session switches to join
+  // directly, so it can be cancelled; how a request ended shows only while
+  // the session still takes requests.
+  const ownRequest = view.canManage ? null : (view.joinRequest ?? null);
+  const requestShown =
+    !!ownRequest &&
+    (ownRequest.state === "pending" ||
+      (asking && ownRequest.state !== "cancelled"));
   const full =
     view.counts.waitingParties > 0 ||
     Number(d.capacity) - view.counts.confirmedSeats < (guest ? 2 : 1);

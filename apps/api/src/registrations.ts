@@ -66,6 +66,8 @@ const conflicts: Record<string, string> = {
     "You have 10 requests waiting. Cancel one or wait for an answer.",
   request_not_pending:
     "That request has already been answered or cancelled. Refresh to see the latest.",
+  request_list_changed:
+    "New requests arrived since you looked. Review them, then try again.",
   request_needs_confirm:
     "The details changed since they asked. They need to confirm the new details first.",
 };
@@ -159,7 +161,10 @@ const withdraw = z.object({ operationKey: key, partyId: key });
 const ownRequest = z.object({ operationKey: key, requestId: key });
 const keepRequest = ownRequest.extend({ version: z.number().int().min(1) });
 const answerRequest = z.object({ operationKey: key, requestId: key });
-const answerRest = z.object({ operationKey: key });
+const answerRest = z.object({
+  operationKey: key,
+  expected: z.number().int().min(0),
+});
 const payment = z.object({
   operationKey: key,
   partyId: key,
@@ -307,6 +312,7 @@ export const registrations = new Hono<ApiEnv>()
     return call(c, "answer", "decline_pending_requests", {
       p_actor_name: (await actorName(c, "Participant")).name,
       p_key: b.operationKey,
+      p_expected: b.expected,
     });
   })
   .all(`${base}/requests/decline-rest`, requireUser, () => notAvailable(action))

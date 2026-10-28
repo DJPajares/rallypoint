@@ -86,7 +86,7 @@ export const functions: Record<string, Record<string, string>> = {
   },
   accept_join_request: { ...write, p_request_id: "uuid" },
   decline_join_request: { ...write, p_request_id: "uuid" },
-  decline_pending_requests: write,
+  decline_pending_requests: { ...write, p_expected: "integer" },
   update_payment: {
     ...write,
     p_party_id: "uuid",

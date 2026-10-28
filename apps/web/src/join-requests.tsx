@@ -64,11 +64,11 @@ export function JoinRequests({
     onChanged(value.registration);
   });
   const busy = mutation.busy || mutation.uncertain;
-  const answer = (verb: string, r?: ManagedJoinRequest) => {
+  const answer = (verb: string, r?: ManagedJoinRequest, expected?: number) => {
     answering.current = r?.name ?? "";
     mutation.run(
       `/api/registrations/${slug}/requests/${verb}`,
-      r ? { requestId: r.id } : {},
+      r ? { requestId: r.id } : { expected },
     );
   };
   if (!requests.length && !said && !mutation.error && !mutation.uncertain)
@@ -178,7 +178,7 @@ export function JoinRequests({
               type="button"
               className={buttonClass({ variant: "primary" })}
               disabled={busy}
-              onClick={() => answer("decline-rest")}
+              onClick={() => answer("decline-rest", undefined, requests.length)}
             >
               {mutation.busy ? "Declining…" : `Decline ${requests.length}`}
             </button>
