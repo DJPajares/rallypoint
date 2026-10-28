@@ -167,6 +167,38 @@ export interface EmailSummary {
     notSent: number;
   } | null;
 }
+/** The viewer's own latest request to join; null once accepted or never asked. */
+export interface OwnJoinRequest {
+  id: string;
+  state: "pending" | "declined" | "cancelled" | "expired" | "session_cancelled";
+  seats: 1 | 2;
+  guestName: string;
+  /** The details changed materially since they asked; Keep my request first. */
+  needsConfirm: boolean;
+  askedAt: string;
+  cancelsLeft: number;
+}
+/**
+ * Organizer/co-host view of one waiting request. Only what helps decide:
+ * never an email address, no-shows, payments or a score.
+ */
+export interface ManagedJoinRequest {
+  id: string;
+  profileId: string | null;
+  name: string;
+  title: RosterTitle | null;
+  level: SkillLevel | null;
+  played: number;
+  hosted: number;
+  playedInGroup: number;
+  seats: 1 | 2;
+  guestName: string;
+  askedAt: string;
+  needsConfirm: boolean;
+  fitsNow: boolean;
+  /** Where Accept would place them now; null when they fit. */
+  waitlistPosition: number | null;
+}
 export interface RegistrationView {
   own: OwnParty | null;
   canManage: boolean;
@@ -181,6 +213,9 @@ export interface RegistrationView {
   earlierFees?: Array<{ currency: string; totalMinor: number }>;
   /** Organizers/co-hosts only. */
   emailSummary?: EmailSummary;
+  joinRequest?: OwnJoinRequest | null;
+  /** Organizers/co-hosts only: requests waiting for an answer, oldest first. */
+  requests?: ManagedJoinRequest[];
   roster: Array<{
     primaryName: string;
     /** The public profile to open from this name; null until they have one. */
@@ -212,3 +247,4 @@ import type {
   SplitSummary,
 } from "./fees.ts";
 import type { RosterTitle } from "./badges.ts";
+import type { SkillLevel } from "./activities.ts";

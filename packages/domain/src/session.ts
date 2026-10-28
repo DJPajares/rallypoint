@@ -83,6 +83,8 @@ export function defaultCurrency(timeZone: string, locale?: string): Currency {
   return "SGD";
 }
 export type PaymentMode = "untracked" | "organizer";
+/** Join directly (anyone with the link), or ask and wait for an organizer. */
+export type JoinMode = "direct" | "request";
 export interface SessionForm {
   title: string;
   activity: string;
@@ -102,6 +104,8 @@ export interface SessionForm {
   feeMode?: FeeMode;
   paymentMode?: PaymentMode;
   releaseUnpaid?: boolean;
+  /** Missing means "direct": sessions saved before this choice existed. */
+  joinMode?: JoinMode;
 }
 export interface SessionDetails extends SessionForm {
   startsAt?: string;
@@ -153,6 +157,7 @@ export const blankSession = (): SessionForm => {
     guests: false,
     paymentMode: "untracked",
     releaseUnpaid: false,
+    joinMode: "direct",
   };
 };
 export class InputError extends Error {}
@@ -234,6 +239,13 @@ export function normalizeSession(
   if (raw.releaseUnpaid !== undefined && typeof raw.releaseUnpaid !== "boolean")
     throw new InputError("Choose whether unpaid spots can be released.");
   form.releaseUnpaid = raw.releaseUnpaid === true;
+  if (
+    raw.joinMode !== undefined &&
+    raw.joinMode !== "direct" &&
+    raw.joinMode !== "request"
+  )
+    throw new InputError("Choose who can join.");
+  form.joinMode = (raw.joinMode as JoinMode | undefined) ?? "direct";
   // A blank link is left out, so sessions saved before links stay unchanged.
   const mapsLink = normalizeMapsLink(raw.mapsLink);
   if (mapsLink) form.mapsLink = mapsLink;

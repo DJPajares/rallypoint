@@ -3,7 +3,14 @@
 // decide only how a status reads, where a row leads and when game day applies.
 
 export type MySessionStatus =
-  "in" | "waitlisted" | "organizing" | "draft" | "cancelled";
+  | "in"
+  | "waitlisted"
+  | "requested"
+  | "not_accepted"
+  | "request_expired"
+  | "organizing"
+  | "draft"
+  | "cancelled";
 
 export interface MySessionRow {
   id: string | null; // drafts only
@@ -17,6 +24,8 @@ export interface MySessionRow {
   state: "draft" | "published" | "completed" | "cancelled";
   status: MySessionStatus;
   waitPosition: number | null;
+  /** Organizing rows only: requests waiting for an answer. */
+  requestCount?: number;
 }
 
 export interface MySessions {
@@ -38,6 +47,12 @@ export function statusLabel(
       return row.waitPosition === null
         ? "Waitlist"
         : `Waitlist #${row.waitPosition}`;
+    case "requested":
+      return "Request sent";
+    case "not_accepted":
+      return "Not accepted";
+    case "request_expired":
+      return "Request expired";
     case "organizing":
       return past ? "Organized" : "Organizing";
     case "draft":
