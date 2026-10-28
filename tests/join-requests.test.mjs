@@ -457,4 +457,85 @@ test("ask to join contract", async (t) => {
       "0",
     );
   });
+  const view = async (s, who) =>
+    (await (await request(path(s), who)).json()).registration;
+
+  await t.test("the requester sees their own request", async () => {
+    const s = await event();
+    await ask(s, a);
+    const mine = (await view(s, a)).joinRequest;
+    assert.equal(mine.state, "pending");
+    assert.equal(mine.seats, 1);
+    assert.equal(mine.needsConfirm, false);
+    assert.equal(mine.cancelsLeft, 2);
+    assert.equal((await view(s, a)).requests, undefined);
+  });
+
+  await t.test("organizers see what helps decide, and nothing else", async () => {
+    const s = await event();
+    await ask(s, a, 2);
+    const [card] = (await view(s, organizer)).requests;
+    assert.equal(card.name, "Synthetic asker 1");
+    assert.equal(card.seats, 2);
+    assert.equal(card.guestName, "Guest");
+    assert.equal(card.played, 0);
+    assert.equal(card.hosted, 0);
+    assert.equal(card.playedInGroup, 0);
+    assert.equal(card.fitsNow, true);
+    assert.equal(card.waitlistPosition, null);
+    for (const key of ["email", "noShows", "fee", "payment", "userId"])
+      assert.equal(key in card, false, key);
+  });
+
+  await t.test("a full session's card says where Accept would place them", async () => {
+    const s = await event({ capacity: "1", joinMode: "direct" });
+    await request(path(s), b, { ...party(), version: s.version });
+    const switched = await request(`/api/sessions/${s.id}`, organizer, {
+      operationKey: crypto.randomUUID(),
+      groupId: firstGroup,
+      intent: "update",
+      version: s.version,
+      details: { ...s.details, joinMode: "request" },
+    });
+    const v = (await switched.json()).session.version;
+    await request(path(s, "/requests"), a, { ...party(), version: v });
+    const [card] = (await view(s, organizer)).requests;
+    assert.equal(card.fitsNow, false);
+    assert.equal(card.waitlistPosition, 1);
+  });
+
+  await t.test("a cancelled session's request can't be answered", async () => {
+    const s = await event();
+    await ask(s, a);
+    const id = pendingId(s, a);
+    const cancelled = await request(`/api/sessions/${s.id}/cancel`, organizer, {
+      operationKey: crypto.randomUUID(),
+    });
+    assert.equal(cancelled.status, 200, await cancelled.clone().text());
+    assert.equal((await view(s, a)).joinRequest.state, "session_cancelled");
+    const r = await answer(s, organizer, "accept", id);
+    assert.equal(r.status, 409);
+  });
+
+  await t.test("a request expires at the start", async () => {
+    const s = await event();
+    await ask(s, a);
+    sql(
+      `update app.sessions set details=jsonb_set(details,'{startsAt}',to_jsonb((now()-interval '1 minute')::text)) where id='${s.id}';`,
+    );
+    assert.equal((await view(s, a)).joinRequest.state, "expired");
+    assert.deepEqual((await view(s, organizer)).requests, []);
+  });
+
+  await t.test("the Sessions tab shows requests", async () => {
+    const s = await event();
+    await ask(s, b);
+    const mine = await (await request("/api/me/sessions", b)).json();
+    const row = mine.upcoming.find((x) => x.slug === s.slug);
+    assert.equal(row.status, "requested");
+    const theirs = await (await request("/api/me/sessions", organizer)).json();
+    const own = theirs.upcoming.find((x) => x.slug === s.slug);
+    assert.equal(own.status, "organizing");
+    assert.equal(own.requestCount, 1);
+  });
 });
