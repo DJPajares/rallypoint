@@ -58,5 +58,6 @@ export function nextWeekForm(d: SessionDetails, now: number): SessionForm {
     feeMode: d.feeMode,
     paymentMode: d.paymentMode,
     releaseUnpaid: d.releaseUnpaid,
+    joinMode: d.joinMode ?? "direct",
   };
 }
