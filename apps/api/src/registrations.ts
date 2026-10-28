@@ -58,7 +58,8 @@ const conflicts: Record<string, string> = {
     "The organizer accepts each person for this session. Ask to join instead.",
   request_not_needed:
     "You can join this session directly. Refresh to see the current options.",
-  request_declined: "The organizer didn’t accept your request for this session.",
+  request_declined:
+    "The organizer didn’t accept your request for this session.",
   request_cancel_limit:
     "You’ve cancelled two requests for this session, so you can’t ask again.",
   request_limit:
@@ -308,9 +309,7 @@ export const registrations = new Hono<ApiEnv>()
       p_key: b.operationKey,
     });
   })
-  .all(`${base}/requests/decline-rest`, requireUser, () =>
-    notAvailable(action),
-  )
+  .all(`${base}/requests/decline-rest`, requireUser, () => notAvailable(action))
   .post(`${base}/payments`, requireUser, async (c) => {
     const b = parse(payment, await readBody(c.req.raw), ...invalid.payment);
     return call(c, "payment", "update_payment", {

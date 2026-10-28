@@ -34,11 +34,9 @@ const admin = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 async function login(email) {
-  const client = createClient(
-    env.SUPABASE_URL,
-    env.SUPABASE_PUBLISHABLE_KEY,
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
+  const client = createClient(env.SUPABASE_URL, env.SUPABASE_PUBLISHABLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
   const { data, error } = await client.auth.signInWithPassword({
     email,
     password: fixturePassword,
@@ -167,20 +165,23 @@ test("ask to join contract", async (t) => {
     assert.equal(o.status, 200);
   });
 
-  await t.test("a request holds no seat and a repeat ask is the same request", async () => {
-    const s = await event();
-    const first = await ask(s, a);
-    assert.equal(first.status, 200, await first.clone().text());
-    const id = pendingId(s, a);
-    assert.ok(id);
-    assert.equal((await ask(s, a)).status, 200);
-    assert.equal(pendingId(s, a), id);
-    const shared = await (await request(`/api/shared/${s.slug}`)).json();
-    assert.deepEqual(shared.session.counts, {
-      confirmedSeats: 0,
-      waitingParties: 0,
-    });
-  });
+  await t.test(
+    "a request holds no seat and a repeat ask is the same request",
+    async () => {
+      const s = await event();
+      const first = await ask(s, a);
+      assert.equal(first.status, 200, await first.clone().text());
+      const id = pendingId(s, a);
+      assert.ok(id);
+      assert.equal((await ask(s, a)).status, 200);
+      assert.equal(pendingId(s, a), id);
+      const shared = await (await request(`/api/shared/${s.slug}`)).json();
+      assert.deepEqual(shared.session.counts, {
+        confirmedSeats: 0,
+        waitingParties: 0,
+      });
+    },
+  );
 
   await t.test("accept places the party and queues no email", async () => {
     const s = await event();
@@ -199,115 +200,133 @@ test("ask to join contract", async (t) => {
     );
   });
 
-  await t.test("accepting into a full session waitlists at the back", async () => {
-    const s = await event({ capacity: "1" });
-    await ask(s, a);
-    await ask(s, b);
-    assert.equal(
-      (await answer(s, organizer, "accept", pendingId(s, b))).status,
-      200,
-    );
-    const r = await answer(s, organizer, "accept", pendingId(s, a));
-    assert.equal((await r.json()).accepted.queuePosition, 1);
-    const mine = await own(s, a);
-    assert.equal(mine.state, "waitlisted");
-    assert.equal(mine.queuePosition, 1);
-  });
+  await t.test(
+    "accepting into a full session waitlists at the back",
+    async () => {
+      const s = await event({ capacity: "1" });
+      await ask(s, a);
+      await ask(s, b);
+      assert.equal(
+        (await answer(s, organizer, "accept", pendingId(s, b))).status,
+        200,
+      );
+      const r = await answer(s, organizer, "accept", pendingId(s, a));
+      assert.equal((await r.json()).accepted.queuePosition, 1);
+      const mine = await own(s, a);
+      assert.equal(mine.state, "waitlisted");
+      assert.equal(mine.queuePosition, 1);
+    },
+  );
 
-  await t.test("two accepts racing the last seat leave one seat taken", async () => {
-    const s = await event({ capacity: "1" });
-    await ask(s, a);
-    await ask(s, b);
-    const cohost = await login("member@rallypoint.test");
-    sql(
-      `update app.group_roles set role='cohost' where group_id='${firstGroup}' and user_id='${cohost.id}';`,
-    );
-    try {
-      const [x, y] = await Promise.all([
-        answer(s, organizer, "accept", pendingId(s, a)),
-        answer(s, cohost, "accept", pendingId(s, b)),
-      ]);
-      assert.equal(x.status, 200);
-      assert.equal(y.status, 200);
-      const states = [(await own(s, a)).state, (await own(s, b)).state].sort();
-      assert.deepEqual(states, ["confirmed", "waitlisted"]);
+  await t.test(
+    "two accepts racing the last seat leave one seat taken",
+    async () => {
+      const s = await event({ capacity: "1" });
+      await ask(s, a);
+      await ask(s, b);
+      const cohost = await login("member@rallypoint.test");
+      sql(
+        `update app.group_roles set role='cohost' where group_id='${firstGroup}' and user_id='${cohost.id}';`,
+      );
+      try {
+        const [x, y] = await Promise.all([
+          answer(s, organizer, "accept", pendingId(s, a)),
+          answer(s, cohost, "accept", pendingId(s, b)),
+        ]);
+        assert.equal(x.status, 200);
+        assert.equal(y.status, 200);
+        const states = [
+          (await own(s, a)).state,
+          (await own(s, b)).state,
+        ].sort();
+        assert.deepEqual(states, ["confirmed", "waitlisted"]);
+        assert.equal(
+          sql(
+            `select sum(seats) from app.parties where session_id='${s.id}' and state='confirmed';`,
+          ),
+          "1",
+        );
+      } finally {
+        sql(
+          `update app.group_roles set role='member' where group_id='${firstGroup}' and user_id='${cohost.id}';`,
+        );
+      }
+    },
+  );
+
+  await t.test(
+    "accept is idempotent and a second manager gets not pending",
+    async () => {
+      const s = await event();
+      await ask(s, a);
+      const id = pendingId(s, a),
+        key = crypto.randomUUID();
+      assert.equal((await answer(s, organizer, "accept", id, key)).status, 200);
+      assert.equal((await answer(s, organizer, "accept", id, key)).status, 200);
+      const again = await answer(s, organizer, "accept", id);
+      assert.equal(again.status, 409);
+      assert.equal((await again.json()).error.code, "request_not_pending");
       assert.equal(
         sql(
-          `select sum(seats) from app.parties where session_id='${s.id}' and state='confirmed';`,
+          `select count(*) from app.parties where session_id='${s.id}' and user_id='${a.id}';`,
         ),
         "1",
       );
-    } finally {
-      sql(
-        `update app.group_roles set role='member' where group_id='${firstGroup}' and user_id='${cohost.id}';`,
+    },
+  );
+
+  await t.test(
+    "accept links a booking made while the session was direct",
+    async () => {
+      const s = await event({ joinMode: "direct" });
+      assert.equal(
+        (await request(path(s), a, { ...party(), version: s.version })).status,
+        200,
       );
-    }
-  });
-
-  await t.test("accept is idempotent and a second manager gets not pending", async () => {
-    const s = await event();
-    await ask(s, a);
-    const id = pendingId(s, a),
-      key = crypto.randomUUID();
-    assert.equal((await answer(s, organizer, "accept", id, key)).status, 200);
-    assert.equal((await answer(s, organizer, "accept", id, key)).status, 200);
-    const again = await answer(s, organizer, "accept", id);
-    assert.equal(again.status, 409);
-    assert.equal((await again.json()).error.code, "request_not_pending");
-    assert.equal(
-      sql(
-        `select count(*) from app.parties where session_id='${s.id}' and user_id='${a.id}';`,
-      ),
-      "1",
-    );
-  });
-
-  await t.test("accept links a booking made while the session was direct", async () => {
-    const s = await event({ joinMode: "direct" });
-    assert.equal(
-      (await request(path(s), a, { ...party(), version: s.version })).status,
-      200,
-    );
-    const stale = sql(
-      `insert into app.join_requests(session_id,user_id,primary_name,seats,consent_version,consent_at)
+      const stale = sql(
+        `insert into app.join_requests(session_id,user_id,primary_name,seats,consent_version,consent_at)
        values('${s.id}','${a.id}','Synthetic asker 1',1,${s.version},now()) returning id;`,
-    );
-    assert.equal((await answer(s, organizer, "accept", stale)).status, 200);
-    assert.equal(
-      sql(
-        `select count(*) from app.parties where session_id='${s.id}' and user_id='${a.id}';`,
-      ),
-      "1",
-    );
-    assert.equal(
-      sql(
-        `select r.party_id=p.id from app.join_requests r join app.parties p on p.session_id=r.session_id and p.user_id=r.user_id where r.id='${stale}';`,
-      ),
-      "t",
-    );
-  });
+      );
+      assert.equal((await answer(s, organizer, "accept", stale)).status, 200);
+      assert.equal(
+        sql(
+          `select count(*) from app.parties where session_id='${s.id}' and user_id='${a.id}';`,
+        ),
+        "1",
+      );
+      assert.equal(
+        sql(
+          `select r.party_id=p.id from app.join_requests r join app.parties p on p.session_id=r.session_id and p.user_id=r.user_id where r.id='${stale}';`,
+        ),
+        "t",
+      );
+    },
+  );
 
-  await t.test("switching to join directly keeps pending requests", async () => {
-    const s = await event();
-    await ask(s, a);
-    const id = pendingId(s, a);
-    const r = await request(`/api/sessions/${s.id}`, organizer, {
-      operationKey: crypto.randomUUID(),
-      groupId: firstGroup,
-      intent: "update",
-      version: s.version,
-      details: { ...s.details, joinMode: "direct" },
-    });
-    assert.equal(r.status, 200, await r.clone().text());
-    const updated = (await r.json()).session;
-    assert.equal(pendingId(s, a), id);
-    assert.equal(
-      (await request(path(s), b, { ...party(), version: updated.version }))
-        .status,
-      200,
-    );
-    assert.equal((await answer(s, organizer, "accept", id)).status, 200);
-  });
+  await t.test(
+    "switching to join directly keeps pending requests",
+    async () => {
+      const s = await event();
+      await ask(s, a);
+      const id = pendingId(s, a);
+      const r = await request(`/api/sessions/${s.id}`, organizer, {
+        operationKey: crypto.randomUUID(),
+        groupId: firstGroup,
+        intent: "update",
+        version: s.version,
+        details: { ...s.details, joinMode: "direct" },
+      });
+      assert.equal(r.status, 200, await r.clone().text());
+      const updated = (await r.json()).session;
+      assert.equal(pendingId(s, a), id);
+      assert.equal(
+        (await request(path(s), b, { ...party(), version: updated.version }))
+          .status,
+        200,
+      );
+      assert.equal((await answer(s, organizer, "accept", id)).status, 200);
+    },
+  );
 
   await t.test("only the session's managers answer requests", async () => {
     const s = await event();
@@ -361,47 +380,53 @@ test("ask to join contract", async (t) => {
     assert.equal((await r.json()).error.code, "request_cancel_limit");
   });
 
-  await t.test("ten waiting requests is the most one person can have", async () => {
-    const s = await event();
-    const others = [];
-    for (let i = 0; i < 10; i++) others.push(await event());
-    sql(
-      others
-        .map(
-          (o) =>
-            `insert into app.join_requests(session_id,user_id,primary_name,seats,consent_version,consent_at) values('${o.id}','${c.id}','Synthetic asker 3',1,${o.version},now());`,
-        )
-        .join("\n"),
-    );
-    const r = await ask(s, c);
-    assert.equal(r.status, 409);
-    assert.equal((await r.json()).error.code, "request_limit");
-  });
+  await t.test(
+    "ten waiting requests is the most one person can have",
+    async () => {
+      const s = await event();
+      const others = [];
+      for (let i = 0; i < 10; i++) others.push(await event());
+      sql(
+        others
+          .map(
+            (o) =>
+              `insert into app.join_requests(session_id,user_id,primary_name,seats,consent_version,consent_at) values('${o.id}','${c.id}','Synthetic asker 3',1,${o.version},now());`,
+          )
+          .join("\n"),
+      );
+      const r = await ask(s, c);
+      assert.equal(r.status, 409);
+      assert.equal((await r.json()).error.code, "request_limit");
+    },
+  );
 
-  await t.test("a material change needs the requester to keep the request", async () => {
-    const s = await event();
-    await ask(s, a);
-    const id = pendingId(s, a);
-    const moved = await request(`/api/sessions/${s.id}`, organizer, {
-      operationKey: crypto.randomUUID(),
-      groupId: firstGroup,
-      intent: "update",
-      version: s.version,
-      details: { ...s.details, location: "Another synthetic room" },
-    });
-    assert.equal(moved.status, 200, await moved.clone().text());
-    const updated = (await moved.json()).session;
-    const blocked = await answer(s, organizer, "accept", id);
-    assert.equal(blocked.status, 409);
-    assert.equal((await blocked.json()).error.code, "request_needs_confirm");
-    const keep = await request(path(s, "/requests/keep"), a, {
-      operationKey: crypto.randomUUID(),
-      requestId: id,
-      version: updated.version,
-    });
-    assert.equal(keep.status, 200, await keep.clone().text());
-    assert.equal((await answer(s, organizer, "accept", id)).status, 200);
-  });
+  await t.test(
+    "a material change needs the requester to keep the request",
+    async () => {
+      const s = await event();
+      await ask(s, a);
+      const id = pendingId(s, a);
+      const moved = await request(`/api/sessions/${s.id}`, organizer, {
+        operationKey: crypto.randomUUID(),
+        groupId: firstGroup,
+        intent: "update",
+        version: s.version,
+        details: { ...s.details, location: "Another synthetic room" },
+      });
+      assert.equal(moved.status, 200, await moved.clone().text());
+      const updated = (await moved.json()).session;
+      const blocked = await answer(s, organizer, "accept", id);
+      assert.equal(blocked.status, 409);
+      assert.equal((await blocked.json()).error.code, "request_needs_confirm");
+      const keep = await request(path(s, "/requests/keep"), a, {
+        operationKey: crypto.randomUUID(),
+        requestId: id,
+        version: updated.version,
+      });
+      assert.equal(keep.status, 200, await keep.clone().text());
+      assert.equal((await answer(s, organizer, "accept", id)).status, 200);
+    },
+  );
 
   await t.test("asking and accepting stop at the start", async () => {
     const s = await event();
@@ -418,26 +443,29 @@ test("ask to join contract", async (t) => {
     assert.equal((await accept.json()).error.code, "registration_closed");
   });
 
-  await t.test("decline the rest declines only what is still waiting", async () => {
-    const s = await event();
-    await ask(s, a);
-    await ask(s, b);
-    await ask(s, d);
-    assert.equal(
-      (await answer(s, organizer, "accept", pendingId(s, a))).status,
-      200,
-    );
-    const key = crypto.randomUUID();
-    const rest = () =>
-      request(path(s, "/requests/decline-rest"), organizer, {
-        operationKey: key,
-      });
-    const r = await rest();
-    assert.equal(r.status, 200);
-    assert.equal((await r.json()).declined, 2);
-    assert.equal((await (await rest()).json()).declined, 2);
-    assert.equal((await own(s, a)).state, "confirmed");
-  });
+  await t.test(
+    "decline the rest declines only what is still waiting",
+    async () => {
+      const s = await event();
+      await ask(s, a);
+      await ask(s, b);
+      await ask(s, d);
+      assert.equal(
+        (await answer(s, organizer, "accept", pendingId(s, a))).status,
+        200,
+      );
+      const key = crypto.randomUUID();
+      const rest = () =>
+        request(path(s, "/requests/decline-rest"), organizer, {
+          operationKey: key,
+        });
+      const r = await rest();
+      assert.equal(r.status, 200);
+      assert.equal((await r.json()).declined, 2);
+      assert.equal((await (await rest()).json()).declined, 2);
+      assert.equal((await own(s, a)).state, "confirmed");
+    },
+  );
 
   await t.test("a booked session may switch who can join", async () => {
     const s = await event({ joinMode: "direct" });
@@ -471,38 +499,44 @@ test("ask to join contract", async (t) => {
     assert.equal((await view(s, a)).requests, undefined);
   });
 
-  await t.test("organizers see what helps decide, and nothing else", async () => {
-    const s = await event();
-    await ask(s, a, 2);
-    const [card] = (await view(s, organizer)).requests;
-    assert.equal(card.name, "Synthetic asker 1");
-    assert.equal(card.seats, 2);
-    assert.equal(card.guestName, "Guest");
-    assert.equal(card.played, 0);
-    assert.equal(card.hosted, 0);
-    assert.equal(card.playedInGroup, 0);
-    assert.equal(card.fitsNow, true);
-    assert.equal(card.waitlistPosition, null);
-    for (const key of ["email", "noShows", "fee", "payment", "userId"])
-      assert.equal(key in card, false, key);
-  });
+  await t.test(
+    "organizers see what helps decide, and nothing else",
+    async () => {
+      const s = await event();
+      await ask(s, a, 2);
+      const [card] = (await view(s, organizer)).requests;
+      assert.equal(card.name, "Synthetic asker 1");
+      assert.equal(card.seats, 2);
+      assert.equal(card.guestName, "Guest");
+      assert.equal(card.played, 0);
+      assert.equal(card.hosted, 0);
+      assert.equal(card.playedInGroup, 0);
+      assert.equal(card.fitsNow, true);
+      assert.equal(card.waitlistPosition, null);
+      for (const key of ["email", "noShows", "fee", "payment", "userId"])
+        assert.equal(key in card, false, key);
+    },
+  );
 
-  await t.test("a full session's card says where Accept would place them", async () => {
-    const s = await event({ capacity: "1", joinMode: "direct" });
-    await request(path(s), b, { ...party(), version: s.version });
-    const switched = await request(`/api/sessions/${s.id}`, organizer, {
-      operationKey: crypto.randomUUID(),
-      groupId: firstGroup,
-      intent: "update",
-      version: s.version,
-      details: { ...s.details, joinMode: "request" },
-    });
-    const v = (await switched.json()).session.version;
-    await request(path(s, "/requests"), a, { ...party(), version: v });
-    const [card] = (await view(s, organizer)).requests;
-    assert.equal(card.fitsNow, false);
-    assert.equal(card.waitlistPosition, 1);
-  });
+  await t.test(
+    "a full session's card says where Accept would place them",
+    async () => {
+      const s = await event({ capacity: "1", joinMode: "direct" });
+      await request(path(s), b, { ...party(), version: s.version });
+      const switched = await request(`/api/sessions/${s.id}`, organizer, {
+        operationKey: crypto.randomUUID(),
+        groupId: firstGroup,
+        intent: "update",
+        version: s.version,
+        details: { ...s.details, joinMode: "request" },
+      });
+      const v = (await switched.json()).session.version;
+      await request(path(s, "/requests"), a, { ...party(), version: v });
+      const [card] = (await view(s, organizer)).requests;
+      assert.equal(card.fitsNow, false);
+      assert.equal(card.waitlistPosition, 1);
+    },
+  );
 
   await t.test("a cancelled session's request can't be answered", async () => {
     const s = await event();
@@ -537,5 +571,22 @@ test("ask to join contract", async (t) => {
     const own = theirs.upcoming.find((x) => x.slug === s.slug);
     assert.equal(own.status, "organizing");
     assert.equal(own.requestCount, 1);
+  });
+  await t.test("Check result recovers a request action", async () => {
+    const s = await event();
+    const key = crypto.randomUUID();
+    assert.equal((await ask(s, a, 1, key)).status, 200);
+    const r = await request(`/api/operations/${key}`, a);
+    assert.equal(r.status, 200, await r.clone().text());
+    assert.equal((await r.json()).registration.joinRequest.state, "pending");
+    const acceptKey = crypto.randomUUID();
+    await answer(s, organizer, "accept", pendingId(s, a), acceptKey);
+    const o = await request(`/api/operations/${acceptKey}`, organizer);
+    assert.equal(o.status, 200, await o.clone().text());
+    assert.equal((await o.json()).accepted.state, "confirmed");
+    assert.equal(
+      (await request(`/api/operations/${acceptKey}`, a)).status,
+      404,
+    );
   });
 });

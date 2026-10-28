@@ -197,6 +197,12 @@ export function RegistrationPanel({
   useEffect(() => {
     if (own?.id) statusHeading.current?.focus();
   }, [own?.id, own?.state, event.state]);
+  const requestKey = view?.joinRequest
+    ? `${view.joinRequest.id}:${view.joinRequest.state}`
+    : "";
+  useEffect(() => {
+    if (requestKey) statusHeading.current?.focus();
+  }, [requestKey]);
   const d = event.details,
     total = (d.feeMinor ?? 0) * (guest ? 2 : 1);
   function refresh() {
@@ -224,9 +230,17 @@ export function RegistrationPanel({
       wait
     );
   }
-  const joinLabel =
+  // Ask to join (P-34): people who can't join directly ask instead, and see
+  // their request until an organizer answers it.
+  const asking = d.joinMode === "request" && !view.canManage;
+  const ownRequest = asking ? (view.joinRequest ?? null) : null;
+  const requestShown = !!ownRequest && ownRequest.state !== "cancelled";
+  const full =
     view.counts.waitingParties > 0 ||
-    Number(d.capacity) - view.counts.confirmedSeats < (guest ? 2 : 1)
+    Number(d.capacity) - view.counts.confirmedSeats < (guest ? 2 : 1);
+  const joinLabel = asking
+    ? "Ask to join"
+    : full
       ? "Agree & waitlist"
       : "Agree & join";
   // Times read in the session's own local time, never with a zone label (D-13).
@@ -292,11 +306,18 @@ export function RegistrationPanel({
   const canJoin =
     event.registrationWindow === "open" &&
     (!own || released || own.state === "withdrawn");
-  const hasAction = own
-    ? ((own.state === "confirmed" || own.state === "waitlisted") &&
-        event.registrationWindow !== "closed") ||
-      canJoin
-    : canJoin;
+  const hasAction =
+    (own
+      ? ((own.state === "confirmed" || own.state === "waitlisted") &&
+          event.registrationWindow !== "closed") ||
+        canJoin
+      : canJoin) &&
+    !(
+      asking &&
+      !!ownRequest &&
+      ownRequest.state !== "pending" &&
+      ownRequest.state !== "cancelled"
+    );
   // A request's error and its recovery, shown in one place only.
   const requestState = (
     <>
@@ -497,6 +518,97 @@ export function RegistrationPanel({
         <p>You can no longer withdraw here.</p>
       )
     ) : null;
+  // The viewer's own request while it waits, or how it ended.
+  const requestBlock = ownRequest ? (
+    <div className="own-status">
+      <StatusBanner
+        tone={ownRequest.state === "pending" ? "warning" : "neutral"}
+        icon={
+          ownRequest.state === "pending" ? (
+            <HourglassIcon size={22} />
+          ) : (
+            <LockSimpleIcon size={22} />
+          )
+        }
+      >
+        <span className="rp-badge rp-badge--inherit">
+          {ownRequest.state === "pending"
+            ? "Request sent"
+            : ownRequest.state === "declined"
+              ? "Not accepted"
+              : ownRequest.state === "expired"
+                ? "Closed"
+                : "Cancelled"}
+        </span>
+        <h2 ref={statusHeading} tabIndex={-1}>
+          {ownRequest.state === "pending"
+            ? "Request sent. The organizer will accept or decline it."
+            : ownRequest.state === "declined"
+              ? "The organizer didn’t accept your request for this session."
+              : ownRequest.state === "expired"
+                ? "This session has started."
+                : "This session was cancelled"}
+        </h2>
+        {ownRequest.state === "pending" ? (
+          <p>
+            {ownRequest.seats === 2
+              ? `You + ${ownRequest.guestName || "one guest"} · 2 seats`
+              : "Just you · 1 seat"}
+          </p>
+        ) : null}
+      </StatusBanner>
+      {ownRequest.state === "pending" && ownRequest.needsConfirm ? (
+        <>
+          <p id="keep-terms">The details changed since you asked.</p>
+          <button
+            type="button"
+            className={buttonClass({ variant: "primary" })}
+            aria-describedby="keep-terms"
+            disabled={mutation.busy || mutation.uncertain}
+            onClick={() =>
+              mutation.run(`/api/registrations/${event.slug}/requests/keep`, {
+                requestId: ownRequest.id,
+                version: event.version,
+              })
+            }
+          >
+            Keep my request
+          </button>
+        </>
+      ) : null}
+      {ownRequest.state === "pending"
+        ? actionArea(
+            "Cancel your request",
+            "Cancel request",
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                mutation.run(
+                  `/api/registrations/${event.slug}/requests/cancel`,
+                  { requestId: ownRequest.id },
+                );
+              }}
+            >
+              <fieldset disabled={mutation.busy || mutation.uncertain}>
+                <legend>Cancel your request</legend>
+                <p id="cancel-request-terms">
+                  {ownRequest.cancelsLeft > 1
+                    ? "You can ask again later."
+                    : "This is your last cancel: after it you can’t ask again for this session."}
+                </p>
+                <button
+                  className={buttonClass()}
+                  aria-describedby="cancel-request-terms"
+                >
+                  {mutation.busy ? "Cancelling…" : "Cancel request"}
+                </button>
+              </fieldset>
+            </form>,
+            "secondary",
+          )
+        : null}
+    </div>
+  ) : null;
   // Display names only; the server decides who may see them.
   const rosterList = view.roster.length ? (
     <ul>
@@ -665,26 +777,33 @@ export function RegistrationPanel({
           {withdrawArea}
         </div>
       ) : null}
-      {canJoin ? (
+      {requestShown ? (
+        requestBlock
+      ) : canJoin ? (
         actionArea(
-          "Join this session",
-          view.counts.waitingParties > 0 ||
-            Number(d.capacity) - view.counts.confirmedSeats < 1
-            ? "Join the waitlist"
-            : "Join",
+          asking ? "Ask to join" : "Join this session",
+          asking
+            ? "Ask to join"
+            : view.counts.waitingParties > 0 ||
+                Number(d.capacity) - view.counts.confirmedSeats < 1
+              ? "Join the waitlist"
+              : "Join",
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              mutation.run(`/api/registrations/${event.slug}`, {
-                version: event.version,
-                seats: guest ? 2 : 1,
-                guestName: guest ? guestName : "",
-                consent: true,
-              });
+              mutation.run(
+                `/api/registrations/${event.slug}${asking ? "/requests" : ""}`,
+                {
+                  version: event.version,
+                  seats: guest ? 2 : 1,
+                  guestName: guest ? guestName : "",
+                  consent: true,
+                },
+              );
             }}
           >
             <fieldset disabled={mutation.busy || mutation.uncertain}>
-              <legend>Join this session</legend>
+              <legend>{asking ? "Ask to join" : "Join this session"}</legend>
               {d.guests && Number(d.capacity) >= 2 ? (
                 <>
                   <CheckField
@@ -758,14 +877,32 @@ export function RegistrationPanel({
               {!Number.isSafeInteger(total) ? (
                 <Notice>The party fee is too large to store precisely.</Notice>
               ) : null}
+              {asking && full ? (
+                <p>
+                  It’s full. If the organizer accepts, you’ll join the waitlist.
+                </p>
+              ) : null}
+              {asking ? (
+                <p id="ask-terms">
+                  The organizer accepts or declines each request.
+                </p>
+              ) : null}
               <button
                 className={buttonClass({ variant: "primary" })}
-                aria-describedby={
-                  payBy ? "join-terms join-pay-by" : "join-terms"
-                }
+                aria-describedby={[
+                  "join-terms",
+                  payBy ? "join-pay-by" : "",
+                  asking ? "ask-terms" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
                 disabled={!Number.isSafeInteger(total)}
               >
-                {mutation.busy ? "Checking your place…" : joinLabel}
+                {mutation.busy
+                  ? asking
+                    ? "Sending your request…"
+                    : "Checking your place…"
+                  : joinLabel}
               </button>
             </fieldset>
           </form>,

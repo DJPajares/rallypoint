@@ -1296,7 +1296,9 @@ export function SharedSessionPage() {
               <p>
                 {shared.state === "cancelled"
                   ? "Sign in to view your registration record."
-                  : "Sign in to join or check your place."}
+                  : d.joinMode === "request"
+                    ? "Sign in to ask to join or check your request."
+                    : "Sign in to join or check your place."}
               </p>
               <StickyActions>
                 <Link
@@ -1305,7 +1307,9 @@ export function SharedSessionPage() {
                 >
                   {shared.state === "cancelled"
                     ? "View your record"
-                    : "Sign in to join"}
+                    : d.joinMode === "request"
+                      ? "Sign in to ask to join"
+                      : "Sign in to join"}
                 </Link>
                 <ShareButton title={d.title} />
               </StickyActions>
