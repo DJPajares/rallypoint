@@ -206,41 +206,23 @@ function SessionLoader({ id }: { id: string }) {
     />
   ) : null;
 }
+/** A new session stands alone (P-35): no group to choose first. */
 export function NewSession() {
-  const { id } = useParams<{ id: string }>();
   const from = useSearchParams().get("from");
-  return from ? (
-    <RunAgain groupId={id!} from={from} />
-  ) : (
-    <BlankSession groupId={id!} />
-  );
-}
-function BlankSession({ groupId: id }: { groupId: string }) {
-  const group = useApi<{ group: GroupSummary }>(`/api/groups/${id}/setup`);
-  return group.loading ? (
-    <DetailPage back={`/groups/${id}`} backLabel="Group sessions">
-      <Pending>Opening your group…</Pending>
-    </DetailPage>
-  ) : group.error ? (
-    <DetailPage back={`/groups/${id}`} backLabel="Group sessions">
-      <Notice retry={group.retry}>{group.error}</Notice>
-    </DetailPage>
-  ) : (
-    <Editor groupId={id} />
-  );
+  return from ? <RunAgain from={from} /> : <Editor />;
 }
 /** Running a session again: next week's form, filled from the source (P-22). */
-function RunAgain({ groupId, from }: { groupId: string; from: string }) {
+function RunAgain({ from }: { from: string }) {
   const source = useApi<{ session: SessionRecord }>(`/api/sessions/${from}`);
   if (source.loading)
     return (
-      <DetailPage back={`/groups/${groupId}`} backLabel="Group sessions">
+      <DetailPage back="/sessions" backLabel="Sessions">
         <Pending>Copying the session…</Pending>
       </DetailPage>
     );
   if (source.error || !source.data)
     return (
-      <DetailPage back={`/groups/${groupId}`} backLabel="Group sessions">
+      <DetailPage back="/sessions" backLabel="Sessions">
         <Notice retry={source.retry}>
           {source.error ?? "That session couldn’t be opened."}
         </Notice>
@@ -251,18 +233,14 @@ function RunAgain({ groupId, from }: { groupId: string; from: string }) {
 function RunAgainEditor({ source }: { source: SessionRecord }) {
   // Worked out once when the form opens, so it never shifts while typing.
   const [prefill] = useState(() => nextWeekForm(source.details, Date.now()));
-  return (
-    <Editor groupId={source.groupId} prefill={prefill} copyFrom={source} />
-  );
+  return <Editor prefill={prefill} copyFrom={source} />;
 }
 function Editor({
   initial,
-  groupId,
   prefill,
   copyFrom,
 }: {
   initial?: SessionRecord;
-  groupId?: string;
   prefill?: SessionForm;
   copyFrom?: SessionRecord;
 }) {
@@ -386,7 +364,7 @@ function Editor({
       return;
     }
     const body = {
-      groupId: record?.groupId ?? groupId,
+      ...(!record && copyFrom ? { fromSession: copyFrom.id } : {}),
       intent,
       version: record?.version,
       details,
@@ -395,10 +373,7 @@ function Editor({
       setPendingEdit(body);
       return;
     }
-    mutation.run(
-      record ? `/api/sessions/${record.id}` : `/api/groups/${groupId}/sessions`,
-      body,
-    );
+    mutation.run(record ? `/api/sessions/${record.id}` : "/api/sessions", body);
   }
   function input(
     key: keyof SessionForm,
@@ -439,11 +414,7 @@ function Editor({
       ? `${origin}/s/${record.slug}`
       : null;
   return (
-    <DetailPage
-      back={`/groups/${record?.groupId ?? groupId}`}
-      backLabel="Group sessions"
-      className="form-page"
-    >
+    <DetailPage back="/sessions" backLabel="Sessions" className="form-page">
       <div className="page-head">
         <h1 ref={header} tabIndex={-1}>
           {terminal
@@ -507,10 +478,16 @@ function Editor({
         <div className="run-again">
           <Link
             className={buttonClass()}
-            href={`/groups/${record.groupId}/sessions/new?from=${record.id}`}
+            href={`/sessions/new?from=${record.id}`}
           >
             <RepeatIcon size={18} aria-hidden="true" />
             Run again next week
+          </Link>
+          <Link
+            className={buttonClass({ variant: "link" })}
+            href={`/sessions/${record.id}/cohosts`}
+          >
+            Co-hosts
           </Link>
         </div>
       ) : null}
@@ -893,9 +870,7 @@ function DeleteDraft({
 }) {
   const router = useRouter(),
     [open, setOpen] = useState(false);
-  const remove = useMutation<Result>((result) =>
-    router.push(`/groups/${result.groupId ?? record.groupId}`),
-  );
+  const remove = useMutation<Result>(() => router.push("/sessions"));
   const working = remove.busy || remove.uncertain;
   useEffect(() => {
     onPending(working);
@@ -1006,7 +981,7 @@ function SessionHead({
             size={16}
           />
         ) : null}
-        {shared.groupName}
+        Hosted by {shared.groupName}
         {shared.details.activity ? ` · ${shared.details.activity}` : ""}
       </span>
       <h1 ref={heading} tabIndex={-1}>

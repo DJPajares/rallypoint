@@ -620,7 +620,7 @@ function useHeadingFocus(loading: boolean, data: unknown, error: unknown) {
 export function GroupSetup() {
   const { id } = useParams<{ id: string }>();
   const result = useApi<{ group: GroupSummary }>(`/api/groups/${id}/setup`);
-  useCreateTarget(result.data ? `/groups/${id}/sessions/new` : null);
+  useCreateTarget(result.data ? "/sessions/new" : null);
   useHeadingFocus(result.loading, result.data, result.error);
   return (
     <DetailPage back="/workspace" backLabel="Your groups">
