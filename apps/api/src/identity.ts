@@ -112,6 +112,24 @@ export const requireUser = createMiddleware<ApiEnv>(async (c, next) => {
   await next();
 });
 
+/**
+ * For reads open to everyone that show more to some people (P-36 private
+ * sessions). A missing, invalid or unverified token reads as signed out, the
+ * least that can be shown, never as an error.
+ */
+export async function optionalUserId(c: Context<ApiEnv>) {
+  const token = c.req.header("Authorization")?.match(/^Bearer (\S+)$/)?.[1];
+  if (!token) return null;
+  const conn = connection(c.env);
+  const { data, error } = await client(conn.url, conn.key)
+    .auth.getUser(token)
+    .catch(() => ({ data: { user: null }, error: true }));
+  const user = data.user;
+  if (error || !user?.email || !user.email_confirmed_at || user.is_anonymous)
+    return null;
+  return user.id;
+}
+
 /** Display-only; editable metadata never grants authority. */
 export const displayName = (user: User, fallback: string) =>
   // Cut by code point so an emoji at the limit is never split in half.

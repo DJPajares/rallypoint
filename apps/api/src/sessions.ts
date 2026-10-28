@@ -7,9 +7,22 @@ import type { SessionDetails } from "@rallypoint/domain/session";
 import type { Database } from "@rallypoint/database";
 import { ApiError, json, parse, readBody, uuid, uuidParam } from "./http";
 import type { ApiEnv } from "./identity";
-import { connection, actorName, notAvailable, requireUser } from "./identity";
+import {
+  connection,
+  actorName,
+  notAvailable,
+  optionalUserId,
+  requireUser,
+} from "./identity";
 import { removeSessionImages } from "./payments";
 import { readActivities } from "./activities";
+
+// P-36: who can be added to a private session's list.
+const accessProblems: Record<string, string> = {
+  access_group_invalid: "You can't add that group.",
+  access_person_invalid: "You can't add that person.",
+  access_limit: "You can add up to 20 groups and 100 people.",
+};
 
 async function rpc(db: Database, name: string, args: Record<string, unknown>) {
   const { data, error } = await db.rpc(name, args);
@@ -55,6 +68,8 @@ async function rpc(db: Database, name: string, args: Record<string, unknown>) {
     };
     if (conflicts[error.message])
       throw new ApiError(409, error.message, conflicts[error.message]);
+    if (accessProblems[error.message])
+      throw new ApiError(422, error.message, accessProblems[error.message]);
     if (["23514", "22P02", "22007", "22008"].includes(error.code))
       throw new ApiError(
         422,
@@ -79,6 +94,13 @@ const version = z.object({ version: z.number().int().min(1) });
 const groupId = z.object({ groupId: z.string().regex(uuid) });
 const fromSessionBody = z.object({ fromSession: z.string().regex(uuid) });
 const groupVisibility = z.object({ visibility: z.enum(["public", "private"]) });
+const accessList = z.object({
+  access: z.object({
+    groups: z.array(z.string().regex(uuid)).max(100),
+    people: z.array(z.string().regex(uuid)).max(200),
+  }),
+});
+const accessQuery = z.object({ q: z.string().max(40).optional() });
 
 const limitCodes = ["activity_capacity_limit", "activity_duration_limit"];
 
@@ -135,6 +157,7 @@ async function newSession(
       p_host_name: (await actorName(c, "Organizer")).name,
       p_from_session: s.fromSession,
       p_origin_group: originGroup,
+      p_access: s.access,
     },
     "save_new_session",
   );
@@ -185,6 +208,11 @@ async function sessionSave(request: Request, editing: boolean) {
           "Choose a session to run again.",
         ).fromSession
       : null;
+  // The list only matters for a private session; null leaves it as it is.
+  const access =
+    b && typeof b === "object" && "access" in b && b.access != null
+      ? parse(accessList, b, "invalid_input", "Check who can see it.").access
+      : null;
   return {
     operationKey,
     intent: chosen,
@@ -192,16 +220,19 @@ async function sessionSave(request: Request, editing: boolean) {
     version: saved,
     group,
     fromSession,
+    access,
   };
 }
 
 const id = `:id{${uuidParam}}`;
 export const sessions = new Hono<ApiEnv>()
-  // Public projection of a published session; no identity involved.
+  // Public projection of a published session. Sign-in is optional: it only
+  // decides whether a private session shows more than that it's private.
   .get(`/shared/${id}`, async (c) => {
     connection(c.env);
     const session = await rpc(c.var.db, "read_shared_session", {
       p_slug: c.req.param("id"),
+      p_actor_id: await optionalUserId(c),
     });
     if (!session)
       throw new ApiError(404, "not_found", "That session is not available.");
@@ -338,6 +369,22 @@ export const sessions = new Hono<ApiEnv>()
     return json(result);
   })
   .all(`/sessions/${id}/delete`, requireUser, () => notAvailable())
+  // P-36: the groups and people an organizer can add to a private session.
+  .get("/sessions/access-options", requireUser, async (c) => {
+    const { q } = parse(
+      accessQuery,
+      { q: c.req.query("q") },
+      "invalid_input",
+      "Search with 40 characters or fewer.",
+    );
+    return json(
+      await rpc(c.var.db, "session_access_options", {
+        p_actor_id: c.var.user.id,
+        p_query: q ?? null,
+      }),
+    );
+  })
+  .all("/sessions/access-options", requireUser, () => notAvailable())
   .post("/sessions", requireUser, async (c) =>
     json(await newSession(c, await sessionSave(c.req.raw, false))),
   )
@@ -362,6 +409,7 @@ export const sessions = new Hono<ApiEnv>()
           p_intent: s.intent,
           p_version: s.version,
           p_details: s.details,
+          p_access: s.access,
         },
         "update_session",
       ),
