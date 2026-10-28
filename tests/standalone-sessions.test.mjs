@@ -201,4 +201,27 @@ test("standalone sessions", async (t) => {
       "0",
     );
   });
+  await t.test("hosting teams don't count as groups", async () => {
+    const groupsStat = async () =>
+      (await (await request("/api/me/badges", organizer)).json()).stats.groups;
+    const profileGroups = async () =>
+      (
+        await (
+          await request(
+            `/api/people/${(await (await request("/api/me", organizer)).json()).profileId}`,
+          )
+        ).json()
+      ).profile.stats.groups;
+    const before = [await groupsStat(), await profileGroups()];
+    assert.equal((await create()).status, 200);
+    assert.deepEqual([await groupsStat(), await profileGroups()], before);
+    assert.equal(
+      before[0],
+      Number(
+        sql(
+          `select count(*) from app.group_roles r join app.groups g on g.id=r.group_id where g.kind='community' and r.user_id=(select id from auth.users where email='organizer@rallypoint.test');`,
+        ),
+      ),
+    );
+  });
 });

@@ -512,7 +512,8 @@ test("ask to join contract", async (t) => {
       assert.equal(card.guestName, "Guest");
       assert.equal(card.played, 0);
       assert.equal(card.hosted, 0);
-      assert.equal(card.playedInGroup, 0);
+      assert.equal(card.playedWithYou, 0);
+      assert.equal("playedInGroup" in card, false);
       assert.equal(card.fitsNow, true);
       assert.equal(card.waitlistPosition, null);
       for (const key of ["email", "noShows", "fee", "payment", "userId"])
