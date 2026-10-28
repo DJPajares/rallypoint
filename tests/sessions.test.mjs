@@ -101,7 +101,7 @@ test("session publication and current-role boundary", async (t) => {
           b = await responses[1].json();
         groupId = a.group.id;
         assert.equal(groupId, b.group.id);
-        assert.equal(a.group.role, "owner");
+        assert.equal(a.group.role, "admin");
       },
     );
     let draft;
@@ -323,7 +323,7 @@ test("session publication and current-role boundary", async (t) => {
           409,
         );
         sql(
-          `delete from app.group_roles where group_id='${groupId}' and user_id='${organizer.id}';`,
+          `delete from app.group_roles where group_id=(select group_id from app.sessions where id='${event.id}') and user_id='${organizer.id}';`,
         );
         assert.equal(
           (await request(`/api/operations/${publish.operationKey}`, organizer))
@@ -340,7 +340,7 @@ test("session publication and current-role boundary", async (t) => {
   } finally {
     if (groupId)
       sql(
-        `with removed_changes as (delete from app.session_changes where session_id in(select id from app.sessions where group_id='${groupId}')), removed_receipts as (delete from app.operation_receipts where actor_id='${organizer.id}' and (resource_id='${groupId}' or resource_id in(select id from app.sessions where group_id='${groupId}'))), removed_sessions as (delete from app.sessions where group_id='${groupId}'), removed_roles as (delete from app.group_roles where group_id='${groupId}') delete from app.groups where id='${groupId}';`,
+        `with removed_changes as (delete from app.session_changes where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${groupId}' or id='${groupId}'))), removed_receipts as (delete from app.operation_receipts where actor_id='${organizer.id}' and (resource_id='${groupId}' or resource_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${groupId}' or id='${groupId}')))), removed_sessions as (delete from app.sessions where group_id in (select id from app.groups where origin_group_id='${groupId}' or id='${groupId}')), removed_roles as (delete from app.group_roles where group_id='${groupId}') delete from app.groups where id='${groupId}';`,
       );
   }
 });

@@ -337,14 +337,14 @@ test("non-manager and revoked co-host cannot edit or replay; committed replay af
     403,
   );
   f.sql(
-    `insert into app.group_roles values('${f.firstGroup}','${f.actors[1].id}','cohost');`,
+    `insert into app.group_roles(group_id,user_id,role) select id,'${f.actors[1].id}','cohost' from app.groups where origin_group_id='${f.firstGroup}' on conflict do nothing;`,
   );
   assert.equal(
     (await f.post(f.actors[1], `/api/sessions/${f.session.id}`, body)).status,
     200,
   );
   f.sql(
-    `delete from app.group_roles where group_id='${f.firstGroup}' and user_id='${f.actors[1].id}';`,
+    `delete from app.group_roles where group_id in (select id from app.groups where origin_group_id='${f.firstGroup}') and user_id='${f.actors[1].id}';`,
   );
   assert.equal(
     (await f.post(f.actors[1], `/api/sessions/${f.session.id}`, body)).status,

@@ -99,7 +99,7 @@ export function JoinRequests({
               Played {r.played} · Hosted {r.hosted}
             </p>
             <p className="join-request__facts">
-              Played in this group’s sessions: {r.playedInGroup}
+              Played in your sessions: {r.playedWithYou}
             </p>
             {r.seats === 2 ? <p>+1: {r.guestName || "Guest"}</p> : null}
             <p className="join-request__facts">Asked {asked(r.askedAt, now)}</p>

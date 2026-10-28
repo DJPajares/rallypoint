@@ -141,7 +141,7 @@ function Editor({
   reload: () => void;
   saved: (message: string) => void;
 }) {
-  const path = `/api/groups/${groupId}/cohosts`;
+  const path = `/api/sessions/${groupId}/cohosts`;
   const read = useApi<{ cohosts: GroupCohosts }>(path);
   const [remove, setRemove] = useState<CohostPerson | null>(null);
   const submitted = useRef<{ action: Action; profileId: string } | null>(null);
@@ -186,12 +186,12 @@ function Editor({
     </>
   );
   return (
-    <DetailPage back={`/groups/${groupId}`} backLabel="Back to group">
+    <DetailPage back={`/sessions/${groupId}/edit`} backLabel="Back to session">
       <div className="page-head">
         {state ? (
           <>
-            <span className="rp-badge">Owner</span>
-            <p>{state.group.name}</p>
+            <span className="rp-badge">Organizer</span>
+            <p>Hosted by {state.group.name}</p>
           </>
         ) : null}
         <h1 ref={heading} tabIndex={-1}>
@@ -209,9 +209,7 @@ function Editor({
               {message}
             </p>
           ) : null}
-          <p>
-            Co-hosts can manage this group's sessions, payments and check-in.
-          </p>
+          <p>Co-hosts can manage this session, its payments and check-in.</p>
           <section aria-labelledby="current-cohosts">
             <div className="section-head">
               <h2 id="current-cohosts">Current co-hosts</h2>
@@ -241,8 +239,8 @@ function Editor({
               />
             ) : (
               <p>
-                People appear here after registering for one of this group's
-                sessions.
+                People appear here after joining one of your sessions, or once
+                they're in a group you admin.
               </p>
             )}
           </section>
@@ -253,9 +251,8 @@ function Editor({
             title="Remove co-host?"
           >
             <p>
-              {remove?.name} will lose access to manage this group's sessions,
-              payments and check-in. Their session registrations stay as they
-              are.
+              {remove?.name} will lose access to manage this session, payments
+              and check-in. Their session registrations stay as they are.
             </p>
             <div className="fee-actions">
               <button

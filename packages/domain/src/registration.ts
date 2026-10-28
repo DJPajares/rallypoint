@@ -190,7 +190,8 @@ export interface ManagedJoinRequest {
   level: SkillLevel | null;
   played: number;
   hosted: number;
-  playedInGroup: number;
+  /** Sessions they were checked in at that the viewer runs or co-hosts. */
+  playedWithYou: number;
   seats: 1 | 2;
   guestName: string;
   askedAt: string;

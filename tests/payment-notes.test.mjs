@@ -407,7 +407,7 @@ test("saying you have sent payment, as a hint for organizers", async (t) => {
 
         // A co-host is an organizer for this; once revoked, they are not.
         sql(
-          `insert into app.group_roles(group_id,user_id,role) values('${firstGroup}','${actors[3].id}','cohost');`,
+          `insert into app.group_roles(group_id,user_id,role) select id,'${actors[3].id}','cohost' from app.groups where origin_group_id='${firstGroup}' on conflict do nothing;`,
         );
         try {
           const co = (await view(s, actors[3])).roster;
@@ -417,7 +417,7 @@ test("saying you have sent payment, as a hint for organizers", async (t) => {
           );
         } finally {
           sql(
-            `delete from app.group_roles where group_id='${firstGroup}' and user_id='${actors[3].id}';`,
+            `delete from app.group_roles where group_id in (select id from app.groups where origin_group_id='${firstGroup}') and user_id='${actors[3].id}';`,
           );
         }
         const revoked = await view(s, actors[3]);
@@ -639,7 +639,7 @@ test("saying you have sent payment, as a hint for organizers", async (t) => {
       );
     }
     sql(
-      `delete from app.group_roles where group_id='${firstGroup}' and role='cohost' and user_id in(${actors.map((a) => `'${a.id}'`).join(",") || "null"});`,
+      `delete from app.group_roles where group_id in (select id from app.groups where origin_group_id='${firstGroup}') and role='cohost' and user_id in(${actors.map((a) => `'${a.id}'`).join(",") || "null"});`,
     );
     for (const a of actors) await admin.auth.admin.deleteUser(a.id);
   }

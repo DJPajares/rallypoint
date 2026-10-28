@@ -515,7 +515,11 @@ test("signals leave one durable, private email job per recipient", async (t) => 
           `update app.email_jobs set state='sending' where session_id='${s.id}';`,
         );
         [e] = await emails();
-        assert.equal(e.status, "not_confirmed", "In flight and past expiry too");
+        assert.equal(
+          e.status,
+          "not_confirmed",
+          "In flight and past expiry too",
+        );
 
         // The cancellation tally counts such jobs the same way.
         const t2 = await event("5");
@@ -529,12 +533,15 @@ test("signals leave one durable, private email job per recipient", async (t) => 
           `update app.email_jobs set expires_at=now()-interval '1 minute',ambiguous=true where id='${order[0]}';
            update app.email_jobs set expires_at=now()-interval '1 minute' where id='${order[1]}';`,
         );
-        assert.deepEqual((await view(t2, organizer)).emailSummary.cancellation, {
-          queued: 1,
-          sent: 0,
-          notConfirmed: 1,
-          notSent: 1,
-        });
+        assert.deepEqual(
+          (await view(t2, organizer)).emailSummary.cancellation,
+          {
+            queued: 1,
+            sent: 0,
+            notConfirmed: 1,
+            notSent: 1,
+          },
+        );
 
         // 500 expired waiting rows leave room for a new join's job.
         const s3 = await event("2");
@@ -581,12 +588,15 @@ test("signals leave one durable, private email job per recipient", async (t) => 
           `update app.email_jobs set state='sending',reason='attempting',ambiguous=false,expires_at=now()-interval '1 minute' where id='${order[0]}';
            update app.email_jobs set expires_at=now()-interval '1 minute' where id='${order[1]}';`,
         );
-        assert.deepEqual((await view(t2, organizer)).emailSummary.cancellation, {
-          queued: 0,
-          sent: 0,
-          notConfirmed: 1,
-          notSent: 1,
-        });
+        assert.deepEqual(
+          (await view(t2, organizer)).emailSummary.cancellation,
+          {
+            queued: 0,
+            sent: 0,
+            notConfirmed: 1,
+            notSent: 1,
+          },
+        );
       },
     );
 
@@ -637,8 +647,14 @@ test("signals leave one durable, private email job per recipient", async (t) => 
           `delete from app.parties where session_id='${s.id}' and user_id<>'${actors[0].id}';`,
         );
         await saveInstructions(s, 1, "Synthetic bank 2");
-        assert.deepEqual(users(s, "instructions_changed").includes(actors[0].id), true);
-        assert.deepEqual((await view(s, organizer)).emailSummary.suppressed, []);
+        assert.deepEqual(
+          users(s, "instructions_changed").includes(actors[0].id),
+          true,
+        );
+        assert.deepEqual(
+          (await view(s, organizer)).emailSummary.suppressed,
+          [],
+        );
       },
     );
 

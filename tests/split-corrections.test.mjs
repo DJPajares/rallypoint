@@ -404,12 +404,12 @@ test("reviewed split corrections", async (t) => {
         );
       const co = f.actors[1];
       f.sql(
-        `insert into app.group_roles values('${f.firstGroup}','${co.id}','cohost')`,
+        `insert into app.group_roles(group_id,user_id,role) select id,'${co.id}','cohost' from app.groups where origin_group_id='${f.firstGroup}' on conflict do nothing`,
       );
       const key = crypto.randomUUID();
       assert.equal((await correct(f, p, 9000, { actor: co, key })).status, 200);
       f.sql(
-        `delete from app.group_roles where group_id='${f.firstGroup}' and user_id='${co.id}'`,
+        `delete from app.group_roles where group_id in (select id from app.groups where origin_group_id='${f.firstGroup}') and user_id='${co.id}'`,
       );
       assert.equal((await f.get(co, `/api/operations/${key}`)).status, 403);
       assert.equal((await correct(f, p, 9000, { actor: co, key })).status, 403);

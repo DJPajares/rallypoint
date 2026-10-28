@@ -22,7 +22,7 @@ async function ownGroup(t, f, owner, name) {
   const group = (await made.json()).group;
   // Independent of hook order: everything is found by this group's id.
   t.after(() => {
-    const sessions = `select id from app.sessions where group_id='${group.id}'`;
+    const sessions = `select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}')`;
     const parties = `select id from app.parties where session_id in(${sessions})`;
     const gone = (table, col, ids) =>
       `do $c$ begin if to_regclass('app.${table}') is not null then execute 'delete from app.${table} where ${col} in(${ids.replaceAll("'", "''")})'; end if; end $c$;`;
@@ -54,7 +54,7 @@ async function ownGroup(t, f, owner, name) {
           .join("") +
         `update app.sessions set current_split_run_id=null where group_id='${group.id}';` +
         gone("split_runs", "session_id", sessions) +
-        `delete from app.parties where session_id in(${sessions});delete from app.sessions where group_id='${group.id}';delete from app.group_roles where group_id='${group.id}';delete from app.groups where id='${group.id}';commit;`,
+        `delete from app.parties where session_id in(${sessions});delete from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}');delete from app.group_roles where group_id='${group.id}';delete from app.groups where id='${group.id}';commit;`,
     );
   });
   const now = Date.now();
@@ -101,7 +101,7 @@ const stored = (f, id) =>
     `select name||'|'||coalesce(archived_at::text,'') from app.groups where id='${id}';`,
   );
 
-test("the owner renames their group and the new name shows on its session page", async (t) => {
+test("the owner renames their group; sessions keep showing who hosts them", async (t) => {
   const f = await fixture(t);
   const [owner] = f.actors;
   const g = await ownGroup(t, f, owner);
@@ -111,14 +111,16 @@ test("the owner renames their group and the new name shows on its session page",
   const r = await rename(f, owner, g.group.id, `  ${name}  `);
   assert.equal(r.status, 200);
   const body = await r.json();
-  assert.deepEqual(body.group, { id: g.group.id, name, role: "owner" });
+  assert.equal(body.group.id, g.group.id);
+  assert.equal(body.group.name, name);
 
   const listed = (await (await f.get(owner, "/api/workspace")).json()).groups;
   assert.equal(listed.find((x) => x.id === g.group.id).name, name);
+  // Sessions stand alone (P-35): a group's name isn't what a session shows.
   const shared = await (
     await f.get(null, `/api/shared/${session.slug}`)
   ).json();
-  assert.equal(shared.session.groupName, name);
+  assert.notEqual(shared.session.groupName, name);
 });
 
 test("a blank or 101-character name is refused and nothing changes", async (t) => {
@@ -154,20 +156,19 @@ test("only the owner can rename or remove", async (t) => {
   );
 });
 
-test("a group with an upcoming session can't be removed, even with no bookings", async (t) => {
+test("removing a group leaves its sessions running", async (t) => {
   const f = await fixture(t);
   const [owner] = f.actors;
   const g = await ownGroup(t, f, owner);
   const session = await g.save("publish");
-
-  const refused = await archive(f, owner, g.group.id);
-  assert.equal(refused.status, 409);
-  assert.equal((await refused.json()).error.message, KEEP);
-  assert.equal(stored(f, g.group.id), `${g.groupName}|`);
-
-  assert.equal((await cancel(f, owner, session.id)).status, 200);
+  // Sessions stand alone (P-35): an upcoming session no longer blocks removal.
   assert.equal((await archive(f, owner, g.group.id)).status, 200);
   assert.notEqual(stored(f, g.group.id), `${g.groupName}|`);
+  assert.equal(
+    f.sql(`select state from app.sessions where id='${session.id}';`),
+    "published",
+  );
+  assert.equal((await f.get(owner, `/api/sessions/${session.id}`)).status, 200);
 });
 
 test("a removed group disappears but keeps its history", async (t) => {
@@ -224,22 +225,13 @@ test("a removed group disappears but keeps its history", async (t) => {
     "1",
     "roles are kept too",
   );
-  assert.ok(
-    !(await mine()).includes(draft.slug),
-    "the draft is gone from Sessions",
-  );
+  // The draft belongs to its organizer, not the group (P-35).
+  assert.ok((await mine()).includes(draft.slug), "the draft stays in Sessions");
   assert.equal(
     f.sql(`select count(*) from app.sessions where id='${draft.id}';`),
     "1",
     "the draft row itself is not deleted",
   );
-  const publish = await g.saveAs(owner, "publish");
-  assert.equal(publish.status, 403, "no new sessions");
-  assert.equal(
-    (await publish.json()).error.message,
-    "This group was removed, so it can't take new sessions.",
-  );
-  assert.equal((await g.saveAs(owner, "draft")).status, 403, "no new drafts");
 });
 
 test("retrying a rename or removal returns the same result", async (t) => {
@@ -311,15 +303,11 @@ test("after removing a group, the owner can still settle its past sessions", asy
   assert.equal((await f.get(owner, `/api/sessions/${session.id}`)).status, 200);
 });
 
-test("a session in progress blocks removal", async (t) => {
+test("a session in progress doesn't block removal", async (t) => {
   const f = await fixture(t);
   const [owner] = f.actors;
   const g = await ownGroup(t, f, owner);
   const session = await g.save("publish");
   moveTimes(f, session.id, 30, 30);
-  const refused = await archive(f, owner, g.group.id);
-  assert.equal(refused.status, 409);
-  assert.equal((await refused.json()).error.message, KEEP);
-  moveTimes(f, session.id, 120, -30);
   assert.equal((await archive(f, owner, g.group.id)).status, 200);
 });

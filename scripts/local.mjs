@@ -106,7 +106,7 @@ async function seed() {
     "db",
     "query",
     "--local",
-    `insert into app.group_roles(group_id,user_id,role) values ('${firstGroup}','${users.organizer}','organizer'),('${firstGroup}','${users.member}','member'),('${secondGroup}','${users.outsider}','organizer') on conflict(group_id,user_id) do update set role=excluded.role;`,
+    `insert into app.group_roles(group_id,user_id,role) values ('${firstGroup}','${users.organizer}','owner'),('${firstGroup}','${users.member}','member'),('${secondGroup}','${users.outsider}','owner') on conflict(group_id,user_id) do update set role=excluded.role;`,
   );
   console.log(
     "Four synthetic Auth identities and two isolated group fixtures are ready.",

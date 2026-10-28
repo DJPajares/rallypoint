@@ -135,7 +135,7 @@ test("local identity and group authorization boundary", async (t) => {
         );
       } finally {
         sql(
-          `insert into app.group_roles values('${firstGroup}','${organizer.id}','organizer');`,
+          `insert into app.group_roles values('${firstGroup}','${organizer.id}','owner');`,
         );
       }
     },

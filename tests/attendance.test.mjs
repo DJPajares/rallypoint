@@ -179,7 +179,7 @@ test("organizer attendance per seat", async (t) => {
           ).error,
         );
         sql(
-          `insert into app.group_roles(group_id,user_id,role) values('${firstGroup}','${actors[2].id}','cohost');`,
+          `insert into app.group_roles(group_id,user_id,role) select id,'${actors[2].id}','cohost' from app.groups where origin_group_id='${firstGroup}' on conflict do nothing;`,
         );
         try {
           assert.equal(
@@ -188,7 +188,7 @@ test("organizer attendance per seat", async (t) => {
           );
         } finally {
           sql(
-            `delete from app.group_roles where group_id='${firstGroup}' and user_id='${actors[2].id}';`,
+            `delete from app.group_roles where group_id in (select id from app.groups where origin_group_id='${firstGroup}') and user_id='${actors[2].id}';`,
           );
         }
         assert.equal(

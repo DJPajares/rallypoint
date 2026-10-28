@@ -18,10 +18,9 @@ import { CoinsIcon } from "@phosphor-icons/react/dist/csr/Coins";
 import { CopyIcon } from "@phosphor-icons/react/dist/csr/Copy";
 import { DoorOpenIcon } from "@phosphor-icons/react/dist/csr/DoorOpen";
 import { MapPinIcon } from "@phosphor-icons/react/dist/csr/MapPin";
-import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { RepeatIcon } from "@phosphor-icons/react/dist/csr/Repeat";
 import { UserPlusIcon } from "@phosphor-icons/react/dist/csr/UserPlus";
-import { fromInstant, fromLocal, nowLocal } from "./dates";
+import { fromInstant, nowLocal } from "./dates";
 import { useActivities } from "./use-activities";
 import { ShareButton } from "./share-button";
 import {
@@ -40,6 +39,7 @@ import {
   Ticket,
 } from "@rallypoint/ui";
 import { DetailPage, StickyActions } from "./ui";
+import { visibilityHelp, visibilityOptions } from "./group-visibility";
 import {
   blankSession,
   currencies,
@@ -84,7 +84,8 @@ type Result = {
 };
 export function CreateGroup() {
   const router = useRouter(),
-    [name, setName] = useState("");
+    [name, setName] = useState(""),
+    [visibility, setVisibility] = useState("public");
   const mutation = useMutation<Result>((result) =>
     router.push(`/groups/${result.group?.id ?? result.groupId}`),
   );
@@ -97,7 +98,7 @@ export function CreateGroup() {
         className="rp-card"
         onSubmit={(e) => {
           e.preventDefault();
-          mutation.run("/api/groups", { name });
+          mutation.run("/api/groups", { name, visibility });
         }}
       >
         <fieldset disabled={mutation.busy || mutation.uncertain}>
@@ -111,6 +112,19 @@ export function CreateGroup() {
               autoComplete="organization"
             />
           </Field>
+          <Field
+            id="group-visibility"
+            label="Who can find it"
+            help={visibilityHelp(visibility)}
+          >
+            <SelectField
+              id="group-visibility"
+              aria-describedby="group-visibility-help"
+              value={visibility}
+              onChange={setVisibility}
+              options={visibilityOptions}
+            />
+          </Field>
           <StickyActions>
             <button className={buttonClass({ variant: "primary" })}>
               {mutation.busy ? "Creating…" : "Create group"}
@@ -121,64 +135,6 @@ export function CreateGroup() {
         {mutation.recovery}
       </form>
     </DetailPage>
-  );
-}
-export function GroupSessions({ group }: { group: GroupSummary }) {
-  const result = useApi<{ sessions: SessionRecord[] }>(
-    `/api/groups/${group.id}/sessions`,
-  );
-  return (
-    <section className="session-list-section">
-      <div className="section-head">
-        <h2>Sessions</h2>
-        <StickyActions>
-          <Link
-            className={buttonClass({ variant: "primary" })}
-            href={`/groups/${group.id}/sessions/new`}
-          >
-            <PlusIcon size={18} weight="bold" aria-hidden="true" />
-            Create session
-          </Link>
-        </StickyActions>
-      </div>
-      {result.loading ? (
-        <Pending>Finding your sessions…</Pending>
-      ) : result.error ? (
-        <Notice retry={result.retry}>{result.error}</Notice>
-      ) : result.data?.sessions.length ? (
-        <div className="session-list">
-          {result.data.sessions.map((s) => (
-            <article key={s.id} className="session-row">
-              <Ticket date={fromLocal(s.details.startLocal)}>
-                <span className="rp-badge">
-                  {
-                    {
-                      draft: "Draft",
-                      published: "Live",
-                      cancelled: "Cancelled",
-                      completed: "Completed",
-                    }[s.state]
-                  }
-                </span>
-                <h3>{s.details.title || "Untitled session"}</h3>
-                <p className="rp-ticket__meta rp-nums">
-                  {fromLocal(s.details.startLocal)?.time ??
-                    "Date to be decided"}
-                </p>
-                <Link className={buttonClass()} href={`/sessions/${s.id}/edit`}>
-                  {s.state === "draft" ? "Continue draft" : "Manage session"}
-                </Link>
-              </Ticket>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <div className="rp-card empty-inline">
-          <h3>Your next get-together starts here.</h3>
-          <p>Save a draft, then publish when the details are ready.</p>
-        </div>
-      )}
-    </section>
   );
 }
 export function SessionEditor() {
@@ -206,41 +162,23 @@ function SessionLoader({ id }: { id: string }) {
     />
   ) : null;
 }
+/** A new session stands alone (P-35): no group to choose first. */
 export function NewSession() {
-  const { id } = useParams<{ id: string }>();
   const from = useSearchParams().get("from");
-  return from ? (
-    <RunAgain groupId={id!} from={from} />
-  ) : (
-    <BlankSession groupId={id!} />
-  );
-}
-function BlankSession({ groupId: id }: { groupId: string }) {
-  const group = useApi<{ group: GroupSummary }>(`/api/groups/${id}/setup`);
-  return group.loading ? (
-    <DetailPage back={`/groups/${id}`} backLabel="Group sessions">
-      <Pending>Opening your group…</Pending>
-    </DetailPage>
-  ) : group.error ? (
-    <DetailPage back={`/groups/${id}`} backLabel="Group sessions">
-      <Notice retry={group.retry}>{group.error}</Notice>
-    </DetailPage>
-  ) : (
-    <Editor groupId={id} />
-  );
+  return from ? <RunAgain from={from} /> : <Editor />;
 }
 /** Running a session again: next week's form, filled from the source (P-22). */
-function RunAgain({ groupId, from }: { groupId: string; from: string }) {
+function RunAgain({ from }: { from: string }) {
   const source = useApi<{ session: SessionRecord }>(`/api/sessions/${from}`);
   if (source.loading)
     return (
-      <DetailPage back={`/groups/${groupId}`} backLabel="Group sessions">
+      <DetailPage back="/sessions" backLabel="Sessions">
         <Pending>Copying the session…</Pending>
       </DetailPage>
     );
   if (source.error || !source.data)
     return (
-      <DetailPage back={`/groups/${groupId}`} backLabel="Group sessions">
+      <DetailPage back="/sessions" backLabel="Sessions">
         <Notice retry={source.retry}>
           {source.error ?? "That session couldn’t be opened."}
         </Notice>
@@ -251,18 +189,14 @@ function RunAgain({ groupId, from }: { groupId: string; from: string }) {
 function RunAgainEditor({ source }: { source: SessionRecord }) {
   // Worked out once when the form opens, so it never shifts while typing.
   const [prefill] = useState(() => nextWeekForm(source.details, Date.now()));
-  return (
-    <Editor groupId={source.groupId} prefill={prefill} copyFrom={source} />
-  );
+  return <Editor prefill={prefill} copyFrom={source} />;
 }
 function Editor({
   initial,
-  groupId,
   prefill,
   copyFrom,
 }: {
   initial?: SessionRecord;
-  groupId?: string;
   prefill?: SessionForm;
   copyFrom?: SessionRecord;
 }) {
@@ -386,7 +320,7 @@ function Editor({
       return;
     }
     const body = {
-      groupId: record?.groupId ?? groupId,
+      ...(!record && copyFrom ? { fromSession: copyFrom.id } : {}),
       intent,
       version: record?.version,
       details,
@@ -395,10 +329,7 @@ function Editor({
       setPendingEdit(body);
       return;
     }
-    mutation.run(
-      record ? `/api/sessions/${record.id}` : `/api/groups/${groupId}/sessions`,
-      body,
-    );
+    mutation.run(record ? `/api/sessions/${record.id}` : "/api/sessions", body);
   }
   function input(
     key: keyof SessionForm,
@@ -439,11 +370,7 @@ function Editor({
       ? `${origin}/s/${record.slug}`
       : null;
   return (
-    <DetailPage
-      back={`/groups/${record?.groupId ?? groupId}`}
-      backLabel="Group sessions"
-      className="form-page"
-    >
+    <DetailPage back="/sessions" backLabel="Sessions" className="form-page">
       <div className="page-head">
         <h1 ref={header} tabIndex={-1}>
           {terminal
@@ -507,10 +434,16 @@ function Editor({
         <div className="run-again">
           <Link
             className={buttonClass()}
-            href={`/groups/${record.groupId}/sessions/new?from=${record.id}`}
+            href={`/sessions/new?from=${record.id}`}
           >
             <RepeatIcon size={18} aria-hidden="true" />
             Run again next week
+          </Link>
+          <Link
+            className={buttonClass({ variant: "link" })}
+            href={`/sessions/${record.id}/cohosts`}
+          >
+            Co-hosts
           </Link>
         </div>
       ) : null}
@@ -893,9 +826,7 @@ function DeleteDraft({
 }) {
   const router = useRouter(),
     [open, setOpen] = useState(false);
-  const remove = useMutation<Result>((result) =>
-    router.push(`/groups/${result.groupId ?? record.groupId}`),
-  );
+  const remove = useMutation<Result>(() => router.push("/sessions"));
   const working = remove.busy || remove.uncertain;
   useEffect(() => {
     onPending(working);
@@ -1006,7 +937,7 @@ function SessionHead({
             size={16}
           />
         ) : null}
-        {shared.groupName}
+        Hosted by {shared.groupName}
         {shared.details.activity ? ` · ${shared.details.activity}` : ""}
       </span>
       <h1 ref={heading} tabIndex={-1}>

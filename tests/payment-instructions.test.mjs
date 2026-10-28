@@ -168,7 +168,7 @@ test("only current organizers write and only booked people read", async (t) => {
   );
   assert.equal((await f.get(confirmed, path(f))).status, 403);
   f.sql(
-    `insert into app.group_roles(group_id,user_id,role) values('${f.firstGroup}','${other.id}','cohost');`,
+    `insert into app.group_roles(group_id,user_id,role) select id,'${other.id}','cohost' from app.groups where origin_group_id='${f.firstGroup}' on conflict do nothing;`,
   );
   await ok(await save(f, other, { revision: 0, action: "save", text: secret }));
   await ok(await upload(f, other, png, "image/png", 1));

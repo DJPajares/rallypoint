@@ -283,12 +283,12 @@ test("organizer split finalization", async (t) => {
         ).error,
       );
       f.sql(
-        `insert into app.group_roles(group_id,user_id,role) values('${f.firstGroup}','${f.actors[1].id}','cohost');`,
+        `insert into app.group_roles(group_id,user_id,role) select id,'${f.actors[1].id}','cohost' from app.groups where origin_group_id='${f.firstGroup}' on conflict do nothing;`,
       );
       const key = crypto.randomUUID();
       assert.equal((await finalize(f, p, key, f.actors[1])).status, 200);
       f.sql(
-        `delete from app.group_roles where group_id='${f.firstGroup}' and user_id='${f.actors[1].id}';`,
+        `delete from app.group_roles where group_id in (select id from app.groups where origin_group_id='${f.firstGroup}') and user_id='${f.actors[1].id}';`,
       );
       assert.equal(
         (await f.get(f.actors[1], `/api/operations/${key}`)).status,

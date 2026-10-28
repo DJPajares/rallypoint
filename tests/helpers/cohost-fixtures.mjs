@@ -18,8 +18,25 @@ export const request = (path, actor, body) =>
   });
 
 export async function cohostFixture(t, { join = true } = {}) {
+  // A fresh organizer per fixture (P-35): co-host candidates include everyone
+  // who joined any session the organizer runs, so the shared organizer
+  // fixture's history would crowd the list.
+  const ownerEmail = `cohost-owner-${crypto.randomUUID().slice(0, 8)}@rallypoint.test`;
+  const ownerAccount = await createClient(
+    env.SUPABASE_URL,
+    env.SUPABASE_SECRET_KEY,
+    {
+      auth: { persistSession: false, autoRefreshToken: false },
+    },
+  ).auth.admin.createUser({
+    email: ownerEmail,
+    password: fixturePassword,
+    email_confirm: true,
+    user_metadata: { full_name: "Synthetic co-host organizer" },
+  });
+  assert.ok(!ownerAccount.error && ownerAccount.data.user);
   const actors = await Promise.all(
-    ["organizer", "member", "newcomer", "outsider"].map(async (name) => {
+    [ownerEmail, "member", "newcomer", "outsider"].map(async (name) => {
       const client = createClient(
         env.SUPABASE_URL,
         env.SUPABASE_PUBLISHABLE_KEY,
@@ -28,7 +45,7 @@ export async function cohostFixture(t, { join = true } = {}) {
         },
       );
       const { data, error } = await client.auth.signInWithPassword({
-        email: `${name}@rallypoint.test`,
+        email: name.includes("@") ? name : `${name}@rallypoint.test`,
         password: fixturePassword,
       });
       assert.ok(!error && data.session, "Synthetic login must succeed");
@@ -49,22 +66,22 @@ export async function cohostFixture(t, { join = true } = {}) {
   });
   assert.equal(created.status, 200);
   const group = (await created.json()).group;
-  const extraUsers = [];
+  const extraUsers = [ownerAccount.data.user.id];
   t.after(() => {
     // Only this test's group and its dependent records; no shared fixture roles.
     sql(`begin;
       delete from app.operation_receipts where resource_id='${group.id}' or payload->>'groupId'='${group.id}' or resource_id in
-        (select id from app.sessions where group_id='${group.id}') or resource_id in
-        (select id from app.parties where session_id in(select id from app.sessions where group_id='${group.id}'));
-      delete from app.email_jobs where session_id in(select id from app.sessions where group_id='${group.id}');
-      delete from app.attendance_changes where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id='${group.id}'));
-      delete from app.seat_attendance where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id='${group.id}'));
-      delete from app.fee_changes where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id='${group.id}'));
-      delete from app.fee_obligations where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id='${group.id}'));
-      delete from app.registration_events where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id='${group.id}'));
-      delete from app.parties where session_id in(select id from app.sessions where group_id='${group.id}');
-      delete from app.session_changes where session_id in(select id from app.sessions where group_id='${group.id}');
-      delete from app.sessions where group_id='${group.id}';
+        (select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}')) or resource_id in
+        (select id from app.parties where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}')));
+      delete from app.email_jobs where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}'));
+      delete from app.attendance_changes where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}')));
+      delete from app.seat_attendance where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}')));
+      delete from app.fee_changes where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}')));
+      delete from app.fee_obligations where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}')));
+      delete from app.registration_events where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}')));
+      delete from app.parties where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}'));
+      delete from app.session_changes where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}'));
+      delete from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}');
       delete from app.groups where id='${group.id}';
       ${extraUsers.map((id) => `delete from auth.users where id='${id}';`).join("\n")}
       commit;`);
@@ -113,14 +130,20 @@ export async function cohostFixture(t, { join = true } = {}) {
       assert.equal(joined.status, 200);
     }
   }
-  const path = `/api/groups/${group.id}/cohosts`;
+  // Co-hosts belong to each session (P-35): `group` is the session's own
+  // hosting team, and `community` the group its people belong to.
+  const team = sql(
+    `select row_to_json(t) from (select g.id, g.name from app.groups g join app.sessions s on s.group_id=g.id where s.id='${session.id}') t;`,
+  );
+  const path = `/api/sessions/${session.id}/cohosts`;
   return {
     actors,
     owner,
     member,
     newcomer,
     outsider,
-    group,
+    group: JSON.parse(team),
+    community: group,
     session,
     path,
     sql,

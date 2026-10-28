@@ -1,14 +1,6 @@
-import { Suspense } from "react";
-import { Pending } from "@rallypoint/ui";
-import { CohostManagement } from "@/cohost-management";
-import { RequireAuth } from "@/screens";
+import { redirect } from "next/navigation";
 
+// Co-hosts belong to each session now (P-35); a group has members instead.
 export default function Page() {
-  return (
-    <Suspense fallback={<Pending />}>
-      <RequireAuth>
-        <CohostManagement />
-      </RequireAuth>
-    </Suspense>
-  );
+  redirect("/workspace");
 }
