@@ -56,7 +56,7 @@ function Redirect({ href }: { href: string; replace?: boolean }) {
   return <Pending>Opening your page…</Pending>;
 }
 const roleName = (role: GroupSummary["role"]) =>
-  role === "cohost" ? "Co-host" : role[0].toUpperCase() + role.slice(1);
+  role === "admin" ? "Admin" : "Member";
 /** The public front door. Signed-in visitors continue to their own Home. */
 export function Landing() {
   const { session } = useAuth();
@@ -640,7 +640,7 @@ export function GroupSetup() {
               </span>
               <h1>{result.data.group.name}</h1>
             </div>
-            {result.data.group.role === "owner" ? (
+            {result.data.group.role === "admin" ? (
               <div className="fee-actions">
                 <Link className={buttonClass()} href={`/groups/${id}/edit`}>
                   Edit group
@@ -676,10 +676,10 @@ export function EditGroup() {
           <h1>Group unavailable</h1>
           <Notice retry={result.retry}>{result.error}</Notice>
         </>
-      ) : group && group.role !== "owner" ? (
+      ) : group && group.role !== "admin" ? (
         <>
           <h1>Group unavailable</h1>
-          <Notice>Only the group’s owner can edit it.</Notice>
+          <Notice>Only the group’s admin can edit it.</Notice>
         </>
       ) : group ? (
         <EditGroupForm group={group} />

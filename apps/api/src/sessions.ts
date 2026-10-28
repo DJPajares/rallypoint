@@ -78,6 +78,7 @@ const intent = z.object({ intent: z.enum(["draft", "publish", "update"]) });
 const version = z.object({ version: z.number().int().min(1) });
 const groupId = z.object({ groupId: z.string().regex(uuid) });
 const fromSessionBody = z.object({ fromSession: z.string().regex(uuid) });
+const groupVisibility = z.object({ visibility: z.enum(["public", "private"]) });
 
 const limitCodes = ["activity_capacity_limit", "activity_duration_limit"];
 
@@ -224,11 +225,22 @@ export const sessions = new Hono<ApiEnv>()
       "invalid_input",
       "Use a group name of 1 to 100 characters.",
     );
+    // New groups are Public unless the admin chooses Private (P-35).
+    const visibility =
+      b && typeof b === "object" && "visibility" in b
+        ? parse(
+            groupVisibility,
+            b,
+            "invalid_input",
+            "Choose Public or Private.",
+          ).visibility
+        : "public";
     return json(
       await rpc(c.var.db, "create_group", {
         p_actor_id: c.var.user.id,
         p_key: operationKey,
         p_name: name,
+        p_visibility: visibility,
       }),
     );
   })
