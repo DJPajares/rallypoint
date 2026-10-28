@@ -16,6 +16,7 @@ import { SplitControls } from "./split-controls";
 import { HowToPay } from "./payment-instructions";
 import { GameDay } from "./game-day";
 import { JoinRequests } from "./join-requests";
+import { InvitePanel } from "./invites";
 import {
   buttonClass,
   CheckField,
@@ -188,6 +189,8 @@ export function RegistrationPanel({
     onChanged(value.registration);
     onChange();
   });
+  // Declining an invite (P-38) changes nothing but the invite itself.
+  const declineInvite = useMutation<unknown>(() => refresh());
   const own = view?.own;
   const statusHeading = useRef<HTMLHeadingElement>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -233,7 +236,8 @@ export function RegistrationPanel({
   }
   // Ask to join (P-34): people who can't join directly ask instead, and see
   // their request until an organizer answers it.
-  const asking = d.joinMode === "request" && !view.canManage;
+  // An invite (P-38) counts as the organizer's approval: join directly.
+  const asking = d.joinMode === "request" && !view.canManage && !view.invite;
   // A request still waiting shows even after the session switches to join
   // directly, so it can be cancelled; how a request ended shows only while
   // the session still takes requests.
@@ -811,6 +815,9 @@ export function RegistrationPanel({
           >
             <fieldset disabled={mutation.busy || mutation.uncertain}>
               <legend>{asking ? "Ask to join" : "Join this session"}</legend>
+              {view.invite ? (
+                <p>{view.invite.inviterName} invited you.</p>
+              ) : null}
               {d.guests && Number(d.capacity) >= 2 ? (
                 <>
                   <CheckField
@@ -929,6 +936,22 @@ export function RegistrationPanel({
           </StatusBanner>
         </div>
       ) : null}
+      {view.invite && canJoin ? (
+        <>
+          <button
+            type="button"
+            className={buttonClass({ variant: "link" })}
+            disabled={declineInvite.busy || declineInvite.uncertain}
+            onClick={() =>
+              declineInvite.run(`/api/invites/${view.invite?.id}/decline`, {})
+            }
+          >
+            Decline invite
+          </button>
+          {declineInvite.error ? <Notice>{declineInvite.error}</Notice> : null}
+          {declineInvite.recovery}
+        </>
+      ) : null}
       {!hasAction && mutation.error ? <Notice>{mutation.error}</Notice> : null}
       {!hasAction ? mutation.recovery : null}
       <button
@@ -970,6 +993,14 @@ export function RegistrationPanel({
             onChanged(value);
             onChange();
           }}
+        />
+      ) : null}
+      {view.canManage && view.sessionId && event.state === "published" ? (
+        <InvitePanel
+          kind="session"
+          target={view.sessionId}
+          invites={view.invites ?? []}
+          onChanged={refresh}
         />
       ) : null}
       {view.canManage && event.state !== "cancelled" ? (

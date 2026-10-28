@@ -221,6 +221,8 @@ export interface RegistrationView {
   invite?: { id: string; inviterName: string } | null;
   /** Organizers/co-hosts only: everyone invited and how it went. */
   invites?: SentInvite[];
+  /** Organizers/co-hosts only: the session's id, for inviting people. */
+  sessionId?: string;
   roster: Array<{
     primaryName: string;
     /** The public profile to open from this name; null until they have one. */
