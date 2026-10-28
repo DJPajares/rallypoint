@@ -1141,7 +1141,10 @@ test("dispatch leases, rechecks and accounts for every email attempt", async (t)
         assert.equal(reminder.state, "queued");
         assert.equal(reminder.reason, "daily_limit");
         const [join1] = forSession(s, "joined_confirmed");
-        assert.deepEqual([join1.state, join1.reason], ["queued", "daily_limit"]);
+        assert.deepEqual(
+          [join1.state, join1.reason],
+          ["queued", "daily_limit"],
+        );
         assert.equal(
           sql(
             `select next_attempt_at::text||'|'||expires_at::text from app.email_jobs where session_id='${s.id}' and kind='joined_confirmed';`,
@@ -1150,11 +1153,17 @@ test("dispatch leases, rechecks and accounts for every email attempt", async (t)
           "Neither the next attempt nor the expiry moved",
         );
         const viewed = (
-          await (await request(`/api/registrations/${s.slug}`, organizer)).json()
+          await (
+            await request(`/api/registrations/${s.slug}`, organizer)
+          ).json()
         ).registration.roster.find((r) => r.id === A.id).emails;
         for (const kind of ["joined_confirmed", "reminder"]) {
           const e = viewed.find((x) => x.kind === kind);
-          assert.deepEqual([e.status, e.reason], ["queued", "daily_limit"], kind);
+          assert.deepEqual(
+            [e.status, e.reason],
+            ["queued", "daily_limit"],
+            kind,
+          );
         }
         shift(s.id, "startsAt", "'72 hours'");
         resetSender();

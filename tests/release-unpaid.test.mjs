@@ -290,13 +290,13 @@ test("giving unpaid spots to the waitlist after the cutoff", async (t) => {
         assert.equal(releasedIn(s), 0);
         // A co-host may release; once the role is revoked the next request is refused.
         sql(
-          `insert into app.group_roles(group_id,user_id,role) values('${firstGroup}','${actors[2].id}','cohost');`,
+          `insert into app.group_roles(group_id,user_id,role) select id,'${actors[2].id}','cohost' from app.groups where origin_group_id='${firstGroup}' on conflict do nothing;`,
         );
         try {
           assert.equal((await release(s, actors[2], a.id, 1)).status, 200);
         } finally {
           sql(
-            `delete from app.group_roles where group_id='${firstGroup}' and user_id='${actors[2].id}';`,
+            `delete from app.group_roles where group_id in (select id from app.groups where origin_group_id='${firstGroup}') and user_id='${actors[2].id}';`,
           );
         }
         assert.equal((await release(s, actors[2], b.id, 1)).status, 403);
@@ -854,7 +854,7 @@ test("giving unpaid spots to the waitlist after the cutoff", async (t) => {
       );
     }
     sql(
-      `delete from app.group_roles where group_id='${firstGroup}' and role='cohost' and user_id in(${actors.map((a) => `'${a.id}'`).join(",") || "null"});`,
+      `delete from app.group_roles where group_id in (select id from app.groups where origin_group_id='${firstGroup}') and role='cohost' and user_id in(${actors.map((a) => `'${a.id}'`).join(",") || "null"});`,
     );
     for (const a of actors) await admin.auth.admin.deleteUser(a.id);
   }

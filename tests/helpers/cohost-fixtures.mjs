@@ -54,17 +54,17 @@ export async function cohostFixture(t, { join = true } = {}) {
     // Only this test's group and its dependent records; no shared fixture roles.
     sql(`begin;
       delete from app.operation_receipts where resource_id='${group.id}' or payload->>'groupId'='${group.id}' or resource_id in
-        (select id from app.sessions where group_id='${group.id}') or resource_id in
-        (select id from app.parties where session_id in(select id from app.sessions where group_id='${group.id}'));
-      delete from app.email_jobs where session_id in(select id from app.sessions where group_id='${group.id}');
-      delete from app.attendance_changes where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id='${group.id}'));
-      delete from app.seat_attendance where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id='${group.id}'));
-      delete from app.fee_changes where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id='${group.id}'));
-      delete from app.fee_obligations where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id='${group.id}'));
-      delete from app.registration_events where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id='${group.id}'));
-      delete from app.parties where session_id in(select id from app.sessions where group_id='${group.id}');
-      delete from app.session_changes where session_id in(select id from app.sessions where group_id='${group.id}');
-      delete from app.sessions where group_id='${group.id}';
+        (select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}')) or resource_id in
+        (select id from app.parties where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}')));
+      delete from app.email_jobs where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}'));
+      delete from app.attendance_changes where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}')));
+      delete from app.seat_attendance where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}')));
+      delete from app.fee_changes where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}')));
+      delete from app.fee_obligations where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}')));
+      delete from app.registration_events where party_id in(select id from app.parties where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}')));
+      delete from app.parties where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}'));
+      delete from app.session_changes where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}'));
+      delete from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}');
       delete from app.groups where id='${group.id}';
       ${extraUsers.map((id) => `delete from auth.users where id='${id}';`).join("\n")}
       commit;`);

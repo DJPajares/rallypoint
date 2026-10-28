@@ -53,7 +53,7 @@ async function ownGroup(t, f, owner) {
   const group = (await made.json()).group;
   t.after(() =>
     f.sql(
-      `begin;delete from app.operation_receipts where resource_id='${group.id}' or resource_id in(select id from app.sessions where group_id='${group.id}');delete from app.session_changes where session_id in(select id from app.sessions where group_id='${group.id}');delete from app.sessions where group_id='${group.id}';delete from app.group_roles where group_id='${group.id}';delete from app.groups where id='${group.id}';commit;`,
+      `begin;delete from app.operation_receipts where resource_id='${group.id}' or resource_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}'));delete from app.session_changes where session_id in(select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}'));delete from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}');delete from app.group_roles where group_id='${group.id}';delete from app.groups where id='${group.id}';commit;`,
     ),
   );
   const save = async (intent, details) => {
@@ -83,12 +83,21 @@ async function ownGroup(t, f, owner) {
     feeMode: "fixed",
     guests: true,
   };
+  // Sessions stand alone (P-35): rows name who hosts them, not a group.
+  const hostName = () =>
+    f.sql(
+      `select name from app.groups where kind='host' and id=(select group_id from app.sessions where id='${published.id}');`,
+    );
+  const published = await save("publish", base);
   return {
     group,
     groupName,
+    get hostName() {
+      return hostName();
+    },
     save,
     base,
-    published: await save("publish", base),
+    published,
     draft: await save("draft", {
       ...base,
       title: "Synthetic undated draft",
@@ -173,13 +182,13 @@ test("managers see their group's sessions and drafts, outsiders don't", async (t
   const { upcoming } = await mine(f, a2);
   const pub = find(upcoming, g.published.slug);
   assert.equal(pub.status, "organizing");
-  assert.equal(pub.groupName, g.groupName);
+  assert.equal(pub.groupName, g.hostName);
   const draft = find(upcoming, g.draft.slug);
   assert.equal(draft.status, "draft");
   assert.equal(draft.id, g.draft.id);
   assert.equal(draft.startLocal, "");
   assert.equal(draft.startsAt, null);
-  const own = upcoming.filter((r) => r.groupName === g.groupName);
+  const own = upcoming.filter((r) => r.groupName === g.hostName);
   assert.deepEqual(
     own.map((r) => r.slug),
     [g.published.slug, g.draft.slug],
@@ -262,7 +271,7 @@ test("a cancelled draft is not listed, and nothing links to its missing page", a
     );
   }
   const kept = (await mine(f, a2)).upcoming.filter(
-    (r) => r.groupName === g.groupName,
+    (r) => r.groupName === g.hostName,
   );
   assert.deepEqual(
     kept.map((r) => r.slug),

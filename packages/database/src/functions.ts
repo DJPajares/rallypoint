@@ -50,6 +50,23 @@ export const functions: Record<string, Record<string, string>> = {
     p_version: "integer",
     p_details: "jsonb",
   },
+  save_new_session: {
+    ...actor,
+    p_key: "uuid",
+    p_intent: "text",
+    p_details: "jsonb",
+    p_host_name: "text",
+    p_from_session: "uuid",
+    p_origin_group: "uuid",
+  },
+  update_session: {
+    ...actor,
+    p_key: "uuid",
+    p_session_id: "uuid",
+    p_intent: "text",
+    p_version: "integer",
+    p_details: "jsonb",
+  },
   cancel_session: {
     ...actor,
     p_actor_name: "text",

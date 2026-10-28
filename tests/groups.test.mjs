@@ -22,7 +22,7 @@ async function ownGroup(t, f, owner, name) {
   const group = (await made.json()).group;
   // Independent of hook order: everything is found by this group's id.
   t.after(() => {
-    const sessions = `select id from app.sessions where group_id='${group.id}'`;
+    const sessions = `select id from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}')`;
     const parties = `select id from app.parties where session_id in(${sessions})`;
     const gone = (table, col, ids) =>
       `do $c$ begin if to_regclass('app.${table}') is not null then execute 'delete from app.${table} where ${col} in(${ids.replaceAll("'", "''")})'; end if; end $c$;`;
@@ -54,7 +54,7 @@ async function ownGroup(t, f, owner, name) {
           .join("") +
         `update app.sessions set current_split_run_id=null where group_id='${group.id}';` +
         gone("split_runs", "session_id", sessions) +
-        `delete from app.parties where session_id in(${sessions});delete from app.sessions where group_id='${group.id}';delete from app.group_roles where group_id='${group.id}';delete from app.groups where id='${group.id}';commit;`,
+        `delete from app.parties where session_id in(${sessions});delete from app.sessions where group_id in (select id from app.groups where origin_group_id='${group.id}' or id='${group.id}');delete from app.group_roles where group_id='${group.id}';delete from app.groups where id='${group.id}';commit;`,
     );
   });
   const now = Date.now();

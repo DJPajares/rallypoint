@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { z } from "zod";
 import { activityFor, limitProblem } from "@rallypoint/domain/activities";
 import { InputError, normalizeSession } from "@rallypoint/domain/session";
@@ -76,6 +77,7 @@ const groupName = z.object({
 const intent = z.object({ intent: z.enum(["draft", "publish", "update"]) });
 const version = z.object({ version: z.number().int().min(1) });
 const groupId = z.object({ groupId: z.string().regex(uuid) });
+const fromSessionBody = z.object({ fromSession: z.string().regex(uuid) });
 
 const limitCodes = ["activity_capacity_limit", "activity_duration_limit"];
 
@@ -86,9 +88,10 @@ const limitCodes = ["activity_capacity_limit", "activity_duration_limit"];
 async function saveSession(
   db: Database,
   args: Record<string, unknown> & { p_details: SessionDetails },
+  name = "save_session",
 ) {
   try {
-    return await rpc(db, "save_session", args);
+    return await rpc(db, name, args);
   } catch (e) {
     if (!(e instanceof ApiError) || !limitCodes.includes(e.code)) throw e;
     const details = args.p_details;
@@ -113,6 +116,27 @@ async function saveSession(
       message ?? "Check the spots and times for this activity.",
     );
   }
+}
+
+/** A new session on its own hosting team, run by its creator (P-35). */
+async function newSession(
+  c: Context<ApiEnv>,
+  s: Awaited<ReturnType<typeof sessionSave>>,
+  originGroup: string | null = null,
+) {
+  return saveSession(
+    c.var.db,
+    {
+      p_actor_id: c.var.user.id,
+      p_key: s.operationKey,
+      p_intent: s.intent,
+      p_details: s.details,
+      p_host_name: (await actorName(c, "Organizer")).name,
+      p_from_session: s.fromSession,
+      p_origin_group: originGroup,
+    },
+    "save_new_session",
+  );
 }
 
 /** Shared checks for saving a session; the order decides which message wins. */
@@ -146,8 +170,28 @@ async function sessionSave(request: Request, editing: boolean) {
         "Reload the session version before saving.",
       ).version
     : null;
-  const group = parse(groupId, b, "invalid_input", "Select a group.").groupId;
-  return { operationKey, intent: chosen, details, version: saved, group };
+  // Sessions stand alone (P-35): a group sent by an older client is ignored.
+  const group =
+    b && typeof b === "object" && "groupId" in b
+      ? parse(groupId, b, "invalid_input", "Select a group.").groupId
+      : null;
+  const fromSession =
+    b && typeof b === "object" && typeof b.fromSession === "string"
+      ? parse(
+          fromSessionBody,
+          b,
+          "invalid_input",
+          "Choose a session to run again.",
+        ).fromSession
+      : null;
+  return {
+    operationKey,
+    intent: chosen,
+    details,
+    version: saved,
+    group,
+    fromSession,
+  };
 }
 
 const id = `:id{${uuidParam}}`;
@@ -238,23 +282,13 @@ export const sessions = new Hono<ApiEnv>()
     }),
   )
   .post(`/groups/${id}/sessions`, requireUser, async (c) => {
-    const s = await sessionSave(c.req.raw, false);
-    if (s.group !== c.req.param("id"))
-      throw new ApiError(
-        422,
-        "invalid_input",
-        "The group does not match this request.",
-      );
+    // Older clients create here; the session stands alone all the same.
     return json(
-      await saveSession(c.var.db, {
-        p_actor_id: c.var.user.id,
-        p_key: s.operationKey,
-        p_group_id: s.group,
-        p_session_id: null,
-        p_intent: s.intent,
-        p_version: null,
-        p_details: s.details,
-      }),
+      await newSession(
+        c,
+        await sessionSave(c.req.raw, false),
+        c.req.param("id"),
+      ),
     );
   })
   .all(`/groups/${id}/sessions`, requireUser, () => notAvailable())
@@ -292,6 +326,10 @@ export const sessions = new Hono<ApiEnv>()
     return json(result);
   })
   .all(`/sessions/${id}/delete`, requireUser, () => notAvailable())
+  .post("/sessions", requireUser, async (c) =>
+    json(await newSession(c, await sessionSave(c.req.raw, false))),
+  )
+  .all("/sessions", requireUser, () => notAvailable())
   .get(`/sessions/${id}`, requireUser, async (c) =>
     json({
       session: await rpc(c.var.db, "read_managed_session", {
@@ -303,15 +341,18 @@ export const sessions = new Hono<ApiEnv>()
   .post(`/sessions/${id}`, requireUser, async (c) => {
     const s = await sessionSave(c.req.raw, true);
     return json(
-      await saveSession(c.var.db, {
-        p_actor_id: c.var.user.id,
-        p_key: s.operationKey,
-        p_group_id: s.group,
-        p_session_id: c.req.param("id"),
-        p_intent: s.intent,
-        p_version: s.version,
-        p_details: s.details,
-      }),
+      await saveSession(
+        c.var.db,
+        {
+          p_actor_id: c.var.user.id,
+          p_key: s.operationKey,
+          p_session_id: c.req.param("id"),
+          p_intent: s.intent,
+          p_version: s.version,
+          p_details: s.details,
+        },
+        "update_session",
+      ),
     );
   })
   .all(`/sessions/${id}`, requireUser, () => notAvailable())

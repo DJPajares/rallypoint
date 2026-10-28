@@ -97,7 +97,7 @@ test("badges and titles", async (t) => {
   async function cohost(label) {
     const actor = await fresh(label);
     sql(
-      `insert into app.group_roles(group_id,user_id,role) values('${firstGroup}','${actor.id}','cohost');`,
+      `insert into app.group_roles(group_id,user_id,role) select id,'${actor.id}','cohost' from app.groups where origin_group_id='${firstGroup}' on conflict do nothing;`,
     );
     cohosts.push(actor.id);
     return actor;
@@ -110,7 +110,13 @@ test("badges and titles", async (t) => {
       details: details(capacity),
     });
     assert.equal(r.status, 200);
-    return (await r.json()).session;
+    const s = (await r.json()).session;
+    // Co-hosts belong to each session (P-35); add this test's co-hosts to it.
+    if (cohosts.length)
+      sql(
+        `insert into app.group_roles(group_id,user_id,role) select group_id,u,'cohost' from app.sessions, unnest(array[${cohosts.map((id) => `'${id}'::uuid`).join(",")}]) u where id='${s.id}' on conflict do nothing;`,
+      );
+    return s;
   }
   const view = async (s, a) =>
     (await (await request(`/api/registrations/${s.slug}`, a)).json())
@@ -545,7 +551,7 @@ test("badges and titles", async (t) => {
   } finally {
     for (const id of cohosts)
       sql(
-        `delete from app.group_roles where group_id='${firstGroup}' and user_id='${id}';`,
+        `delete from app.group_roles where group_id in (select id from app.groups where origin_group_id='${firstGroup}') and user_id='${id}';`,
       );
     for (const id of groups) sql(`delete from app.groups where id='${id}';`);
   }

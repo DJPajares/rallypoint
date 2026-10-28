@@ -1,7 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { renderEmail } from "../packages/email/src/render.ts";
-import { mailpitProvider, resendProvider } from "../packages/email/src/provider.ts";
+import {
+  mailpitProvider,
+  resendProvider,
+} from "../packages/email/src/provider.ts";
 
 const base = {
   title: "Friday Pickleball",
@@ -25,7 +28,12 @@ const when = (iso, timeZone) =>
 test("every email kind has its copy, local time, link and sign-off", () => {
   const cutoff = when(base.cutoffAt, base.timeZone);
   const cases = [
-    ["joined_confirmed", "Your RallyPoint place", "You’re in for Friday Pickleball.", {}],
+    [
+      "joined_confirmed",
+      "Your RallyPoint place",
+      "You’re in for Friday Pickleball.",
+      {},
+    ],
     [
       "joined_waitlisted",
       "Your RallyPoint place",
@@ -38,7 +46,12 @@ test("every email kind has its copy, local time, link and sign-off", () => {
       "You’re on the waitlist for Friday Pickleball.",
       { queuePosition: null },
     ],
-    ["promoted", "Your RallyPoint place", "A place opened: you’re now in for Friday Pickleball.", {}],
+    [
+      "promoted",
+      "Your RallyPoint place",
+      "A place opened: you’re now in for Friday Pickleball.",
+      {},
+    ],
     [
       "released",
       "Your RallyPoint place",
@@ -46,8 +59,18 @@ test("every email kind has its copy, local time, link and sign-off", () => {
       {},
     ],
     ["cancelled", "Session update", "Friday Pickleball was cancelled.", {}],
-    ["instructions_changed", "Session update", "How to pay for Friday Pickleball has changed.", {}],
-    ["reminder", "Session reminder", "Friday Pickleball starts in about 24 hours.", {}],
+    [
+      "instructions_changed",
+      "Session update",
+      "How to pay for Friday Pickleball has changed.",
+      {},
+    ],
+    [
+      "reminder",
+      "Session reminder",
+      "Friday Pickleball starts in about 24 hours.",
+      {},
+    ],
   ];
   for (const [kind, subject, first, extra] of cases) {
     const out = renderEmail({ ...base, kind, ...extra });
@@ -65,7 +88,11 @@ test("every email kind has its copy, local time, link and sign-off", () => {
 });
 
 test("html escapes the title while text keeps it raw", () => {
-  const out = renderEmail({ ...base, kind: "joined_confirmed", title: `<b>&"` });
+  const out = renderEmail({
+    ...base,
+    kind: "joined_confirmed",
+    title: `<b>&"`,
+  });
   assert.ok(out.text.includes(`You’re in for <b>&".`));
   assert.ok(out.html.includes("You’re in for &lt;b&gt;&amp;&quot;."));
   assert.ok(!out.html.includes("<b>"));
@@ -79,13 +106,21 @@ const msg = {
   html: "<p>hello</p>",
   idempotencyKey: "job-1",
 };
-const reply = (status, body, headers = {}) => async () =>
-  new Response(body === undefined ? null : JSON.stringify(body), { status, headers });
+const reply =
+  (status, body, headers = {}) =>
+  async () =>
+    new Response(body === undefined ? null : JSON.stringify(body), {
+      status,
+      headers,
+    });
 const send = (fetch, extra = {}) =>
   resendProvider({ apiKey: "k", fetch, ...extra }).send(msg);
 
 test("Resend outcomes are classified", async () => {
-  assert.deepEqual(await send(reply(200, { id: "re_1" })), { outcome: "accepted", id: "re_1" });
+  assert.deepEqual(await send(reply(200, { id: "re_1" })), {
+    outcome: "accepted",
+    id: "re_1",
+  });
   assert.equal((await send(reply(500, {}))).outcome, "transient");
   assert.deepEqual(await send(reply(429, {}, { "retry-after": "120" })), {
     outcome: "transient",
@@ -104,14 +139,18 @@ test("Resend outcomes are classified", async () => {
     code: "monthly_quota",
   });
   assert.equal(
-    (await send(reply(409, { name: "concurrent_idempotent_requests" }))).outcome,
+    (await send(reply(409, { name: "concurrent_idempotent_requests" })))
+      .outcome,
     "transient",
   );
   assert.equal(
     (await send(reply(409, { name: "invalid_idempotent_request" }))).outcome,
     "permanent",
   );
-  assert.equal((await send(reply(422, { name: "validation_error" }))).outcome, "permanent");
+  assert.equal(
+    (await send(reply(422, { name: "validation_error" }))).outcome,
+    "permanent",
+  );
   assert.deepEqual(await send(() => new Promise(() => {}), { timeoutMs: 50 }), {
     outcome: "ambiguous",
     code: "timeout",
@@ -182,7 +221,11 @@ test("a 2xx without a usable id is ambiguous, never accepted", async () => {
     assert.deepEqual(await send(raw(200, body)), expected, `resend ${body}`);
   }
   for (const body of ["{}", "not json", '{"ID":""}', '{"ID":5}']) {
-    assert.deepEqual(await mailpit(raw(200, body)), expected, `mailpit ${body}`);
+    assert.deepEqual(
+      await mailpit(raw(200, body)),
+      expected,
+      `mailpit ${body}`,
+    );
   }
 });
 
@@ -192,7 +235,10 @@ test("permanent codes are only provider names that look like safe codes", async 
     outcome: "permanent",
     code: "http_422",
   });
-  assert.deepEqual(await send(raw(422, "not json")), { outcome: "permanent", code: "http_422" });
+  assert.deepEqual(await send(raw(422, "not json")), {
+    outcome: "permanent",
+    code: "http_422",
+  });
   assert.deepEqual(await send(raw(422, `{"name":"${"a".repeat(65)}"}`)), {
     outcome: "permanent",
     code: "http_422",

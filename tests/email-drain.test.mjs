@@ -112,48 +112,96 @@ function stub() {
     next: [],
     async send(m) {
       s.calls.push(m);
-      return s.next.shift() ?? { outcome: "accepted", id: `stub-${s.calls.length}` };
+      return (
+        s.next.shift() ?? { outcome: "accepted", id: `stub-${s.calls.length}` }
+      );
     },
   };
   return s;
 }
 
 test("deliveryFromEnv picks a provider from the environment alone", () => {
-  const keys = { DATABASE_URL: env.DATABASE_URL, SUPABASE_URL: env.SUPABASE_URL, SUPABASE_SECRET_KEY: "x" };
+  const keys = {
+    DATABASE_URL: env.DATABASE_URL,
+    SUPABASE_URL: env.SUPABASE_URL,
+    SUPABASE_SECRET_KEY: "x",
+  };
   assert.equal(deliveryFromEnv({}), null);
   assert.equal(deliveryFromEnv({ SUPABASE_URL: env.SUPABASE_URL }), null);
   assert.equal(deliveryFromEnv({ SUPABASE_SECRET_KEY: "x" }), null);
   const off = deliveryFromEnv({ ...keys, APP_ORIGIN: "https://rally.test" });
   assert.equal(off.provider, null, "Delivery is off unless enabled");
-  const on = { ...keys, EMAIL_DELIVERY_ENABLED: "true", APP_ORIGIN: "https://rally.test" };
+  const on = {
+    ...keys,
+    EMAIL_DELIVERY_ENABLED: "true",
+    APP_ORIGIN: "https://rally.test",
+  };
   assert.equal(deliveryFromEnv({ ...on }).provider, null, "No provider named");
-  assert.equal(deliveryFromEnv({ ...on, EMAIL_PROVIDER: "resend" }).provider, null);
-  assert.equal(deliveryFromEnv({ ...on, EMAIL_PROVIDER: "mailpit" }).provider, null);
-  assert.equal(deliveryFromEnv({ ...on, EMAIL_PROVIDER: "other", RESEND_API_KEY: "k" }).provider, null);
   assert.equal(
-    typeof deliveryFromEnv({ ...on, EMAIL_PROVIDER: "resend", RESEND_API_KEY: "k" }).provider.send,
+    deliveryFromEnv({ ...on, EMAIL_PROVIDER: "resend" }).provider,
+    null,
+  );
+  assert.equal(
+    deliveryFromEnv({ ...on, EMAIL_PROVIDER: "mailpit" }).provider,
+    null,
+  );
+  assert.equal(
+    deliveryFromEnv({ ...on, EMAIL_PROVIDER: "other", RESEND_API_KEY: "k" })
+      .provider,
+    null,
+  );
+  assert.equal(
+    typeof deliveryFromEnv({
+      ...on,
+      EMAIL_PROVIDER: "resend",
+      RESEND_API_KEY: "k",
+    }).provider.send,
     "function",
   );
-  const mail = deliveryFromEnv({ ...on, EMAIL_PROVIDER: "mailpit", MAILPIT_URL: inbox });
+  const mail = deliveryFromEnv({
+    ...on,
+    EMAIL_PROVIDER: "mailpit",
+    MAILPIT_URL: inbox,
+  });
   assert.equal(typeof mail.provider.send, "function");
   assert.equal(mail.from, "RallyPoint <no-reply@auth.wndrhive.com>");
   assert.equal(mail.appOrigin, "https://rally.test");
   assert.equal(
-    deliveryFromEnv({ ...on, EMAIL_PROVIDER: "mailpit", MAILPIT_URL: inbox, EMAIL_FROM: "A <a@x.test>" }).from,
+    deliveryFromEnv({
+      ...on,
+      EMAIL_PROVIDER: "mailpit",
+      MAILPIT_URL: inbox,
+      EMAIL_FROM: "A <a@x.test>",
+    }).from,
     "A <a@x.test>",
   );
 });
 
 test("email database access uses Prisma and defaults an empty API schema", async () => {
-  const keys = { DATABASE_URL: env.DATABASE_URL, SUPABASE_URL: env.SUPABASE_URL, SUPABASE_SECRET_KEY: "x" };
-  assert.equal(deliveryFromEnv({ SUPABASE_URL: env.SUPABASE_URL, SUPABASE_SECRET_KEY: "x" }), null);
+  const keys = {
+    DATABASE_URL: env.DATABASE_URL,
+    SUPABASE_URL: env.SUPABASE_URL,
+    SUPABASE_SECRET_KEY: "x",
+  };
+  assert.equal(
+    deliveryFromEnv({
+      SUPABASE_URL: env.SUPABASE_URL,
+      SUPABASE_SECRET_KEY: "x",
+    }),
+    null,
+  );
   for (const value of [undefined, "", "missing_synthetic_api"]) {
     const options = deliveryFromEnv({ ...keys, SUPABASE_API_SCHEMA: value });
     try {
-      const result = await options.db.rpc("list_my_groups", { p_actor_id: crypto.randomUUID() });
-      if (value === "missing_synthetic_api") assert.equal(result.error.code, "3F000");
+      const result = await options.db.rpc("list_my_groups", {
+        p_actor_id: crypto.randomUUID(),
+      });
+      if (value === "missing_synthetic_api")
+        assert.equal(result.error.code, "3F000");
       else assert.deepEqual(result, { data: [], error: null });
-    } finally { await options.close(); }
+    } finally {
+      await options.close();
+    }
   }
 });
 
@@ -249,7 +297,10 @@ test("the drain sends each due email once, within the ceilings", async (t) => {
       );
     resetSender();
     for (const label of ["p0", "p1", "p2", "p3", "p4"]) {
-      const a = await account(label, label === "p1" ? "Zorblax Quimby" : undefined);
+      const a = await account(
+        label,
+        label === "p1" ? "Zorblax Quimby" : undefined,
+      );
       actors.push({ ...(await login(a.email)), email: a.email });
     }
 
@@ -314,7 +365,11 @@ test("the drain sends each due email once, within the ceilings", async (t) => {
         const p = stub();
         const settle = await drain(p);
         assert.equal(settle.leased, true);
-        assert.equal(own(p).length, 0, "The stale job waits out its retry spacing");
+        assert.equal(
+          own(p).length,
+          0,
+          "The stale job waits out its retry spacing",
+        );
         assert.equal(row(job.id).state, "queued");
         assert.equal(row(job.id).ambiguous, true);
         due(job.id);
@@ -401,21 +456,28 @@ test("the drain sends each due email once, within the ceilings", async (t) => {
       clearJobs();
     });
 
-    await t.test("a quota answer opens the circuit and stops the run", async () => {
-      resetSender();
-      const s = await event();
-      await join(s, actors[0]);
-      await join(s, actors[1]);
-      const p = stub();
-      p.next.push({ outcome: "quota", code: "daily_quota" });
-      await drain(p);
-      assert.equal(own(p).length, 1, "The second job is not tried after the quota answer");
-      const states = jobsFor(s).map((j) => `${j.state}:${j.reason}`);
-      assert.deepEqual(states, ["queued:daily_limit", "queued:daily_limit"]);
-      resetSender();
-      sql(`delete from app.email_budget;`);
-      clearJobs();
-    });
+    await t.test(
+      "a quota answer opens the circuit and stops the run",
+      async () => {
+        resetSender();
+        const s = await event();
+        await join(s, actors[0]);
+        await join(s, actors[1]);
+        const p = stub();
+        p.next.push({ outcome: "quota", code: "daily_quota" });
+        await drain(p);
+        assert.equal(
+          own(p).length,
+          1,
+          "The second job is not tried after the quota answer",
+        );
+        const states = jobsFor(s).map((j) => `${j.state}:${j.reason}`);
+        assert.deepEqual(states, ["queued:daily_limit", "queued:daily_limit"]);
+        resetSender();
+        sql(`delete from app.email_budget;`);
+        clearJobs();
+      },
+    );
 
     await t.test("overlapping drains send once", async () => {
       resetSender();
@@ -438,29 +500,32 @@ test("the drain sends each due email once, within the ceilings", async (t) => {
       clearJobs();
     });
 
-    await t.test("an account without a verified email is Not sent", async () => {
-      resetSender();
-      const s = await event();
-      await join(s, actors[4]);
-      sql(
-        `update auth.users set email_confirmed_at=null where id='${actors[4].id}';`,
-      );
-      try {
-        const p = stub();
-        const result = await drain(p);
-        assert.equal(own(p).length, 0);
-        const [job] = jobsFor(s, actors[4]);
-        assert.equal(job.state, "not_sent");
-        assert.equal(job.reason, "no_verified_email");
-        assert.equal(job.payload, null);
-        assert.ok(result.ended >= 1);
-      } finally {
+    await t.test(
+      "an account without a verified email is Not sent",
+      async () => {
+        resetSender();
+        const s = await event();
+        await join(s, actors[4]);
         sql(
-          `update auth.users set email_confirmed_at=now() where id='${actors[4].id}';`,
+          `update auth.users set email_confirmed_at=null where id='${actors[4].id}';`,
         );
-      }
-      clearJobs();
-    });
+        try {
+          const p = stub();
+          const result = await drain(p);
+          assert.equal(own(p).length, 0);
+          const [job] = jobsFor(s, actors[4]);
+          assert.equal(job.state, "not_sent");
+          assert.equal(job.reason, "no_verified_email");
+          assert.equal(job.payload, null);
+          assert.ok(result.ended >= 1);
+        } finally {
+          sql(
+            `update auth.users set email_confirmed_at=now() where id='${actors[4].id}';`,
+          );
+        }
+        clearJobs();
+      },
+    );
 
     await t.test(
       "a bad stored time ends the job as render_failed instead of retrying",
@@ -474,7 +539,9 @@ test("the drain sends each due email once, within the ceilings", async (t) => {
             `update app.sessions set details=jsonb_set(details,'{timeZone}','"Not/AZone"') where id='${s.id}';`,
           );
         } finally {
-          sql(`alter table app.sessions enable trigger protect_booked_session;`);
+          sql(
+            `alter table app.sessions enable trigger protect_booked_session;`,
+          );
         }
         const p = stub();
         await drain(p);
@@ -518,10 +585,21 @@ test("the drain sends each due email once, within the ceilings", async (t) => {
         const p = stub();
         await drain(p);
         const calls = own(p);
-        assert.ok(calls.length >= 4, `join and instruction emails for two people (${calls.length})`);
+        assert.ok(
+          calls.length >= 4,
+          `join and instruction emails for two people (${calls.length})`,
+        );
         for (const c of calls)
           for (const text of [c.text, c.html, c.subject])
-            for (const secret of ["Zorblax", "Quimby", "REFLEAK", "7391", "LEAKY", "9123", "PayNow"])
+            for (const secret of [
+              "Zorblax",
+              "Quimby",
+              "REFLEAK",
+              "7391",
+              "LEAKY",
+              "9123",
+              "PayNow",
+            ])
               assert.ok(!text.includes(secret), `${secret} must not appear`);
         // The other party's email is addressed to them, not copied to anyone else.
         assert.deepEqual(
@@ -552,21 +630,34 @@ test("the drain sends each due email once, within the ceilings", async (t) => {
       },
     );
 
-    await t.test("a drain that cannot take the lease does nothing", async () => {
-      resetSender();
-      const s = await event();
-      await join(s, actors[0]);
-      const holder = uuid();
-      await rpc("claim_email_jobs", { p_holder: holder, p_limit: 0 });
-      const p = stub();
-      const result = await drain(p);
-      assert.deepEqual(result, { leased: false, sent: 0, retried: 0, ended: 0, skipped: 0 });
-      assert.equal(p.calls.length, 0);
-      assert.equal(sql(`select holder from app.email_sender;`), holder, "The other holder keeps its lease");
-      assert.equal((await drain(null)).leased, false);
-      resetSender();
-      clearJobs();
-    });
+    await t.test(
+      "a drain that cannot take the lease does nothing",
+      async () => {
+        resetSender();
+        const s = await event();
+        await join(s, actors[0]);
+        const holder = uuid();
+        await rpc("claim_email_jobs", { p_holder: holder, p_limit: 0 });
+        const p = stub();
+        const result = await drain(p);
+        assert.deepEqual(result, {
+          leased: false,
+          sent: 0,
+          retried: 0,
+          ended: 0,
+          skipped: 0,
+        });
+        assert.equal(p.calls.length, 0);
+        assert.equal(
+          sql(`select holder from app.email_sender;`),
+          holder,
+          "The other holder keeps its lease",
+        );
+        assert.equal((await drain(null)).leased, false);
+        resetSender();
+        clearJobs();
+      },
+    );
 
     await t.test("the local inbox receives a message", async () => {
       resetSender();
@@ -574,7 +665,9 @@ test("the drain sends each due email once, within the ceilings", async (t) => {
       await join(s, actors[3]);
       const result = await drain(mailpitProvider({ baseUrl: inbox }));
       assert.ok(result.sent >= 1);
-      const listing = await (await fetch(`${inbox}/api/v1/messages?limit=200`)).json();
+      const listing = await (
+        await fetch(`${inbox}/api/v1/messages?limit=200`)
+      ).json();
       const found = listing.messages.filter(
         (m) =>
           m.To?.some((r) => r.Address === actors[3].email) &&
@@ -598,7 +691,9 @@ test("the drain sends each due email once, within the ceilings", async (t) => {
     }
     // A failed run can leave a message behind; remove only this run's own, by ID.
     try {
-      const listing = await (await fetch(`${inbox}/api/v1/messages?limit=200`)).json();
+      const listing = await (
+        await fetch(`${inbox}/api/v1/messages?limit=200`)
+      ).json();
       const stray = listing.messages
         .filter((m) => m.To?.some((r) => r.Address.startsWith(mine)))
         .map((m) => m.ID);

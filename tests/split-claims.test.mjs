@@ -162,7 +162,7 @@ test("split claims and live estimates", async (t) => {
       const p = f.parties[0].id;
       const c = (await view(f, f.organizer)).roster[0].splitClaim;
       f.sql(
-        `insert into app.group_roles(group_id,user_id,role) values('${f.firstGroup}','${f.actors[1].id}','cohost');`,
+        `insert into app.group_roles(group_id,user_id,role) select id,'${f.actors[1].id}','cohost' from app.groups where origin_group_id='${f.firstGroup}' on conflict do nothing;`,
       );
       const body = {
         operationKey: crypto.randomUUID(),
@@ -190,7 +190,7 @@ test("split claims and live estimates", async (t) => {
         2,
       );
       f.sql(
-        `delete from app.group_roles where group_id='${f.firstGroup}' and user_id='${f.actors[1].id}';`,
+        `delete from app.group_roles where group_id in (select id from app.groups where origin_group_id='${f.firstGroup}') and user_id='${f.actors[1].id}';`,
       );
       assert.equal(
         (

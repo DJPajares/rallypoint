@@ -158,11 +158,11 @@ test("cancellation requires a current manager and rechecks roles on replay and r
   const cohost = f.actors[1],
     key = crypto.randomUUID();
   f.sql(
-    `insert into app.group_roles(group_id,user_id,role) values('${f.firstGroup}','${cohost.id}','cohost');`,
+    `insert into app.group_roles(group_id,user_id,role) select id,'${cohost.id}','cohost' from app.groups where origin_group_id='${f.firstGroup}' on conflict do nothing;`,
   );
   assert.equal((await cancel(f, cohost, key)).status, 200);
   f.sql(
-    `delete from app.group_roles where group_id='${f.firstGroup}' and user_id='${cohost.id}';`,
+    `delete from app.group_roles where group_id in (select id from app.groups where origin_group_id='${f.firstGroup}') and user_id='${cohost.id}';`,
   );
   assert.equal((await cancel(f, cohost, key)).status, 403);
   assert.equal((await f.get(cohost, `/api/operations/${key}`)).status, 403);

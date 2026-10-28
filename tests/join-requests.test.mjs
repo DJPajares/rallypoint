@@ -226,7 +226,7 @@ test("ask to join contract", async (t) => {
       await ask(s, b);
       const cohost = await login("member@rallypoint.test");
       sql(
-        `update app.group_roles set role='cohost' where group_id='${firstGroup}' and user_id='${cohost.id}';`,
+        `insert into app.group_roles(group_id,user_id,role) select group_id,'${cohost.id}','cohost' from app.sessions where id='${s.id}';`,
       );
       try {
         const [x, y] = await Promise.all([
@@ -248,7 +248,7 @@ test("ask to join contract", async (t) => {
         );
       } finally {
         sql(
-          `update app.group_roles set role='member' where group_id='${firstGroup}' and user_id='${cohost.id}';`,
+          `delete from app.group_roles where group_id=(select group_id from app.sessions where id='${s.id}') and user_id='${cohost.id}';`,
         );
       }
     },
@@ -636,7 +636,7 @@ test("ask to join contract", async (t) => {
     const id = pendingId(s, a);
     const cohost = await login("member@rallypoint.test");
     sql(
-      `update app.group_roles set role='cohost' where group_id='${firstGroup}' and user_id='${cohost.id}';`,
+      `insert into app.group_roles(group_id,user_id,role) select group_id,'${cohost.id}','cohost' from app.sessions where id='${s.id}';`,
     );
     try {
       const results = await Promise.all([
@@ -652,7 +652,7 @@ test("ask to join contract", async (t) => {
       );
     } finally {
       sql(
-        `update app.group_roles set role='member' where group_id='${firstGroup}' and user_id='${cohost.id}';`,
+        `delete from app.group_roles where group_id=(select group_id from app.sessions where id='${s.id}') and user_id='${cohost.id}';`,
       );
     }
   });
