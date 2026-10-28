@@ -115,6 +115,45 @@
   outline: var(--focus-width) solid var(--color-focus);
   outline-offset: var(--focus-offset);
 }
+/* Ask to join (P-34): requests waiting for an organizer's answer. */
+.join-requests {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+.join-requests h2 {
+  margin: 0;
+}
+.join-requests__list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.join-request {
+  display: grid;
+  gap: var(--space-2);
+}
+.join-request p {
+  margin: 0;
+}
+.join-request__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+.join-request__name .title-pill {
+  margin-left: 0;
+}
+.join-request__facts {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+.join-request__confirm {
+  flex-basis: 100%;
+}
 @media (prefers-reduced-motion: reduce) {
   .check-toggle {
     transition: none;

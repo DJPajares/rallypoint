@@ -235,6 +235,7 @@ export function HomeDashboard() {
 // normal case, so it reads quietly under the title instead.
 const statusTone: Partial<Record<MySessionRow["status"], Tone>> = {
   waitlisted: "warning",
+  requested: "neutral",
   draft: "neutral",
   cancelled: "danger",
 };
@@ -306,6 +307,12 @@ function MySessionRowLink({ row, past }: { row: MySessionRow; past: boolean }) {
             </span>
           </span>
           <span className="rp-row__trail">
+            {row.requestCount ? (
+              <Pill tone="warning">
+                {row.requestCount}{" "}
+                {row.requestCount === 1 ? "request" : "requests"}
+              </Pill>
+            ) : null}
             {tone ? <Pill tone={tone}>{status}</Pill> : null}
             <CaretRightIcon size={16} aria-hidden="true" />
           </span>

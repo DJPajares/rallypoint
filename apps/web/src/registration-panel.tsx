@@ -15,6 +15,7 @@ import { splitMoney } from "@rallypoint/domain/fees";
 import { SplitControls } from "./split-controls";
 import { HowToPay } from "./payment-instructions";
 import { GameDay } from "./game-day";
+import { JoinRequests } from "./join-requests";
 import {
   buttonClass,
   CheckField,
@@ -953,6 +954,16 @@ export function RegistrationPanel({
                   (p.seats === 2 ? ` + ${p.guestName || "guest"}` : ""),
               ]),
           )}
+        />
+      ) : null}
+      {view.canManage && view.requests ? (
+        <JoinRequests
+          slug={event.slug}
+          requests={view.requests}
+          onChanged={(value) => {
+            onChanged(value);
+            onChange();
+          }}
         />
       ) : null}
       {view.canManage && event.state !== "cancelled" ? (
