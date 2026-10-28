@@ -217,6 +217,12 @@ export interface RegistrationView {
   joinRequest?: OwnJoinRequest | null;
   /** Organizers/co-hosts only: requests waiting for an answer, oldest first. */
   requests?: ManagedJoinRequest[];
+  /** The viewer's own waiting invite to this session (P-38). */
+  invite?: { id: string; inviterName: string } | null;
+  /** Organizers/co-hosts only: everyone invited and how it went. */
+  invites?: SentInvite[];
+  /** Organizers/co-hosts only: the session's id, for inviting people. */
+  sessionId?: string;
   roster: Array<{
     primaryName: string;
     /** The public profile to open from this name; null until they have one. */
@@ -249,3 +255,4 @@ import type {
 } from "./fees.ts";
 import type { RosterTitle } from "./badges.ts";
 import type { SkillLevel } from "./activities.ts";
+import type { SentInvite } from "./contracts.ts";

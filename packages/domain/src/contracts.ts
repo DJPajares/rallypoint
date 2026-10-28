@@ -56,6 +56,7 @@ export type GroupView =
       members?: GroupMember[];
       requests?: GroupRequest[];
       inviteToken?: string;
+      invites?: SentInvite[];
       concealed?: undefined;
     };
 
@@ -70,4 +71,31 @@ export interface GroupCohosts {
   assigned: CohostPerson[];
   candidates: CohostPerson[];
   nextCursor: string | null;
+}
+/** P-38: an invite waiting for you, as Home shows it. */
+export interface MyInvite {
+  id: string;
+  kind: "group" | "session";
+  inviterName: string;
+  sentAt: string;
+  group: { id: string; name: string } | null;
+  session: {
+    slug: string;
+    title: string;
+    startsAt: string | null;
+    timeZone: string;
+  } | null;
+}
+/** Someone you can invite: people you already know through RallyPoint. */
+export interface InviteCandidate {
+  profileId: string;
+  name: string;
+  title: { key: string; level: number } | null;
+}
+/** An invite as its group's admin or its session's organizers see it. */
+export interface SentInvite {
+  id: string;
+  name: string;
+  state: "pending" | "accepted" | "declined" | "withdrawn";
+  sentAt: string;
 }

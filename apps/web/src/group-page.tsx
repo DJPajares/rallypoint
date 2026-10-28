@@ -10,6 +10,7 @@ import { useApi } from "./use-api";
 import { useMutation } from "./use-mutation";
 import { DetailPage } from "./ui";
 import { PersonName, TitlePill } from "./badges";
+import { InvitePanel } from "./invites";
 
 type Answer = { group?: GroupView; left?: true };
 const subscribe = () => () => undefined;
@@ -52,7 +53,12 @@ export function GroupPage() {
     said_.current = message;
     mutation.run(`/api/groups/${id}/${verb}`, body);
   };
-  const group = changed ?? read.data?.group ?? null;
+  // A refresh after an action keeps showing the last group read, so the page
+  // (and any confirmation on it) stays put while the new read is out.
+  const [lastGroup, setLastGroup] = useState<GroupView | null>(null);
+  if (read.data?.group && read.data.group !== lastGroup)
+    setLastGroup(read.data.group);
+  const group = changed ?? read.data?.group ?? lastGroup;
   if (read.loading && !group)
     return (
       <DetailPage back="/workspace" backLabel="Your groups">
@@ -315,6 +321,17 @@ export function GroupPage() {
             </div>
           ) : null}
         </section>
+      ) : null}
+      {admin ? (
+        <InvitePanel
+          kind="group"
+          target={group.id}
+          invites={group.invites ?? []}
+          onChanged={() => {
+            setChanged(null);
+            read.retry();
+          }}
+        />
       ) : null}
       {group.members && !left ? (
         <section className="join-requests" aria-labelledby="group-members">

@@ -22,6 +22,7 @@ import type {
   Identity,
 } from "@rallypoint/domain/contracts";
 import { visibilityHelp, visibilityOptions } from "./group-visibility";
+import { HomeInvites } from "./invites";
 import { feeStanding } from "@rallypoint/domain/registration";
 import { SplitFee } from "./split-fee";
 import type {
@@ -174,12 +175,13 @@ export function HomeDashboard() {
       {identity.error ? (
         <Notice retry={identity.retry}>{identity.error}</Notice>
       ) : null}
+      <HomeInvites />
       <div className="rp-card rp-card--accent plan-card">
         <div>
           <h2>Plan the next one</h2>
           <p>
             {canCreate
-              ? "Pick a group, set the time and seats, then share one link."
+              ? "Set the time and seats, then share one link."
               : "Start a group to publish your first session."}
           </p>
         </div>

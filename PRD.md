@@ -106,7 +106,22 @@ Create and manage recurring communities with organizers, co-hosts and members. R
 
 **Accepted bootstrap, 2026-10-22:** a verified group creator becomes its owner, with authority over organizer/co-host assignments. General role-assignment/invitation UI and membership entry remain outside P-02. Creation never grants authority over another group.
 
-**Amended, 2026-10-28 (owner; P-35, [WDL-413](https://linear.app/wwonderland/issue/WDL-413)):** "sessions should not be tied to any groups… Groups should just be a list of all users exclusive to that group." A session stands alone: its creator is its organizer and co-hosts are added per session (anyone who joined one of the organizer's sessions, or a member of a group they admin). A group is a list of members with one admin (its creator) and is **Public** or **Private**. People ask to join through the admin's invite link (any group) or a **Join this group** button (public groups only); the admin accepts or declines every request, and a private group shows nothing to someone without the link. Request limits mirror Ask to join: one waiting request per group, declined is final, two own cancels, ten waiting group requests per person. Members can leave; the admin can't. Removal is not a ban. A group role gives no control over any session. Search, direct in-app invites and private sessions are later tasks (P-37, P-38, P-36). No email.
+**Amended, 2026-10-28 (owner; P-35, [WDL-413](https://linear.app/wwonderland/issue/WDL-413)):** "sessions should not be tied to any groups… Groups should just be a list of all users exclusive to that group." A session stands alone: its creator is its organizer and co-hosts are added per session (anyone who joined one of the organizer's sessions, or a member of a group they admin). A group is a list of members with one admin (its creator) and is **Public** or **Private**. People ask to join through the admin's invite link (any group) or a **Join this group** button (public groups only); the admin accepts or declines every request, and a private group shows nothing to someone without the link. Request limits mirror Ask to join: one waiting request per group, declined is final, two own cancels, ten waiting group requests per person. Members can leave; the admin can't. Removal is not a ban. A group role gives no control over any session. Search, direct in-app invites and private sessions are later tasks (P-37, P-38, P-36). No email. **Direct invites, 2026-10-29 (owner: "Yes, use them"; P-38, [WDL-415](https://linear.app/wwonderland/issue/WDL-415)):**
+- **Who invites:** a group's admin, and a session's organizer or co-hosts.
+- **Who they can invite:** only people they already know. That means:
+  - someone confirmed in a session they ran or played in; or
+  - a co-member of one of their groups.
+
+  Nobody can be looked up by name or email.
+- **Where invites show:** the person invited sees them on Home.
+- **Group Join:** makes them a member at once.
+- **Session Join:** opens the normal join, with fee and waitlist consent. They take a spot if the whole party fits, otherwise they go on the waitlist. An invite counts as approval on an Ask to join session. It never skips the queue and queues no email.
+- **Limits:**
+  - one waiting invite per person per group or session;
+  - the sender can withdraw a waiting invite;
+  - session invites expire at start;
+  - a declined invite is final for that group or session;
+  - each sender can have at most 20 invites waiting.
 
 **Accepted co-host increment, 2026-10-24 (P-15 / WDL-390):** the owner selected P-15 and accepted choosing co-hosts from people who have registered for one of that group's sessions. The owner can grant and remove co-host access, with current permissions enforced at the trusted boundary and actor/time recorded. Invitations, general membership entry and ownership transfer remain outside this increment. See the [implementation plan](docs/superpowers/plans/2026-10-24-cohost-management.md) and [local review evidence](docs/superpowers/reviews/2026-10-24-cohost-management-validation.md). Implemented for review; human acceptance, integration and deployment remain separate.
 
