@@ -61,7 +61,27 @@ export function GuestChange({
   );
 
   if (own.seats === 2) {
-    // What happens to the guest's fee, said once, before they confirm.
+    // A split share is fixed once the cutoff passes (unless the session
+    // changed after they booked): the organizer handles the guest then.
+    if (
+      split &&
+      own.state === "confirmed" &&
+      !beforeCutoff &&
+      !own.freeWithdrawalAfterChange
+    )
+      return (
+        <p className="rp-help">
+          After the cutoff your guest’s share stays. Ask the organizer to change
+          your guest.
+        </p>
+      );
+    // What happens to the guest's place and fee, said once, before they confirm.
+    const placeWords =
+      own.state === "waitlisted"
+        ? `${guest} leaves; you keep your place in line.`
+        : view.counts.waitingParties > 0
+          ? `${guest}’s place goes to the next person waiting. You keep yours.`
+          : `${guest}’s place opens up. You keep yours.`;
     const feeWords = !tracked
       ? ""
       : fee?.markedPaid
@@ -70,16 +90,13 @@ export function GuestChange({
           ? beforeCutoff || own.freeWithdrawalAfterChange
             ? `Their ${feeLabel({ currency: fee.currency, feeMinor: fee.unitMinor })} is dropped.`
             : `Their ${feeLabel({ currency: fee.currency, feeMinor: fee.unitMinor })} stays unless the organizer waives it.`
-          : split && own.state === "confirmed" && !beforeCutoff
-            ? "After the cutoff your guest’s share stays, so ask the organizer."
-            : "";
+          : "";
     return (
       <div className="guest-change">
         {open ? (
           <>
             <p id="guest-drop-terms">
-              {guest}’s place goes to the next person waiting. You keep yours.{" "}
-              {feeWords}
+              {placeWords} {feeWords}
             </p>
             <div className="fee-actions">
               <button
@@ -116,18 +133,28 @@ export function GuestChange({
   }
 
   // Adding: a confirmed booking, guests allowed, a free place and nobody waiting.
+  // Where the organizer accepts each person, they add guests too.
   const room =
     own.state === "confirmed" &&
     !!d.guests &&
+    d.joinMode !== "request" &&
+    !(own.splitClaim && (own.splitClaim.waived || !own.splitClaim.eligible)) &&
     view.counts.waitingParties === 0 &&
     Number(d.capacity) - view.counts.confirmedSeats >= 1 &&
-    (!tracked || split || !fee || (fee.liabilityState === "due" && !fee.markedPaid));
+    (!tracked ||
+      split ||
+      !fee ||
+      fee.chargedSeats === 2 ||
+      (fee.liabilityState === "due" && !fee.markedPaid));
   if (!room) return null;
-  const guestFee =
-    tracked && !split && (d.feeMinor ?? 0) > 0
+  // A fee that still covers a guest dropped after the cutoff charges nothing new.
+  const covered = !!fee && fee.chargedSeats === 2;
+  const guestFee = covered
+    ? "Your fee already covers a guest."
+    : tracked && !split && (d.feeMinor ?? 0) > 0
       ? `I agree to pay ${feeLabel({ currency: d.currency, feeMinor: d.feeMinor })} for my guest.`
       : split
-        ? "My guest’s seat counts toward the final split."
+        ? "My guest’s seat counts toward the final split, so my share goes up."
         : "";
   return (
     <div className="guest-change">
@@ -169,7 +196,7 @@ export function GuestChange({
               >
                 {mutation.busy
                   ? "Adding…"
-                  : guestFee && !split
+                  : guestFee && !split && !covered
                     ? "Agree & add guest"
                     : "Add guest"}
               </button>

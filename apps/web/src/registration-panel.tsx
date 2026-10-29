@@ -457,7 +457,9 @@ export function RegistrationPanel({
                   ? " · Nothing is due."
                   : own.state === "withdrawn" && !own.fee.markedPaid
                     ? " · The fee stays unless the organizer waives it."
-                    : ""}
+                    : own.seats === 1 && own.fee.chargedSeats === 2
+                      ? " · Includes your removed guest’s fee, which stays unless the organizer waives it."
+                      : ""}
         </p>
       ) : null}
       {earlierFees.map((fee, i) => (

@@ -63,6 +63,8 @@ const conflicts: Record<string, string> = {
     "There’s no free place for a guest right now, or someone is already waiting for one.",
   guest_fee_settled:
     "Your fee is already marked paid or waived, so a guest can’t be added here. Ask the organizer.",
+  guest_needs_organizer:
+    "The organizer accepts each person for this session, so ask them to add your guest.",
   guest_change_closed:
     "Guests can only change before the session starts, while you’re booked. Refresh your record.",
   note_not_allowed:
@@ -145,8 +147,22 @@ async function call(
         "session_unavailable",
         "That session is not available for registration.",
       );
+    if (action === "guest" && error.message === "stale_terms")
+      throw new ApiError(
+        409,
+        "stale_terms",
+        "The session details changed. Refresh and review them before adding a guest.",
+      );
     if (conflicts[error.message])
       throw new ApiError(409, error.message, conflicts[error.message]);
+    if (error.code === "23514" && action === "guest")
+      throw new ApiError(
+        422,
+        error.message,
+        error.message === "guest_disabled"
+          ? "This session does not allow guests."
+          : "Check your guest and agree to the fee to add them.",
+      );
     if (error.code === "23514" && managing && managing !== "answer") {
       const [code, message] = invalid[managing];
       throw new ApiError(422, code, message);

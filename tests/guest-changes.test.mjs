@@ -331,3 +331,45 @@ test("in a split session, a guest's share stays once the cutoff passes", async (
   assert.equal((await r.json()).error.code, "guest_share_stays");
   assert.equal(w.party(pa.id), "confirmed|2");
 });
+
+test("review fixes: request sessions, consent, waived shares and repeat adds", async (t) => {
+  const w = await world(t);
+  const [a, b] = await Promise.all(["a", "b"].map(w.person));
+  const add = (s, who, id) =>
+    w.guest(s, who, id, {
+      action: "add",
+      guestName: "",
+      version: s.version,
+      consent: true,
+    });
+  // Where the organizer accepts each person, a guest isn't added without them.
+  const asked = await w.session();
+  const pa = await w.join(asked, a);
+  sql(`begin; set local session_replication_role=replica;
+    update app.sessions set details=details||'{"joinMode":"request"}' where id='${asked.id}'; commit;`);
+  const r = await add(asked, a, pa.id);
+  assert.equal(r.status, 409);
+  assert.equal((await r.json()).error.code, "guest_needs_organizer");
+  // Adding keeps the booker's original terms (and any free withdrawal).
+  const s = await w.session();
+  const pb = await w.join(s, b);
+  const before = sql(`select consent_version||'|'||consent_at from app.parties where id='${pb.id}';`);
+  assert.equal((await add(s, b, pb.id)).status, 200);
+  assert.equal(
+    sql(`select consent_version||'|'||consent_at from app.parties where id='${pb.id}';`),
+    before,
+  );
+  // Dropped after the cutoff, then added back: the fee already covers the guest.
+  w.shift(s, "cutoffAt", -60000);
+  assert.equal((await w.guest(s, b, pb.id, { action: "drop" })).status, 200);
+  const revision = sql(`select revision from app.fee_obligations where party_id='${pb.id}';`);
+  assert.equal((await add(s, b, pb.id)).status, 200);
+  assert.equal(sql(`select revision from app.fee_obligations where party_id='${pb.id}';`), revision);
+  // A waived split share can't take a guest.
+  const split = await w.session({ feeMode: "split", fee: "30.00" });
+  const pc = await w.join(split, a);
+  sql(`update app.split_claims set waived=true where party_id='${pc.id}';`);
+  const waived = await add(split, a, pc.id);
+  assert.equal(waived.status, 409);
+  assert.equal((await waived.json()).error.code, "guest_fee_settled");
+});
