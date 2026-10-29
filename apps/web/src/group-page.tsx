@@ -41,7 +41,12 @@ export function GroupPage() {
   const mutation = useMutation<Answer>((value) => {
     setConfirm(null);
     if (value.left) setLeft(true);
-    if (value.group) setChanged(value.group);
+    // An answer is read without the invite link. Someone holding the link
+    // reads the group again with it, so they can still ask to join.
+    if (value.group?.concealed && invite) {
+      setChanged(null);
+      read.retry();
+    } else if (value.group) setChanged(value.group);
     setSaid(said_.current);
   });
   const busy = mutation.busy || mutation.uncertain;

@@ -207,6 +207,10 @@ function Editor({
 }) {
   const router = useRouter();
   const [record, setRecord] = useState(initial);
+  // Only the session's organizer manages co-hosts. Save and cancel answers
+  // don't repeat this, so it comes from the first read; whoever creates a
+  // session is its organizer.
+  const organizer = initial ? initial.canManageCohosts === true : true;
   const origin = useSyncExternalStore(
     subscribeOrigin,
     clientOrigin,
@@ -460,7 +464,7 @@ function Editor({
             <RepeatIcon size={18} aria-hidden="true" />
             Run again next week
           </Link>
-          {record.canManageCohosts ? (
+          {organizer ? (
             <Link
               className={buttonClass({ variant: "link" })}
               href={`/sessions/${record.id}/cohosts`}
