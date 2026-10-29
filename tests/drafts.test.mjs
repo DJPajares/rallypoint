@@ -100,12 +100,22 @@ test("an organizer deletes a draft and its payment details go with it", async (t
   );
   assert.equal(up.status, 200, "QR must upload to a draft");
   assert.equal((await objects(session.id)).length, 1);
+  const team = f.sql(
+    `select g.id from app.groups g join app.sessions s on s.group_id=g.id where s.id='${session.id}' and g.kind='host';`,
+  );
+  assert.ok(team, "A draft is run by its own hosting team");
 
   const r = await del(f, f.organizer, session.id);
   assert.equal(r.status, 200);
   assert.equal((await r.json()).deleted, true);
 
   assert.equal(count(f, session.id), 0);
+  // P-39: the draft's hidden hosting team goes with it.
+  assert.equal(
+    f.sql(`select count(*) from app.groups where id='${team}';`),
+    "0",
+    "The hosting team is removed",
+  );
   for (const table of [
     "payment_instructions",
     "payment_instruction_notices",
