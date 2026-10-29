@@ -21,15 +21,17 @@ const owes = (p: RosterParty) =>
  * Withdrawn or removed, but still carrying money an organizer may act on: a
  * fee that is due or waived, or (before a split is final) a retained or
  * waived share. A spot given to the waitlist stays listed too, as the record
- * of who released it (owner, 2026-10-23).
+ * of who released it (owner, 2026-10-23). So does anyone the organizers
+ * removed, with who did it and when (P-28).
  */
 const leftWithFee = (p: RosterParty) =>
-  (p.state === "withdrawn" || p.state === "removed") &&
+  !!p.removal ||
+  ((p.state === "withdrawn" || p.state === "removed") &&
   (p.fee
     ? p.fee.liabilityState === "due" ||
       p.fee.liabilityState === "waived" ||
       p.fee.liabilityState === "released_unpaid"
-    : !!p.splitClaim && (p.splitClaim.eligible || p.splitClaim.waived));
+    : !!p.splitClaim && (p.splitClaim.eligible || p.splitClaim.waived)));
 
 /** Who gave this party's spot to the waitlist, and when; null if nobody did. */
 export function releaseRecord(p: RosterParty) {

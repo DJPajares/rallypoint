@@ -12,6 +12,7 @@ type Action =
   | "payment"
   | "attendance"
   | "release"
+  | "remove"
   | "note"
   | "ask"
   | "request"
@@ -43,6 +44,14 @@ const conflicts: Record<string, string> = {
   release_closed: "Spots can’t be given away once the session starts.",
   release_not_eligible:
     "Only spots booked before the cutoff and still unpaid can go to the waitlist. Refresh to see the latest record.",
+  removal_closed: "People can’t be removed once the session starts.",
+  removal_not_eligible:
+    "They’ve already left this session. Refresh to see the latest.",
+  party_not_found: "That person isn’t in this session. Refresh the list.",
+  removal_not_allowed:
+    "Organizers and co-hosts can’t be removed. They can withdraw themselves.",
+  removed_from_session:
+    "The organizer removed you from this session, so you can’t join it again.",
   note_not_allowed:
     "You can only say you’ve paid for your own booking in a session paid to the organizer.",
   note_already_paid: "The organizer has already marked this paid.",
@@ -75,6 +84,7 @@ const invalid = {
   payment: ["invalid_payment", "Choose a fee and a payment action."],
   attendance: ["invalid_attendance", "Choose a seat and an attendance state."],
   release: ["invalid_release", "Choose a spot to give to the waitlist."],
+  remove: ["invalid_removal", "Choose someone to remove."],
   note: [
     "invalid_payment_note",
     "Use a payment reference of up to 60 characters.",
@@ -84,6 +94,7 @@ const managingWords = {
   payment: "update payments",
   attendance: "update attendance",
   release: "release spots",
+  remove: "remove people",
   answer: "answer requests",
 } as const;
 
@@ -103,6 +114,7 @@ async function call(
       action === "payment" ||
       action === "attendance" ||
       action === "release" ||
+      action === "remove" ||
       action === "answer"
         ? action
         : null;
@@ -180,6 +192,7 @@ const release = z.object({
   // The note's send time as the organizer last saw it, or null when they saw none.
   noteSentAt: z.union([z.iso.datetime({ offset: true }), z.null()]),
 });
+const removal = z.object({ operationKey: key, partyId: key });
 const paymentNote = z.object({
   operationKey: key,
   partyId: key,
@@ -340,6 +353,15 @@ export const registrations = new Hono<ApiEnv>()
     });
   })
   .all(`${base}/release`, requireUser, () => notAvailable(action))
+  .post(`${base}/remove`, requireUser, async (c) => {
+    const b = parse(removal, await readBody(c.req.raw), ...invalid.remove);
+    return call(c, "remove", "remove_party", {
+      p_actor_name: (await actorName(c, "Participant")).name,
+      p_key: b.operationKey,
+      p_party_id: b.partyId,
+    });
+  })
+  .all(`${base}/remove`, requireUser, () => notAvailable(action))
   .post(`${base}/payment-note`, requireUser, async (c) => {
     const b = parse(paymentNote, await readBody(c.req.raw), ...invalid.note);
     return call(c, "note", "update_payment_note", {

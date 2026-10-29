@@ -15,6 +15,7 @@ export interface Fee {
     | "removed_before_cutoff"
     | "removed_session_cancelled"
     | "released_unpaid"
+    | "removed_by_organizer"
     | "waived";
   removedAt: string | null;
   markedPaid: boolean;
@@ -34,7 +35,8 @@ export interface ManagedFee extends Fee {
       | "removed_after_change"
       | "removed_before_cutoff"
       | "removed_session_cancelled"
-      | "released_unpaid";
+      | "released_unpaid"
+      | "removed_by_organizer";
     previousMinor?: number | null;
     currentMinor?: number | null;
     currency?: string;
@@ -77,7 +79,8 @@ export interface SplitClaimDuesItem {
 export const feeStanding = (fee: Fee) =>
   fee.liabilityState === "removed_after_change" ||
   fee.liabilityState === "removed_before_cutoff" ||
-  fee.liabilityState === "removed_session_cancelled"
+  fee.liabilityState === "removed_session_cancelled" ||
+  fee.liabilityState === "removed_by_organizer"
     ? "Removed"
     : fee.liabilityState === "released_unpaid"
       ? "Released"
@@ -106,6 +109,8 @@ export interface OwnParty {
   consentVersion: number;
   freeWithdrawalAfterChange?: boolean;
   withdrawnAt: string | null;
+  /** P-28: the session's organizers removed this booking. */
+  removedByOrganizer?: boolean;
   fee: Fee | null;
   /** Their own note, or null; only booked people in "Pay the organizer" can have one. */
   paymentNote?: PaymentNote | null;
@@ -238,6 +243,10 @@ export interface RegistrationView {
     attendance?: SeatAttendance[];
     /** The badge this person chose to show, while it is still earned. */
     title?: RosterTitle | null;
+    /** Organizers/co-hosts only; whether this party can be removed right now (P-28). */
+    removable?: boolean;
+    /** Organizers/co-hosts only; who removed this party and when (P-28). */
+    removal?: { by: string; at: string };
     /** Organizers/co-hosts only; whether this party could be released right now. */
     releasable?: boolean;
     /** Organizers/co-hosts only; what this party said about sending payment. */

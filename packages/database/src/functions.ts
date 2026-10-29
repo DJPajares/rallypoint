@@ -193,6 +193,7 @@ export const functions: Record<string, Record<string, string>> = {
     p_revision: "integer",
     p_note_sent_at: "timestamptz",
   },
+  remove_party: { ...write, p_party_id: "uuid" },
   update_payment_note: {
     ...slug,
     p_key: "uuid",

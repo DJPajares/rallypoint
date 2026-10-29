@@ -8,6 +8,7 @@ export type MySessionStatus =
   | "requested"
   | "not_accepted"
   | "request_expired"
+  | "removed"
   | "organizing"
   | "draft"
   | "cancelled";
@@ -53,6 +54,8 @@ export function statusLabel(
       return "Not accepted";
     case "request_expired":
       return "Request expired";
+    case "removed":
+      return "Removed by the organizer";
     case "organizing":
       return past ? "Organized" : "Organizing";
     case "draft":

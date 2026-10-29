@@ -313,10 +313,16 @@ export function RegistrationPanel({
     ) : (
       <LockSimpleIcon size={22} />
     );
-  // A player whose unpaid spot went to the waitlist, or who withdrew, can join again.
+  // Removed by the organizers (P-28): back in only through their invite.
+  const removedByOrganizer = own?.state === "removed" && !!own.removedByOrganizer;
+  // A player whose unpaid spot went to the waitlist, or who withdrew, can join
+  // again; someone removed can once the organizers invite them back.
   const canJoin =
     event.registrationWindow === "open" &&
-    (!own || released || own.state === "withdrawn");
+    (!own ||
+      released ||
+      own.state === "withdrawn" ||
+      (removedByOrganizer && !!view.invite));
   const hasAction =
     (own
       ? ((own.state === "confirmed" || own.state === "waitlisted") &&
@@ -425,7 +431,8 @@ export function RegistrationPanel({
           <strong>
             {own.fee.liabilityState === "removed_after_change" ||
             own.fee.liabilityState === "removed_before_cutoff" ||
-            own.fee.liabilityState === "removed_session_cancelled"
+            own.fee.liabilityState === "removed_session_cancelled" ||
+            own.fee.liabilityState === "removed_by_organizer"
               ? "Fee removed: "
               : own.fee.liabilityState === "waived"
                 ? "Fee waived by the organizer: "
@@ -443,6 +450,8 @@ export function RegistrationPanel({
               ? " · The time or place changed after you booked, so nothing is due."
               : own.fee.liabilityState === "removed_before_cutoff"
                 ? " · You withdrew before the cutoff, so nothing is due."
+                : own.fee.liabilityState === "removed_by_organizer"
+                  ? " · You were removed, so nothing is due."
                 : own.fee.liabilityState === "waived"
                   ? " · Nothing is due."
                   : own.state === "withdrawn" && !own.fee.markedPaid
@@ -760,7 +769,9 @@ export function RegistrationPanel({
                   ? `You have ${own.seats === 2 ? "two places" : "a place"}.`
                   : own.state === "waitlisted"
                     ? `Waiting party ${own.queuePosition}`
-                    : "Your previous registration"}
+                    : removedByOrganizer
+                      ? "The organizer removed you from this session."
+                      : "Your previous registration"}
             </h2>
             <p>
               {own.primaryName}

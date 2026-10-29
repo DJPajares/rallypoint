@@ -1258,7 +1258,18 @@ export function SharedSessionPage() {
     }
   }, [result.data, slug]);
   const back = session ? "/home" : "/";
-  if (result.loading)
+  // A refresh after an action (or a renewed token) keeps the last read on
+  // screen, for the same person and session only, so the page below it and
+  // any message it just showed stay put.
+  const viewer = `${session?.user.id ?? ""}|${slug}`;
+  const [last, setLast] = useState<{
+    viewer: string;
+    data: NonNullable<typeof result.data>;
+  } | null>(null);
+  if (result.data && (last?.data !== result.data || last.viewer !== viewer))
+    setLast({ viewer, data: result.data });
+  const kept = result.loading && last?.viewer === viewer ? last.data : null;
+  if (result.loading && !kept)
     return (
       <DetailPage back={back} backLabel="Home">
         <Pending>Opening the session…</Pending>
@@ -1272,8 +1283,9 @@ export function SharedSessionPage() {
         <Link href="/">Back to home</Link>
       </DetailPage>
     );
-  if (!result.data) return null;
-  const shared = result.data.session;
+  const data = kept ?? result.data;
+  if (!data) return null;
+  const shared = data.session;
   if (isPrivateStub(shared))
     return (
       <DetailPage back={back} backLabel="Home" className="shared-session">
