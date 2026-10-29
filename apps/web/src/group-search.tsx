@@ -20,6 +20,8 @@ type Found = {
 export function GroupSearch() {
   const [query, setQuery] = useState("");
   const [shown, setShown] = useState("");
+  // One status line stays on the page so screen readers hear each change.
+  const [status, setStatus] = useState("");
   // Searching waits for a pause in typing, so each keystroke isn't a request.
   useEffect(() => {
     const timer = setTimeout(() => setShown(query.trim()), 300);
@@ -42,30 +44,46 @@ export function GroupSearch() {
           onChange={(e) => setQuery(e.target.value)}
         />
       </Field>
-      {shown.length >= 2 ? <Results query={shown} /> : null}
+      <p className="rp-help" role="status">
+        {shown.length >= 2 ? status : ""}
+      </p>
+      {shown.length >= 2 ? (
+        <Results query={shown} onStatus={setStatus} />
+      ) : null}
     </section>
   );
 }
 
-function Results({ query }: { query: string }) {
+function Results({
+  query,
+  onStatus,
+}: {
+  query: string;
+  onStatus: (text: string) => void;
+}) {
   const found = useApi<{ groups: Found[] }>(
     `/api/groups/search?q=${encodeURIComponent(query)}`,
   );
-  if (found.loading) return <Pending>Searching groups…</Pending>;
-  if (found.error)
-    return <Notice retry={found.retry}>{found.error}</Notice>;
   const groups = found.data?.groups ?? [];
+  const status = found.loading
+    ? ""
+    : found.error
+      ? ""
+      : groups.length
+        ? `${groups.length} ${groups.length === 1 ? "group" : "groups"} found.`
+        : "No group by that name.";
+  useEffect(() => onStatus(status), [onStatus, status]);
+  if (found.loading) return <Pending>Searching groups…</Pending>;
+  if (found.error) return <Notice retry={found.retry}>{found.error}</Notice>;
   return (
     <>
-      <p className="rp-help" role="status">
-        {groups.length
-          ? `${groups.length} ${groups.length === 1 ? "group" : "groups"} found.`
-          : "No group by that name."}
-      </p>
       {groups.length ? (
         <ul className="join-requests__list">
           {groups.map((g, i) => (
-            <li key={g.id ?? `private-${i}`} className="join-request access-option">
+            <li
+              key={g.id ?? `private-${i}`}
+              className="join-request access-option"
+            >
               <p className="join-request__name">
                 <strong>{g.name}</strong>
                 <span className="join-request__facts">

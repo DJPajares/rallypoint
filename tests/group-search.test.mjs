@@ -112,20 +112,31 @@ test("group search", async (t) => {
       const r = await search(q);
       assert.equal(r.status, 422, `q=${JSON.stringify(q)}`);
     }
+    // Length counts characters, so an emoji is one character, not two.
+    assert.equal((await search("😀")).status, 422);
+    assert.equal((await search("😀".repeat(21))).status, 200);
   });
 
-  await t.test("public result links; private result shows name only", async () => {
-    const pub = group(`Find ${nonce} Public`);
-    group(`Find ${nonce} Secret`, { visibility: "private" });
-    const results = await found(`find ${nonce.toUpperCase()}`);
-    assert.deepEqual(results, [
-      { id: pub, name: `Find ${nonce} Public`, visibility: "public", viewerRole: null },
-      { name: `Find ${nonce} Secret`, visibility: "private" },
-    ]);
-    for (const r of results)
-      for (const key of ["memberCount", "members", "inviteToken"])
-        assert.equal(key in r, false, key);
-  });
+  await t.test(
+    "public result links; private result shows name only",
+    async () => {
+      const pub = group(`Find ${nonce} Public`);
+      group(`Find ${nonce} Secret`, { visibility: "private" });
+      const results = await found(`find ${nonce.toUpperCase()}`);
+      assert.deepEqual(results, [
+        {
+          id: pub,
+          name: `Find ${nonce} Public`,
+          visibility: "public",
+          viewerRole: null,
+        },
+        { name: `Find ${nonce} Secret`, visibility: "private" },
+      ]);
+      for (const r of results)
+        for (const key of ["memberCount", "members", "inviteToken"])
+          assert.equal(key in r, false, key);
+    },
+  );
 
   await t.test("a private group you're in shows as yours", async () => {
     group(`Mine ${nonce} Private`, { visibility: "private" });
@@ -161,7 +172,8 @@ test("group search", async (t) => {
   });
 
   await t.test("at most 20 results", async () => {
-    for (let i = 0; i < 22; i++) group(`Many ${nonce} ${String(i).padStart(2, "0")}`);
+    for (let i = 0; i < 22; i++)
+      group(`Many ${nonce} ${String(i).padStart(2, "0")}`);
     const results = await found(`Many ${nonce}`);
     assert.equal(results.length, 20);
     assert.equal(results[0].name, `Many ${nonce} 00`);
