@@ -41,16 +41,22 @@ export interface GroupRequest {
 }
 /**
  * A group page. A private group shows someone without a valid invite link
- * only that it is private.
+ * only that it is private, and their own pending request so they can cancel it.
  */
 export type GroupView =
-  | { id: string; visibility: "private"; concealed: true }
+  | {
+      id: string;
+      visibility: "private";
+      concealed: true;
+      request?: { id: string; state: "pending" };
+    }
   | {
       id: string;
       name: string;
       visibility: GroupVisibility;
       viewerRole: "admin" | "member" | null;
-      memberCount: number;
+      /** Left out of a private group for someone who isn't in it. */
+      memberCount?: number;
       canAsk: boolean;
       request: { id: string; state: "pending" | "declined" } | null;
       members?: GroupMember[];

@@ -460,12 +460,14 @@ function Editor({
             <RepeatIcon size={18} aria-hidden="true" />
             Run again next week
           </Link>
-          <Link
-            className={buttonClass({ variant: "link" })}
-            href={`/sessions/${record.id}/cohosts`}
-          >
-            Co-hosts
-          </Link>
+          {record.canManageCohosts ? (
+            <Link
+              className={buttonClass({ variant: "link" })}
+              href={`/sessions/${record.id}/cohosts`}
+            >
+              Co-hosts
+            </Link>
+          ) : null}
         </div>
       ) : null}
       {copyFailed ? (

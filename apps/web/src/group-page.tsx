@@ -73,14 +73,43 @@ export function GroupPage() {
       </DetailPage>
     );
   if (!group) return null;
+  const status = (
+    <>
+      {said ? (
+        <p ref={note} tabIndex={-1} role="status" className="game-day__status">
+          {said}
+        </p>
+      ) : null}
+      {mutation.error ? <Notice>{mutation.error}</Notice> : null}
+      {mutation.recovery}
+    </>
+  );
+  const cancelButton = (requestId: string) => (
+    <button
+      type="button"
+      className={buttonClass()}
+      disabled={busy}
+      onClick={() =>
+        run("requests/cancel", { requestId }, "Request cancelled.")
+      }
+    >
+      Cancel request
+    </button>
+  );
   if (group.concealed)
     return (
       <DetailPage back="/workspace" backLabel="Your groups">
+        {status}
         <div className="own-status">
           <StatusBanner tone="neutral" icon={<LockSimpleIcon size={22} />}>
             <h1>This group is private.</h1>
-            <p>Ask its admin for an invite link.</p>
+            <p>
+              {group.request
+                ? "Your request to join is waiting for the admin."
+                : "Ask its admin for an invite link."}
+            </p>
           </StatusBanner>
+          {group.request ? cancelButton(group.request.id) : null}
         </div>
       </DetailPage>
     );
@@ -157,9 +186,12 @@ export function GroupPage() {
                   : "Private group"}
           </span>
           <h1>{group.name}</h1>
-          <p className="rp-help">
-            {group.memberCount} {group.memberCount === 1 ? "member" : "members"}
-          </p>
+          {group.memberCount !== undefined ? (
+            <p className="rp-help">
+              {group.memberCount}{" "}
+              {group.memberCount === 1 ? "member" : "members"}
+            </p>
+          ) : null}
         </div>
         {admin ? (
           <div className="fee-actions">
@@ -169,13 +201,7 @@ export function GroupPage() {
           </div>
         ) : null}
       </div>
-      {said ? (
-        <p ref={note} tabIndex={-1} role="status" className="game-day__status">
-          {said}
-        </p>
-      ) : null}
-      {mutation.error ? <Notice>{mutation.error}</Notice> : null}
-      {mutation.recovery}
+      {status}
       {left ? (
         <p>You left this group.</p>
       ) : group.viewerRole === null ? (
@@ -184,20 +210,7 @@ export function GroupPage() {
             <StatusBanner tone="warning" icon={<HourglassIcon size={22} />}>
               <h2>Request sent. The admin will accept or decline it.</h2>
             </StatusBanner>
-            <button
-              type="button"
-              className={buttonClass()}
-              disabled={busy}
-              onClick={() =>
-                run(
-                  "requests/cancel",
-                  { requestId: request.id },
-                  "Request cancelled.",
-                )
-              }
-            >
-              Cancel request
-            </button>
+            {cancelButton(request.id)}
           </div>
         ) : request?.state === "declined" ? (
           <div className="own-status">

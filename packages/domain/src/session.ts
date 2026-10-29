@@ -129,6 +129,8 @@ export interface SessionRecord {
   cancelledFrom?: "draft" | "published" | null;
   /** P-36: who is on a private session's list; managers only. */
   access?: SessionAccessList;
+  /** P-39: only the session's organizer manages co-hosts. */
+  canManageCohosts?: boolean;
 }
 export interface SessionAccessList {
   groups: { id: string; name: string }[];
