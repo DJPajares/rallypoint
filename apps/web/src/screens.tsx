@@ -241,6 +241,7 @@ const statusTone: Partial<Record<MySessionRow["status"], Tone>> = {
   requested: "neutral",
   not_accepted: "neutral",
   request_expired: "neutral",
+  removed: "neutral",
   draft: "neutral",
   cancelled: "danger",
 };
