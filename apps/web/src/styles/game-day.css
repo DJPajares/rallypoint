@@ -208,3 +208,10 @@
   align-items: center;
   gap: 2px;
 }
+
+/* P-37: find a group by name, above your groups. */
+.group-search {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
