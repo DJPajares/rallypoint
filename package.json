@@ -21,7 +21,7 @@
     "typecheck": "turbo run typecheck --cache-dir=.turbo/cache",
     "check": "pnpm lint && pnpm typecheck && pnpm build",
     "test": "pnpm test:api",
-    "test:api": "pnpm db:generate && node --test --test-concurrency=1 tests/*.test.mjs",
+    "test:api": "pnpm db:generate && node scripts/expire-test-email-jobs.mjs && node --test --test-concurrency=1 tests/*.test.mjs",
     "db:start": "node scripts/local.mjs start",
     "db:reset": "node scripts/local.mjs reset",
     "db:stop": "node scripts/local.mjs stop",
