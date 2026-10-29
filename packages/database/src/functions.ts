@@ -107,6 +107,7 @@ export const functions: Record<string, Record<string, string>> = {
   read_managed_session: { ...actor, p_session_id: "uuid" },
   read_shared_session: { p_slug: "uuid", p_actor_id: "uuid" },
   session_access_options: { ...actor, p_query: "text" },
+  search_groups: { ...actor, p_query: "text" },
   read_operation: { ...actor, p_key: "uuid" },
   save_session: {
     ...actor,

@@ -75,9 +75,32 @@ const body = async <T>(c: Context<ApiEnv>, schema: z.ZodType<T>) =>
     "Refresh and try again.",
   );
 
+// P-37: search is for finding a group by name, never for listing them all.
+const search = z.object({ q: z.string().trim().min(2).max(40) });
+
 const base = `/groups/:id{${uuidParam}}`;
 const action = "Use the action button.";
 export const groups = new Hono<ApiEnv>()
+  .get("/groups/search", requireUser, async (c) => {
+    const { q } = parse(
+      search,
+      { q: c.req.query("q") },
+      "invalid_input",
+      "Type 2 to 40 characters to search.",
+    );
+    const { data, error } = await c.var.db.rpc("search_groups", {
+      p_actor_id: c.var.user.id,
+      p_query: q,
+    });
+    if (error)
+      throw new ApiError(
+        503,
+        "service_unavailable",
+        "Groups could not be searched. Please try again.",
+      );
+    return json({ groups: data });
+  })
+  .all("/groups/search", requireUser, () => notAvailable())
   .get(base, requireUser, async (c) => {
     const invite = c.req.query("invite");
     if (invite !== undefined && !uuid.test(invite))
