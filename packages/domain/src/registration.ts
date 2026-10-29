@@ -36,7 +36,9 @@ export interface ManagedFee extends Fee {
       | "removed_before_cutoff"
       | "removed_session_cancelled"
       | "released_unpaid"
-      | "removed_by_organizer";
+      | "removed_by_organizer"
+      | "guest_dropped"
+      | "guest_added";
     previousMinor?: number | null;
     currentMinor?: number | null;
     currency?: string;

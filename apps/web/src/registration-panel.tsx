@@ -17,6 +17,7 @@ import { HowToPay } from "./payment-instructions";
 import { GameDay } from "./game-day";
 import { JoinRequests } from "./join-requests";
 import { InvitePanel } from "./invites";
+import { GuestChange } from "./guest-change";
 import {
   buttonClass,
   CheckField,
@@ -482,6 +483,19 @@ export function RegistrationPanel({
       ) : null}
     </>
   ) : null;
+  // Remove the +1, or add one later (P-27); it shows only when it can happen.
+  const guestChange = own ? (
+    <GuestChange
+      event={event}
+      own={own}
+      view={view}
+      now={now}
+      onDone={(value) => {
+        onChanged(value);
+        onChange();
+      }}
+    />
+  ) : null;
   // Withdraw or leave the waitlist, or say it can no longer happen here.
   const withdrawArea =
     own && (own.state === "confirmed" || own.state === "waitlisted") ? (
@@ -729,6 +743,7 @@ export function RegistrationPanel({
           <div className="game-day-more__body">
             {gameDay.more}
             <ShareButton title={d.title} />
+            {guestChange}
             {withdrawArea}
             {phone && sheetOpen ? null : requestState}
             <button
@@ -796,6 +811,7 @@ export function RegistrationPanel({
             </p>
           ) : null}
           {feeBlock}
+          {guestChange}
           {withdrawArea}
         </div>
       ) : null}
