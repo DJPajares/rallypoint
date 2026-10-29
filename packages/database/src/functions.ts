@@ -105,7 +105,8 @@ export const functions: Record<string, Record<string, string>> = {
   archive_group: { ...actor, p_key: "uuid", p_group_id: "uuid" },
   list_group_sessions: { ...actor, p_group_id: "uuid" },
   read_managed_session: { ...actor, p_session_id: "uuid" },
-  read_shared_session: { p_slug: "uuid" },
+  read_shared_session: { p_slug: "uuid", p_actor_id: "uuid" },
+  session_access_options: { ...actor, p_query: "text" },
   read_operation: { ...actor, p_key: "uuid" },
   save_session: {
     ...actor,
@@ -124,6 +125,7 @@ export const functions: Record<string, Record<string, string>> = {
     p_host_name: "text",
     p_from_session: "uuid",
     p_origin_group: "uuid",
+    p_access: "jsonb",
   },
   update_session: {
     ...actor,
@@ -132,6 +134,7 @@ export const functions: Record<string, Record<string, string>> = {
     p_intent: "text",
     p_version: "integer",
     p_details: "jsonb",
+    p_access: "jsonb",
   },
   cancel_session: {
     ...actor,

@@ -112,6 +112,8 @@ async function call(
         "group_access_denied",
         `Only this session’s organizers can ${managingWords[managing]}.`,
       );
+    if (error.code === "42501" && error.message === "session_private")
+      throw new ApiError(403, "session_private", "This session is private.");
     if (error.code === "42501")
       throw new ApiError(
         403,

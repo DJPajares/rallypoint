@@ -85,6 +85,8 @@ export function defaultCurrency(timeZone: string, locale?: string): Currency {
 export type PaymentMode = "untracked" | "organizer";
 /** Join directly (anyone with the link), or ask and wait for an organizer. */
 export type JoinMode = "direct" | "request";
+/** P-36: who can see a session. Private sessions are seen by the people its organizers chose. */
+export type SessionAccess = "public" | "private";
 export interface SessionForm {
   title: string;
   activity: string;
@@ -106,6 +108,7 @@ export interface SessionForm {
   releaseUnpaid?: boolean;
   /** Missing means "direct": sessions saved before this choice existed. */
   joinMode?: JoinMode;
+  access?: SessionAccess;
 }
 export interface SessionDetails extends SessionForm {
   startsAt?: string;
@@ -124,7 +127,21 @@ export interface SessionRecord {
   details: SessionDetails;
   bookingsStarted: boolean;
   cancelledFrom?: "draft" | "published" | null;
+  /** P-36: who is on a private session's list; managers only. */
+  access?: SessionAccessList;
 }
+export interface SessionAccessList {
+  groups: { id: string; name: string }[];
+  people: { profileId: string; name: string }[];
+}
+/** What someone without access to a private session gets (P-36). */
+export interface PrivateSession {
+  slug: string;
+  private: true;
+}
+export const isPrivateStub = (
+  s: SharedSession | PrivateSession,
+): s is PrivateSession => "private" in s && s.private === true;
 export interface SharedSession {
   slug: string;
   groupName: string;
@@ -158,6 +175,7 @@ export const blankSession = (): SessionForm => {
     paymentMode: "untracked",
     releaseUnpaid: false,
     joinMode: "direct",
+    access: "public",
   };
 };
 export class InputError extends Error {}
@@ -246,6 +264,15 @@ export function normalizeSession(
   )
     throw new InputError("Choose who can join.");
   form.joinMode = (raw.joinMode as JoinMode | undefined) ?? "direct";
+  if (
+    raw.access !== undefined &&
+    raw.access !== "public" &&
+    raw.access !== "private"
+  )
+    throw new InputError("Choose who can see it.");
+  form.access = (raw.access as SessionAccess | undefined) ?? "public";
+  // Ask to join is for public sessions only.
+  if (form.access === "private") form.joinMode = "direct";
   // A blank link is left out, so sessions saved before links stay unchanged.
   const mapsLink = normalizeMapsLink(raw.mapsLink);
   if (mapsLink) form.mapsLink = mapsLink;
