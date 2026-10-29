@@ -194,6 +194,15 @@ export const functions: Record<string, Record<string, string>> = {
     p_note_sent_at: "timestamptz",
   },
   remove_party: { ...write, p_party_id: "uuid" },
+  change_guest: {
+    ...slug,
+    p_key: "uuid",
+    p_party_id: "uuid",
+    p_action: "text",
+    p_guest_name: "text",
+    p_version: "integer",
+    p_consent: "boolean",
+  },
   update_payment_note: {
     ...slug,
     p_key: "uuid",

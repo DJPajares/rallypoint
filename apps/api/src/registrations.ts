@@ -13,6 +13,7 @@ type Action =
   | "attendance"
   | "release"
   | "remove"
+  | "guest"
   | "note"
   | "ask"
   | "request"
@@ -52,6 +53,18 @@ const conflicts: Record<string, string> = {
     "Organizers and co-hosts can’t be removed. They can withdraw themselves.",
   removed_from_session:
     "The organizer removed you from this session, so you can’t join it again.",
+  no_guest: "There’s no guest on this booking. Refresh to see the latest.",
+  guest_exists: "Your booking already has a guest.",
+  guest_checked_in:
+    "Your guest is already checked in, so they can’t be removed here. Ask the organizer.",
+  guest_share_stays:
+    "After the cutoff your guest’s share stays, so they can’t be removed here. Ask the organizer.",
+  guest_no_place:
+    "There’s no free place for a guest right now, or someone is already waiting for one.",
+  guest_fee_settled:
+    "Your fee is already marked paid or waived, so a guest can’t be added here. Ask the organizer.",
+  guest_change_closed:
+    "Guests can only change before the session starts, while you’re booked. Refresh your record.",
   note_not_allowed:
     "You can only say you’ve paid for your own booking in a session paid to the organizer.",
   note_already_paid: "The organizer has already marked this paid.",
@@ -193,6 +206,17 @@ const release = z.object({
   noteSentAt: z.union([z.iso.datetime({ offset: true }), z.null()]),
 });
 const removal = z.object({ operationKey: key, partyId: key });
+const guestChange = z.discriminatedUnion("action", [
+  z.object({ operationKey: key, partyId: key, action: z.literal("drop") }),
+  z.object({
+    operationKey: key,
+    partyId: key,
+    action: z.literal("add"),
+    guestName: z.string().trim().max(80),
+    version: z.number().int().min(1),
+    consent: z.literal(true),
+  }),
+]);
 const paymentNote = z.object({
   operationKey: key,
   partyId: key,
@@ -362,6 +386,23 @@ export const registrations = new Hono<ApiEnv>()
     });
   })
   .all(`${base}/remove`, requireUser, () => notAvailable(action))
+  .post(`${base}/guest`, requireUser, async (c) => {
+    const b = parse(
+      guestChange,
+      await readBody(c.req.raw),
+      "invalid_guest_change",
+      "Check your guest and agree to the fee to add them.",
+    );
+    return call(c, "guest", "change_guest", {
+      p_key: b.operationKey,
+      p_party_id: b.partyId,
+      p_action: b.action,
+      p_guest_name: b.action === "add" ? b.guestName : null,
+      p_version: b.action === "add" ? b.version : null,
+      p_consent: b.action === "add" ? b.consent : null,
+    });
+  })
+  .all(`${base}/guest`, requireUser, () => notAvailable(action))
   .post(`${base}/payment-note`, requireUser, async (c) => {
     const b = parse(paymentNote, await readBody(c.req.raw), ...invalid.note);
     return call(c, "note", "update_payment_note", {
