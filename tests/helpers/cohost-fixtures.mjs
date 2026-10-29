@@ -97,7 +97,7 @@ export async function cohostFixture(t, { join = true } = {}) {
     intent: "publish",
     details: {
       title: "Synthetic co-host session",
-      // A typed activity: one seat is below any sport's minimum (D-23).
+      // A typed activity: two seats are below any sport's minimum (D-23).
       activity: "Synthetic practice",
       location: "Synthetic court",
       instructions: "",
@@ -106,7 +106,8 @@ export async function cohostFixture(t, { join = true } = {}) {
       openLocal: local(-3600000),
       cutoffLocal: local(43200000),
       timeZone: "UTC",
-      capacity: "1",
+      // Both joiners are confirmed, so both can be made co-hosts (P-39).
+      capacity: "2",
       fee: "5.00",
       currency: "SGD",
       guests: false,

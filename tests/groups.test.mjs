@@ -123,6 +123,18 @@ test("the owner renames their group; sessions keep showing who hosts them", asyn
   assert.notEqual(shared.session.groupName, name);
 });
 
+test("a rename and its retry both report the admin role", async (t) => {
+  const f = await fixture(t);
+  const [owner] = f.actors;
+  const g = await ownGroup(t, f, owner);
+  const key = crypto.randomUUID();
+  for (let i = 0; i < 2; i++) {
+    const r = await rename(f, owner, g.group.id, "Synthetic retried", key);
+    assert.equal(r.status, 200);
+    assert.equal((await r.json()).group.role, "admin", `attempt ${i + 1}`);
+  }
+});
+
 test("a blank or 101-character name is refused and nothing changes", async (t) => {
   const f = await fixture(t);
   const [owner] = f.actors;

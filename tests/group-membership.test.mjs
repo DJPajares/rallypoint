@@ -165,6 +165,9 @@ test("group membership", async (t) => {
     assert.equal(invited.name, "Synthetic private group");
     assert.equal(invited.canAsk, true);
     assert.equal(invited.members, undefined);
+    // P-39: the link shows the name and Ask to join, not how many are in it.
+    assert.equal("memberCount" in invited, false);
+    assert.equal(typeof (await view(g, owner)).memberCount, "number");
     assert.equal((await ask(g, b, token)).status, 200);
     assert.equal(
       (await answer(g, owner, pending(g, b), "decline")).status,
@@ -286,6 +289,36 @@ test("group membership", async (t) => {
     assert.equal(pending(g, a), id);
     assert.equal((await answer(g, owner, id, "accept")).status, 200);
   });
+
+  await t.test(
+    "after a group turns Private, a requester sees only their request",
+    async () => {
+      const g = await group("public");
+      await ask(g, b);
+      const id = pending(g, b);
+      const r = await request(`/api/groups/${g.id}/visibility`, owner, {
+        operationKey: crypto.randomUUID(),
+        visibility: "private",
+      });
+      assert.equal(r.status, 200);
+      const hidden = { id: g.id, visibility: "private", concealed: true };
+      assert.deepEqual(await view(g, b), {
+        ...hidden,
+        request: { id, state: "pending" },
+      });
+      // The cancel answer, and its retry, show nothing more about the group.
+      const operationKey = crypto.randomUUID();
+      for (let i = 0; i < 2; i++) {
+        const c = await request(`/api/groups/${g.id}/requests/cancel`, b, {
+          operationKey,
+          requestId: id,
+        });
+        assert.equal(c.status, 200, await c.clone().text());
+        assert.deepEqual((await c.json()).group, hidden, `attempt ${i + 1}`);
+      }
+      assert.deepEqual(await view(g, b), hidden);
+    },
+  );
   await t.test("someone asking before opening the app is named", async () => {
     const g = await group("public");
     const email = `p35-${nonce}-fresh@rallypoint.test`;

@@ -114,7 +114,10 @@ or remote reset path. Do not place real data in this development database.
 `pnpm test:api` uses the synthetic passwords without logging tokens. It checks
 missing/forged sessions, group isolation, metadata role spoofing, immediate role
 revocation, backend-RPC denial, internal-table exposure and truthful empty results.
-It temporarily removes and restores the synthetic organizer role.
+It temporarily removes and restores the synthetic organizer role. Before it runs,
+it expires email jobs that earlier runs left queued for synthetic
+`@rallypoint.test` accounts, since nothing sends them locally and the queue
+would otherwise fill.
 
 ## Configuration
 

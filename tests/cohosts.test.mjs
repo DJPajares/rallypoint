@@ -317,10 +317,20 @@ test("concurrent retries are audited once; stale grants and old receipts cannot 
 test("candidates are scoped, historical, named from profiles, and existing co-hosts can be removed without registrations", async (t) => {
   const f = await cohostFixture(t);
   f.sql(`update app.parties set state='withdrawn' where session_id='${f.session.id}' and user_id='${f.member.id}';
+    update app.parties set state='waitlisted' where session_id='${f.session.id}' and user_id='${f.newcomer.id}';
     insert into app.group_roles values('${f.group.id}','${f.outsider.id}','cohost');`);
   const state = await f.read();
-  assert.ok(state.candidates.some((p) => p.profileId === f.member.profileId));
-  assert.ok(state.candidates.some((p) => p.profileId === f.newcomer.profileId));
+  const listed = (s, who) => s.candidates.some((p) => p.profileId === who.profileId);
+  // P-39: members of the organizer's groups, and people confirmed in one of
+  // their sessions. A waitlisted newcomer is neither.
+  assert.ok(listed(state, f.member));
+  assert.ok(!listed(state, f.newcomer));
+  assert.equal(
+    (await f.change(f.owner, f.newcomer.profileId, "add", state.revision)).status,
+    409,
+  );
+  f.sql(`update app.parties set state='confirmed' where session_id='${f.session.id}' and user_id='${f.newcomer.id}';`);
+  assert.ok(listed(await f.read(), f.newcomer));
   assert.deepEqual(state.assigned, [
     { name: f.outsider.displayName, profileId: f.outsider.profileId },
   ]);
@@ -404,6 +414,9 @@ test("candidates are scoped, historical, named from profiles, and existing co-ho
     ),
     "owner",
   );
+  // Someone who withdrew and isn't in the organizer's group isn't listed.
+  f.sql(`delete from app.group_roles where group_id='${f.community.id}' and user_id='${f.member.id}';`);
+  assert.ok(!listed(await f.read(), f.member));
 });
 
 test("candidate paging reaches each stable profile once, even when names match or change", async (t) => {
@@ -419,7 +432,7 @@ test("candidate paging reaches each stable profile once, even when names match o
   f.sql(`insert into auth.users(id) values ${ids.map((id) => `('${id}')`).join(",")};
     insert into app.profiles(user_id,account_name) values ${ids.map((id) => `('${id}','Same name')`).join(",")};
     insert into app.parties(session_id,user_id,primary_name,seats,state,queue_sequence,consent_version,consent_at)
-      values ${ids.map((id, i) => `('${f.session.id}','${id}','Old name',1,'withdrawn',${i + 1},1,now())`).join(",")};`);
+      values ${ids.map((id, i) => `('${f.session.id}','${id}','Old name',1,'confirmed',${i + 1},1,now())`).join(",")};`);
   const a = await f.read();
   assert.equal(a.candidates.length, 50);
   assert.ok(a.nextCursor);
@@ -522,7 +535,7 @@ function baseURL(path) {
   return (process.env.RALLYPOINT_TEST_URL ?? "http://127.0.0.1:3000") + path;
 }
 
-test("revoking a co-host also denies deleted-draft receipt recovery and same-key POST replay", async (t) => {
+test("deleting a draft removes its team; the deleter's retry and recovery still answer", async (t) => {
   const f = await cohostFixture(t);
   assert.equal(
     (await f.change(f.owner, f.member.profileId, "add", "0")).status,
@@ -536,41 +549,49 @@ test("revoking a co-host also denies deleted-draft receipt recovery and same-key
   });
   assert.equal(draftResponse.status, 200);
   const draft = (await draftResponse.json()).session;
-  // Run again copied the co-host; this draft's team is managed on its own.
+  // Run again copied the co-host onto the draft's own team.
   const draftTeam = f.sql(
     `select group_id from app.sessions where id='${draft.id}';`,
   );
   const operationKey = crypto.randomUUID();
   const path = `/api/sessions/${draft.id}/delete`;
   assert.equal((await request(path, f.member, { operationKey })).status, 200);
+  // P-39: the team and its co-host roles go with the draft.
+  assert.equal(
+    f.sql(
+      `select (select count(*) from app.groups where id='${draftTeam}')||'|'||(select count(*) from app.group_roles where group_id='${draftTeam}');`,
+    ),
+    "0|0",
+  );
   assert.equal(
     (await request(`/api/operations/${operationKey}`, f.member)).status,
     200,
   );
   assert.equal((await request(path, f.member, { operationKey })).status, 200);
-  // The draft is gone, so its co-host is removed through its team.
-  const teamPath = `/api/groups/${draftTeam}/cohosts`;
-  const teamState = (await (await request(teamPath, f.owner)).json()).cohosts;
+  // Someone else's key never answers.
   assert.equal(
-    (
-      await request(teamPath, f.owner, {
-        operationKey: crypto.randomUUID(),
-        profileId: f.member.profileId,
-        action: "remove",
-        revision: teamState.revision,
-      })
-    ).status,
-    200,
+    (await request(`/api/operations/${operationKey}`, f.newcomer)).status,
+    404,
   );
-  assert.equal(
-    (await request(`/api/operations/${operationKey}`, f.member)).status,
-    403,
-  );
-  assert.equal((await request(path, f.member, { operationKey })).status, 403);
   assert.equal(
     f.sql(`select count(*) from app.sessions where id='${draft.id}';`),
     "0",
   );
+});
+
+test("only the session's organizer is offered co-host management", async (t) => {
+  const f = await cohostFixture(t);
+  assert.equal(
+    (await f.change(f.owner, f.member.profileId, "add", "0")).status,
+    200,
+  );
+  const managed = async (actor) => {
+    const r = await request(`/api/sessions/${f.session.id}`, actor);
+    assert.equal(r.status, 200);
+    return (await r.json()).session.canManageCohosts;
+  };
+  assert.equal(await managed(f.owner), true);
+  assert.equal(await managed(f.member), false);
 });
 
 test("an owner can revoke co-host access to retained session history after removing the group", async (t) => {
