@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { FormEvent, RefObject } from "react";
 import Link from "next/link";
+import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
 import { EarnedBadgeCheck } from "./badges";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useAuth } from "./auth-context";
@@ -984,10 +985,13 @@ function SessionHead({
   shared,
   heading,
   ticket = true,
+  manageHref,
 }: {
   shared: SharedSession;
   heading: RefObject<HTMLHeadingElement | null>;
   ticket?: boolean;
+  /** P-33: the editor, for the session's organizers and co-hosts only. */
+  manageHref?: string;
 }) {
   const { catalog } = useActivities();
   return (
@@ -1017,6 +1021,16 @@ function SessionHead({
       <h1 ref={heading} tabIndex={-1}>
         {shared.details.title}
       </h1>
+      {/* Secondary, so Share stays the one primary action (D-15). */}
+      {manageHref ? (
+        <Link
+          className={buttonClass({ size: "sm" })}
+          href={manageHref}
+        >
+          <PencilSimpleIcon size={16} aria-hidden="true" />
+          Manage session
+        </Link>
+      ) : null}
       {shared.state !== "published" ? (
         <Notice tone="warning">
           {shared.state === "cancelled"
@@ -1199,7 +1213,16 @@ function SignedInSession({
         gameDay ? "session-layout session-layout--game-day" : "session-layout"
       }
     >
-      <SessionHead shared={shared} heading={heading} ticket={!gameDay} />
+      <SessionHead
+        shared={shared}
+        heading={heading}
+        ticket={!gameDay}
+        manageHref={
+          layoutView?.canManage && layoutView.sessionId
+            ? `/sessions/${layoutView.sessionId}/edit`
+            : undefined
+        }
+      />
       <aside className="session-side" aria-label="Places and registration">
         {gameDay ? null : <Availability shared={shared} />}
         <RegistrationPanel
