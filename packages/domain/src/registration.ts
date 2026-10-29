@@ -243,6 +243,8 @@ export interface RegistrationView {
     attendance?: SeatAttendance[];
     /** The badge this person chose to show, while it is still earned. */
     title?: RosterTitle | null;
+    /** Organizers/co-hosts only; whether this party can be removed right now (P-28). */
+    removable?: boolean;
     /** Organizers/co-hosts only; who removed this party and when (P-28). */
     removal?: { by: string; at: string };
     /** Organizers/co-hosts only; whether this party could be released right now. */

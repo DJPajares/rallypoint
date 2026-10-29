@@ -1019,11 +1019,6 @@ export function RegistrationPanel({
           slug={event.slug}
           view={view}
           ended={ended}
-          canRemove={
-            event.state === "published" &&
-            !!d.startsAt &&
-            now < Date.parse(d.startsAt)
-          }
           tracked={tracked}
           when={when}
           splitCurrency={split?.currency}

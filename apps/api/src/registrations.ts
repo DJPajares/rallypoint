@@ -48,6 +48,8 @@ const conflicts: Record<string, string> = {
   removal_not_eligible:
     "They’ve already left this session. Refresh to see the latest.",
   party_not_found: "That person isn’t in this session. Refresh the list.",
+  removal_not_allowed:
+    "Organizers and co-hosts can’t be removed. They can withdraw themselves.",
   removed_from_session:
     "The organizer removed you from this session, so you can’t join it again.",
   note_not_allowed:

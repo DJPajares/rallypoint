@@ -280,11 +280,14 @@ function ReleaseConfirm({
 function RemoveConfirm({
   slug,
   party,
+  waiting,
   onKeep,
   onDone,
 }: {
   slug: string;
   party: RosterParty;
+  /** Whether anyone else is waiting for a place. */
+  waiting: boolean;
   onKeep: () => void;
   onDone: (view: RegistrationView) => void;
 }) {
@@ -298,7 +301,9 @@ function RemoveConfirm({
       <p>
         {party.state === "waitlisted"
           ? "They leave the waitlist."
-          : `${party.seats === 2 ? "Their places go" : "Their place goes"} to the next person waiting.`}{" "}
+          : waiting
+            ? `${party.seats === 2 ? "Their places open" : "Their place opens"} for the waitlist.`
+            : `${party.seats === 2 ? "Their places open" : "Their place opens"} up.`}{" "}
         {fee?.markedPaid
           ? "Their payment stays marked paid; sort out any refund with them."
           : fee && fee.liabilityState === "due" && fee.totalMinor > 0
@@ -355,8 +360,7 @@ function PartyDetails({
   when: (iso: string) => string;
   onDone: (view: RegistrationView) => void;
   onRelease: (partyId: string) => void;
-  /** Present only while people can still be removed: before the start. */
-  onRemove?: (partyId: string) => void;
+  onRemove: (partyId: string) => void;
   onUndoReview: (partyId: string) => void;
 }) {
   const labelId = `sheet-party-${party.id}`;
@@ -439,16 +443,14 @@ function PartyDetails({
       {tracked && party.state === "waitlisted" ? (
         <p className="rp-help">Waiting is free until a place opens.</p>
       ) : null}
-      {party.id &&
-      onRemove &&
-      (party.state === "confirmed" || party.state === "waitlisted") ? (
+      {party.id && party.removable ? (
         <div>
           <button
             type="button"
             className={buttonClass({ size: "sm" })}
             aria-describedby={labelId}
             aria-haspopup="dialog"
-            onClick={() => onRemove(party.id!)}
+            onClick={() => onRemove?.(party.id!)}
           >
             Remove from session
           </button>
@@ -474,7 +476,6 @@ export function GameDay({
   slug,
   view,
   ended,
-  canRemove,
   tracked,
   when,
   splitCurrency,
@@ -484,8 +485,6 @@ export function GameDay({
   slug: string;
   view: RegistrationView;
   ended: boolean;
-  /** Published and not started: organizers can still remove people (P-28). */
-  canRemove: boolean;
   /** "Pay the organizer": only then do payment words, counts and filters show. */
   tracked: boolean;
   when: (iso: string) => string;
@@ -660,14 +659,10 @@ export function GameDay({
               setOpenId(null);
               setReleaseId(id);
             }}
-            onRemove={
-              canRemove
-                ? (id) => {
-                    setOpenId(null);
-                    setRemoveId(id);
-                  }
-                : undefined
-            }
+            onRemove={(id) => {
+              setOpenId(null);
+              setRemoveId(id);
+            }}
             onUndoReview={(id) => {
               setOpenId(null);
               onUndoReview(id);
@@ -720,6 +715,9 @@ export function GameDay({
           <RemoveConfirm
             slug={slug}
             party={removing}
+            waiting={view.roster.some(
+              (p) => p.state === "waitlisted" && p.id !== removing.id,
+            )}
             onKeep={() => setRemoveId(null)}
             onDone={(next) => {
               onDone(next);

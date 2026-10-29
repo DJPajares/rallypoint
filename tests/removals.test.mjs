@@ -195,3 +195,76 @@ test("nobody can be removed once the session starts", async (t) => {
   assert.equal((await r.json()).error.code, "removal_closed");
   assert.equal(f.state(f.member), "confirmed");
 });
+
+test("organizers and co-hosts can't be removed; they withdraw instead", async (t) => {
+  const f = await setup(t);
+  assert.equal(
+    (await f.change(f.owner, f.member.profileId, "add", "0")).status,
+    200,
+  );
+  const roster = (await f.view()).roster;
+  const cohost = await f.party(f.member);
+  assert.equal(cohost.removable, false);
+  assert.equal((await f.party(f.newcomer)).removable, true);
+  const r = await f.remove(f.owner, cohost.id);
+  assert.equal(r.status, 409);
+  assert.equal((await r.json()).error.code, "removal_not_allowed");
+  assert.equal(f.state(f.member), "confirmed");
+  assert.ok(roster.length > 0);
+});
+
+test("a removed party's fee never becomes due again", async (t) => {
+  const f = await setup(t);
+  const target = await f.party(f.newcomer);
+  assert.equal(
+    (
+      await request(`${f.path}/payments`, f.owner, {
+        operationKey: crypto.randomUUID(),
+        partyId: target.id,
+        action: "mark_paid",
+        revision: target.fee.revision,
+      })
+    ).status,
+    200,
+  );
+  assert.equal((await f.remove(f.owner, target.id)).status, 200);
+  const paid = (await f.party(f.newcomer)).fee;
+  // Marked paid by mistake: taking the mark back drops the fee, as removal would have.
+  const r = await request(`${f.path}/payments`, f.owner, {
+    operationKey: crypto.randomUUID(),
+    partyId: target.id,
+    action: "mark_unpaid",
+    revision: paid.revision,
+  });
+  assert.equal(r.status, 200, await r.clone().text());
+  const fee = (await f.party(f.newcomer)).fee;
+  assert.equal(fee.liabilityState, "removed_by_organizer");
+  assert.equal(fee.markedPaid, false);
+});
+
+test("a removal closes the person's waiting request", async (t) => {
+  const f = await setup(t);
+  const target = await f.party(f.newcomer);
+  const requestId = f.sql(`insert into app.join_requests(session_id,user_id,primary_name,guest_name,seats,consent_version,consent_at,state,asked_at)
+    values('${f.session.id}','${f.newcomer.id}','Synthetic newcomer','',1,1,now(),'pending',now()) returning id;`);
+  assert.equal((await f.remove(f.owner, target.id)).status, 200);
+  assert.equal(
+    f.sql(`select state from app.join_requests where id='${requestId}';`),
+    "cancelled",
+  );
+});
+
+test("someone who once declined an invite can still be invited back after a removal", async (t) => {
+  const f = await setup(t);
+  f.sql(`insert into app.invites(session_id,invitee_id,inviter_id,inviter_name,state,decided_at)
+    values('${f.session.id}','${f.newcomer.id}','${f.owner.id}','Synthetic organizer','declined',now());`);
+  const target = await f.party(f.newcomer);
+  assert.equal((await f.remove(f.owner, target.id)).status, 200);
+  const invited = await request("/api/invites", f.owner, {
+    operationKey: crypto.randomUUID(),
+    kind: "session",
+    target: f.session.id,
+    profileId: f.newcomer.profileId,
+  });
+  assert.equal(invited.status, 200, await invited.clone().text());
+});
