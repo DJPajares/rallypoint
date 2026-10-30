@@ -552,7 +552,7 @@ const initials = (name: string) =>
     .toUpperCase() || "?";
 
 /** The group's mark: its initials on a gradient chosen by the group. */
-function GroupCrest({ id, name }: { id: string; name: string }) {
+export function GroupCrest({ id, name }: { id: string; name: string }) {
   return (
     <span className="group-crest" data-tone={tone(id)} aria-hidden="true">
       {initials(name)}

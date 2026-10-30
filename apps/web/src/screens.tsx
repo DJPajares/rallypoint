@@ -18,10 +18,9 @@ import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
 import type {
   GroupSummary,
-  GroupVisibility,
   Identity,
 } from "@rallypoint/domain/contracts";
-import { visibilityHelp, visibilityOptions } from "./group-visibility";
+import { EditGroupForm } from "./group-edit";
 import { HomeInvites } from "./invites";
 import { feeStanding } from "@rallypoint/domain/registration";
 import { SplitFee } from "./split-fee";
@@ -38,20 +37,16 @@ import {
   Badge,
   buttonClass,
   EmptyState,
-  Field,
   ListGroup,
   Notice,
   Pending,
   Pill,
   Segmented,
-  SelectField,
-  Sheet,
   SpotsMeter,
   Ticket,
 } from "@rallypoint/ui";
 import type { Tone } from "@rallypoint/ui";
-import { DetailPage, StickyActions } from "./ui";
-import { useMutation } from "./use-mutation";
+import { DetailPage } from "./ui";
 import { EarnedBadgeSheet, NextBadge } from "./badges";
 import type { BadgesView } from "@rallypoint/domain/badges";
 function Redirect({ href }: { href: string; replace?: boolean }) {
@@ -646,154 +641,6 @@ export function EditGroup() {
         <EditGroupForm group={group} />
       ) : null}
     </DetailPage>
-  );
-}
-/** Public or Private (P-35): who can find the group and ask to join. */
-function GroupVisibilityForm({ group }: { group: GroupSummary }) {
-  const [visibility, setVisibility] = useState(group.visibility ?? "public");
-  const [saved, setSaved] = useState("");
-  const save = useMutation<{ group: { visibility: string } }>(() =>
-    setSaved("Saved."),
-  );
-  return (
-    <form
-      className="rp-card"
-      onSubmit={(e) => {
-        e.preventDefault();
-        setSaved("");
-        save.run(`/api/groups/${group.id}/visibility`, { visibility });
-      }}
-    >
-      <fieldset disabled={save.busy || save.uncertain}>
-        <Field
-          id="group-visibility"
-          label="Who can find it"
-          help={visibilityHelp(visibility)}
-        >
-          <SelectField
-            id="group-visibility"
-            aria-describedby="group-visibility-help"
-            value={visibility}
-            onChange={(next) => setVisibility(next as GroupVisibility)}
-            options={visibilityOptions}
-          />
-        </Field>
-        <button className={buttonClass()}>
-          {save.busy ? "Saving…" : "Save"}
-        </button>
-        <p role="status" className="rp-help">
-          {saved}
-        </p>
-      </fieldset>
-      {save.error ? <Notice>{save.error}</Notice> : null}
-      {save.recovery}
-    </form>
-  );
-}
-function EditGroupForm({ group }: { group: GroupSummary }) {
-  const router = useRouter(),
-    [name, setName] = useState(group.name),
-    [open, setOpen] = useState(false);
-  const save = useMutation<{ group: GroupSummary }>(() =>
-    router.push(`/groups/${group.id}`),
-  );
-  const remove = useMutation<{ archived: boolean }>(() =>
-    router.push("/workspace"),
-  );
-  const working = save.busy || save.uncertain;
-  const removing = remove.busy || remove.uncertain;
-  return (
-    <>
-      <div className="page-head">
-        <h1>Edit group</h1>
-      </div>
-      <form
-        className="rp-card"
-        onSubmit={(e) => {
-          e.preventDefault();
-          save.run(`/api/groups/${group.id}/rename`, { name });
-        }}
-      >
-        <fieldset disabled={working || removing}>
-          <Field id="group-name" label="Group name">
-            <input
-              id="group-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={100}
-              required
-              autoComplete="organization"
-            />
-          </Field>
-          <StickyActions>
-            {/* A disabled fieldset doesn't stop links, so hold this one still while saving. */}
-            <Link
-              className={buttonClass()}
-              href={`/groups/${group.id}`}
-              aria-disabled={working || removing || undefined}
-              tabIndex={working || removing ? -1 : undefined}
-              style={
-                working || removing
-                  ? { opacity: 0.6, cursor: "not-allowed" }
-                  : undefined
-              }
-              onClick={(e) => {
-                if (working || removing) e.preventDefault();
-              }}
-            >
-              Cancel
-            </Link>
-            <button className={buttonClass({ variant: "primary" })}>
-              {save.busy ? "Saving…" : "Save"}
-            </button>
-          </StickyActions>
-        </fieldset>
-        {save.error ? <Notice>{save.error}</Notice> : null}
-        {save.recovery}
-      </form>
-      <GroupVisibilityForm group={group} />
-      <section className="rp-card" aria-label="Remove group">
-        <button
-          type="button"
-          className={buttonClass()}
-          disabled={working || removing}
-          onClick={() => setOpen(true)}
-        >
-          Remove group
-        </button>
-        <Sheet
-          open={open}
-          onClose={() => setOpen(false)}
-          title="Remove this group?"
-        >
-          <p>
-            It disappears for everyone in it. Past sessions and badges stay.
-          </p>
-          <div className="fee-actions">
-            <button
-              type="button"
-              className={buttonClass()}
-              disabled={removing}
-              onClick={() => setOpen(false)}
-            >
-              Keep it
-            </button>
-            <button
-              type="button"
-              className={buttonClass({ variant: "primary" })}
-              disabled={removing}
-              onClick={() => remove.run(`/api/groups/${group.id}/archive`, {})}
-            >
-              {remove.busy ? "Removing…" : "Remove group"}
-            </button>
-          </div>
-          {remove.error ? <Notice>{remove.error}</Notice> : null}
-          {remove.recovery}
-        </Sheet>
-        {!open && remove.error ? <Notice>{remove.error}</Notice> : null}
-        {!open ? remove.recovery : null}
-      </section>
-    </>
   );
 }
 export function NotFound() {
