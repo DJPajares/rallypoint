@@ -1,7 +1,16 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
-import { buttonClass, Field, Notice, Pending, Sheet } from "@rallypoint/ui";
+import {
+  buttonClass,
+  Field,
+  ListGroup,
+  ListRow,
+  Notice,
+  Pending,
+  Sheet,
+} from "@rallypoint/ui";
 import type {
   InviteCandidate,
   MyInvite,
@@ -129,13 +138,28 @@ export function InvitePanel({
   target,
   invites,
   onChanged,
+  sheetOpen,
+  onSheetChange,
+  sheetTop,
 }: {
   kind: "group" | "session";
   target: string;
   invites: SentInvite[];
   onChanged: () => void;
+  /**
+   * When the page opens the sheet itself (the group page's Invite people),
+   * the panel shows only the invites already sent, and only if there are any.
+   */
+  sheetOpen?: boolean;
+  onSheetChange?: (open: boolean) => void;
+  /** Shown first in the sheet, such as the group's invite link. */
+  sheetTop?: ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
+  const [ownOpen, setOwnOpen] = useState(false);
+  const controlled = sheetOpen !== undefined;
+  const open = controlled ? sheetOpen : ownOpen;
+  const setOpen = (next: boolean) =>
+    controlled ? onSheetChange?.(next) : setOwnOpen(next);
   const [query, setQuery] = useState("");
   const [shown, setShown] = useState("");
   const [said, setSaid] = useState("");
@@ -160,22 +184,29 @@ export function InvitePanel({
     message.current = text;
     mutation.run(path, body);
   };
+  // A page that opens the sheet itself hides an empty list entirely.
+  if (controlled && !invites.length && !open && !said && !mutation.error)
+    return null;
   return (
     <section className="join-requests" aria-labelledby={`invited-${kind}`}>
-      <div className="fee-actions">
+      {controlled ? (
         <h2 id={`invited-${kind}`}>Invited</h2>
-        <button
-          type="button"
-          className={buttonClass()}
-          aria-haspopup="dialog"
-          onClick={() => {
-            setSaid("");
-            setOpen(true);
-          }}
-        >
-          Invite
-        </button>
-      </div>
+      ) : (
+        <div className="fee-actions">
+          <h2 id={`invited-${kind}`}>Invited</h2>
+          <button
+            type="button"
+            className={buttonClass()}
+            aria-haspopup="dialog"
+            onClick={() => {
+              setSaid("");
+              setOpen(true);
+            }}
+          >
+            Invite
+          </button>
+        </div>
+      )}
       {said && !open ? (
         <p ref={note} tabIndex={-1} role="status" className="game-day__status">
           {said}
@@ -211,10 +242,15 @@ export function InvitePanel({
             </li>
           ))}
         </ul>
-      ) : (
+      ) : controlled ? null : (
         <p className="rp-help">Nobody invited yet.</p>
       )}
-      <Sheet open={open} onClose={() => setOpen(false)} title="Invite someone">
+      <Sheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title={controlled ? "Invite people" : "Invite someone"}
+      >
+        {sheetTop}
         <Field
           id={`invite-search-${kind}`}
           label="Search people you know"
@@ -288,25 +324,31 @@ function Candidates({
       </p>
     );
   return (
-    <ul className="join-requests__list">
+    // One row per person with a small Invite, so the sheet has no wall of
+    // brand-coloured buttons (D-15).
+    <ListGroup label="People you can invite">
       {candidates.data.people.map((person) => (
-        <li key={person.profileId} className="join-request">
-          <p className="join-request__name">
-            <PersonName name={person.name} profileId={person.profileId} />
-            <TitlePill title={person.title} />
-          </p>
-          <div className="fee-actions">
+        <ListRow
+          key={person.profileId}
+          title={
+            <>
+              <PersonName name={person.name} profileId={person.profileId} />
+              <TitlePill title={person.title} />
+            </>
+          }
+          trailing={
             <button
               type="button"
-              className={buttonClass({ variant: "primary" })}
+              className={buttonClass({ size: "sm" })}
               disabled={busy}
+              aria-label={`Invite ${person.name}`}
               onClick={() => invite(person)}
             >
               Invite
             </button>
-          </div>
-        </li>
+          }
+        />
       ))}
-    </ul>
+    </ListGroup>
   );
 }

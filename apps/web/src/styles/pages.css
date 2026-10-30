@@ -831,3 +831,188 @@
 .game-day-more__body > :not(.rp-button) {
   justify-self: stretch;
 }
+
+/* Group page (owner, 2026-10-30, "Quiet, not boring"): the crest and the
+   members' faces are the one bold thing; everything below is grouped lists. */
+.group-page {
+  display: grid;
+  gap: var(--space-6);
+  align-content: start;
+}
+.group-hero {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+.group-hero__text {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.group-hero__text h1 {
+  margin: 0;
+  font-size: var(--text-display-md);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+.group-hero__meta,
+.group-hero__people {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-text-muted);
+}
+.group-crest {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  aspect-ratio: 1;
+  border-radius: var(--radius-xl);
+  color: var(--palette-white);
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.02em;
+  box-shadow: var(--shadow-sm);
+}
+.group-crest[data-tone="1"], .group-face[data-tone="1"] { background: var(--avatar-1); }
+.group-crest[data-tone="2"], .group-face[data-tone="2"] { background: var(--avatar-2); }
+.group-crest[data-tone="3"], .group-face[data-tone="3"] { background: var(--avatar-3); }
+.group-crest[data-tone="4"], .group-face[data-tone="4"] { background: var(--avatar-4); }
+.group-crest[data-tone="5"], .group-face[data-tone="5"] { background: var(--avatar-5); }
+.group-crest[data-tone="6"], .group-face[data-tone="6"] { background: var(--avatar-6); }
+.group-face {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+  border-radius: var(--radius-full);
+  color: var(--palette-white);
+  font-family: var(--font-heading);
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+}
+.group-face--lg {
+  width: var(--size-control);
+  height: var(--size-control);
+  font-size: var(--text-xl);
+}
+.group-faces {
+  display: inline-flex;
+}
+.group-faces .group-face {
+  width: 28px;
+  height: 28px;
+  font-size: var(--text-xs);
+  border: 2px solid var(--color-bg);
+}
+.group-faces .group-face + .group-face {
+  margin-inline-start: calc(var(--space-2) * -1);
+}
+/* The one action sits under the header at its own width, with Edit beside
+   it for the admin; on a phone the action fills the row. */
+.group-actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+.group-page .own-status {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}
+.group-page .own-status > * {
+  justify-self: stretch;
+}
+.group-page .own-status > .rp-button {
+  justify-self: start;
+}
+.group-action {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+.group-section {
+  display: grid;
+  gap: var(--space-3);
+}
+.group-section h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+.group-request__actions {
+  display: flex;
+  gap: var(--space-2);
+  /* Lines up under the name: row inset, face, then the row's gap. */
+  padding: 0 var(--space-3) var(--space-3)
+    calc(var(--space-3) + var(--size-control-sm) + var(--space-3));
+}
+.group-confirm {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+.group-confirm p {
+  margin: 0;
+}
+.group-date {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  padding: var(--space-1) 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-sunken);
+  line-height: 1.1;
+}
+.group-date__month {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.group-date__day {
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+}
+.group-invite-link {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-4);
+}
+.group-invite-link p {
+  margin: 0;
+}
+.group-member-sheet {
+  display: grid;
+  gap: var(--space-4);
+  justify-items: start;
+}
+.group-member-sheet__who {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+.group-member-sheet__who p {
+  margin: 0;
+}
+.group-leave {
+  padding-top: var(--space-2);
+}
+@media (max-width: 520px) {
+  .group-actions > .rp-button {
+    flex: 1;
+  }
+  .group-action > .rp-button {
+    justify-self: stretch;
+  }
+  .group-crest {
+    width: 64px;
+    font-size: var(--text-xl);
+  }
+}

@@ -63,8 +63,19 @@ export type GroupView =
       requests?: GroupRequest[];
       inviteToken?: string;
       invites?: SentInvite[];
+      /** Members only: the next sessions opened to this group (up to five). */
+      upcoming?: GroupSession[];
       concealed?: undefined;
     };
+
+/** A session opened to a group through its access list, as members see it. */
+export interface GroupSession {
+  slug: string;
+  title: string;
+  activity: string;
+  startsAt: string;
+  timeZone: string;
+}
 
 export interface CohostPerson {
   profileId: string;
