@@ -27,6 +27,11 @@ export interface MySessionRow {
   waitPosition: number | null;
   /** Organizing rows only: requests waiting for an answer. */
   requestCount?: number;
+  /** Where it happens, as the session page says. */
+  location?: string;
+  /** Hosting, not started yet: parties waiting, and confirmed parties who still owe. */
+  waitingCount?: number;
+  toPayCount?: number;
 }
 
 export interface MySessions {
@@ -120,4 +125,27 @@ export function gameDayHeadline(own: {
 /** How many seats are taken against the capacity, in words. */
 export function comingLine(confirmedSeats: number, capacity: number): string {
   return `${confirmedSeats} of ${capacity} coming`;
+}
+
+/**
+ * How soon a session starts, for Home's Up next (owner, 2026-10-30): plain
+ * words, rounded down, never a time zone. Empty when the start isn't known.
+ */
+export function startsIn(
+  startsAt: string | null,
+  endsAt: string | null,
+  now: number,
+): string {
+  if (!startsAt) return "";
+  const start = Date.parse(startsAt);
+  const end = endsAt ? Date.parse(endsAt) : start;
+  if (start <= now) return end > now ? "Happening now" : "";
+  const minutes = Math.floor((start - now) / 60_000);
+  if (minutes < 1) return "Starting now";
+  if (minutes < 60)
+    return `Starts in ${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Starts in ${hours} ${hours === 1 ? "hour" : "hours"}`;
+  const days = Math.floor(hours / 24);
+  return `In ${days} ${days === 1 ? "day" : "days"}`;
 }

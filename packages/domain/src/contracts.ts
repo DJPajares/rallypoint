@@ -21,6 +21,8 @@ export interface GroupSummary {
   name: string;
   role: "admin" | "member";
   visibility?: GroupVisibility;
+  /** Everyone in the group, the admin included (Groups tab). */
+  memberCount?: number;
 }
 /** One person in a group, as members see them. */
 export interface GroupMember {

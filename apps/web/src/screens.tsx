@@ -10,7 +10,6 @@ import {
 } from "next/navigation";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/csr/ArrowRight";
 import { CalendarDotsIcon } from "@phosphor-icons/react/dist/csr/CalendarDots";
-import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { ReceiptIcon } from "@phosphor-icons/react/dist/csr/Receipt";
 import { UsersThreeIcon } from "@phosphor-icons/react/dist/csr/UsersThree";
@@ -29,7 +28,6 @@ import type {
   SplitClaimDuesItem,
 } from "@rallypoint/domain/registration";
 import { feeLabel } from "@rallypoint/domain/session";
-import { sessionHref, statusLabel } from "@rallypoint/domain/my-sessions";
 import type { MySessionRow, MySessions } from "@rallypoint/domain/my-sessions";
 import { fromLocal } from "./dates";
 import { useFrame } from "./frame";
@@ -40,13 +38,12 @@ import {
   ListGroup,
   Notice,
   Pending,
-  Pill,
   Segmented,
   SpotsMeter,
   Ticket,
 } from "@rallypoint/ui";
-import type { Tone } from "@rallypoint/ui";
 import { DetailPage } from "./ui";
+import { GroupRow, SessionRow, TabHero, UpNext } from "./tab-parts";
 import { EarnedBadgeSheet, NextBadge } from "./badges";
 import type { BadgesView } from "@rallypoint/domain/badges";
 function Redirect({ href }: { href: string; replace?: boolean }) {
@@ -56,8 +53,6 @@ function Redirect({ href }: { href: string; replace?: boolean }) {
   }, [router, href]);
   return <Pending>Opening your page…</Pending>;
 }
-const roleName = (role: GroupSummary["role"]) =>
-  role === "admin" ? "Admin" : "Member";
 /** The public front door. Signed-in visitors continue to their own Home. */
 export function Landing() {
   const { session } = useAuth();
@@ -133,112 +128,132 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     />
   );
 }
-function GroupCard({ group }: { group: GroupSummary }) {
-  return (
-    <article className="rp-card group-card">
-      <span className="rp-icon-tile" aria-hidden="true">
-        <UsersThreeIcon size={24} />
-      </span>
-      <div className="group-card-text">
-        <span className="rp-badge">{roleName(group.role)}</span>
-        <h2>{group.name}</h2>
-      </div>
-      <Link href={`/groups/${group.id}`} className={buttonClass()}>
-        Open group
-        <ArrowRightIcon size={18} aria-hidden="true" />
-      </Link>
-    </article>
-  );
-}
+const DAY = 86_400_000;
 export function HomeDashboard() {
   const identity = useApi<Identity>("/api/me");
   const workspace = useApi<{ groups: GroupSummary[] }>("/api/workspace");
   const badges = useApi<BadgesView>("/api/me/badges");
+  const sessions = useApi<MySessions>("/api/me/sessions");
   const { openCreate } = useFrame();
+  // Read once: Home's "this week" and "starts in" don't need to tick.
+  const [now] = useState(() => Date.now());
   const groups = workspace.data?.groups ?? [];
-  // Anyone can start a session; it no longer needs a group (P-35).
-  const canCreate = true;
+  // Up next is a session you're going to: in, hosting or waiting for a place.
+  const going = goingTo(sessions.data?.upcoming ?? []);
+  const next = going[0];
+  const week = going
+    .slice(1)
+    .filter((row) => row.startsAt && Date.parse(row.startsAt) - now < 7 * DAY)
+    .slice(0, 4);
+  const thisWeek = going.filter(
+    (row) => row.startsAt && Date.parse(row.startsAt) - now < 7 * DAY,
+  ).length;
+  const dateLine = new Intl.DateTimeFormat("en", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  }).format(now);
   return (
-    <section className="page home-page">
-      <div className="page-head">
-        <h1>
-          {identity.data
+    <section className="page tab-page home-page">
+      <TabHero
+        title={
+          identity.data
             ? `Hi, ${identity.data.displayName.split(" ")[0]}.`
-            : "Welcome back."}
-        </h1>
-      </div>
+            : "Welcome back."
+        }
+        summary={
+          thisWeek
+            ? `${dateLine} · ${thisWeek} ${thisWeek === 1 ? "session" : "sessions"} this week`
+            : dateLine
+        }
+        // With nothing coming up, the empty card offers New session instead.
+        onCreate={next ? openCreate : undefined}
+      />
       {identity.error ? (
         <Notice retry={identity.retry}>{identity.error}</Notice>
       ) : null}
-      <HomeInvites />
-      <div className="rp-card rp-card--accent plan-card">
-        <div>
-          <h2>Plan the next one</h2>
-          <p>
-            {canCreate
-              ? "Set the time and seats, then share one link."
-              : "Start a group to publish your first session."}
-          </p>
-        </div>
-        {canCreate ? (
-          <button
-            type="button"
-            className={buttonClass({ variant: "primary" })}
-            onClick={openCreate}
-          >
-            <PlusIcon size={20} weight="bold" aria-hidden="true" />
+      {sessions.loading ? (
+        <Pending>Finding what's next…</Pending>
+      ) : sessions.error ? (
+        <Notice retry={sessions.retry}>{sessions.error}</Notice>
+      ) : next ? (
+        <UpNext row={next} now={now} />
+      ) : (
+        <div className="up-next up-next--empty">
+          <CalendarDotsIcon size={30} aria-hidden="true" />
+          <div>
+            <h2>Nothing coming up</h2>
+            <p>Start a session, or open a group to see what it has planned.</p>
+          </div>
+          <button type="button" className={buttonClass()} onClick={openCreate}>
+            <PlusIcon size={18} weight="bold" aria-hidden="true" />
             New session
           </button>
-        ) : (
-          <Link
-            className={buttonClass({ variant: "primary" })}
-            href="/groups/new"
-          >
-            <PlusIcon size={20} weight="bold" aria-hidden="true" />
-            Start a group
-          </Link>
-        )}
-      </div>
+        </div>
+      )}
+      <HomeInvites />
+      {week.length ? (
+        <section className="tab-section" aria-labelledby="home-week">
+          <div className="tab-section__head">
+            <h2 id="home-week">This week</h2>
+            <Link className={buttonClass({ variant: "link" })} href="/sessions">
+              All sessions
+            </Link>
+          </div>
+          <ListGroup>
+            {week.map((row) => (
+              <SessionRow key={row.slug} row={row} past={false} speakDate />
+            ))}
+          </ListGroup>
+        </section>
+      ) : null}
       <NextBadge view={badges.data} />
       <EarnedBadgeSheet view={badges.data} />
-      <div className="section-head">
-        <h2>Your groups</h2>
-        {groups.length > 3 ? (
-          <Link className={buttonClass({ variant: "link" })} href="/workspace">
-            See all {groups.length}
-          </Link>
-        ) : null}
-      </div>
-      {workspace.loading ? (
-        <Pending>Finding your groups…</Pending>
-      ) : workspace.error ? (
-        <Notice retry={workspace.retry}>{workspace.error}</Notice>
-      ) : groups.length ? (
-        <div className="group-grid">
-          {groups.slice(0, 3).map((group) => (
-            <GroupCard key={group.id} group={group} />
-          ))}
+      <section className="tab-section" aria-labelledby="home-groups">
+        <div className="tab-section__head">
+          <h2 id="home-groups">Your groups</h2>
+          {groups.length > 3 ? (
+            <Link className={buttonClass({ variant: "link" })} href="/workspace">
+              See all {groups.length}
+            </Link>
+          ) : null}
         </div>
-      ) : (
-        <p className="rp-help">
-          No groups yet. Start one to run sessions — sessions you join are on
-          the Sessions tab.
-        </p>
-      )}
+        {workspace.loading ? (
+          <Pending>Finding your groups…</Pending>
+        ) : workspace.error ? (
+          <Notice retry={workspace.retry}>{workspace.error}</Notice>
+        ) : (
+          <ListGroup>
+            {groups.slice(0, 3).map((group) => (
+              <GroupRow key={group.id} group={group} />
+            ))}
+            {groups.length ? null : <StartGroupRow />}
+          </ListGroup>
+        )}
+      </section>
     </section>
   );
 }
-// Only states that ask for attention get a pill; being in or organizing is the
-// normal case, so it reads quietly under the title instead.
-const statusTone: Partial<Record<MySessionRow["status"], Tone>> = {
-  waitlisted: "warning",
-  requested: "neutral",
-  not_accepted: "neutral",
-  request_expired: "neutral",
-  removed: "neutral",
-  draft: "neutral",
-  cancelled: "danger",
-};
+/** The quiet way to start a group, as the last row of a groups list. */
+function StartGroupRow() {
+  return (
+    <li className="rp-row tab-row">
+      <div className="rp-row__line">
+        <Link className="rp-row__main" href="/groups/new">
+          <span className="rp-row__lead tab-row__add" aria-hidden="true">
+            <PlusIcon size={20} weight="bold" />
+          </span>
+          <span className="rp-row__text">
+            <span className="rp-row__title">Start a group</span>
+            <span className="rp-row__sub">
+              A list of people you play with, public or private.
+            </span>
+          </span>
+        </Link>
+      </div>
+    </li>
+  );
+}
 /** A calendar day as "YYYY-MM-DD", the same shape as a row's startLocal. */
 const dayKey = (date: Date) =>
   [
@@ -288,39 +303,6 @@ function byDay(rows: MySessionRow[], newestFirst: boolean) {
   }
   return [...days].map(([key, rows]) => ({ key, rows }));
 }
-function MySessionRowLink({ row, past }: { row: MySessionRow; past: boolean }) {
-  const time = fromLocal(row.startLocal)?.time;
-  const tone = statusTone[row.status];
-  const status = statusLabel(row, past);
-  return (
-    <li className="rp-row">
-      <div className="rp-row__line">
-        <Link className="rp-row__main my-session" href={sessionHref(row)}>
-          <span className="my-session__time rp-nums">{time ?? "TBD"}</span>
-          <span className="rp-row__text">
-            <span className="rp-row__title">
-              {row.title || "Untitled session"}
-            </span>
-            {/* Status first: a long group name is what gets cut short. */}
-            <span className="rp-row__sub">
-              {tone ? row.groupName : `${status} · ${row.groupName}`}
-            </span>
-          </span>
-          <span className="rp-row__trail">
-            {row.requestCount ? (
-              <Pill tone="warning">
-                {row.requestCount}{" "}
-                {row.requestCount === 1 ? "request" : "requests"}
-              </Pill>
-            ) : null}
-            {tone ? <Pill tone={tone}>{status}</Pill> : null}
-            <CaretRightIcon size={16} aria-hidden="true" />
-          </span>
-        </Link>
-      </div>
-    </li>
-  );
-}
 function SessionDays({
   rows,
   past,
@@ -337,12 +319,41 @@ function SessionDays({
         <h2>{label}</h2>
         <ListGroup>
           {day.rows.map((row) => (
-            <MySessionRowLink key={row.id ?? row.slug} row={row} past={past} />
+            <SessionRow
+              key={row.id ?? row.slug}
+              row={row}
+              past={past}
+              today={!past && day.key === today}
+            />
           ))}
         </ListGroup>
       </section>
     );
   });
+}
+/**
+ * Sessions you're going to: in, hosting or waiting for a place, published.
+ * Drafts, cancellations and requests don't count as coming up.
+ */
+const goingTo = (rows: MySessionRow[]) =>
+  rows.filter(
+    (row) =>
+      row.state === "published" &&
+      (row.status === "in" ||
+        row.status === "organizing" ||
+        row.status === "waitlisted"),
+  );
+/** "3 coming up · next today, 7:00 PM"; nothing when none are coming up. */
+function sessionsSummary(upcoming: MySessionRow[], today: string) {
+  const going = byDay(goingTo(upcoming), false).flatMap((day) => day.rows);
+  const next = going.find((row) => row.startLocal);
+  if (!next) return undefined;
+  const day = dayLabel(next.startLocal.slice(0, 10), today, false);
+  const time = fromLocal(next.startLocal)?.time;
+  const when = [day === "Today" || day === "Tomorrow" ? day.toLowerCase() : day, time]
+    .filter(Boolean)
+    .join(", ");
+  return `${going.length} coming up · next ${when}`;
 }
 export function SessionsPage() {
   const sessions = useApi<MySessions>("/api/me/sessions");
@@ -357,10 +368,14 @@ export function SessionsPage() {
   const pastTotal = sessions.data?.pastTotal ?? 0;
   const showing = pastTotal > 0 ? view : "upcoming";
   return (
-    <section className="page sessions-page">
-      <div className="page-head">
-        <h1>Sessions</h1>
-      </div>
+    <section className="page tab-page sessions-page">
+      <TabHero
+        title="Sessions"
+        summary={
+          sessions.data ? sessionsSummary(upcoming, today) : undefined
+        }
+        onCreate={upcoming.length || pastTotal ? openCreate : undefined}
+      />
       {sessions.loading ? (
         <Pending>Finding your sessions…</Pending>
       ) : sessions.error ? (
@@ -560,27 +575,29 @@ export function DuesPage() {
 }
 export function Workspace() {
   const workspace = useApi<{ groups: GroupSummary[] }>("/api/workspace");
+  const groups = workspace.data?.groups ?? [];
+  const admin = groups.filter((group) => group.role === "admin").length;
   return (
-    <section className="page">
-      <div className="page-head-row">
-        <div>
-          <h1>Your groups</h1>
-        </div>
-        <Link className={buttonClass()} href="/groups/new">
-          <PlusIcon size={18} weight="bold" aria-hidden="true" />
-          Start a group
-        </Link>
-      </div>
+    <section className="page tab-page groups-page">
+      <TabHero
+        title="Your groups"
+        summary={
+          groups.length
+            ? `${groups.length} ${groups.length === 1 ? "group" : "groups"}${admin ? ` · you run ${admin}` : ""}`
+            : undefined
+        }
+      />
       {workspace.loading ? (
         <Pending>Finding your groups…</Pending>
       ) : workspace.error ? (
         <Notice retry={workspace.retry}>{workspace.error}</Notice>
-      ) : workspace.data?.groups.length ? (
-        <div className="group-grid">
-          {workspace.data.groups.map((group) => (
-            <GroupCard key={group.id} group={group} />
+      ) : groups.length ? (
+        <ListGroup>
+          {groups.map((group) => (
+            <GroupRow key={group.id} group={group} />
           ))}
-        </div>
+          <StartGroupRow />
+        </ListGroup>
       ) : (
         <EmptyState
           icon={<UsersThreeIcon size={34} />}
@@ -594,8 +611,8 @@ export function Workspace() {
             </Link>
           }
         >
-          Start a group to run sessions. Sessions you join are on the Sessions
-          tab.
+          A group is a list of people you play with. Sessions you join are on
+          the Sessions tab.
         </EmptyState>
       )}
     </section>

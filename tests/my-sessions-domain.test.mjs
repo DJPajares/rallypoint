@@ -112,3 +112,19 @@ test("headline and coming line", () => {
   assert.equal(comingLine(12, 16), "12 of 16 coming");
   assert.equal(comingLine(1, 8), "1 of 8 coming");
 });
+
+test("Up next says how soon, plainly", async () => {
+  const { startsIn } = await import("../packages/domain/src/my-sessions.ts");
+  const now = Date.parse("2026-10-30T10:00:00Z");
+  const at = (ms) => new Date(now + ms).toISOString();
+  const min = 60_000, hour = 60 * min, day = 24 * hour;
+  assert.equal(startsIn(at(-hour), at(hour), now), "Happening now");
+  assert.equal(startsIn(at(30 * 1000), at(hour), now), "Starting now");
+  assert.equal(startsIn(at(25 * min), at(2 * hour), now), "Starts in 25 minutes");
+  assert.equal(startsIn(at(1 * min), at(2 * hour), now), "Starts in 1 minute");
+  assert.equal(startsIn(at(3 * hour + 10 * min), at(5 * hour), now), "Starts in 3 hours");
+  assert.equal(startsIn(at(1 * hour), at(5 * hour), now), "Starts in 1 hour");
+  assert.equal(startsIn(at(30 * hour), at(32 * hour), now), "In 1 day");
+  assert.equal(startsIn(at(5 * day), at(5 * day + hour), now), "In 5 days");
+  assert.equal(startsIn(null, null, now), "");
+});
