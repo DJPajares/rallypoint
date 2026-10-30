@@ -1,7 +1,7 @@
 /* Page layouts. Shared pieces live in @rallypoint/ui; this file only arranges
    them, using tokens for every value. */
 .page-head {
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-4);
 }
 .section-head {
   display: flex;
@@ -770,7 +770,7 @@
    members' faces are the one bold thing; everything below is grouped lists. */
 .group-page {
   display: grid;
-  gap: var(--space-6);
+  gap: var(--space-5);
   align-content: start;
 }
 .group-hero {
@@ -995,7 +995,7 @@
    session, a crest for a group. Home's Up next is the one bold card. */
 .tab-page {
   display: grid;
-  gap: var(--space-6);
+  gap: var(--space-5);
   align-content: start;
   max-width: var(--layout-form);
   margin-inline: auto;
