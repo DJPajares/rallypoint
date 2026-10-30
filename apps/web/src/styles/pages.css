@@ -1016,3 +1016,41 @@
     font-size: var(--text-xl);
   }
 }
+
+/* Edit group (owner, 2026-10-30): the crest previews the name; one form, one
+   Save; removing the group sits apart at the bottom. */
+.group-edit__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+.group-edit__head h1 {
+  margin: 0;
+}
+.group-edit fieldset {
+  display: grid;
+  gap: var(--space-6);
+}
+.group-edit__choice {
+  display: grid;
+  gap: var(--space-2);
+}
+.group-edit__choice > p {
+  margin: 0;
+}
+.group-edit__remove {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  margin-top: var(--space-10);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+.group-edit__remove h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+.group-edit__remove p {
+  margin: 0;
+}

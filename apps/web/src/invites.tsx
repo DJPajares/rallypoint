@@ -136,7 +136,7 @@ const stateWords: Record<SentInvite["state"], string> = {
 export function InvitePanel({
   kind,
   target,
-  invites,
+  invites: sent,
   onChanged,
   sheetOpen,
   onSheetChange,
@@ -155,6 +155,8 @@ export function InvitePanel({
   /** Shown first in the sheet, such as the group's invite link. */
   sheetTop?: ReactNode;
 }) {
+  // A withdrawn invite is gone for the person invited, so it's gone here too.
+  const invites = sent.filter((invite) => invite.state !== "withdrawn");
   const [ownOpen, setOwnOpen] = useState(false);
   const controlled = sheetOpen !== undefined;
   const open = controlled ? sheetOpen : ownOpen;
