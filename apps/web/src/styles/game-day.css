@@ -209,9 +209,12 @@
   gap: 2px;
 }
 
-/* P-37: find a group by name, above your groups. */
-.group-search {
+/* Universal search, opened from the menu: groups and your own sessions. */
+.search {
+  display: grid;
+  gap: var(--space-4);
+}
+.search section {
   display: grid;
   gap: var(--space-3);
-  margin-bottom: var(--space-6);
 }

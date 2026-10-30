@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BellIcon } from "@phosphor-icons/react/dist/csr/Bell";
 import { ListIcon } from "@phosphor-icons/react/dist/csr/List";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { MoonIcon } from "@phosphor-icons/react/dist/csr/Moon";
 import { SignInIcon } from "@phosphor-icons/react/dist/csr/SignIn";
 import { SunIcon } from "@phosphor-icons/react/dist/csr/Sun";
@@ -105,6 +106,18 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
   );
   const actions = signedIn
     ? [
+        // One search for groups and your own sessions.
+        <Link
+          key="search"
+          className="fab-action"
+          href="/search"
+          onClick={collapse}
+        >
+          <span>Search</span>
+          <span className={iconButtonClass()} aria-hidden="true">
+            <MagnifyingGlassIcon size={20} />
+          </span>
+        </Link>,
         <button
           key="updates"
           type="button"
