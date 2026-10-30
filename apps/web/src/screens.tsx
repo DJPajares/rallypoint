@@ -23,7 +23,6 @@ import type {
 } from "@rallypoint/domain/contracts";
 import { visibilityHelp, visibilityOptions } from "./group-visibility";
 import { HomeInvites } from "./invites";
-import { GroupSearch } from "./group-search";
 import { feeStanding } from "@rallypoint/domain/registration";
 import { SplitFee } from "./split-fee";
 import type {
@@ -577,7 +576,6 @@ export function Workspace() {
           Start a group
         </Link>
       </div>
-      <GroupSearch />
       {workspace.loading ? (
         <Pending>Finding your groups…</Pending>
       ) : workspace.error ? (
