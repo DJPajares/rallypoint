@@ -1,9 +1,10 @@
 /* App frame: top bar (tablet/desktop), bottom bar (phone), floating menu.
    Every value is a token from @rallypoint/ui; the notch geometry below is the
    one exception, because it is tied to the SVG paths it describes. */
-.app {
-  min-height: 100dvh;
-}
+/* No forced full-height: a short page is only as tall as its content, so it
+   never scrolls. (100dvh can exceed what a phone window shows, such as under
+   a status bar, which made empty pages scroll by a few dozen pixels.) The
+   background is on html and body, so nothing shows through. */
 .skip-link {
   position: fixed;
   top: calc(var(--space-3) + var(--safe-top));
@@ -120,7 +121,7 @@ main {
   max-width: var(--layout-max);
   margin: 0 auto;
   padding: var(--space-8) max(var(--layout-gutter), var(--safe-right))
-    var(--space-16) max(var(--layout-gutter), var(--safe-left));
+    var(--space-10) max(var(--layout-gutter), var(--safe-left));
 }
 
 /* Floating menu */
@@ -236,7 +237,7 @@ main {
 @media (min-width: 1200px) {
   main {
     padding-top: var(--space-10);
-    padding-bottom: var(--space-16);
+    padding-bottom: var(--space-12);
   }
 }
 
@@ -254,10 +255,10 @@ main {
   }
   main {
     /* The menu chip (and the back chip on detail pages) share this first row. */
-    padding-top: calc(var(--safe-top) + var(--size-touch) + var(--space-6));
+    padding-top: calc(var(--safe-top) + var(--size-touch) + var(--space-4));
     padding-bottom: calc(
       var(--layout-bottombar) + var(--safe-bottom) + var(--size-create) / 2 +
-        var(--space-3)
+        var(--space-2)
     );
   }
   .app:not([data-signed-in]) main {

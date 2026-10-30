@@ -158,8 +158,8 @@ export function HomeDashboard() {
       <TabHero
         title={
           identity.data
-            ? `Hi, ${identity.data.displayName.split(" ")[0]}.`
-            : "Welcome back."
+            ? `Hi, ${identity.data.displayName.split(" ")[0]}`
+            : "Welcome back"
         }
         summary={
           thisWeek
