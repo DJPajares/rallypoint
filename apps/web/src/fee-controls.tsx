@@ -18,6 +18,8 @@ const changeWords: Record<ManagedFee["history"][number]["action"], string> = {
   removed_before_cutoff: "Removed before the cutoff",
   removed_session_cancelled: "Removed on session cancellation",
   removed_by_organizer: "Dropped when they were removed",
+  guest_dropped: "Guest removed",
+  guest_added: "Guest added",
   released_unpaid: "Spot given to the waitlist",
 };
 /**

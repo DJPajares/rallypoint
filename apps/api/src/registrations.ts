@@ -13,6 +13,7 @@ type Action =
   | "attendance"
   | "release"
   | "remove"
+  | "guest"
   | "note"
   | "ask"
   | "request"
@@ -52,6 +53,20 @@ const conflicts: Record<string, string> = {
     "Organizers and co-hosts can’t be removed. They can withdraw themselves.",
   removed_from_session:
     "The organizer removed you from this session, so you can’t join it again.",
+  no_guest: "There’s no guest on this booking. Refresh to see the latest.",
+  guest_exists: "Your booking already has a guest.",
+  guest_checked_in:
+    "Your guest is already checked in, so they can’t be removed here. Ask the organizer.",
+  guest_share_stays:
+    "After the cutoff your guest’s share stays, so they can’t be removed here. Ask the organizer.",
+  guest_no_place:
+    "There’s no free place for a guest right now, or someone is already waiting for one.",
+  guest_fee_settled:
+    "Your fee is already marked paid or waived, so a guest can’t be added here. Ask the organizer.",
+  guest_needs_organizer:
+    "The organizer accepts each person for this session, so ask them to add your guest.",
+  guest_change_closed:
+    "Guests can only change before the session starts, while you’re booked. Refresh your record.",
   note_not_allowed:
     "You can only say you’ve paid for your own booking in a session paid to the organizer.",
   note_already_paid: "The organizer has already marked this paid.",
@@ -132,8 +147,22 @@ async function call(
         "session_unavailable",
         "That session is not available for registration.",
       );
+    if (action === "guest" && error.message === "stale_terms")
+      throw new ApiError(
+        409,
+        "stale_terms",
+        "The session details changed. Refresh and review them before adding a guest.",
+      );
     if (conflicts[error.message])
       throw new ApiError(409, error.message, conflicts[error.message]);
+    if (error.code === "23514" && action === "guest")
+      throw new ApiError(
+        422,
+        error.message,
+        error.message === "guest_disabled"
+          ? "This session does not allow guests."
+          : "Check your guest and agree to the fee to add them.",
+      );
     if (error.code === "23514" && managing && managing !== "answer") {
       const [code, message] = invalid[managing];
       throw new ApiError(422, code, message);
@@ -193,6 +222,17 @@ const release = z.object({
   noteSentAt: z.union([z.iso.datetime({ offset: true }), z.null()]),
 });
 const removal = z.object({ operationKey: key, partyId: key });
+const guestChange = z.discriminatedUnion("action", [
+  z.object({ operationKey: key, partyId: key, action: z.literal("drop") }),
+  z.object({
+    operationKey: key,
+    partyId: key,
+    action: z.literal("add"),
+    guestName: z.string().trim().max(80),
+    version: z.number().int().min(1),
+    consent: z.literal(true),
+  }),
+]);
 const paymentNote = z.object({
   operationKey: key,
   partyId: key,
@@ -362,6 +402,23 @@ export const registrations = new Hono<ApiEnv>()
     });
   })
   .all(`${base}/remove`, requireUser, () => notAvailable(action))
+  .post(`${base}/guest`, requireUser, async (c) => {
+    const b = parse(
+      guestChange,
+      await readBody(c.req.raw),
+      "invalid_guest_change",
+      "Check your guest and agree to the fee to add them.",
+    );
+    return call(c, "guest", "change_guest", {
+      p_key: b.operationKey,
+      p_party_id: b.partyId,
+      p_action: b.action,
+      p_guest_name: b.action === "add" ? b.guestName : null,
+      p_version: b.action === "add" ? b.version : null,
+      p_consent: b.action === "add" ? b.consent : null,
+    });
+  })
+  .all(`${base}/guest`, requireUser, () => notAvailable(action))
   .post(`${base}/payment-note`, requireUser, async (c) => {
     const b = parse(paymentNote, await readBody(c.req.raw), ...invalid.note);
     return call(c, "note", "update_payment_note", {

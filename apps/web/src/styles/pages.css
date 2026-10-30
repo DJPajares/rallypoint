@@ -408,6 +408,15 @@
 .session-head > h1 {
   margin-bottom: var(--space-4);
 }
+.guest-change {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}
+.guest-change fieldset {
+  display: grid;
+  gap: var(--space-3);
+}
 .session-head > h1 + .rp-button {
   margin-bottom: var(--space-4);
 }
