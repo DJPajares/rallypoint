@@ -4,10 +4,13 @@ import { splitFixture } from "./helpers/split-fixtures.mjs";
 
 // The Sessions tab reads this list. Widening the inclusion rule, dropping the
 // one-row-per-session guarantee or returning money/roster fields must fail here.
+// (Only a host's own upcoming rows add two counts, tested in tabs-data.)
 const KEYS = [
   "endsAt",
   "groupName",
   "id",
+  // The place the person is going (owner, 2026-10-30, Home's Up next).
+  "location",
   "slug",
   "startLocal",
   "startsAt",

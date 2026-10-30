@@ -11,7 +11,7 @@ import type {
 } from "@rallypoint/domain/contracts";
 import { useMutation } from "./use-mutation";
 import { StickyActions } from "./ui";
-import { GroupCrest } from "./group-page";
+import { GroupCrest } from "./visuals";
 import { visibilityHelp } from "./group-visibility";
 
 /**

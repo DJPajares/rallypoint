@@ -1054,3 +1054,222 @@
 .group-edit__remove p {
   margin: 0;
 }
+
+/* Home, Sessions and Groups (owner, 2026-10-30): one frame for all three
+   tabs. The same column, a large title with one line of what's true now,
+   then grouped lists whose rows all lead with a picture: a date tile for a
+   session, a crest for a group. Home's Up next is the one bold card. */
+.tab-page {
+  display: grid;
+  gap: var(--space-6);
+  align-content: start;
+  max-width: var(--layout-form);
+  margin-inline: auto;
+}
+.tab-hero {
+  display: grid;
+  gap: var(--space-2);
+}
+.tab-hero h1 {
+  margin: 0;
+  font-size: var(--text-display-md);
+  line-height: 1.05;
+}
+.tab-hero__summary {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+}
+.tab-section {
+  display: grid;
+  gap: var(--space-3);
+}
+.tab-section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.tab-section__head h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+.tab-row .rp-row__line {
+  padding-right: 0;
+}
+.tab-row .rp-row__main {
+  padding-right: var(--space-3);
+}
+.tab-row .rp-row__text {
+  flex: 1;
+  min-width: 0;
+}
+.tab-row .rp-row__sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tab-row .rp-row__trail {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+}
+.tab-row__pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.tab-row__pills--below {
+  display: none;
+  margin-top: var(--space-1);
+}
+@media (max-width: 520px) {
+  .tab-row__pills--below {
+    display: flex;
+  }
+  .tab-row__pills--beside {
+    display: none;
+  }
+}
+.tab-row__facts {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+/* In a row the crest shrinks to a tile the size of a date tile. */
+.tab-row__crest .group-crest {
+  width: 44px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-md);
+  box-shadow: none;
+}
+.tab-row__add {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  aspect-ratio: 1;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+}
+/* Today stands out with an outlined tile; a filled one is kept for Up next. */
+.tab-row--today .group-date {
+  outline: 2px solid var(--color-action);
+  outline-offset: -2px;
+  color: var(--color-link);
+}
+.tab-row--today .group-date__month {
+  color: var(--color-link);
+}
+.tab-page .session-day {
+  margin-top: 0;
+}
+.tab-page .session-day h2 {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: var(--space-2) var(--space-1);
+  background: var(--color-bg);
+}
+@media (min-width: 768px) {
+  .tab-page .session-day h2 {
+    top: var(--layout-topbar);
+  }
+}
+
+/* Home's hero: the next session as one big card. */
+.up-next {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  color: inherit;
+  text-decoration: none;
+}
+a.up-next:hover {
+  border-color: var(--color-border-strong);
+}
+a.up-next:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+.up-next__date .group-date {
+  width: 76px;
+  padding: var(--space-3) 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+.up-next__date .group-date__month {
+  color: var(--color-on-action);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+.up-next__date .group-date__day {
+  font-size: var(--text-2xl);
+}
+.up-next__body {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.up-next__eyebrow {
+  color: var(--color-link);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+.up-next__title {
+  font-family: var(--font-heading);
+  font-size: var(--text-display-sm);
+  font-weight: var(--weight-bold);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.up-next__where {
+  color: var(--color-text-muted);
+}
+.up-next__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.up-next__go {
+  color: var(--color-text-muted);
+}
+.up-next--empty {
+  grid-template-columns: auto 1fr;
+  color: var(--color-text-muted);
+}
+.up-next--empty h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--text-lg);
+}
+.up-next--empty p {
+  margin: 0;
+}
+.up-next--empty .rp-button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+@media (max-width: 520px) {
+  .up-next {
+    grid-template-columns: auto 1fr;
+    gap: var(--space-4);
+    padding: var(--space-5);
+  }
+  .up-next__go {
+    display: none;
+  }
+  .up-next__date .group-date {
+    width: 64px;
+  }
+}
