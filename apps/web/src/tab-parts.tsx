@@ -1,7 +1,9 @@
 "use client";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Pill } from "@rallypoint/ui";
+import { buttonClass, Pill } from "@rallypoint/ui";
+import { CalendarDotsIcon } from "@phosphor-icons/react/dist/csr/CalendarDots";
+import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import type { Tone } from "@rallypoint/ui";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { LockSimpleIcon } from "@phosphor-icons/react/dist/csr/LockSimple";
@@ -25,20 +27,41 @@ import { DateTile, GroupCrest } from "./visuals";
 export function TabHero({
   title,
   summary,
-  children,
+  onCreate,
 }: {
   title: ReactNode;
   summary?: ReactNode;
-  children?: ReactNode;
+  /** New session, shown on tablet and desktop where there's no + tab. */
+  onCreate?: () => void;
 }) {
   return (
     <header className="tab-hero">
       <h1>{title}</h1>
       {summary ? <p className="tab-hero__summary">{summary}</p> : null}
-      {children}
+      {onCreate ? (
+        <button
+          type="button"
+          className={`${buttonClass({ variant: "primary" })} tab-hero__action`}
+          onClick={onCreate}
+        >
+          <PlusIcon size={18} weight="bold" aria-hidden="true" />
+          New session
+        </button>
+      ) : null}
     </header>
   );
 }
+
+/** A row's day in words for screen readers, where no day heading says it. */
+const spokenDay = (row: MySessionRow) =>
+  row.startsAt
+    ? new Intl.DateTimeFormat("en", {
+        timeZone: row.timeZone,
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      }).format(new Date(row.startsAt))
+    : "";
 
 /** Every status gets words and a tone; colour only supports the words (D-15). */
 const statusTone: Record<MySessionRow["status"], Tone> = {
@@ -58,11 +81,14 @@ export function SessionRow({
   row,
   past,
   today,
+  speakDate,
 }: {
   row: MySessionRow;
   past: boolean;
   /** Today's sessions stand out a little in a list. */
   today?: boolean;
+  /** Say the day aloud when no day heading above the row says it. */
+  speakDate?: boolean;
 }) {
   const time = fromLocal(row.startLocal)?.time;
   const where = [time, row.location].filter(Boolean).join(" · ");
@@ -85,14 +111,16 @@ export function SessionRow({
               <DateTile iso={row.startsAt} timeZone={row.timeZone} />
             ) : (
               <span className="group-date" aria-hidden="true">
-                <span className="group-date__month">Date</span>
-                <span className="group-date__day">?</span>
+                <CalendarDotsIcon size={22} />
               </span>
             )}
           </span>
           <span className="rp-row__text">
             <span className="rp-row__title">
               {row.title || "Untitled session"}
+              {speakDate && row.startsAt ? (
+                <span className="rp-sr-only">, {spokenDay(row)}</span>
+              ) : null}
             </span>
             <span className="rp-row__sub">{where || row.groupName}</span>
             {/* On a phone the pills sit under the line, so titles keep room. */}
@@ -165,7 +193,12 @@ export function UpNext({ row, now }: { row: MySessionRow; now: number }) {
         <span className="up-next__eyebrow">
           Up next{soon ? ` · ${soon}` : ""}
         </span>
-        <span className="up-next__title">{row.title || "Untitled session"}</span>
+        <span className="up-next__title">
+          {row.title || "Untitled session"}
+          {row.startsAt ? (
+            <span className="rp-sr-only">, {spokenDay(row)}</span>
+          ) : null}
+        </span>
         <span className="up-next__where">
           {[time, row.location].filter(Boolean).join(" · ") || row.groupName}
         </span>

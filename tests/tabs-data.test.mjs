@@ -136,4 +136,24 @@ test("tab data: member counts and session rows", async (t) => {
   assert.equal(joined.location, "Synthetic court 3");
   assert.equal("waitingCount" in joined, false);
   assert.equal("toPayCount" in joined, false);
+  // "To pay" counts as game day does: someone who withdrew after the cutoff
+  // still owes, alongside whoever moved in.
+  sql(`begin; set local session_replication_role=replica;
+    update app.sessions set details=jsonb_set(details,'{cutoffAt}',to_jsonb((now()-interval '1 minute')::text)) where id='${s.id}';
+    commit;`);
+  const partyA = sql(
+    `select id from app.parties where session_id='${s.id}' and user_id='${a.id}';`,
+  );
+  assert.equal(
+    (
+      await request(`/api/registrations/${s.slug}/withdraw`, a, {
+        operationKey: crypto.randomUUID(),
+        partyId: partyA,
+      })
+    ).status,
+    200,
+  );
+  const after = await row(host);
+  assert.equal(after.waitingCount, 0);
+  assert.equal(after.toPayCount, 2);
 });

@@ -3,17 +3,6 @@
 .page-head {
   margin-bottom: var(--space-6);
 }
-.page-head-row {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  margin-bottom: var(--space-6);
-}
-.page-head-row h1 {
-  margin: 0;
-}
 .section-head {
   display: flex;
   align-items: center;
@@ -133,40 +122,9 @@
 }
 
 /* Home and groups */
-.plan-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  padding: var(--space-6);
-}
-.plan-card h2 {
-  margin-bottom: var(--space-1);
-}
-.plan-card p {
-  margin: 0;
-  opacity: 0.85;
-}
 .group-grid {
   display: grid;
   gap: var(--space-3);
-}
-.group-card {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: start;
-  gap: var(--space-3);
-}
-.group-card-text h2 {
-  margin: var(--space-1) 0 0;
-  font-size: var(--text-xl);
-  overflow-wrap: anywhere;
-}
-.group-card > .rp-button,
-.group-card > .rp-help {
-  grid-column: 1 / -1;
-  margin: 0;
 }
 
 /* Group sessions */
@@ -201,26 +159,6 @@
 /* The whole row is the link, so its hover fills the row edge to edge. */
 .session-day .rp-row__line {
   padding-right: 0;
-}
-.my-session {
-  padding-right: var(--space-3);
-}
-.my-session__time {
-  flex: none;
-  width: calc(var(--space-16) + var(--space-2));
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-}
-.my-session .rp-row__text {
-  flex: 1;
-}
-.my-session .rp-row__sub {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.my-session .rp-row__trail {
-  color: var(--color-text-muted);
 }
 .session-empty {
   margin-top: var(--space-6);
@@ -653,10 +591,6 @@
   }
 }
 @media (max-width: 767px) {
-  .plan-card .rp-button,
-  .page-head-row .rp-button {
-    width: 100%;
-  }
   .registration-note .sticky-actions > .rp-button {
     flex: 1;
   }
@@ -1068,7 +1002,25 @@
 }
 .tab-hero {
   display: grid;
-  gap: var(--space-2);
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  column-gap: var(--space-4);
+  row-gap: var(--space-2);
+}
+.tab-hero > :not(.tab-hero__action) {
+  grid-column: 1;
+}
+/* Phones create from the + in the tab bar; wider screens have no tab bar,
+   so the page offers New session itself. */
+.tab-hero__action {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: none;
+}
+@media (min-width: 768px) {
+  .tab-hero__action {
+    display: inline-flex;
+  }
 }
 .tab-hero h1 {
   margin: 0;
@@ -1167,7 +1119,7 @@
 }
 .tab-page .session-day h2 {
   position: sticky;
-  top: 0;
+  top: var(--safe-top);
   z-index: 1;
   margin: 0;
   padding: var(--space-2) var(--space-1);

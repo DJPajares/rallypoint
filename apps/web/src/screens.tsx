@@ -139,13 +139,7 @@ export function HomeDashboard() {
   const [now] = useState(() => Date.now());
   const groups = workspace.data?.groups ?? [];
   // Up next is a session you're going to: in, hosting or waiting for a place.
-  const going = (sessions.data?.upcoming ?? []).filter(
-    (row) =>
-      row.state === "published" &&
-      (row.status === "in" ||
-        row.status === "organizing" ||
-        row.status === "waitlisted"),
-  );
+  const going = goingTo(sessions.data?.upcoming ?? []);
   const next = going[0];
   const week = going
     .slice(1)
@@ -172,6 +166,8 @@ export function HomeDashboard() {
             ? `${dateLine} · ${thisWeek} ${thisWeek === 1 ? "session" : "sessions"} this week`
             : dateLine
         }
+        // With nothing coming up, the empty card offers New session instead.
+        onCreate={next ? openCreate : undefined}
       />
       {identity.error ? (
         <Notice retry={identity.retry}>{identity.error}</Notice>
@@ -206,7 +202,7 @@ export function HomeDashboard() {
           </div>
           <ListGroup>
             {week.map((row) => (
-              <SessionRow key={row.slug} row={row} past={false} />
+              <SessionRow key={row.slug} row={row} past={false} speakDate />
             ))}
           </ListGroup>
         </section>
@@ -335,16 +331,29 @@ function SessionDays({
     );
   });
 }
-/** "3 coming up · next today, 7:00 PM", or what's true when nothing is. */
+/**
+ * Sessions you're going to: in, hosting or waiting for a place, published.
+ * Drafts, cancellations and requests don't count as coming up.
+ */
+const goingTo = (rows: MySessionRow[]) =>
+  rows.filter(
+    (row) =>
+      row.state === "published" &&
+      (row.status === "in" ||
+        row.status === "organizing" ||
+        row.status === "waitlisted"),
+  );
+/** "3 coming up · next today, 7:00 PM"; nothing when none are coming up. */
 function sessionsSummary(upcoming: MySessionRow[], today: string) {
-  if (!upcoming.length) return "Nothing coming up.";
-  const next = upcoming[0];
+  const going = byDay(goingTo(upcoming), false).flatMap((day) => day.rows);
+  const next = going.find((row) => row.startLocal);
+  if (!next) return undefined;
   const day = dayLabel(next.startLocal.slice(0, 10), today, false);
   const time = fromLocal(next.startLocal)?.time;
   const when = [day === "Today" || day === "Tomorrow" ? day.toLowerCase() : day, time]
     .filter(Boolean)
     .join(", ");
-  return `${upcoming.length} coming up · next ${when}`;
+  return `${going.length} coming up · next ${when}`;
 }
 export function SessionsPage() {
   const sessions = useApi<MySessions>("/api/me/sessions");
@@ -365,6 +374,7 @@ export function SessionsPage() {
         summary={
           sessions.data ? sessionsSummary(upcoming, today) : undefined
         }
+        onCreate={upcoming.length || pastTotal ? openCreate : undefined}
       />
       {sessions.loading ? (
         <Pending>Finding your sessions…</Pending>
