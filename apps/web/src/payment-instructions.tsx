@@ -1,6 +1,13 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { buttonClass, Field, Notice, Pending } from "@rallypoint/ui";
+import {
+  buttonClass,
+  Field,
+  Input,
+  Notice,
+  Pending,
+  Textarea,
+} from "@rallypoint/ui";
 import { instructionsEmailWords } from "@rallypoint/domain/game-day";
 import type {
   ManagedPaymentInstructions,
@@ -72,7 +79,7 @@ function QrImage({ slug, revision }: { slug: string; revision: number }) {
     // An object URL from memory; next/image can't optimize it.
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      className="payment-qr"
+      className="h-auto w-[min(100%,240px)] justify-self-start! rounded-sm bg-qr-backdrop"
       src={image.url}
       alt="Payment QR code"
       onError={image.fail}
@@ -90,11 +97,11 @@ export function HowToPay({
 }) {
   return (
     <section
-      className="rounded-lg border border-border bg-surface p-5 how-to-pay"
+      className="rounded-lg border border-border bg-surface p-5 grid justify-items-start gap-3 *:m-0 *:justify-self-stretch"
       aria-labelledby="how-to-pay"
     >
       <h2 id="how-to-pay">How to pay</h2>
-      <p className="payment-text">{instructions.text}</p>
+      <p className="whitespace-pre-line wrap-anywhere">{instructions.text}</p>
       {instructions.hasImage ? (
         <QrImage slug={slug} revision={instructions.imageRevision} />
       ) : null}
@@ -216,7 +223,7 @@ export function PaymentInstructionsEditor({
 
   return (
     <section
-      className="rounded-lg border border-border bg-surface p-5 payment-editor"
+      className="rounded-lg border border-border bg-surface p-5 my-4 grid justify-items-start gap-3 *:m-0 *:justify-self-stretch"
       aria-labelledby="payment-editor"
     >
       <h2 id="payment-editor">Payment instructions</h2>
@@ -233,7 +240,7 @@ export function PaymentInstructionsEditor({
             label="How to pay"
             help="Only people booked in this session see this. Payment happens outside RallyPoint."
           >
-            <textarea
+            <Textarea
               id="payment-text"
               rows={3}
               maxLength={1000}
@@ -264,7 +271,7 @@ export function PaymentInstructionsEditor({
         </fieldset>
       </form>
       {instructions ? (
-        <div className="payment-qr-field">
+        <div className="grid justify-items-start gap-3 *:m-0 *:justify-self-stretch">
           <Field
             id="payment-qr"
             label={
@@ -274,7 +281,7 @@ export function PaymentInstructionsEditor({
             }
             help="PNG, JPEG or WebP, up to 1 MB. The written instructions still show if it can’t load."
           >
-            <input
+            <Input
               ref={fileInput}
               id="payment-qr"
               type="file"
@@ -315,7 +322,7 @@ export function PaymentInstructionsEditor({
       {uploadError ? <Notice>{uploadError}</Notice> : null}
       {mutation.recovery}
       {status ? (
-        <p className="save-status" role="status">
+        <p className="mt-3 font-semibold text-success" role="status">
           {status}
         </p>
       ) : null}

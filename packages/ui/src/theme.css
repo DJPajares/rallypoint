@@ -445,6 +445,11 @@
     font-size: var(--text-sm);
     font-weight: 600;
   }
+  /* Sheet paragraphs are small by default; a paragraph's own text size class
+     still wins, because utilities sit in a later layer than this one. */
+  [data-slot="sheet"] p {
+    font-size: var(--text-sm);
+  }
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

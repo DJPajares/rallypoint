@@ -24,6 +24,7 @@ import {
   buttonClass,
   cx,
   Field,
+  Input,
   Notice,
   Pending,
   Sheet,
@@ -35,6 +36,7 @@ import { useActivities } from "./use-activities";
 import { DetailPage, StickyActions } from "./ui";
 
 const maxCustom = 3;
+const errorClass = "mt-2 mb-0 text-sm font-medium text-danger";
 
 type Level = "" | SkillLevel;
 interface Draft {
@@ -107,24 +109,31 @@ function LevelPick({
   onChange: (value: Level) => void;
 }) {
   return (
-    <fieldset className="level-pick">
-      <legend className="level-pick__legend">
+    <fieldset
+      data-slot="level-pick"
+      className="m-0 grid min-w-0 gap-1 border-0 pt-0 pr-3 pb-3 pl-16 max-[30rem]:pl-3"
+    >
+      <legend className="float-left mb-1 w-full p-0 pt-1 text-sm font-semibold text-text-muted">
         Your level
         <span className="sr-only"> in {activityName}</span>
       </legend>
       {levelChoices(activity).map((choice) => (
-        <label key={choice.value || "none"} className="level-pick__option">
+        <label
+          key={choice.value || "none"}
+          className="flex min-h-touch cursor-pointer items-start gap-3 rounded-md border border-border px-3 py-2 has-checked:border-chrome has-checked:shadow-ring-chrome"
+        >
           <input
+            className="m-0 mt-0.5 size-check flex-none accent-stub"
             type="radio"
             name={name}
             value={choice.value}
             checked={value === choice.value}
             onChange={() => onChange(choice.value)}
           />
-          <span className="level-pick__text">
-            <span className="level-pick__label">{choice.label}</span>
+          <span className="grid min-w-0 gap-0.5">
+            <span className="font-semibold">{choice.label}</span>
             {choice.meaning ? (
-              <span className="level-pick__meaning">{choice.meaning}</span>
+              <span className="text-sm text-text-muted">{choice.meaning}</span>
             ) : null}
           </span>
         </label>
@@ -138,13 +147,21 @@ export function EditProfile() {
   const activities = useActivities();
   if (profile.loading || activities.loading)
     return (
-      <DetailPage back="/profile" backLabel="Profile" className="form-page">
+      <DetailPage
+        back="/profile"
+        backLabel="Profile"
+        className="mx-auto max-w-form"
+      >
         <Pending>Opening your profile…</Pending>
       </DetailPage>
     );
   if (profile.error || !profile.data)
     return (
-      <DetailPage back="/profile" backLabel="Profile" className="form-page">
+      <DetailPage
+        back="/profile"
+        backLabel="Profile"
+        className="mx-auto max-w-form"
+      >
         <Notice retry={profile.retry}>
           {profile.error ?? "Please try again."}
         </Notice>
@@ -152,7 +169,11 @@ export function EditProfile() {
     );
   if (!activities.catalog)
     return (
-      <DetailPage back="/profile" backLabel="Profile" className="form-page">
+      <DetailPage
+        back="/profile"
+        backLabel="Profile"
+        className="mx-auto max-w-form"
+      >
         <Notice retry={activities.retry}>
           {activities.error ?? "Activities could not be loaded."}
         </Notice>
@@ -327,7 +348,7 @@ function EditForm({
     <DetailPage
       back="/profile"
       backLabel="Profile"
-      className="form-page"
+      className="mx-auto max-w-form"
       onBack={(event) => {
         if (!dirty) return;
         event.preventDefault();
@@ -337,11 +358,11 @@ function EditForm({
       <div className="mb-4">
         <h1>Edit profile</h1>
       </div>
-      <form className="profile-form" noValidate onSubmit={save}>
-        <fieldset disabled={busy}>
+      <form noValidate onSubmit={save}>
+        <fieldset disabled={busy} className="m-0 min-w-0 border-0 p-0">
           <div className="rounded-lg border border-border bg-surface p-5">
             <Field id="profile-name" label="Name">
-              <input
+              <Input
                 ref={nameInput}
                 id="profile-name"
                 value={draft.name}
@@ -355,7 +376,7 @@ function EditForm({
                 }
               />
               {nameError ? (
-                <p id="profile-name-error" className="profile-error">
+                <p id="profile-name-error" className={errorClass}>
                   {nameError}
                 </p>
               ) : null}
@@ -372,9 +393,10 @@ function EditForm({
           <section aria-labelledby="plays-heading">
             {/* Accordion pattern: a button inside the heading opens the list;
                 folded, a summary line stands in for it. */}
-            <div className="mt-8 mb-3 flex items-center justify-between gap-3 [&_h2]:m-0">
-              <h2 id="plays-heading" className="section-toggle">
+            <div className="mt-6 mb-1 flex items-center justify-between gap-3 [&_h2]:m-0">
+              <h2 id="plays-heading" className="m-0">
                 <button
+                  className="group/toggle -ml-2 inline-flex min-h-touch items-center gap-2 rounded-md border-0 bg-transparent px-2 text-inherit [font:inherit] tracking-[inherit] hover:bg-surface-sunken"
                   type="button"
                   aria-expanded={playsOpen}
                   aria-controls="plays-panel"
@@ -382,7 +404,7 @@ function EditForm({
                 >
                   Activities you play
                   <CaretDownIcon
-                    className="section-toggle__caret"
+                    className="flex-none text-text-muted transition-transform duration-200 ease-standard group-aria-[expanded=false]/toggle:-rotate-90"
                     size={20}
                     weight="bold"
                     aria-hidden="true"
@@ -390,7 +412,7 @@ function EditForm({
                 </button>
               </h2>
             </div>
-            <p className="mt-1 mb-0 text-sm text-text-muted profile-form__lede">
+            <p className="mt-0 mb-3 text-sm text-text-muted">
               {playsOpen
                 ? "Tap what you play, then rate yourself honestly. A rating is optional."
                 : activitiesSummary(
@@ -399,11 +421,11 @@ function EditForm({
             </p>
             <div
               id="plays-panel"
-              className="fold"
+              className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-200 ease-standard data-open:grid-rows-[1fr]"
               data-open={playsOpen || undefined}
               inert={!playsOpen}
             >
-              <div className="fold__inner">
+              <div className="invisible min-h-0 overflow-hidden transition-[visibility] delay-200 duration-0 in-data-open:visible in-data-open:-m-1 in-data-open:p-1 in-data-open:delay-0">
                 <ul
                   className="m-0 list-none overflow-hidden rounded-lg bg-surface p-0 shadow-sm"
                   aria-labelledby="plays-heading"
@@ -414,12 +436,10 @@ function EditForm({
                     return (
                       <li
                         key={key}
-                        className={cx(
-                          "border-t border-border first:border-t-0 play-row",
-                          preset.on && "is-on",
-                        )}
+                        data-on={preset.on || undefined}
+                        className="group/play border-t border-border first:border-t-0"
                       >
-                        <label className="play-row__toggle">
+                        <label className="flex min-h-14 cursor-pointer items-center gap-3 px-3 py-2 hover:bg-surface-sunken has-focus-visible:outline-3 has-focus-visible:-outline-offset-3 has-focus-visible:outline-focus">
                           <input
                             type="checkbox"
                             className="sr-only"
@@ -428,10 +448,13 @@ function EditForm({
                               setPreset(name, { on: e.target.checked })
                             }
                           />
-                          <span className="play-row__icon" aria-hidden="true">
+                          <span
+                            className="inline-flex size-10 flex-none items-center justify-center rounded-full bg-surface-sunken text-text-muted group-data-on/play:bg-success-bg group-data-on/play:text-success"
+                            aria-hidden="true"
+                          >
                             <ActivityIcon icon={activity.icon} size={22} />
                           </span>
-                          <span className="grid min-w-0">
+                          <span className="grid min-w-0 flex-1">
                             <span className="truncate font-semibold">
                               {name}
                             </span>
@@ -443,7 +466,10 @@ function EditForm({
                               </span>
                             ) : null}
                           </span>
-                          <span className="play-row__state" aria-hidden="true">
+                          <span
+                            className="inline-flex min-h-8 flex-none items-center gap-1 rounded-full border border-border-strong px-3 text-sm font-semibold text-text group-data-on/play:border-success group-data-on/play:bg-success-bg group-data-on/play:text-success"
+                            aria-hidden="true"
+                          >
                             {preset.on ? (
                               <>
                                 <CheckIcon size={16} weight="bold" />
@@ -475,10 +501,10 @@ function EditForm({
           </section>
 
           <section aria-labelledby="own-heading">
-            <div className="mt-8 mb-3 flex items-center justify-between gap-3 [&_h2]:m-0">
+            <div className="mt-6 mb-1 flex items-center justify-between gap-3 [&_h2]:m-0">
               <h2 id="own-heading">Something else?</h2>
             </div>
-            <p className="mt-1 mb-0 text-sm text-text-muted profile-form__lede">
+            <p className="mt-0 mb-3 text-sm text-text-muted">
               Add up to {maxCustom} activities that aren’t listed.
             </p>
             {draft.custom.length ? (
@@ -492,10 +518,11 @@ function EditForm({
                   return (
                     <li
                       key={row.id}
-                      className="border-t border-border first:border-t-0 own-row"
+                      className="border-t border-border first:border-t-0 **:data-[slot=level-pick]:pl-3"
                     >
-                      <div className="own-row__line">
-                        <input
+                      <div className="flex items-center gap-2 p-3">
+                        <Input
+                          className="mt-0 flex-1"
                           id={`custom-${row.id}`}
                           aria-label={label}
                           aria-invalid={activityError ? true : undefined}
@@ -530,7 +557,7 @@ function EditForm({
               <button
                 ref={addButton}
                 type="button"
-                className={cx(buttonClass({ variant: "secondary" }), "own-add")}
+                className={cx(buttonClass({ variant: "secondary" }), "mt-3")}
                 onClick={addCustom}
               >
                 <PlusIcon size={18} aria-hidden="true" />
@@ -541,7 +568,7 @@ function EditForm({
               <p
                 ref={activitiesError}
                 id="activities-error"
-                className="profile-error"
+                className={errorClass}
                 tabIndex={-1}
               >
                 {activityError}
@@ -549,7 +576,7 @@ function EditForm({
             ) : null}
           </section>
 
-          <p className="mt-1 mb-0 text-sm text-text-muted profile-form__account">
+          <p className="mt-6 mb-3 text-sm wrap-anywhere text-text-muted">
             Signed in as {session?.user.email ?? "your account"}
           </p>
           {problem ? <Notice>{problem}</Notice> : null}
@@ -580,7 +607,7 @@ function EditForm({
         onClose={keepEditing}
         title="Discard your changes?"
       >
-        <div className="discard-choice">
+        <div className="mt-3 grid gap-2">
           <button
             type="button"
             className={buttonClass({ variant: "primary", wide: true })}

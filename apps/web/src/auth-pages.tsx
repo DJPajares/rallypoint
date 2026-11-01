@@ -12,7 +12,18 @@ import { EyeSlashIcon } from "@phosphor-icons/react/dist/csr/EyeSlash";
 import type { AuthError } from "@supabase/supabase-js";
 import { hidesAccount, isRecoverySession } from "@rallypoint/domain/auth-links";
 import type { LinkError } from "@rallypoint/domain/auth-links";
-import { buttonClass, Divider, Field, Notice, Pending } from "@rallypoint/ui";
+import {
+  bareInputClass,
+  buttonClass,
+  controlBoxClass,
+  controlClass,
+  cx,
+  Divider,
+  Field,
+  Input,
+  Notice,
+  Pending,
+} from "@rallypoint/ui";
 import { safeReturnPath, useAuth } from "./auth-context";
 import { rememberReturnPath, redirectUrl, takeReturnPath } from "./return-path";
 
@@ -67,14 +78,14 @@ function AuthLayout({
   children: ReactNode;
 }) {
   return (
-    <section className="signin-page">
+    <section className="mx-auto grid max-w-250 gap-6 md:min-h-[60dvh] md:grid-cols-[1fr_minmax(320px,420px)] md:items-center">
       {intro ? (
-        <div className="signin-intro">
+        <div>
           <h1>{intro.title}</h1>
           <p className="max-w-reading text-lg text-text-muted">{intro.lede}</p>
         </div>
       ) : null}
-      <div className="rounded-lg border border-border bg-surface p-5 signin-card">
+      <div className="rounded-lg border border-border bg-surface p-5 [&_h2]:mb-0">
         {intro ? <h2>{title}</h2> : <h1>{title}</h1>}
         {children}
       </div>
@@ -105,7 +116,7 @@ function LocalNote() {
   return (
     <>
       <Divider>Local development</Divider>
-      <p className="mt-1 mb-0 text-sm text-text-muted">
+      <p className="mt-1 mb-4 text-sm text-text-muted">
         Use a synthetic account. Confirmation and reset emails go to the{" "}
         <a href="http://127.0.0.1:54324" target="_blank" rel="noreferrer">
           local mail inbox
@@ -137,10 +148,10 @@ function PasswordField({
       label={label}
       help={fresh ? `At least ${minPassword} characters.` : undefined}
     >
-      <div className="rp-control rp-affix password-control">
+      <div className={cx(controlClass, controlBoxClass, "pr-0")}>
         <input
           id={id}
-          className="rp-bare rp-affix__input"
+          className={bareInputClass}
           type={shown ? "text" : "password"}
           autoComplete={autoComplete}
           minLength={fresh ? minPassword : undefined}
@@ -151,7 +162,7 @@ function PasswordField({
         />
         <button
           type="button"
-          className="password-toggle"
+          className="inline-flex size-touch flex-none items-center justify-center rounded-full border-0 bg-transparent p-0 text-text-muted hover:text-text focus-visible:-outline-offset-3"
           aria-pressed={shown}
           aria-label={shown ? "Hide password" : "Show password"}
           onClick={() => setShown((value) => !value)}
@@ -176,7 +187,7 @@ function EmailField({
 }) {
   return (
     <Field id="email" label="Email address">
-      <input
+      <Input
         id="email"
         type="email"
         autoComplete="email"
@@ -259,7 +270,7 @@ export function SignIn() {
       <Unavailable />
       {config?.auth?.google ? (
         <button
-          className={buttonClass({ variant: "accent", wide: true })}
+          className={cx(buttonClass({ variant: "accent", wide: true }), "mt-4")}
           onClick={() => void google()}
           disabled={busy}
         >
@@ -268,7 +279,7 @@ export function SignIn() {
         </button>
       ) : null}
       {config?.auth?.password ? (
-        <form className="auth-form" onSubmit={(event) => void submit(event)}>
+        <form onSubmit={(event) => void submit(event)}>
           <LocalNote />
           <EmailField value={email} onChange={setEmail} />
           <PasswordField
@@ -279,7 +290,7 @@ export function SignIn() {
             autoComplete="current-password"
           />
           <Link
-            className="auth-aside"
+            className="-mt-2 block text-right text-sm"
             href={withNext("/forgot-password", next)}
           >
             Forgot password?
@@ -312,7 +323,10 @@ export function SignIn() {
             </p>
           ) : null}
           <button
-            className={buttonClass({ variant: "primary", wide: true })}
+            className={cx(
+              buttonClass({ variant: "primary", wide: true }),
+              "mt-4",
+            )}
             disabled={busy || !client}
           >
             {busy ? "Signing in…" : "Sign in"}
@@ -320,7 +334,7 @@ export function SignIn() {
           </button>
         </form>
       ) : null}
-      <p className="mt-1 mb-0 text-sm text-text-muted signin-footnote">
+      <p className="mt-5 mb-0 text-sm text-text-muted">
         New here?{" "}
         <Link href={withNext("/sign-up", next)}>Create an account</Link>
       </p>
@@ -393,7 +407,7 @@ export function SignUp() {
           .
         </p>
         {problem ? <Notice>{problem}</Notice> : null}
-        <div className="auth-actions">
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
             type="button"
             className={buttonClass()}
@@ -431,10 +445,10 @@ export function SignUp() {
     >
       <Unavailable />
       {config?.auth?.password ? (
-        <form className="auth-form" onSubmit={(event) => void submit(event)}>
+        <form onSubmit={(event) => void submit(event)}>
           <LocalNote />
           <Field id="name" label="Your name">
-            <input
+            <Input
               id="name"
               autoComplete="name"
               maxLength={80}
@@ -453,7 +467,10 @@ export function SignUp() {
           />
           {problem ? <Notice>{problem}</Notice> : null}
           <button
-            className={buttonClass({ variant: "primary", wide: true })}
+            className={cx(
+              buttonClass({ variant: "primary", wide: true }),
+              "mt-4",
+            )}
             disabled={busy || !client}
           >
             {busy ? "Creating your account…" : "Create account"}
@@ -461,7 +478,7 @@ export function SignUp() {
           </button>
         </form>
       ) : null}
-      <p className="mt-1 mb-0 text-sm text-text-muted signin-footnote">
+      <p className="mt-5 mb-0 text-sm text-text-muted">
         Already have an account?{" "}
         <Link href={withNext("/sign-in", next)}>Sign in</Link>
       </p>
@@ -501,17 +518,17 @@ export function ForgotPassword() {
         <>
           <Unavailable />
           {config?.auth?.password ? (
-            <form
-              className="auth-form"
-              onSubmit={(event) => void submit(event)}
-            >
-              <p className="mt-1 mb-0 text-sm text-text-muted">
+            <form onSubmit={(event) => void submit(event)}>
+              <p className="mt-1 mb-4 text-sm text-text-muted">
                 We’ll email you a link to choose a new password.
               </p>
               <EmailField value={email} onChange={setEmail} />
               {problem ? <Notice>{problem}</Notice> : null}
               <button
-                className={buttonClass({ variant: "primary", wide: true })}
+                className={cx(
+                  buttonClass({ variant: "primary", wide: true }),
+                  "mt-4",
+                )}
                 disabled={busy || !client}
               >
                 {busy ? "Sending…" : "Send link"}
@@ -520,7 +537,7 @@ export function ForgotPassword() {
           ) : null}
         </>
       )}
-      <p className="mt-1 mb-0 text-sm text-text-muted signin-footnote">
+      <p className="mt-5 mb-0 text-sm text-text-muted">
         <Link href={withNext("/sign-in", next)}>Back to sign in</Link>
       </p>
     </AuthLayout>
@@ -546,7 +563,7 @@ function LinkProblem({ kind }: { kind: LinkError }) {
       ) : (
         <p>This link has expired or was already used.</p>
       )}
-      <div className="auth-actions">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <Link className={buttonClass({ variant: "primary" })} href="/sign-in">
           Sign in
         </Link>
@@ -618,7 +635,7 @@ export function ResetPassword() {
       {done ? (
         <p role="status">Password updated.</p>
       ) : (
-        <form className="auth-form" onSubmit={(event) => void submit(event)}>
+        <form onSubmit={(event) => void submit(event)}>
           <PasswordField
             id="new-password"
             label="New password"
@@ -628,7 +645,10 @@ export function ResetPassword() {
           />
           {problem ? <Notice>{problem}</Notice> : null}
           <button
-            className={buttonClass({ variant: "primary", wide: true })}
+            className={cx(
+              buttonClass({ variant: "primary", wide: true }),
+              "mt-4",
+            )}
             disabled={busy}
           >
             {busy ? "Saving…" : "Save password"}

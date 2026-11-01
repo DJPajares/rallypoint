@@ -85,10 +85,20 @@
   --notch-shape: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 64'><path fill='black' d='M0 0H29.404A12 12 0 0 1 41.08 9.2308A40 40 0 0 0 118.92 9.2308A12 12 0 0 1 130.596 0H160V64H0Z'/></svg>");
 }
 
-/* The floating menu's icon spin and item pop-in. */
+/* Animations: the floating menu's icon spin and item pop-in, and the earned
+   badge. Reduced motion stops them (theme.css). */
 @theme {
   --animate-fab-spin: fab-spin 200ms var(--ease-standard);
   --animate-fab-in: fab-in 200ms var(--ease-standard) both;
+  /* The one moment a level is earned (D-16). */
+  --animate-medallion-in: medallion-in 520ms cubic-bezier(0.2, 0.9, 0.3, 1.25)
+    both;
+  @keyframes medallion-in {
+    from {
+      opacity: 0;
+      transform: scale(0.6) rotate(-12deg);
+    }
+  }
   @keyframes fab-spin {
     from {
       opacity: 0;

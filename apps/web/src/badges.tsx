@@ -154,7 +154,8 @@ export function Medallion({
   const colors = level ? levelColors[level - 1] : null;
   return (
     <svg
-      className={cx("medallion", !colors && "medallion--locked")}
+      data-slot="medallion"
+      className={cx("block flex-none", !colors && "text-border-strong")}
       width={size}
       height={size}
       viewBox="0 0 100 100"
@@ -252,7 +253,11 @@ export function PersonName({
   profileId?: string | null;
 }) {
   return profileId ? (
-    <Link className="person-link" href={`/people/${profileId}`}>
+    <Link
+      data-slot="person-link"
+      className="text-inherit underline decoration-text-muted underline-offset-2 hover:decoration-current focus-visible:rounded-sm focus-visible:shadow-focus focus-visible:outline-none"
+      href={`/people/${profileId}`}
+    >
       {name}
     </Link>
   ) : (
@@ -269,7 +274,10 @@ export function TitlePill({ title }: { title: unknown }) {
   const shown = rosterTitle(title);
   if (!shown) return null;
   return (
-    <span className="title-pill">
+    <span
+      data-slot="title-pill"
+      className="ml-2 inline-flex max-w-full items-center gap-1 truncate rounded-full border border-border bg-surface-sunken py-0.5 pr-2 pl-0.5 align-middle text-xs leading-[1.6] font-semibold whitespace-nowrap text-text"
+    >
       <Medallion badge={shown.key} level={shown.level} size={18} decorative />
       {levelTitle(shown.key, shown.level)}
     </span>
@@ -331,19 +339,19 @@ export function EarnedBadgeSheet({ view }: { view: BadgesView | null }) {
   }
   return (
     <Sheet open={!closed} onClose={close} title="New badge">
-      <div className="earned-badge">
-        <div className="earned-badge__halo">
+      <div className="grid justify-items-center gap-2 text-center">
+        <div className="grid h-43 w-50 place-items-center bg-[radial-gradient(circle_at_50%_52%,color-mix(in_srgb,var(--badge-glow)_30%,transparent)_0%,color-mix(in_srgb,var(--badge-glow)_10%,transparent)_38%,transparent_64%)] **:data-[slot=medallion]:animate-medallion-in **:data-[slot=medallion]:drop-shadow-[0_14px_18px_var(--badge-glow-shadow)]">
           <Medallion badge={key} level={level} size={132} />
         </div>
-        <p className="earned-badge__name">
+        <p className="m-0 font-heading text-2xl leading-tight font-extrabold tracking-tight">
           {badgeDefinition(key).name} · Level {level}
         </p>
-        <p className="earned-badge__line">{levelSentence(key, level)}</p>
+        <p className={earnedLine}>{levelSentence(key, level)}</p>
         {isShown ? (
-          <p className="earned-badge__line">Your title is now {title}.</p>
+          <p className={earnedLine}>Your title is now {title}.</p>
         ) : null}
         {more ? (
-          <Link className="earned-badge__more" href="/profile" onClick={close}>
+          <Link className="text-sm text-link" href="/profile" onClick={close}>
             +{more} more on your profile
           </Link>
         ) : null}
@@ -351,7 +359,10 @@ export function EarnedBadgeSheet({ view }: { view: BadgesView | null }) {
         {!isShown ? (
           <button
             type="button"
-            className={buttonClass({ variant: "primary", wide: true })}
+            className={cx(
+              buttonClass({ variant: "primary", wide: true }),
+              "mt-4",
+            )}
             disabled={busy}
             onClick={() => showAsTitle(key)}
           >
@@ -387,11 +398,19 @@ function SignedInBadgeCheck() {
 function Ring({ value, children }: { value: number; children: ReactNode }) {
   const circumference = 2 * Math.PI * 19;
   return (
-    <span className="progress-ring" aria-hidden="true">
+    <span
+      className="relative size-11 flex-none *:data-[slot=medallion]:absolute *:data-[slot=medallion]:inset-2.25 [&>svg]:absolute [&>svg]:inset-0"
+      aria-hidden="true"
+    >
       <svg viewBox="0 0 44 44" width="44" height="44">
-        <circle className="progress-ring__track" cx="22" cy="22" r="19" />
         <circle
-          className="progress-ring__value"
+          className="fill-none stroke-border stroke-4"
+          cx="22"
+          cy="22"
+          r="19"
+        />
+        <circle
+          className="fill-none stroke-chrome stroke-4 [stroke-linecap:round]"
           cx="22"
           cy="22"
           r="19"
@@ -409,11 +428,14 @@ export function NextBadge({ view }: { view: BadgesView | null }) {
   const next = nextBadge(badgeStates(view));
   if (!next) return null;
   return (
-    <Link className="next-badge" href="/profile">
+    <Link
+      className="mt-4 flex items-center gap-3 rounded-lg bg-surface px-4 py-3 text-text no-underline shadow-sm transition-shadow duration-150 ease-standard hover:shadow-lg focus-visible:shadow-focus focus-visible:outline-none [&>svg]:text-text-muted"
+      href="/profile"
+    >
       <Ring value={next.current / next.target}>
         <Medallion badge={next.key} level={next.level} size={26} decorative />
       </Ring>
-      <span className="next-badge__text">
+      <span className="grid min-w-0 flex-1 [&_span]:text-sm [&_span]:text-text-muted [&_strong]:text-base [&_strong]:font-semibold">
         <strong>{badgeDefinition(next.key).name}</strong>
         <span>{progressLabel(next.key, next.target - next.current)}</span>
       </span>
@@ -430,6 +452,10 @@ const initials = (name: string) =>
     .map((part) => part[0]!.toUpperCase())
     .join("") || "?";
 
+const earnedLine = "m-0 max-w-[26ch] text-text-muted";
+const shelfItem =
+  "grid min-h-touch w-full content-start justify-items-center gap-1 rounded-md border-0 bg-transparent p-1 text-center text-xs font-semibold text-inherit [font-family:inherit] [button&]:cursor-pointer [button&]:focus-visible:shadow-focus [button&]:focus-visible:outline-none **:data-[slot=medallion]:mb-1";
+
 /** Initials inside the brand's gradient ring: the profile head and its menu entry. */
 export function RingAvatar({
   name,
@@ -439,8 +465,24 @@ export function RingAvatar({
   size: "sm" | "lg";
 }) {
   return (
-    <span className={`ring-avatar ring-avatar--${size}`} aria-hidden="true">
-      <span>{initials(name)}</span>
+    <span
+      className={cx(
+        "block flex-none rounded-full bg-[conic-gradient(from_200deg,var(--brand-orange),var(--badge-glow),var(--badge-ring-sky),var(--brand-orange))]",
+        size === "lg" ? "size-22 p-0.75" : "size-full p-0.5",
+      )}
+      aria-hidden="true"
+    >
+      <span
+        data-slot="avatar-face"
+        className={cx(
+          "grid size-full place-items-center rounded-full bg-surface font-heading font-extrabold text-text",
+          size === "lg"
+            ? "border-3 border-bg text-2xl"
+            : "border-2 border-surface text-sm tracking-tight",
+        )}
+      >
+        {initials(name)}
+      </span>
     </span>
   );
 }
@@ -462,21 +504,26 @@ function Plays({
   const { catalog } = useActivities();
   if (!activities || (!activities.length && !owner)) return null;
   return (
-    <section className="plays" aria-labelledby="plays-title">
+    <section aria-labelledby="plays-title">
       <div className="mt-8 mb-3 flex items-center justify-between gap-3 [&_h2]:m-0">
         <h2 id="plays-title">Plays</h2>
         {activities.some((a) => a.level) ? (
-          <span className="plays__note">Self-rated</span>
+          <span className="rounded-full border border-border px-2 py-0.5 text-xs font-semibold text-text-muted">
+            Self-rated
+          </span>
         ) : null}
       </div>
       {activities.length ? (
-        <ul className="m-0 list-none overflow-hidden rounded-lg bg-surface p-0 shadow-sm plays__list">
+        <ul className="m-0 list-none overflow-hidden rounded-lg bg-surface p-0 shadow-sm">
           {activities.map((a) => (
             <li
               key={a.name}
-              className="border-t border-border first:border-t-0 plays__row"
+              className="flex min-h-15 items-center gap-3 border-t border-border py-2 pr-4 pl-3 first:border-t-0"
             >
-              <span className="plays__icon" aria-hidden="true">
+              <span
+                className="inline-flex size-10 flex-none items-center justify-center rounded-full bg-success-bg text-success"
+                aria-hidden="true"
+              >
                 <ActivityIcon
                   icon={
                     catalog?.find((c) => c.key === a.key)?.icon ??
@@ -486,11 +533,13 @@ function Plays({
                   size={22}
                 />
               </span>
-              <span className="plays__body">
-                <span className="plays__name">{a.name}</span>
-                <span className="plays__level">
+              <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3 gap-y-0.5">
+                <span className="min-w-0 font-semibold wrap-anywhere">
+                  {a.name}
+                </span>
+                <span className="inline-flex flex-none items-center gap-2 text-sm font-medium text-text-muted">
                   <span
-                    className="plays__meter"
+                    className="group/meter inline-flex h-4 items-end gap-0.75 *:w-1.25 *:rounded-full *:bg-border-strong [&>span:nth-child(1)]:h-2 [&>span:nth-child(2)]:h-3 [&>span:nth-child(3)]:h-4 data-[step=1]:[&>span:nth-child(-n+1)]:bg-success data-[step=2]:[&>span:nth-child(-n+2)]:bg-success data-[step=3]:*:bg-success"
                     data-step={levelStep(a.level)}
                     aria-hidden="true"
                   >
@@ -505,7 +554,7 @@ function Plays({
           ))}
         </ul>
       ) : (
-        <div className="plays__empty">
+        <div className="grid justify-items-start gap-3 rounded-lg bg-surface p-4 shadow-sm [&_p]:m-0 [&_p]:text-text-muted">
           <p>
             Add the activities you play, so hosts know what to invite you to.
           </p>
@@ -567,36 +616,46 @@ function BadgeDetails({
   return (
     <Sheet open={state !== null} onClose={onClose} title={definition.name}>
       {state ? (
-        <div className="badge-details">
+        <div className="grid justify-items-center gap-2">
           <Medallion badge={key} level={level} size={96} />
-          <p className="badge-details__status">{badgeLevelLabel(level)}</p>
-          <p className="badge-details__about">{badgeAbout(key)}</p>
+          <p className="m-0 font-semibold text-text-muted">
+            {badgeLevelLabel(level)}
+          </p>
+          <p className="m-0 max-w-[32ch] text-center text-text-muted">
+            {badgeAbout(key)}
+          </p>
           {level === 0 ? (
-            <div className="badge-details__start">
-              <p className="badge-details__start-label">How to earn it</p>
+            <div className="my-2 grid w-full gap-0.5 rounded-md bg-surface-sunken p-3 text-center [&_p]:m-0 [&_p]:font-semibold">
+              <p className="text-sm text-text-muted">How to earn it</p>
               <p>{firstStep(key)}</p>
             </div>
           ) : null}
-          <ol className="badge-levels">
+          <ol className="mt-2 mb-0 grid w-full list-none gap-2 p-0">
             {definition.thresholds.map((_, i) => {
               const step = (i + 1) as Level;
               const earned = state.levels.find((l) => l.level === step);
               return (
-                <li key={step} className={cx(earned && "badge-levels__earned")}>
+                <li
+                  key={step}
+                  className={cx(
+                    "flex min-h-touch items-center gap-3 rounded-md bg-surface-sunken px-3 py-2 text-text-muted",
+                    earned && "text-text",
+                  )}
+                >
                   <Medallion
                     badge={key}
                     level={earned ? step : 0}
                     size={28}
                     decorative
                   />
-                  <span className="badge-levels__text">
+                  <span className="grid min-w-0 flex-1 text-sm [&_strong]:font-semibold">
                     <strong>Level {step}</strong>
                     <span>
                       {levelTarget(key, step)} · “{levelTitle(key, step)}”
                     </span>
                   </span>
                   {earned ? (
-                    <span className="badge-levels__when">
+                    <span className="inline-flex items-center gap-1 text-xs whitespace-nowrap">
                       <CheckIcon size={16} weight="bold" aria-hidden="true" />
                       <span className="sr-only">Earned </span>
                       {dateLabel(earned.earnedAt)}
@@ -609,7 +668,7 @@ function BadgeDetails({
             })}
           </ol>
           {target !== null && state.current > 0 ? (
-            <p className="badge-details__next">
+            <p className="mt-2 mb-0 text-center font-semibold">
               {progressLabel(key, target - state.current)} for level {level + 1}
             </p>
           ) : null}
@@ -641,29 +700,37 @@ function ProfileView({
 }) {
   const shelf = owner ? badges : badges.filter((b) => b.level > 0);
   return (
-    <section className="page profile-page">
-      <div className="profile-head">
+    <section className="mx-auto max-w-160">
+      <div className="mb-6 grid justify-items-center gap-2 text-center [&_h1]:m-0 **:data-[slot=title-pill]:ml-0 **:data-[slot=title-pill]:text-sm">
         <RingAvatar name={name} size="lg" />
         <h1>{name || "Your profile"}</h1>
-        {owner?.email ? <p className="profile-email">{owner.email}</p> : null}
+        {owner?.email ? (
+          <p className="-mt-2 mb-0 max-w-full text-sm wrap-anywhere text-text-muted">
+            {owner.email}
+          </p>
+        ) : null}
         {title ? <TitlePill title={title} /> : null}
         {owner ? (
-          <div className="profile-actions">
+          <div className="mt-2 flex w-full max-w-104 justify-center gap-2">
             <Link
-              className={buttonClass({ variant: "secondary" })}
+              className={cx(
+                buttonClass({ variant: "secondary" }),
+                "min-w-0 flex-[1_1_0] px-3",
+              )}
               href="/profile/edit"
             >
               <PencilSimpleIcon size={18} aria-hidden="true" />
               <span>
-                Edit<span className="wide-only"> profile</span>
+                Edit<span className="max-[25rem]:sr-only"> profile</span>
               </span>
             </Link>
             {owner.profileId ? (
               <ShareButton
                 title={`${name} on RallyPoint`}
+                className="min-w-0 flex-[1_1_0] px-3"
                 label={
                   <span>
-                    Share<span className="wide-only"> profile</span>
+                    Share<span className="max-[25rem]:sr-only"> profile</span>
                   </span>
                 }
                 url={
@@ -709,7 +776,7 @@ function ProfileView({
               Your first badge comes with your first check-in.
             </p>
           ) : null}
-          <ul className="badge-shelf">
+          <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(92px,1fr))] gap-x-3 gap-y-5 p-0 text-center">
             {shelf.map((b) => {
               const content = (
                 <>
@@ -726,20 +793,24 @@ function ProfileView({
               return (
                 <li
                   key={b.key}
-                  className={cx(!b.level && "badge-shelf__locked")}
+                  className={cx(
+                    "[&_small]:font-normal [&_small]:text-text-muted",
+                    !b.level &&
+                      "[&_span:not([data-slot])]:font-medium [&_span:not([data-slot])]:text-text-muted",
+                  )}
                 >
                   {/* The visible name and level are the accessible name (WCAG 2.5.3). */}
                   {owner ? (
                     <button
                       type="button"
-                      className="badge-shelf__item"
+                      className={shelfItem}
                       aria-haspopup="dialog"
                       onClick={() => owner.onOpen(b.key)}
                     >
                       {content}
                     </button>
                   ) : (
-                    <span className="badge-shelf__item">{content}</span>
+                    <span className={shelfItem}>{content}</span>
                   )}
                 </li>
               );
@@ -828,7 +899,7 @@ export function ProfilePage() {
           moreActions: (
             <button
               type="button"
-              className={cx(iconButtonClass(), "profile-actions__icon")}
+              className={cx(iconButtonClass(), "size-control")}
               aria-label={account.leaving ? "Signing out…" : "Sign out"}
               title="Sign out"
               onClick={() => void account.signOut()}
@@ -852,7 +923,10 @@ export function ProfilePage() {
         onClose={() => setChoosing(false)}
         title="Your title"
       >
-        <form className="title-choice" onSubmit={saveTitle}>
+        <form
+          className="[&_fieldset]:mt-3 [&_fieldset]:mb-4 [&_fieldset]:grid [&_fieldset]:gap-2 [&_label]:flex [&_label]:min-h-touch [&_label]:cursor-pointer [&_label]:items-center [&_label]:gap-3 [&_label]:rounded-md [&_label]:border [&_label]:border-border [&_label]:px-3 [&_label]:py-2 [&_label]:has-checked:border-chrome [&_label]:has-checked:shadow-ring-chrome **:data-[slot=title-pill]:ml-0"
+          onSubmit={saveTitle}
+        >
           <p className="mt-1 mb-0 text-sm text-text-muted">
             Shown next to your name on session lists.
           </p>
@@ -877,7 +951,7 @@ export function ProfilePage() {
                   checked={choice === t.key}
                   onChange={() => setChoice(t.key)}
                 />
-                <span className="title-choice__option">
+                <span className="grid min-w-0 justify-items-start gap-0.5 [&_small]:text-xs [&_small]:text-text-muted">
                   <TitlePill title={t} />
                   <small>
                     {badgeDefinition(t.key).name} · level {t.level}
@@ -911,13 +985,13 @@ export function PersonProfilePage() {
   const profile = result.data?.profile;
   if (result.loading)
     return (
-      <section className="page profile-page">
+      <section className="mx-auto max-w-160">
         <Pending>Opening the profile…</Pending>
       </section>
     );
   if (!profile)
     return (
-      <section className="page profile-page">
+      <section className="mx-auto max-w-160">
         {result.error === "Profile not found" ? (
           <EmptyState
             headingLevel={1}
