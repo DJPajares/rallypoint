@@ -98,6 +98,40 @@ preview; it points Wrangler at the old build directory.
 - `packages/database`: server-only Prisma client and allowlisted, parameter-bound
   PostgreSQL function access shared by the API and scheduled email sender.
 - `scripts` / `tests`: root local lifecycle and meaningful integration checks.
+- `packages/ui`: the UI components (D-24), described below.
+
+### UI: shadcn/ui and Tailwind CSS
+
+The UI uses [shadcn/ui](https://ui.shadcn.com) on Base UI (`base-nova` style,
+shadcn 4.21.0, `@base-ui/react` 1.8.0) with Tailwind CSS 4 (PRD D-24).
+
+- **Theme:** `packages/ui/src/theme.css` is the one place the look is decided.
+  The RallyPoint design tokens are the Tailwind theme, with light and dark
+  values. Tailwind's own colour palette is removed, so only tokens exist, for
+  example `bg-surface`, `text-text-muted` and `border-border`. shadcn's names
+  (`primary`, `muted`, `card`…) point at the same tokens. The `dark:` variant
+  follows the system setting, or the theme switch when it's set.
+- **Shared components:**
+  - shadcn's components live as source in `packages/ui/src/components/ui/`,
+    restyled to RallyPoint (pill buttons, 48px controls);
+  - `@rallypoint/ui` builds the app's components on them: `Button`/`buttonClass`,
+    `Field`, `Sheet` (a swipeable drawer on phones, a dialog elsewhere),
+    `Notice`, `ListRow` and the rest.
+- **Screens:** they use Tailwind utilities. Join classes with `cn()` (or its
+  alias `cx`) so a later class replaces a conflicting earlier one.
+- **`apps/web/app/globals.css`:** imports Tailwind and the theme, and holds the
+  few app-wide pieces utilities can't express: the tab bar notch, glass bars
+  and animations.
+- **Design-token test:** `tests/design-tokens.test.mjs` refuses literal colours
+  and arbitrary colour, font-size or radius classes.
+- **Adding a shadcn component:** with network access to `ui.shadcn.com`, run
+  `pnpm dlx shadcn@4.21.0 add <name>` from `packages/ui`; `components.json` is
+  set up for the monorepo. Then restyle it to the tokens and remove anything
+  using a colour outside the theme. Where the registry can't be reached, copy
+  the component from the shadcn repository at tag `shadcn@4.21.0`
+  (`apps/v4/registry/bases/base/ui`) and expand its `cn-*` classes from
+  `registry/styles/style-nova.css`, which is what the CLI does.
+- **Catalogue:** `/design` (development only) shows every token and component.
 
 Workspace dependencies use `workspace:*`. Turbo orders package checks and caches
 lint/type results inside this checkout's `.turbo/cache` (including in Git worktrees). Builds, dev servers and database/integration commands are not
