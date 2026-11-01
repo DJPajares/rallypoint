@@ -392,7 +392,15 @@
 }
 
 /* Sheet: bottom-anchored on phones, a centred card elsewhere. */
+/* While a sheet is open the page behind stays put. The gutter keeps the
+   layout from shifting where the page had a scrollbar. */
+html:has(.rp-sheet[open]) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
 .rp-sheet {
+  /* Scrolling inside the sheet stops at its ends, never moving the page. */
+  overscroll-behavior: contain;
   width: min(480px, calc(100% - var(--space-8)));
   max-height: min(85dvh, 720px);
   padding: 0;
@@ -444,7 +452,16 @@
   .rp-sheet__body {
     padding-bottom: calc(var(--space-6) + var(--safe-bottom));
   }
-  /* A grab handle says "this slides up from the bottom". */
+  /* The handle and title bar are the swipe-down-to-close area: the browser
+     leaves the gesture to the sheet instead of scrolling. */
+  .rp-sheet__head {
+    touch-action: none;
+    cursor: grab;
+  }
+  .rp-sheet__head:active {
+    cursor: grabbing;
+  }
+  /* A grab handle says "swipe me down to close". */
   .rp-sheet__head::before {
     content: "";
     position: absolute;
