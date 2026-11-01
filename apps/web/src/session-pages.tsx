@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { FormEvent, RefObject } from "react";
 import Link from "next/link";
-import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
 import { EarnedBadgeCheck } from "./badges";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useAuth } from "./auth-context";
@@ -31,20 +30,20 @@ import {
   AffixInput,
   buttonClass,
   DateTimeField,
-  cx,
   Field,
   Input,
   Notice,
   NumberStepper,
   Pending,
+  Pill,
   SelectField,
   SpotsMeter,
   Sheet,
   SwitchField,
   Textarea,
-  Ticket,
 } from "@rallypoint/ui";
 import { DetailPage, StickyActions } from "./ui";
+import { DateTile } from "./visuals";
 import { visibilityHelp, visibilityOptions } from "./group-visibility";
 import {
   blankSession,
@@ -157,10 +156,19 @@ export function SessionEditor() {
 // The session page: head, then places and registration, then details on a
 // phone; details beside a sticky side panel from tablet up. On game day it's
 // one column of head and the panel.
-const layoutClass =
-  "group/layout grid gap-5 [grid-template-areas:'head'_'side'_'details'] md:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] md:items-start md:gap-x-8 md:[grid-template-areas:'head_side'_'details_side'] desk:grid-cols-[minmax(0,1fr)_380px] desk:gap-x-12";
-const gameDayLayoutClass =
-  "grid-cols-[minmax(0,40rem)] [grid-template-areas:'head'_'side'] md:grid-cols-[minmax(0,40rem)] md:[grid-template-areas:'head'_'side'] desk:grid-cols-[minmax(0,40rem)]";
+/*
+ * The session page (owner, 2026-11-02): a hero, then two independent
+ * columns. "Your place" comes first in reading order and on phones, and sits
+ * on the right from tablet width; the main column holds a host's people and
+ * the details. Neither column sizes the other, so neither leaves gaps.
+ */
+const bodyClass =
+  "grid items-start gap-5 md:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] md:gap-x-8 desk:grid-cols-[minmax(0,1fr)_380px] desk:gap-x-12";
+// Sticky, but never taller than the window, so its lower controls stay reachable.
+const sideClass =
+  "grid content-start gap-4 md:sticky md:top-[calc(var(--spacing-topbar)+24px)] md:col-start-2 md:row-start-1 md:max-h-[calc(100dvh-var(--spacing-topbar)-48px)] md:overflow-y-auto";
+const mainClass =
+  "grid min-w-0 gap-5 md:col-start-1 md:row-start-1 **:data-[slot=facts]:mb-0 **:data-[slot=session-instructions]:mb-0";
 
 function SessionLoader({ id }: { id: string }) {
   const result = useApi<{ session: SessionRecord }>(`/api/sessions/${id}`);
@@ -980,80 +988,96 @@ function sessionTime(shared: SharedSession, value: string | undefined) {
       }).format(new Date(value))
     : "To be decided";
 }
-/** When and where: the date stub, the time, the venue and its maps link. */
-function SessionTicket({ shared }: { shared: SharedSession }) {
+/**
+ * The session's hero (owner, 2026-11-02), the same in every state: the date
+ * as the brand tile, who hosts it, the title, when and where, and how full it
+ * is. It matches Home's Up next, so a session looks the same wherever it opens.
+ */
+function SessionHero({
+  shared,
+  heading,
+  hosting,
+}: {
+  shared: SharedSession;
+  heading: RefObject<HTMLHeadingElement | null>;
+  /** The viewer runs this session. */
+  hosting?: boolean;
+}) {
+  const { catalog } = useActivities();
   const d = shared.details;
   const start = fromInstant(d.startsAt, d.timeZone);
   const end = fromInstant(d.endsAt, d.timeZone);
   // The organizer's pasted place wins; otherwise search for the venue text.
   const mapHref = d.mapsLink || mapsUrl(d.location);
+  const day = d.startsAt
+    ? new Intl.DateTimeFormat("en", {
+        timeZone: d.timeZone,
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      }).format(new Date(d.startsAt))
+    : "";
+  const { counts } = shared;
   return (
-    <Ticket date={start}>
-      <div className="font-semibold tabular-nums">
-        {start ? `${start.time} – ${end?.time ?? "?"}` : "Time to be decided"}
-      </div>
-      <div className="text-sm text-text-muted">{d.location}</div>
-      {mapHref ? (
-        <a
-          className={buttonClass({ variant: "link" })}
-          href={mapHref}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <MapPinIcon size={18} aria-hidden="true" />
-          Open in Google Maps
-        </a>
-      ) : null}
-    </Ticket>
-  );
-}
-function SessionHead({
-  shared,
-  heading,
-  ticket = true,
-  manageHref,
-}: {
-  shared: SharedSession;
-  heading: RefObject<HTMLHeadingElement | null>;
-  ticket?: boolean;
-  /** P-33: the editor, for the session's organizers and co-hosts only. */
-  manageHref?: string;
-}) {
-  const { catalog } = useActivities();
-  return (
-    <div className="[grid-area:head] [&>h1]:mb-4 group-data-game-day/layout:[&>h1]:mb-0 [&>h1+a]:mb-4">
-      {/* Group and activity share one line, so the title stands alone. */}
-      <span className="mb-1 inline-flex items-center gap-1 text-sm font-semibold text-text-muted">
-        {shared.details.activity ? (
-          <ActivityIcon
-            icon={
-              (catalog &&
-                matchActivity(catalog, shared.details.activity)?.icon) ??
-              "general"
-            }
-            size={16}
-          />
+    <header className="grid gap-4">
+      <div className="grid grid-cols-[auto_1fr] items-start gap-5 max-[520px]:gap-4">
+        {d.startsAt ? (
+          <DateTile iso={d.startsAt} timeZone={d.timeZone} variant="hero" />
         ) : null}
-        Hosted by {shared.groupName}
-        {shared.details.activity ? ` · ${shared.details.activity}` : ""}
-        {shared.details.access === "private" ? (
-          <span className="inline-flex items-center gap-0.5">
-            {" · "}
-            <LockSimpleIcon size={14} aria-hidden="true" />
-            Private
+        <div className="grid min-w-0 gap-1">
+          <span className="inline-flex items-center gap-1 text-sm font-semibold text-text-muted">
+            {d.activity ? (
+              <ActivityIcon
+                icon={
+                  (catalog && matchActivity(catalog, d.activity)?.icon) ??
+                  "general"
+                }
+                size={16}
+              />
+            ) : null}
+            Hosted by {shared.groupName}
+            {d.activity ? ` · ${d.activity}` : ""}
           </span>
-        ) : null}
-      </span>
-      <h1 ref={heading} tabIndex={-1}>
-        {shared.details.title}
-      </h1>
-      {/* Secondary, so Share stays the one primary action (D-15). */}
-      {manageHref ? (
-        <Link className={buttonClass({ size: "sm" })} href={manageHref}>
-          <PencilSimpleIcon size={16} aria-hidden="true" />
-          Manage session
-        </Link>
-      ) : null}
+          <h1
+            ref={heading}
+            tabIndex={-1}
+            className="m-0 text-display-md leading-tight wrap-anywhere max-[520px]:text-display-sm"
+          >
+            {d.title}
+          </h1>
+          <p className="m-0 mt-1 font-semibold">
+            {start
+              ? `${day} · ${start.time} – ${end?.time ?? "?"}`
+              : "Time to be decided"}
+          </p>
+          {d.location || mapHref ? (
+            <p className="m-0 flex flex-wrap items-center gap-x-3 text-text-muted">
+              {d.location}
+              {mapHref ? (
+                <a
+                  className={buttonClass({ variant: "link" })}
+                  href={mapHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MapPinIcon size={16} aria-hidden="true" />
+                  Open in Google Maps
+                </a>
+              ) : null}
+            </p>
+          ) : null}
+          {hosting || d.access === "private" ? (
+            <span className="mt-2 flex flex-wrap gap-2">
+              {hosting ? <Pill tone="neutral">Hosting</Pill> : null}
+              {d.access === "private" ? (
+                <Pill tone="neutral" icon={<LockSimpleIcon size={14} />}>
+                  Private
+                </Pill>
+              ) : null}
+            </span>
+          ) : null}
+        </div>
+      </div>
       {shared.state !== "published" ? (
         <Notice tone="warning">
           {shared.state === "cancelled"
@@ -1061,51 +1085,30 @@ function SessionHead({
             : "This session has finished."}
         </Notice>
       ) : null}
-      {ticket ? <SessionTicket shared={shared} /> : null}
-    </div>
-  );
-}
-/** The spots card. Signed out, it carries its own Refresh. */
-function Availability({
-  shared,
-  onRefresh,
-}: {
-  shared: SharedSession;
-  onRefresh?: () => void;
-}) {
-  const { counts } = shared;
-  return (
-    <div
-      className="rounded-lg border border-border bg-surface p-5"
-      role="status"
-    >
-      {shared.state === "cancelled" ? (
-        <p>
-          Previously registered: {counts.confirmedSeats}{" "}
-          {counts.confirmedSeats === 1 ? "seat" : "seats"}.
-        </p>
-      ) : (
-        <SpotsMeter
-          capacity={Number(shared.details.capacity)}
-          taken={counts.confirmedSeats}
-        />
-      )}
-      {shared.state === "published" && counts.waitingParties > 0 ? (
-        <p className="mt-2 mb-0 text-sm text-text-muted">
-          {counts.waitingParties}{" "}
-          {counts.waitingParties === 1 ? "party is" : "parties are"} waiting and
-          will get the next places, in order.
-        </p>
-      ) : null}
-      {onRefresh ? (
-        <button
-          className={buttonClass({ variant: "link" })}
-          onClick={onRefresh}
-        >
-          Refresh
-        </button>
-      ) : null}
-    </div>
+      <div
+        className="grid gap-2 rounded-lg border border-border bg-surface p-4 [&_p]:m-0"
+        role="status"
+      >
+        {shared.state === "cancelled" ? (
+          <p>
+            Previously registered: {counts.confirmedSeats}{" "}
+            {counts.confirmedSeats === 1 ? "seat" : "seats"}.
+          </p>
+        ) : (
+          <SpotsMeter
+            capacity={Number(d.capacity)}
+            taken={counts.confirmedSeats}
+          />
+        )}
+        {shared.state === "published" && counts.waitingParties > 0 ? (
+          <p className="text-sm text-text-muted">
+            {counts.waitingParties}{" "}
+            {counts.waitingParties === 1 ? "party is" : "parties are"} waiting
+            and will get the next places, in order.
+          </p>
+        ) : null}
+      </div>
+    </header>
   );
 }
 function SessionFacts({ shared }: { shared: SharedSession }) {
@@ -1239,59 +1242,40 @@ function SignedInSession({
       },
       now,
     );
+  // A host's tools are drawn into the main column (see RegistrationPanel).
+  const [main, setMain] = useState<HTMLDivElement | null>(null);
   return (
-    <div
-      data-game-day={gameDay || undefined}
-      className={cx(layoutClass, gameDay && gameDayLayoutClass)}
-    >
-      <SessionHead
+    <div className="grid gap-6">
+      <SessionHero
         shared={shared}
         heading={heading}
-        ticket={!gameDay}
-        manageHref={
-          layoutView?.canManage && layoutView.sessionId
-            ? `/sessions/${layoutView.sessionId}/edit`
-            : undefined
-        }
+        hosting={!!layoutView?.canManage}
       />
-      <aside
-        className="grid content-start gap-4 [grid-area:side] md:sticky md:top-[calc(var(--spacing-topbar)+24px)] group-data-game-day/layout:static"
-        aria-label="Places and registration"
-      >
-        {gameDay ? null : <Availability shared={shared} />}
-        <RegistrationPanel
-          event={shared}
-          view={view}
-          loading={result.loading}
-          error={result.error}
-          onRefresh={() => {
-            setChanged(null);
-            result.retry();
-          }}
-          onChanged={setChanged}
-          onChange={onChange}
-          gameDay={
-            gameDay
-              ? {
-                  details: <SessionTicket shared={shared} />,
-                  notes: <GoodToKnow shared={shared} />,
-                  more: (
-                    <>
-                      <Availability shared={shared} />
-                      <SessionFacts shared={shared} />
-                    </>
-                  ),
-                }
-              : undefined
-          }
-        />
-      </aside>
-      {gameDay ? null : (
-        <div className="min-w-0 [grid-area:details]">
+      <div className={bodyClass}>
+        <aside className={sideClass} aria-label="Your place">
+          <RegistrationPanel
+            event={shared}
+            view={view}
+            loading={result.loading}
+            error={result.error}
+            onRefresh={() => {
+              setChanged(null);
+              result.retry();
+            }}
+            onChanged={setChanged}
+            onChange={onChange}
+            mainTarget={main}
+            gameDay={
+              gameDay ? { details: null, notes: null, more: null } : undefined
+            }
+          />
+        </aside>
+        <div className={mainClass}>
+          <div ref={setMain} className="grid gap-5 empty:hidden" />
           <SessionFacts shared={shared} />
           <GoodToKnow shared={shared} />
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -1376,47 +1360,45 @@ export function SharedSessionPage() {
           onChange={result.retry}
         />
       ) : (
-        <div className={layoutClass}>
-          <SessionHead shared={shared} heading={heading} />
-          <aside
-            className="grid content-start gap-4 [grid-area:side] md:sticky md:top-[calc(var(--spacing-topbar)+24px)] group-data-game-day/layout:static"
-            aria-label="Places and registration"
-          >
-            <Availability shared={shared} onRefresh={result.retry} />
-            <div className="rounded-lg border border-border bg-surface p-5 grid gap-3 [&_h2]:m-0 [&_p]:m-0 [&_p]:text-text-muted **:data-[slot=sticky-actions]:mt-1">
-              {/* Open needs no heading: the button says what to do. */}
-              {shared.registrationWindow === "open" ? null : (
-                <h2>
-                  {shared.registrationWindow === "closed"
-                    ? "Registration is closed."
-                    : "Registration opens soon."}
-                </h2>
-              )}
-              <p>
-                {shared.state === "cancelled"
-                  ? "Sign in to view your registration record."
-                  : d.joinMode === "request"
-                    ? "Sign in to ask to join or check your request."
-                    : "Sign in to join or check your place."}
-              </p>
-              <StickyActions>
-                <Link
-                  className={buttonClass({ variant: "primary" })}
-                  href={`/sign-in?next=${encodeURIComponent(`/s/${slug}`)}`}
-                >
+        <div className="grid gap-6">
+          <SessionHero shared={shared} heading={heading} />
+          <div className={bodyClass}>
+            <aside className={sideClass} aria-label="Your place">
+              <div className="rounded-lg border border-border bg-surface p-5 grid gap-3 [&_h2]:m-0 [&_p]:m-0 [&_p]:text-text-muted **:data-[slot=sticky-actions]:mt-1">
+                {/* Open needs no heading: the button says what to do. */}
+                {shared.registrationWindow === "open" ? null : (
+                  <h2>
+                    {shared.registrationWindow === "closed"
+                      ? "Registration is closed."
+                      : "Registration opens soon."}
+                  </h2>
+                )}
+                <p>
                   {shared.state === "cancelled"
-                    ? "View your record"
+                    ? "Sign in to view your registration record."
                     : d.joinMode === "request"
-                      ? "Sign in to ask to join"
-                      : "Sign in to join"}
-                </Link>
-                <ShareButton title={d.title} />
-              </StickyActions>
+                      ? "Sign in to ask to join or check your request."
+                      : "Sign in to join or check your place."}
+                </p>
+                <StickyActions>
+                  <Link
+                    className={buttonClass({ variant: "primary" })}
+                    href={`/sign-in?next=${encodeURIComponent(`/s/${slug}`)}`}
+                  >
+                    {shared.state === "cancelled"
+                      ? "View your record"
+                      : d.joinMode === "request"
+                        ? "Sign in to ask to join"
+                        : "Sign in to join"}
+                  </Link>
+                  <ShareButton title={d.title} />
+                </StickyActions>
+              </div>
+            </aside>
+            <div className={mainClass}>
+              <SessionFacts shared={shared} />
+              <GoodToKnow shared={shared} />
             </div>
-          </aside>
-          <div className="min-w-0 [grid-area:details]">
-            <SessionFacts shared={shared} />
-            <GoodToKnow shared={shared} />
           </div>
         </div>
       )}

@@ -1,6 +1,10 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
+import Link from "next/link";
+import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
+import { UserPlusIcon } from "@phosphor-icons/react/dist/csr/UserPlus";
 import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
 import { HourglassIcon } from "@phosphor-icons/react/dist/csr/Hourglass";
 import { LockSimpleIcon } from "@phosphor-icons/react/dist/csr/LockSimple";
@@ -20,6 +24,7 @@ import { InvitePanel } from "./invites";
 import { GuestChange } from "./guest-change";
 import {
   buttonClass,
+  iconButtonClass,
   cx,
   Input,
   CheckField,
@@ -35,7 +40,7 @@ import type { Tone } from "@rallypoint/ui";
 import { feeLabel } from "@rallypoint/domain/session";
 import type { SharedSession } from "@rallypoint/domain/session";
 import { feeStanding } from "@rallypoint/domain/registration";
-import { comingLine, gameDayHeadline } from "@rallypoint/domain/my-sessions";
+import { gameDayHeadline } from "@rallypoint/domain/my-sessions";
 import type {
   OwnParty,
   RegistrationView,
@@ -170,6 +175,7 @@ export function RegistrationPanel({
   onChanged,
   onChange,
   gameDay,
+  mainTarget,
 }: {
   event: SharedSession;
   view: RegistrationView | null;
@@ -186,6 +192,13 @@ export function RegistrationPanel({
    * the order that player needs them.
    */
   gameDay?: { details: ReactNode; notes: ReactNode; more: ReactNode };
+  /**
+   * The page's main column, where a host's tools (people, requests, invites
+   * sent, the split) are drawn so they lead the page. Their state stays in
+   * this panel. Null until the page has the column; nothing is drawn until
+   * then. Left out, the tools stay in the panel.
+   */
+  mainTarget?: HTMLElement | null;
 }) {
   const [guest, setGuest] = useState(false),
     [guestName, setGuestName] = useState("");
@@ -197,6 +210,15 @@ export function RegistrationPanel({
   const [undoPartyId, setUndoPartyId] = useState<string | undefined>();
   const [rosterOpen, setRosterOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  // A host shares first; joining as a player waits behind a quiet link.
+  const [hostJoining, setHostJoining] = useState(false);
+  const [inviting, setInviting] = useState(false);
+  const joinArea = useRef<HTMLDivElement>(null);
+  // Revealing the join form moves focus into it, so it isn't lost.
+  useEffect(() => {
+    if (hostJoining)
+      joinArea.current?.querySelector<HTMLElement>("input, button")?.focus();
+  }, [hostJoining]);
   const mutation = useMutation<{ registration: RegistrationView }>((value) => {
     setSheetOpen(false);
     onChanged(value.registration);
@@ -412,7 +434,8 @@ export function RegistrationPanel({
           >
             {mutation.uncertain ? "Check your request" : triggerLabel}
           </button>
-          <ShareButton title={d.title} primary={view?.canManage} />
+          {/* A host's Share is in their tools card. */}
+          {view?.canManage ? null : <ShareButton title={d.title} />}
         </StickyActions>
         <Sheet
           open={sheetOpen}
@@ -713,29 +736,27 @@ export function RegistrationPanel({
           </StatusBanner>
         </div>
         {gameDay.details}
-        <div className="rounded-lg border border-border bg-surface p-5 grid grid-cols-[1fr_auto] items-center justify-items-start gap-1 [&>p]:m-0 [&>p]:font-semibold">
-          <p>{comingLine(view.counts.confirmedSeats, Number(d.capacity))}</p>
-          {view.rosterAllowed ? (
-            <>
-              <button
-                type="button"
-                className={buttonClass({ variant: "link" })}
-                aria-expanded={rosterOpen}
-                aria-controls="game-day-roster"
-                onClick={() => setRosterOpen((open) => !open)}
-              >
-                {"See who's coming"}
-              </button>
-              <div
-                id="game-day-roster"
-                className="col-span-full justify-self-stretch [&_h2]:text-xl [&_ul]:m-0 [&_ul]:list-none [&_ul]:p-0 [&_li]:grid [&_li]:gap-0.5 [&_li]:border-t [&_li]:border-border [&_li]:py-2 [&_li]:text-sm [&_li_span]:text-text-muted"
-                hidden={!rosterOpen}
-              >
-                {rosterList}
-              </div>
-            </>
-          ) : null}
-        </div>
+        {/* How full it is shows in the hero; here is just who's coming. */}
+        {view.rosterAllowed ? (
+          <div className="grid justify-items-start gap-1">
+            <button
+              type="button"
+              className={buttonClass({ variant: "link" })}
+              aria-expanded={rosterOpen}
+              aria-controls="game-day-roster"
+              onClick={() => setRosterOpen((open) => !open)}
+            >
+              {"See who's coming"}
+            </button>
+            <div
+              id="game-day-roster"
+              className="col-span-full justify-self-stretch [&_h2]:text-xl [&_ul]:m-0 [&_ul]:list-none [&_ul]:p-0 [&_li]:grid [&_li]:gap-0.5 [&_li]:border-t [&_li]:border-border [&_li]:py-2 [&_li]:text-sm [&_li_span]:text-text-muted"
+              hidden={!rosterOpen}
+            >
+              {rosterList}
+            </div>
+          </div>
+        ) : null}
         {showFee ? (
           <div className="rounded-lg border border-border bg-surface p-5 grid gap-3 [&>p]:m-0">
             {feeBlock}
@@ -780,11 +801,132 @@ export function RegistrationPanel({
       </section>
     );
   }
+  const host = view.canManage;
+  // A host's tools, drawn in the page's main column (see mainTarget).
+  const hostBlocks = (
+    <>
+      {event.state !== "cancelled" && view.canManage && split ? (
+        <SplitControls
+          slug={event.slug}
+          onDone={(value) => {
+            onChanged(value);
+            onChange();
+          }}
+          refreshKey={view.roster
+            .map((p) => `${p.id}:${p.fee?.revision}:${p.splitClaim?.revision}`)
+            .join(",")}
+          undoPartyId={undoPartyId}
+          onUndoDone={() => setUndoPartyId(undefined)}
+          partyNames={Object.fromEntries(
+            view.roster
+              .filter((p) => p.id)
+              .map((p) => [
+                p.id!,
+                p.primaryName +
+                  (p.seats === 2 ? ` + ${p.guestName || "guest"}` : ""),
+              ]),
+          )}
+        />
+      ) : null}
+      {view.canManage && view.requests ? (
+        <JoinRequests
+          slug={event.slug}
+          requests={view.requests}
+          onChanged={(value) => {
+            onChanged(value);
+            onChange();
+          }}
+        />
+      ) : null}
+      {view.canManage && view.sessionId && event.state === "published" ? (
+        <InvitePanel
+          kind="session"
+          target={view.sessionId}
+          invites={view.invites ?? []}
+          sheetOpen={inviting}
+          onSheetChange={setInviting}
+          onChanged={refresh}
+        />
+      ) : null}
+      {view.canManage && event.state !== "cancelled" ? (
+        <GameDay
+          slug={event.slug}
+          view={view}
+          ended={ended}
+          tracked={tracked}
+          when={when}
+          splitCurrency={split?.currency}
+          onDone={(value) => {
+            onChanged(value);
+            onChange();
+          }}
+          onUndoReview={setUndoPartyId}
+        />
+      ) : null}
+    </>
+  );
+  // A host joins only after choosing to; until then the side card is theirs.
+  const joinHidden = host && !own && !hostJoining;
   return (
     <section
       className="grid gap-3 [&>p]:m-0 [&>p]:text-sm"
       aria-label="Your registration"
     >
+      {host ? (
+        <div className="grid justify-items-start gap-3 rounded-lg border border-border bg-surface p-5">
+          <div className="flex items-center justify-between gap-2 justify-self-stretch">
+            <h2 className="m-0 text-lg">You’re hosting</h2>
+            <button
+              type="button"
+              className={iconButtonClass()}
+              aria-label="Refresh"
+              title="Refresh"
+              disabled={mutation.busy || mutation.uncertain}
+              onClick={refresh}
+            >
+              <ArrowsClockwiseIcon size={18} aria-hidden="true" />
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2 max-[520px]:w-full max-[520px]:*:w-full">
+            {event.state === "published" ? (
+              <ShareButton title={d.title} primary />
+            ) : null}
+            {view.sessionId ? (
+              <Link
+                className={buttonClass()}
+                href={`/sessions/${view.sessionId}/edit`}
+              >
+                <PencilSimpleIcon size={18} aria-hidden="true" />
+                Manage session
+              </Link>
+            ) : null}
+            {view.sessionId && event.state === "published" ? (
+              <button
+                type="button"
+                className={buttonClass()}
+                aria-haspopup="dialog"
+                onClick={() => setInviting(true)}
+              >
+                <UserPlusIcon size={18} aria-hidden="true" />
+                Invite people
+              </button>
+            ) : null}
+          </div>
+          {joinHidden && canJoin ? (
+            <button
+              type="button"
+              className={buttonClass({ variant: "link" })}
+              onClick={() => {
+                setHostJoining(true);
+                // On a phone the join form lives in a sheet: open it now.
+                if (phone) setSheetOpen(true);
+              }}
+            >
+              Join as a player
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {own ? (
         <div className="grid gap-3 [&>p]:m-0 [&>p]:text-sm **:data-[slot=badge]:mb-1">
           <StatusBanner tone={ownTone} icon={ownIcon}>
@@ -842,136 +984,155 @@ export function RegistrationPanel({
       {requestShown ? (
         requestBlock
       ) : canJoin ? (
-        actionArea(
-          asking ? "Ask to join" : "Join this session",
-          asking
-            ? "Ask to join"
-            : view.counts.waitingParties > 0 ||
-                Number(d.capacity) - view.counts.confirmedSeats < 1
-              ? "Join the waitlist"
-              : "Join",
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              mutation.run(
-                `/api/registrations/${event.slug}${asking ? "/requests" : ""}`,
-                {
-                  version: event.version,
-                  seats: guest ? 2 : 1,
-                  guestName: guest ? guestName : "",
-                  consent: true,
-                },
-              );
-            }}
+        joinHidden ? null : (
+          // A host who chose to join gets focus moved into this form.
+          // Larger screens show the form as the "Your place" card.
+          <div
+            ref={joinArea}
+            className={
+              phone
+                ? "contents"
+                : "grid rounded-lg border border-border bg-surface p-5"
+            }
           >
-            <fieldset disabled={mutation.busy || mutation.uncertain}>
-              <legend>{asking ? "Ask to join" : "Join this session"}</legend>
-              {view.invite ? (
-                <p>{view.invite.inviterName} invited you.</p>
-              ) : null}
-              {d.guests && Number(d.capacity) >= 2 ? (
-                <>
-                  <CheckField
-                    checked={guest}
-                    onCheckedChange={setGuest}
-                    disabled={mutation.busy || mutation.uncertain}
-                  >
-                    Bring one guest (two seats together)
-                  </CheckField>
-                  {guest ? (
-                    <Field id="guest-name" label="Guest name (optional)">
-                      <Input
-                        id="guest-name"
-                        value={guestName}
-                        onChange={(e) => setGuestName(e.target.value)}
-                        maxLength={80}
-                        autoComplete="off"
-                      />
-                    </Field>
-                  ) : null}
-                </>
-              ) : null}
-              {split ? (
-                <>
-                  <p>
-                    <strong>
-                      Estimated share if confirmed now:{" "}
-                      {split.prospectivePartyMinor
-                        ? splitMoney(
-                            split.currency,
-                            guest
-                              ? (split.prospectivePartyMinor.two ??
-                                  split.prospectivePartyMinor.one)
-                              : split.prospectivePartyMinor.one,
-                          )
-                        : "Awaiting the organizer’s split"}
-                    </strong>
-                  </p>
-                  <p id="join-terms">
-                    By choosing <strong>{joinLabel}</strong>, I agree to my
-                    party’s final share of{" "}
-                    {splitMoney(split.currency, split.totalMinor)}. It can
-                    change until the organizer finalizes after start, up to the
-                    full total if my party is the only payer left. A guest
-                    counts as another seat. Waiting is free; promotion before
-                    start includes our seats in the split. {cutoffTerms}
-                  </p>
-                </>
-              ) : tracked ? (
-                <p id="join-terms">
-                  By choosing <strong>{joinLabel}</strong>, I agree to pay{" "}
-                  {feeLabel({ ...d, feeMinor: total })} for{" "}
-                  {guest ? "two seats" : "one seat"} if I get a place. If it’s
-                  full, I join the waitlist for free; if a place opens before
-                  the start, I’m moved in automatically and the fee applies.{" "}
-                  {cutoffTerms}
-                </p>
-              ) : (
-                <p id="join-terms">
-                  By choosing <strong>{joinLabel}</strong>, I take{" "}
-                  {guest ? "two seats" : "one seat"} if I get a place. If it’s
-                  full, I join the waitlist; if a place opens before the start,
-                  I’m moved in automatically.
-                </p>
-              )}
-              {payBy ? (
-                <p id="join-pay-by">
-                  Pay by {payBy} or your spot may go to the waitlist.
-                </p>
-              ) : null}
-              {!Number.isSafeInteger(total) ? (
-                <Notice>The party fee is too large to store precisely.</Notice>
-              ) : null}
-              {asking && full ? (
-                <p>
-                  It’s full. If the organizer accepts, you’ll join the waitlist.
-                </p>
-              ) : null}
-              {asking ? (
-                <p id="ask-terms">
-                  The organizer accepts or declines each request.
-                </p>
-              ) : null}
-              <button
-                className={buttonClass({ variant: "primary" })}
-                aria-describedby={[
-                  "join-terms",
-                  payBy ? "join-pay-by" : "",
-                  asking ? "ask-terms" : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                disabled={!Number.isSafeInteger(total)}
+            {actionArea(
+              asking ? "Ask to join" : "Join this session",
+              asking
+                ? "Ask to join"
+                : view.counts.waitingParties > 0 ||
+                    Number(d.capacity) - view.counts.confirmedSeats < 1
+                  ? "Join the waitlist"
+                  : "Join",
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  mutation.run(
+                    `/api/registrations/${event.slug}${asking ? "/requests" : ""}`,
+                    {
+                      version: event.version,
+                      seats: guest ? 2 : 1,
+                      guestName: guest ? guestName : "",
+                      consent: true,
+                    },
+                  );
+                }}
               >
-                {mutation.busy
-                  ? asking
-                    ? "Sending your request…"
-                    : "Checking your place…"
-                  : joinLabel}
-              </button>
-            </fieldset>
-          </form>,
-          "primary",
+                <fieldset disabled={mutation.busy || mutation.uncertain}>
+                  <legend>
+                    {asking ? "Ask to join" : "Join this session"}
+                  </legend>
+                  {view.invite ? (
+                    <p>{view.invite.inviterName} invited you.</p>
+                  ) : null}
+                  {d.guests && Number(d.capacity) >= 2 ? (
+                    <>
+                      <CheckField
+                        checked={guest}
+                        onCheckedChange={setGuest}
+                        disabled={mutation.busy || mutation.uncertain}
+                      >
+                        Bring one guest (two seats together)
+                      </CheckField>
+                      {guest ? (
+                        <Field id="guest-name" label="Guest name (optional)">
+                          <Input
+                            id="guest-name"
+                            value={guestName}
+                            onChange={(e) => setGuestName(e.target.value)}
+                            maxLength={80}
+                            autoComplete="off"
+                          />
+                        </Field>
+                      ) : null}
+                    </>
+                  ) : null}
+                  {split ? (
+                    <>
+                      <p>
+                        <strong>
+                          Estimated share if confirmed now:{" "}
+                          {split.prospectivePartyMinor
+                            ? splitMoney(
+                                split.currency,
+                                guest
+                                  ? (split.prospectivePartyMinor.two ??
+                                      split.prospectivePartyMinor.one)
+                                  : split.prospectivePartyMinor.one,
+                              )
+                            : "Awaiting the organizer’s split"}
+                        </strong>
+                      </p>
+                      <p id="join-terms">
+                        By choosing <strong>{joinLabel}</strong>, I agree to my
+                        party’s final share of{" "}
+                        {splitMoney(split.currency, split.totalMinor)}. It can
+                        change until the organizer finalizes after start, up to
+                        the full total if my party is the only payer left. A
+                        guest counts as another seat. Waiting is free; promotion
+                        before start includes our seats in the split.{" "}
+                        {cutoffTerms}
+                      </p>
+                    </>
+                  ) : tracked ? (
+                    <p id="join-terms">
+                      By choosing <strong>{joinLabel}</strong>, I agree to pay{" "}
+                      {feeLabel({ ...d, feeMinor: total })} for{" "}
+                      {guest ? "two seats" : "one seat"} if I get a place. If
+                      it’s full, I join the waitlist for free; if a place opens
+                      before the start, I’m moved in automatically and the fee
+                      applies. {cutoffTerms}
+                    </p>
+                  ) : (
+                    <p id="join-terms">
+                      By choosing <strong>{joinLabel}</strong>, I take{" "}
+                      {guest ? "two seats" : "one seat"} if I get a place. If
+                      it’s full, I join the waitlist; if a place opens before
+                      the start, I’m moved in automatically.
+                    </p>
+                  )}
+                  {payBy ? (
+                    <p id="join-pay-by">
+                      Pay by {payBy} or your spot may go to the waitlist.
+                    </p>
+                  ) : null}
+                  {!Number.isSafeInteger(total) ? (
+                    <Notice>
+                      The party fee is too large to store precisely.
+                    </Notice>
+                  ) : null}
+                  {asking && full ? (
+                    <p>
+                      It’s full. If the organizer accepts, you’ll join the
+                      waitlist.
+                    </p>
+                  ) : null}
+                  {asking ? (
+                    <p id="ask-terms">
+                      The organizer accepts or declines each request.
+                    </p>
+                  ) : null}
+                  <button
+                    className={buttonClass({ variant: "primary" })}
+                    aria-describedby={[
+                      "join-terms",
+                      payBy ? "join-pay-by" : "",
+                      asking ? "ask-terms" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    disabled={!Number.isSafeInteger(total)}
+                  >
+                    {mutation.busy
+                      ? asking
+                        ? "Sending your request…"
+                        : "Checking your place…"
+                      : joinLabel}
+                  </button>
+                </fieldset>
+              </form>,
+              "primary",
+            )}
+          </div>
         )
       ) : !own ? (
         <div className="grid gap-3 [&>p]:m-0 [&>p]:text-sm **:data-[slot=badge]:mb-1">
@@ -987,7 +1148,7 @@ export function RegistrationPanel({
           </StatusBanner>
         </div>
       ) : null}
-      {view.invite && canJoin ? (
+      {view.invite && canJoin && !joinHidden ? (
         <>
           <button
             type="button"
@@ -1005,70 +1166,30 @@ export function RegistrationPanel({
       ) : null}
       {!hasAction && mutation.error ? <Notice>{mutation.error}</Notice> : null}
       {!hasAction ? mutation.recovery : null}
-      <button
-        className={cx(buttonClass({ variant: "link" }), "justify-self-end")}
-        disabled={mutation.busy || mutation.uncertain}
-        onClick={refresh}
-      >
-        <ArrowsClockwiseIcon size={18} aria-hidden="true" />
-        Refresh
-      </button>
-      {event.state !== "cancelled" && view.canManage && split ? (
-        <SplitControls
-          slug={event.slug}
-          onDone={(value) => {
-            onChanged(value);
-            onChange();
-          }}
-          refreshKey={view.roster
-            .map((p) => `${p.id}:${p.fee?.revision}:${p.splitClaim?.revision}`)
-            .join(",")}
-          undoPartyId={undoPartyId}
-          onUndoDone={() => setUndoPartyId(undefined)}
-          partyNames={Object.fromEntries(
-            view.roster
-              .filter((p) => p.id)
-              .map((p) => [
-                p.id!,
-                p.primaryName +
-                  (p.seats === 2 ? ` + ${p.guestName || "guest"}` : ""),
-              ]),
+      {/* A host refreshes from their card; everyone else from this link. */}
+      {host ? null : (
+        <button
+          className={cx(
+            buttonClass({ variant: "link" }),
+            "justify-self-end max-md:hidden",
           )}
-        />
-      ) : null}
-      {view.canManage && view.requests ? (
-        <JoinRequests
-          slug={event.slug}
-          requests={view.requests}
-          onChanged={(value) => {
-            onChanged(value);
-            onChange();
-          }}
-        />
-      ) : null}
-      {view.canManage && view.sessionId && event.state === "published" ? (
-        <InvitePanel
-          kind="session"
-          target={view.sessionId}
-          invites={view.invites ?? []}
-          onChanged={refresh}
-        />
-      ) : null}
-      {view.canManage && event.state !== "cancelled" ? (
-        <GameDay
-          slug={event.slug}
-          view={view}
-          ended={ended}
-          tracked={tracked}
-          when={when}
-          splitCurrency={split?.currency}
-          onDone={(value) => {
-            onChanged(value);
-            onChange();
-          }}
-          onUndoReview={setUndoPartyId}
-        />
-      ) : view.rosterAllowed ? (
+          disabled={mutation.busy || mutation.uncertain}
+          onClick={refresh}
+        >
+          <ArrowsClockwiseIcon size={18} aria-hidden="true" />
+          Refresh
+        </button>
+      )}
+      {host
+        ? mainTarget === undefined
+          ? hostBlocks
+          : mainTarget
+            ? createPortal(hostBlocks, mainTarget)
+            : null
+        : null}
+      {/* A host's people list is game day (in hostBlocks); the roster is for
+          everyone else, and for a host once the session is cancelled. */}
+      {view.rosterAllowed && !(host && event.state !== "cancelled") ? (
         <section className="rounded-lg border border-border bg-surface p-5 [&_h2]:text-xl [&_ul]:m-0 [&_ul]:list-none [&_ul]:p-0 [&_li]:grid [&_li]:gap-0.5 [&_li]:border-t [&_li]:border-border [&_li]:py-2 [&_li]:text-sm [&_li_span]:text-text-muted">
           <h2>
             {event.state === "cancelled"

@@ -190,13 +190,19 @@ export function InvitePanel({
     message.current = text;
     mutation.run(path, body);
   };
-  // A page that opens the sheet itself hides an empty list entirely.
-  if (controlled && !invites.length && !open && !said && !mutation.error)
-    return null;
+  // A page that opens the sheet itself hides an empty list. It stays
+  // mounted, so its sheet (drawn in a portal) closes normally and hands focus
+  // back to the button that opened it.
+  const listHidden = controlled && !invites.length && !said && !mutation.error;
+  // Each time the page opens the sheet, an earlier "Invited …" note is gone.
+  useEffect(() => {
+    if (controlled && sheetOpen) setSaid("");
+  }, [controlled, sheetOpen]);
   return (
     <section
       className="mt-6 grid gap-3 [&_h2]:m-0"
       aria-labelledby={`invited-${kind}`}
+      hidden={listHidden}
     >
       {controlled ? (
         <h2 id={`invited-${kind}`}>Invited</h2>
