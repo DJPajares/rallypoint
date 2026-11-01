@@ -1,4 +1,4 @@
-import { buttonVariants } from "./components/ui/button";
+import { buttonVariants } from "./components/ui/button-variants";
 import { cn } from "./lib/utils";
 export type ButtonVariant = "primary" | "secondary" | "accent" | "link";
 export interface ButtonStyle {

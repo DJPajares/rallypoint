@@ -49,6 +49,8 @@ export {
   Pill,
   Segmented,
   StatRow,
+} from "./components/list";
+export {
   listClass,
   rowClass,
   rowLineClass,
@@ -59,7 +61,7 @@ export {
   rowSubClass,
   rowTrailClass,
   toneClass,
-} from "./components/list";
+} from "./components/list-classes";
 // shadcn/ui primitives screens use directly (D-24).
 export { Input } from "./components/ui/input";
 export { Textarea } from "./components/ui/textarea";
