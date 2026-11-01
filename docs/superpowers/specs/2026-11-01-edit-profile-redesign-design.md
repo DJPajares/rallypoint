@@ -15,7 +15,7 @@
   - When on, the row's subtitle shows the rating ("Intermediate" or "Not rated"), and a level choice opens directly below: native radios for Beginner, Intermediate and Advanced. Each shows its description for that activity, followed by **No rating**. Arrow keys move between them, and the group is named "Your Badminton level".
   - Turning an activity off hides its levels but keeps the chosen level until Save, so an accidental tap loses nothing.
 - **Something else?** — up to three typed-in activities as rows of their own. Each has a name input, the same level radios (with the typed activity's descriptions, or the general ones) and a Remove link.
-- **Save** — the single orange action in `StickyActions`, with Cancel beside it. While saving, the form is disabled and the button reads "Saving…". On success you return to Profile, which announces "Profile saved." A failure keeps every choice and says what to do. The existing "save again to be sure" wording still covers unclear results.
+- **Save** — the single orange action in `StickyActions`, with Cancel beside it. While saving, the form is disabled and the button reads "Saving…". On success you stay on Edit profile, which then shows what was stored with nothing left unsaved, and a "Profile saved." toast pops in at the top and leaves on its own (owner feedback, 2026-11-01; Base UI Toast, mounted once for the whole app). A failure keeps every choice and says what to do. The existing "save again to be sure" wording still covers unclear results.
 - **Leaving** — Back and Cancel ask "Discard your changes?" when something changed, and a clean form leaves at once. Closing or reloading the tab with changes triggers the browser's own warning.
 
 ## Unchanged

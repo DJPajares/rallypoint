@@ -46,3 +46,6 @@ export {
 export { ActivityIcon } from "./components/activity-icon";
 export { ChoiceTiles } from "./components/choice-tiles";
 export type { Tile } from "./components/choice-tiles";
+export { ToastProvider } from "./components/toast";
+export { useToast } from "./use-toast";
+export type { ToastTone } from "./components/toast";

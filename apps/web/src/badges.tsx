@@ -2,7 +2,7 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import Link from "next/link";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
 import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
@@ -49,7 +49,6 @@ import {
   Pending,
   Sheet,
   StatRow,
-  StatusBanner,
 } from "@rallypoint/ui";
 import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
@@ -683,18 +682,6 @@ export function ProfilePage() {
   const [open, setOpen] = useState<BadgeKey | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Edit profile comes back with ?saved=1. Say so once, then tidy the address
-  // so a reload doesn't repeat it.
-  const savedParam = useSearchParams().get("saved") === "1";
-  // The status region is empty on the first render and filled after, so
-  // screen readers announce it.
-  const [profileSaved, setProfileSaved] = useState(false);
-  useEffect(() => {
-    if (!savedParam) return;
-    window.history.replaceState(null, "", "/profile");
-    // Not cancelled when the cleared address re-runs this effect.
-    setTimeout(() => setProfileSaved(true), 0);
-  }, [savedParam]);
   const view = saved ?? badges.data;
   const name = identity.data?.displayName ?? "";
   const shelf = badgeCatalog.map((b) => {
@@ -726,13 +713,6 @@ export function ProfilePage() {
     ) : undefined;
   return (
     <>
-      <div role="status" className="profile-saved">
-        {profileSaved ? (
-          <StatusBanner tone="success" icon={<CheckIcon size={20} />}>
-            Profile saved.
-          </StatusBanner>
-        ) : null}
-      </div>
       {identity.error ? (
         <Notice retry={identity.retry}>{identity.error}</Notice>
       ) : null}

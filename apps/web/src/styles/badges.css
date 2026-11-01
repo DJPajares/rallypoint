@@ -404,12 +404,6 @@ button.badge-shelf__item:focus-visible {
   margin: var(--space-6) 0 var(--space-3);
   overflow-wrap: anywhere;
 }
-.profile-saved:empty {
-  display: none;
-}
-.profile-saved {
-  margin-bottom: var(--space-4);
-}
 /* One activity: the whole line is the toggle. */
 .play-row__toggle {
   display: flex;
