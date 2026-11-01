@@ -132,7 +132,10 @@ function SentNote({
                 {mutation.busy ? "Saving…" : "I’ve sent it"}
               </button>
             </div>
-            <p id="sent-note-help" className="rp-help">
+            <p
+              id="sent-note-help"
+              className="mt-1 mb-0 text-sm text-text-muted"
+            >
               The organizer still marks it paid.
             </p>
           </fieldset>
@@ -315,7 +318,8 @@ export function RegistrationPanel({
       <LockSimpleIcon size={22} />
     );
   // Removed by the organizers (P-28): back in only through their invite.
-  const removedByOrganizer = own?.state === "removed" && !!own.removedByOrganizer;
+  const removedByOrganizer =
+    own?.state === "removed" && !!own.removedByOrganizer;
   // A player whose unpaid spot went to the waitlist, or who withdrew, can join
   // again; someone removed can once the organizers invite them back.
   const canJoin =
@@ -453,13 +457,13 @@ export function RegistrationPanel({
                 ? " · You withdrew before the cutoff, so nothing is due."
                 : own.fee.liabilityState === "removed_by_organizer"
                   ? " · You were removed, so nothing is due."
-                : own.fee.liabilityState === "waived"
-                  ? " · Nothing is due."
-                  : own.state === "withdrawn" && !own.fee.markedPaid
-                    ? " · The fee stays unless the organizer waives it."
-                    : own.seats === 1 && own.fee.chargedSeats === 2
-                      ? " · Includes your removed guest’s fee, which stays unless the organizer waives it."
-                      : ""}
+                  : own.fee.liabilityState === "waived"
+                    ? " · Nothing is due."
+                    : own.state === "withdrawn" && !own.fee.markedPaid
+                      ? " · The fee stays unless the organizer waives it."
+                      : own.seats === 1 && own.fee.chargedSeats === 2
+                        ? " · Includes your removed guest’s fee, which stays unless the organizer waives it."
+                        : ""}
         </p>
       ) : null}
       {earlierFees.map((fee, i) => (
@@ -567,7 +571,7 @@ export function RegistrationPanel({
           )
         }
       >
-        <span className="rp-badge rp-badge--inherit">
+        <span className="inline-flex items-center gap-1 rounded-full bg-surface-sunken px-3 py-0.5 text-xs font-semibold text-text-muted bg-current/14 text-inherit">
           {ownRequest.state === "pending"
             ? "Request sent"
             : ownRequest.state === "declined"
@@ -700,7 +704,7 @@ export function RegistrationPanel({
           </StatusBanner>
         </div>
         {gameDay.details}
-        <div className="rp-card game-day-coming">
+        <div className="rounded-lg border border-border bg-surface p-5 game-day-coming">
           <p>{comingLine(view.counts.confirmedSeats, Number(d.capacity))}</p>
           {view.rosterAllowed ? (
             <>
@@ -720,7 +724,9 @@ export function RegistrationPanel({
           ) : null}
         </div>
         {showFee ? (
-          <div className="rp-card game-day-fee">{feeBlock}</div>
+          <div className="rounded-lg border border-border bg-surface p-5 game-day-fee">
+            {feeBlock}
+          </div>
         ) : null}
         {gameDay.notes}
         {/* Held open while a request's error or recovery shows, so a
@@ -766,7 +772,7 @@ export function RegistrationPanel({
       {own ? (
         <div className="own-status">
           <StatusBanner tone={ownTone} icon={ownIcon}>
-            <span className="rp-badge rp-badge--inherit">
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface-sunken px-3 py-0.5 text-xs font-semibold text-text-muted bg-current/14 text-inherit">
               {event.state !== "published"
                 ? "Your registration record"
                 : own.state === "confirmed"
@@ -1047,7 +1053,7 @@ export function RegistrationPanel({
           onUndoReview={setUndoPartyId}
         />
       ) : view.rosterAllowed ? (
-        <section className="rp-card roster">
+        <section className="rounded-lg border border-border bg-surface p-5 roster">
           <h2>
             {event.state === "cancelled"
               ? "Registration records"

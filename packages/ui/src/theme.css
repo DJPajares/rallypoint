@@ -437,6 +437,14 @@
     margin-bottom: 12px;
     font-size: var(--text-xl);
   }
+  fieldset {
+    min-width: 0;
+  }
+  label {
+    display: block;
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

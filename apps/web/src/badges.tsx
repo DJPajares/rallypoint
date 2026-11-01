@@ -463,16 +463,19 @@ function Plays({
   if (!activities || (!activities.length && !owner)) return null;
   return (
     <section className="plays" aria-labelledby="plays-title">
-      <div className="section-head">
+      <div className="mt-8 mb-3 flex items-center justify-between gap-3 [&_h2]:m-0">
         <h2 id="plays-title">Plays</h2>
         {activities.some((a) => a.level) ? (
           <span className="plays__note">Self-rated</span>
         ) : null}
       </div>
       {activities.length ? (
-        <ul className="rp-list plays__list">
+        <ul className="m-0 list-none overflow-hidden rounded-lg bg-surface p-0 shadow-sm plays__list">
           {activities.map((a) => (
-            <li key={a.name} className="rp-row plays__row">
+            <li
+              key={a.name}
+              className="border-t border-border first:border-t-0 plays__row"
+            >
               <span className="plays__icon" aria-hidden="true">
                 <ActivityIcon
                   icon={
@@ -595,11 +598,11 @@ function BadgeDetails({
                   {earned ? (
                     <span className="badge-levels__when">
                       <CheckIcon size={16} weight="bold" aria-hidden="true" />
-                      <span className="rp-sr-only">Earned </span>
+                      <span className="sr-only">Earned </span>
                       {dateLabel(earned.earnedAt)}
                     </span>
                   ) : (
-                    <span className="rp-sr-only">Not yet</span>
+                    <span className="sr-only">Not yet</span>
                   )}
                 </li>
               );
@@ -696,13 +699,13 @@ function ProfileView({
           />
           <Plays activities={activities} owner={!!owner} />
           {shelf.length ? (
-            <div className="section-head">
+            <div className="mt-8 mb-3 flex items-center justify-between gap-3 [&_h2]:m-0">
               <h2>Badges</h2>
               {owner?.titleControl}
             </div>
           ) : null}
           {owner && !badges.some((b) => b.level > 0) ? (
-            <p className="rp-help">
+            <p className="mt-1 mb-0 text-sm text-text-muted">
               Your first badge comes with your first check-in.
             </p>
           ) : null}
@@ -850,9 +853,11 @@ export function ProfilePage() {
         title="Your title"
       >
         <form className="title-choice" onSubmit={saveTitle}>
-          <p className="rp-help">Shown next to your name on session lists.</p>
+          <p className="mt-1 mb-0 text-sm text-text-muted">
+            Shown next to your name on session lists.
+          </p>
           <fieldset>
-            <legend className="rp-sr-only">Title</legend>
+            <legend className="sr-only">Title</legend>
             <label>
               <input
                 type="radio"
@@ -916,7 +921,7 @@ export function PersonProfilePage() {
         {result.error === "Profile not found" ? (
           <EmptyState
             headingLevel={1}
-            icon={<span className="rp-nums">404</span>}
+            icon={<span className="tabular-nums">404</span>}
             title="Profile not found"
             action={
               <Link className={buttonClass({ variant: "primary" })} href="/">

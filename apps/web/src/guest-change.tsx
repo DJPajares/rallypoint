@@ -70,7 +70,7 @@ export function GuestChange({
       !own.freeWithdrawalAfterChange
     )
       return (
-        <p className="rp-help">
+        <p className="mt-1 mb-0 text-sm text-text-muted">
           After the cutoff your guest’s share stays. Ask the organizer to change
           your guest.
         </p>
@@ -92,13 +92,13 @@ export function GuestChange({
             : `Their ${feeLabel({ currency: fee.currency, feeMinor: fee.unitMinor })} stays unless the organizer waives it.`
           : "";
     return (
-      <div className="guest-change">
+      <div className="grid justify-items-start gap-3 [&_fieldset]:grid [&_fieldset]:gap-3">
         {open ? (
           <>
             <p id="guest-drop-terms">
               {placeWords} {feeWords}
             </p>
-            <div className="fee-actions">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 className={buttonClass()}
@@ -157,7 +157,7 @@ export function GuestChange({
         ? "My guest’s seat counts toward the final split, so my share goes up."
         : "";
   return (
-    <div className="guest-change">
+    <div className="grid justify-items-start gap-3 [&_fieldset]:grid [&_fieldset]:gap-3">
       {open ? (
         <form
           onSubmit={(e) => {
@@ -182,7 +182,7 @@ export function GuestChange({
               />
             </Field>
             {guestFee ? <p id="guest-add-terms">{guestFee}</p> : null}
-            <div className="fee-actions">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 className={buttonClass()}

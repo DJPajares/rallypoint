@@ -15,10 +15,7 @@ import { ReceiptIcon } from "@phosphor-icons/react/dist/csr/Receipt";
 import { UsersThreeIcon } from "@phosphor-icons/react/dist/csr/UsersThree";
 import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
-import type {
-  GroupSummary,
-  Identity,
-} from "@rallypoint/domain/contracts";
+import type { GroupSummary, Identity } from "@rallypoint/domain/contracts";
 import { EditGroupForm } from "./group-edit";
 import { HomeInvites } from "./invites";
 import { feeStanding } from "@rallypoint/domain/registration";
@@ -69,7 +66,7 @@ export function Landing() {
             <br />
             <span>Great sessions.</span>
           </h1>
-          <p className="rp-lede">
+          <p className="max-w-reading text-lg text-text-muted">
             Bring your people together, then get back to the good part. One
             shared link shows who’s in, what it costs and when to cancel by.
           </p>
@@ -81,15 +78,19 @@ export function Landing() {
         </div>
         <div className="landing-art" aria-hidden="true">
           <div className="landing-card">
-            <span className="rp-kicker">Thursday Pickleball Crew</span>
+            <span className="mb-1 block text-sm font-semibold text-text-muted">
+              Thursday Pickleball Crew
+            </span>
             <p className="landing-card-title">Thursday night doubles</p>
             <Ticket
               date={{ weekday: "Thu", day: "24", month: "Oct", time: "" }}
             >
-              <div className="rp-ticket__time">7:00 – 9:00 pm</div>
-              <div className="rp-ticket__meta">Riverside Courts · court 3</div>
+              <div className="font-semibold tabular-nums">7:00 – 9:00 pm</div>
+              <div className="text-sm text-text-muted">
+                Riverside Courts · court 3
+              </div>
             </Ticket>
-            <div className="rp-card">
+            <div className="rounded-lg border border-border bg-surface p-5">
               <SpotsMeter capacity={12} taken={10} />
             </div>
             <span className="landing-join">Join · 2 spots left</span>
@@ -102,8 +103,11 @@ export function Landing() {
           ["Share", "Drop one link in the group chat."],
           ["Show up", "Everyone knows if they’re in or waiting."],
         ].map(([title, body], index) => (
-          <div key={title} className="rp-card landing-step">
-            <span className="step-number rp-nums">{index + 1}</span>
+          <div
+            key={title}
+            className="rounded-lg border border-border bg-surface p-5 landing-step"
+          >
+            <span className="step-number tabular-nums">{index + 1}</span>
             <h2>{title}</h2>
             <p>{body}</p>
           </div>
@@ -213,7 +217,10 @@ export function HomeDashboard() {
         <div className="tab-section__head">
           <h2 id="home-groups">Your groups</h2>
           {groups.length > 3 ? (
-            <Link className={buttonClass({ variant: "link" })} href="/workspace">
+            <Link
+              className={buttonClass({ variant: "link" })}
+              href="/workspace"
+            >
               See all {groups.length}
             </Link>
           ) : null}
@@ -237,15 +244,21 @@ export function HomeDashboard() {
 /** The quiet way to start a group, as the last row of a groups list. */
 function StartGroupRow() {
   return (
-    <li className="rp-row tab-row">
-      <div className="rp-row__line">
-        <Link className="rp-row__main" href="/groups/new">
-          <span className="rp-row__lead tab-row__add" aria-hidden="true">
+    <li className="border-t border-border first:border-t-0 tab-row">
+      <div className="flex min-h-13 items-center gap-2 pr-3">
+        <Link
+          className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-2 pr-1 pl-3 text-left text-inherit no-underline [font:inherit] [a&]:hover:bg-surface-sunken [button&]:cursor-pointer [button&]:hover:bg-surface-sunken focus-visible:-outline-offset-3"
+          href="/groups/new"
+        >
+          <span
+            className="inline-flex flex-none tab-row__add"
+            aria-hidden="true"
+          >
             <PlusIcon size={20} weight="bold" />
           </span>
-          <span className="rp-row__text">
-            <span className="rp-row__title">Start a group</span>
-            <span className="rp-row__sub">
+          <span className="grid min-w-0">
+            <span className="truncate font-semibold">Start a group</span>
+            <span className="text-sm text-text-muted">
               A list of people you play with, public or private.
             </span>
           </span>
@@ -350,7 +363,10 @@ function sessionsSummary(upcoming: MySessionRow[], today: string) {
   if (!next) return undefined;
   const day = dayLabel(next.startLocal.slice(0, 10), today, false);
   const time = fromLocal(next.startLocal)?.time;
-  const when = [day === "Today" || day === "Tomorrow" ? day.toLowerCase() : day, time]
+  const when = [
+    day === "Today" || day === "Tomorrow" ? day.toLowerCase() : day,
+    time,
+  ]
     .filter(Boolean)
     .join(", ");
   return `${going.length} coming up · next ${when}`;
@@ -371,9 +387,7 @@ export function SessionsPage() {
     <section className="page tab-page sessions-page">
       <TabHero
         title="Sessions"
-        summary={
-          sessions.data ? sessionsSummary(upcoming, today) : undefined
-        }
+        summary={sessions.data ? sessionsSummary(upcoming, today) : undefined}
         onCreate={upcoming.length || pastTotal ? openCreate : undefined}
       />
       {sessions.loading ? (
@@ -416,7 +430,7 @@ export function SessionsPage() {
             <>
               <SessionDays rows={past} past today={today} />
               {past.length < pastTotal ? (
-                <p className="rp-help">
+                <p className="mt-1 mb-0 text-sm text-text-muted">
                   Your latest {past.length} of {pastTotal}.
                 </p>
               ) : null}
@@ -424,7 +438,9 @@ export function SessionsPage() {
           ) : upcoming.length ? (
             <SessionDays rows={upcoming} past={false} today={today} />
           ) : (
-            <p className="rp-help session-empty">Nothing coming up.</p>
+            <p className="mt-1 mb-0 text-sm text-text-muted session-empty">
+              Nothing coming up.
+            </p>
           )}
         </>
       )}
@@ -442,7 +458,7 @@ function DuesRow({ item }: { item: DuesItem }) {
     minute: "2-digit",
   }).format(new Date(item.session.startsAt));
   return (
-    <li className="rp-card dues-item">
+    <li className="rounded-lg border border-border bg-surface p-5 dues-item">
       <div>
         <Link href={`/s/${item.session.slug}`}>
           <strong>{item.session.title}</strong>
@@ -471,7 +487,7 @@ function DuesRow({ item }: { item: DuesItem }) {
 }
 function SplitDuesRow({ item }: { item: SplitClaimDuesItem }) {
   return (
-    <li className="rp-card dues-item">
+    <li className="rounded-lg border border-border bg-surface p-5 dues-item">
       <div>
         <Link href={`/s/${item.session.slug}`}>
           <strong>{item.session.title}</strong>
@@ -509,7 +525,7 @@ export function DuesPage() {
   const settled = dues.filter((d) => !owing.includes(d));
   return (
     <section className="page">
-      <div className="page-head">
+      <div className="mb-4">
         <h1>Dues</h1>
       </div>
       {result.loading ? (
@@ -531,7 +547,7 @@ export function DuesPage() {
             <h2 id="dues-owing">To pay</h2>
             {owing.length ? (
               <>
-                <p className="rp-help">
+                <p className="mt-1 mb-0 text-sm text-text-muted">
                   Pay the organizer directly. They mark it paid here; RallyPoint
                   never collects payments.
                 </p>
@@ -542,7 +558,9 @@ export function DuesPage() {
                 </ul>
               </>
             ) : (
-              <p className="rp-help">Nothing to pay right now.</p>
+              <p className="mt-1 mb-0 text-sm text-text-muted">
+                Nothing to pay right now.
+              </p>
             )}
           </section>
           {estimated.length ? (
@@ -665,7 +683,7 @@ export function NotFound() {
     <section className="page">
       <EmptyState
         headingLevel={1}
-        icon={<span className="rp-nums">404</span>}
+        icon={<span className="tabular-nums">404</span>}
         title="That page isn’t here."
         action={
           <Link className={buttonClass({ variant: "primary" })} href="/">

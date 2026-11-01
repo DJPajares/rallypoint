@@ -68,7 +68,7 @@ export function FeeControls({
               ["waive", "Waive fee"],
             ];
   return (
-    <div className="fee-controls">
+    <div className="mt-1 grid gap-1 [&_strong]:text-text">
       <span>
         <strong>{feeStanding(fee)}</strong> ·{" "}
         {feeLabel({ currency: fee.currency, feeMinor: fee.totalMinor })}
@@ -79,7 +79,7 @@ export function FeeControls({
         </span>
       ) : null}
       {actions.length ? (
-        <div className="fee-actions">
+        <div className="flex flex-wrap gap-2">
           {actions.map(([action, label]) => (
             <button
               key={action}

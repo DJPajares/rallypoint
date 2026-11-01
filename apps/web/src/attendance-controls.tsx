@@ -46,7 +46,7 @@ export function SeatAttendanceControls({
     (s) => s !== seat.state && (s !== "no_show" || ended),
   );
   return (
-    <div className="seat-attendance">
+    <div className="mt-2 grid gap-1 [&_strong]:text-text">
       <span id={labelId}>
         <strong>{name}</strong> · {stateWords[seat.state]}
       </span>
@@ -56,7 +56,7 @@ export function SeatAttendanceControls({
           {when(seat.at)}
         </span>
       ) : null}
-      <div className="fee-actions">
+      <div className="flex flex-wrap gap-2">
         {options.map((state) => (
           <button
             key={state}

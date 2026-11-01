@@ -48,7 +48,7 @@ export function ShareButton({
         <ShareNetworkIcon size={18} aria-hidden="true" />
         {label}
       </button>
-      <span role="status" className="rp-sr-only">
+      <span role="status" className="sr-only">
         {status}
       </span>
     </>

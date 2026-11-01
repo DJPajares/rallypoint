@@ -110,7 +110,7 @@ function LevelPick({
     <fieldset className="level-pick">
       <legend className="level-pick__legend">
         Your level
-        <span className="rp-sr-only"> in {activityName}</span>
+        <span className="sr-only"> in {activityName}</span>
       </legend>
       {levelChoices(activity).map((choice) => (
         <label key={choice.value || "none"} className="level-pick__option">
@@ -334,12 +334,12 @@ function EditForm({
         setDiscarding(true);
       }}
     >
-      <div className="page-head">
+      <div className="mb-4">
         <h1>Edit profile</h1>
       </div>
       <form className="profile-form" noValidate onSubmit={save}>
         <fieldset disabled={busy}>
-          <div className="rp-card">
+          <div className="rounded-lg border border-border bg-surface p-5">
             <Field id="profile-name" label="Name">
               <input
                 ref={nameInput}
@@ -360,7 +360,10 @@ function EditForm({
                 </p>
               ) : null}
             </Field>
-            <p id="profile-visible" className="rp-help">
+            <p
+              id="profile-visible"
+              className="mt-1 mb-0 text-sm text-text-muted"
+            >
               Anyone with your profile link sees your name, what you play and
               your levels.
             </p>
@@ -369,7 +372,7 @@ function EditForm({
           <section aria-labelledby="plays-heading">
             {/* Accordion pattern: a button inside the heading opens the list;
                 folded, a summary line stands in for it. */}
-            <div className="section-head">
+            <div className="mt-8 mb-3 flex items-center justify-between gap-3 [&_h2]:m-0">
               <h2 id="plays-heading" className="section-toggle">
                 <button
                   type="button"
@@ -387,7 +390,7 @@ function EditForm({
                 </button>
               </h2>
             </div>
-            <p className="rp-help profile-form__lede">
+            <p className="mt-1 mb-0 text-sm text-text-muted profile-form__lede">
               {playsOpen
                 ? "Tap what you play, then rate yourself honestly. A rating is optional."
                 : activitiesSummary(
@@ -401,19 +404,25 @@ function EditForm({
               inert={!playsOpen}
             >
               <div className="fold__inner">
-                <ul className="rp-list" aria-labelledby="plays-heading">
+                <ul
+                  className="m-0 list-none overflow-hidden rounded-lg bg-surface p-0 shadow-sm"
+                  aria-labelledby="plays-heading"
+                >
                   {listed.map((activity) => {
                     const { name, key } = activity;
                     const preset = draft.presets[name]!;
                     return (
                       <li
                         key={key}
-                        className={cx("rp-row play-row", preset.on && "is-on")}
+                        className={cx(
+                          "border-t border-border first:border-t-0 play-row",
+                          preset.on && "is-on",
+                        )}
                       >
                         <label className="play-row__toggle">
                           <input
                             type="checkbox"
-                            className="rp-sr-only"
+                            className="sr-only"
                             checked={preset.on}
                             onChange={(e) =>
                               setPreset(name, { on: e.target.checked })
@@ -422,10 +431,12 @@ function EditForm({
                           <span className="play-row__icon" aria-hidden="true">
                             <ActivityIcon icon={activity.icon} size={22} />
                           </span>
-                          <span className="rp-row__text">
-                            <span className="rp-row__title">{name}</span>
+                          <span className="grid min-w-0">
+                            <span className="truncate font-semibold">
+                              {name}
+                            </span>
                             {preset.on ? (
-                              <span className="rp-row__sub">
+                              <span className="text-sm text-text-muted">
                                 {preset.level
                                   ? levelLabel[preset.level]
                                   : "Not rated"}
@@ -464,19 +475,25 @@ function EditForm({
           </section>
 
           <section aria-labelledby="own-heading">
-            <div className="section-head">
+            <div className="mt-8 mb-3 flex items-center justify-between gap-3 [&_h2]:m-0">
               <h2 id="own-heading">Something else?</h2>
             </div>
-            <p className="rp-help profile-form__lede">
+            <p className="mt-1 mb-0 text-sm text-text-muted profile-form__lede">
               Add up to {maxCustom} activities that aren’t listed.
             </p>
             {draft.custom.length ? (
-              <ul className="rp-list" aria-labelledby="own-heading">
+              <ul
+                className="m-0 list-none overflow-hidden rounded-lg bg-surface p-0 shadow-sm"
+                aria-labelledby="own-heading"
+              >
                 {draft.custom.map((row, index) => {
                   const label = `Your own activity ${index + 1}`;
                   const named = row.name.trim() || label.toLowerCase();
                   return (
-                    <li key={row.id} className="rp-row own-row">
+                    <li
+                      key={row.id}
+                      className="border-t border-border first:border-t-0 own-row"
+                    >
                       <div className="own-row__line">
                         <input
                           id={`custom-${row.id}`}
@@ -532,7 +549,7 @@ function EditForm({
             ) : null}
           </section>
 
-          <p className="rp-help profile-form__account">
+          <p className="mt-1 mb-0 text-sm text-text-muted profile-form__account">
             Signed in as {session?.user.email ?? "your account"}
           </p>
           {problem ? <Notice>{problem}</Notice> : null}

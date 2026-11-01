@@ -62,18 +62,21 @@ export function HomeInvites() {
     mutation.run(`/api/invites/${invite.id}/${verb}`, {});
   };
   return (
-    <section className="rp-card join-requests" aria-labelledby="home-invites">
+    <section
+      className="rounded-lg border border-border bg-surface p-5 mt-6 grid gap-3 [&_h2]:m-0"
+      aria-labelledby="home-invites"
+    >
       <h2 id="home-invites">Invites ({invites.length})</h2>
       {said ? (
-        <p ref={note} tabIndex={-1} role="status" className="game-day__status">
+        <p ref={note} tabIndex={-1} role="status" className="m-0 text-sm">
           {said}
         </p>
       ) : null}
       {mutation.error ? <Notice>{mutation.error}</Notice> : null}
       {mutation.recovery}
-      <ul className="join-requests__list">
+      <ul className="m-0 grid list-none gap-3 p-0">
         {invites.map((invite) => (
-          <li key={invite.id} className="join-request">
+          <li key={invite.id} className="grid gap-2 [&_p]:m-0">
             <p>
               {invite.inviterName} invited you to{" "}
               <strong>
@@ -82,7 +85,7 @@ export function HomeInvites() {
                   : `${invite.session?.title} · ${when(invite.session?.startsAt ?? null, invite.session?.timeZone ?? "UTC")}`}
               </strong>
             </p>
-            <div className="fee-actions">
+            <div className="flex flex-wrap gap-2">
               {invite.group ? (
                 <button
                   type="button"
@@ -190,11 +193,14 @@ export function InvitePanel({
   if (controlled && !invites.length && !open && !said && !mutation.error)
     return null;
   return (
-    <section className="join-requests" aria-labelledby={`invited-${kind}`}>
+    <section
+      className="mt-6 grid gap-3 [&_h2]:m-0"
+      aria-labelledby={`invited-${kind}`}
+    >
       {controlled ? (
         <h2 id={`invited-${kind}`}>Invited</h2>
       ) : (
-        <div className="fee-actions">
+        <div className="flex flex-wrap gap-2">
           <h2 id={`invited-${kind}`}>Invited</h2>
           <button
             type="button"
@@ -210,21 +216,26 @@ export function InvitePanel({
         </div>
       )}
       {said && !open ? (
-        <p ref={note} tabIndex={-1} role="status" className="game-day__status">
+        <p ref={note} tabIndex={-1} role="status" className="m-0 text-sm">
           {said}
         </p>
       ) : null}
       {mutation.error && !open ? <Notice>{mutation.error}</Notice> : null}
       {invites.length ? (
-        <ul className="join-requests__list">
+        <ul className="m-0 grid list-none gap-3 p-0">
           {invites.map((invite) => (
-            <li key={invite.id} className="rp-card join-request">
-              <p className="join-request__name">
+            <li
+              key={invite.id}
+              className="rounded-lg border border-border bg-surface p-5 grid gap-2 [&_p]:m-0"
+            >
+              <p className="flex flex-wrap items-center gap-1 **:data-[slot=title-pill]:ml-0">
                 <strong>{invite.name}</strong>
               </p>
-              <p className="join-request__facts">{stateWords[invite.state]}</p>
+              <p className="text-sm text-text-muted">
+                {stateWords[invite.state]}
+              </p>
               {invite.state === "pending" ? (
-                <div className="fee-actions">
+                <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
                     className={buttonClass({ variant: "link" })}
@@ -245,7 +256,7 @@ export function InvitePanel({
           ))}
         </ul>
       ) : controlled ? null : (
-        <p className="rp-help">Nobody invited yet.</p>
+        <p className="mt-1 mb-0 text-sm text-text-muted">Nobody invited yet.</p>
       )}
       <Sheet
         open={open}
@@ -268,7 +279,7 @@ export function InvitePanel({
           />
         </Field>
         {said ? (
-          <p role="status" className="game-day__status">
+          <p role="status" className="m-0 text-sm">
             {said}
           </p>
         ) : null}
@@ -321,7 +332,7 @@ function Candidates({
     return <Notice retry={candidates.retry}>{candidates.error}</Notice>;
   if (!candidates.data?.people.length)
     return (
-      <p className="rp-help">
+      <p className="mt-1 mb-0 text-sm text-text-muted">
         {query ? "Nobody by that name." : "Nobody to invite yet."}
       </p>
     );

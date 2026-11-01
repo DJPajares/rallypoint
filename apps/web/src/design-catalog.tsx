@@ -69,7 +69,7 @@ export function DesignCatalog() {
   const [guest, setGuest] = useState(false);
   return (
     <section className="page catalog">
-      <div className="page-head">
+      <div className="mb-4">
         <Kicker>@rallypoint/ui</Kicker>
         <h1>Design system</h1>
         <Lede>
@@ -89,7 +89,7 @@ export function DesignCatalog() {
       </div>
 
       <h2>Type</h2>
-      <Card className="stack">
+      <Card className="grid gap-3">
         <span
           style={{ fontSize: "var(--text-display-lg)" }}
           className="catalog-display"
@@ -110,7 +110,7 @@ export function DesignCatalog() {
       </Card>
 
       <h2>Space and radius</h2>
-      <Card className="stack">
+      <Card className="grid gap-3">
         {space.map((step) => (
           <div key={step} className="catalog-row">
             <code>--space-{step}</code>
@@ -147,7 +147,7 @@ export function DesignCatalog() {
 
       <h2>Surfaces</h2>
       <div className="group-grid">
-        <Card className="stack">
+        <Card className="grid gap-3">
           <div className="catalog-wrap">
             <IconTile>
               <UsersThreeIcon size={24} />
@@ -158,14 +158,14 @@ export function DesignCatalog() {
           <h3>Card</h3>
           <Help>The default surface for grouped content.</Help>
         </Card>
-        <Card tone="accent" className="stack">
+        <Card tone="accent" className="grid gap-3">
           <h3>Accent card</h3>
           <p>For the one block a screen leads with.</p>
         </Card>
       </div>
 
       <h2>Status and feedback</h2>
-      <div className="stack">
+      <div className="grid gap-3">
         <StatusBanner tone="success" icon={<CheckCircleIcon size={22} />}>
           <Badge inherit>Confirmed</Badge>
           <h2>You have two places.</h2>

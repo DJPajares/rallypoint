@@ -103,10 +103,19 @@ export function SessionRow({
     </>
   );
   return (
-    <li className={today ? "rp-row tab-row tab-row--today" : "rp-row tab-row"}>
-      <div className="rp-row__line">
-        <Link className="rp-row__main" href={sessionHref(row)}>
-          <span className="rp-row__lead">
+    <li
+      className={
+        today
+          ? "border-t border-border first:border-t-0 tab-row tab-row--today"
+          : "border-t border-border first:border-t-0 tab-row"
+      }
+    >
+      <div className="flex min-h-13 items-center gap-2 pr-3">
+        <Link
+          className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-2 pr-1 pl-3 text-left text-inherit no-underline [font:inherit] [a&]:hover:bg-surface-sunken [button&]:cursor-pointer [button&]:hover:bg-surface-sunken focus-visible:-outline-offset-3"
+          href={sessionHref(row)}
+        >
+          <span className="inline-flex flex-none">
             {row.startsAt ? (
               <DateTile iso={row.startsAt} timeZone={row.timeZone} />
             ) : (
@@ -115,20 +124,22 @@ export function SessionRow({
               </span>
             )}
           </span>
-          <span className="rp-row__text">
-            <span className="rp-row__title">
+          <span className="grid min-w-0">
+            <span className="truncate font-semibold">
               {row.title || "Untitled session"}
               {speakDate && row.startsAt ? (
-                <span className="rp-sr-only">, {spokenDay(row)}</span>
+                <span className="sr-only">, {spokenDay(row)}</span>
               ) : null}
             </span>
-            <span className="rp-row__sub">{where || row.groupName}</span>
+            <span className="text-sm text-text-muted">
+              {where || row.groupName}
+            </span>
             {/* On a phone the pills sit under the line, so titles keep room. */}
             <span className="tab-row__pills tab-row__pills--below">
               {pills}
             </span>
           </span>
-          <span className="rp-row__trail">
+          <span className="inline-flex flex-none items-center gap-2">
             <span className="tab-row__pills tab-row__pills--beside">
               {pills}
             </span>
@@ -150,22 +161,25 @@ export function GroupRow({ group }: { group: GroupSummary }) {
       : "",
   ].filter(Boolean);
   return (
-    <li className="rp-row tab-row">
-      <div className="rp-row__line">
-        <Link className="rp-row__main" href={`/groups/${group.id}`}>
-          <span className="rp-row__lead tab-row__crest">
+    <li className="border-t border-border first:border-t-0 tab-row">
+      <div className="flex min-h-13 items-center gap-2 pr-3">
+        <Link
+          className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-2 pr-1 pl-3 text-left text-inherit no-underline [font:inherit] [a&]:hover:bg-surface-sunken [button&]:cursor-pointer [button&]:hover:bg-surface-sunken focus-visible:-outline-offset-3"
+          href={`/groups/${group.id}`}
+        >
+          <span className="inline-flex flex-none tab-row__crest">
             <GroupCrest id={group.id} name={group.name} />
           </span>
-          <span className="rp-row__text">
-            <span className="rp-row__title">{group.name}</span>
-            <span className="rp-row__sub tab-row__facts">
+          <span className="grid min-w-0">
+            <span className="truncate font-semibold">{group.name}</span>
+            <span className="text-sm text-text-muted tab-row__facts">
               {group.visibility === "private" ? (
                 <LockSimpleIcon size={14} aria-hidden="true" />
               ) : null}
               {facts.join(" · ")}
             </span>
           </span>
-          <span className="rp-row__trail">
+          <span className="inline-flex flex-none items-center gap-2">
             <CaretRightIcon size={16} aria-hidden="true" />
           </span>
         </Link>
@@ -196,7 +210,7 @@ export function UpNext({ row, now }: { row: MySessionRow; now: number }) {
         <span className="up-next__title">
           {row.title || "Untitled session"}
           {row.startsAt ? (
-            <span className="rp-sr-only">, {spokenDay(row)}</span>
+            <span className="sr-only">, {spokenDay(row)}</span>
           ) : null}
         </span>
         <span className="up-next__where">

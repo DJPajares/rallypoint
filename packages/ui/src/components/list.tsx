@@ -66,7 +66,9 @@ export function ListRow({
     <>
       {leading ? <span className={rowLeadClass}>{leading}</span> : null}
       <span className={rowTextClass}>
-        <span className={rowTitleClass}>{title}</span>
+        <span data-slot="row-title" className={rowTitleClass}>
+          {title}
+        </span>
         {subtitle ? <span className={rowSubClass}>{subtitle}</span> : null}
       </span>
     </>

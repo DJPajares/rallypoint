@@ -71,10 +71,10 @@ function AuthLayout({
       {intro ? (
         <div className="signin-intro">
           <h1>{intro.title}</h1>
-          <p className="rp-lede">{intro.lede}</p>
+          <p className="max-w-reading text-lg text-text-muted">{intro.lede}</p>
         </div>
       ) : null}
-      <div className="rp-card signin-card">
+      <div className="rounded-lg border border-border bg-surface p-5 signin-card">
         {intro ? <h2>{title}</h2> : <h1>{title}</h1>}
         {children}
       </div>
@@ -105,7 +105,7 @@ function LocalNote() {
   return (
     <>
       <Divider>Local development</Divider>
-      <p className="rp-help">
+      <p className="mt-1 mb-0 text-sm text-text-muted">
         Use a synthetic account. Confirmation and reset emails go to the{" "}
         <a href="http://127.0.0.1:54324" target="_blank" rel="noreferrer">
           local mail inbox
@@ -307,7 +307,7 @@ export function SignIn() {
             <Notice>{problem}</Notice>
           ) : null}
           {resent ? (
-            <p role="status" className="rp-help">
+            <p role="status" className="mt-1 mb-0 text-sm text-text-muted">
               Sent. Check your inbox.
             </p>
           ) : null}
@@ -320,7 +320,7 @@ export function SignIn() {
           </button>
         </form>
       ) : null}
-      <p className="rp-help signin-footnote">
+      <p className="mt-1 mb-0 text-sm text-text-muted signin-footnote">
         New here?{" "}
         <Link href={withNext("/sign-up", next)}>Create an account</Link>
       </p>
@@ -384,7 +384,7 @@ export function SignUp() {
           We sent a link to <strong>{email}</strong>. Tap it to finish creating
           your account.
         </p>
-        <p className="rp-help">
+        <p className="mt-1 mb-0 text-sm text-text-muted">
           Already have an account?{" "}
           <Link href={withNext("/sign-in", next)}>Sign in</Link> or{" "}
           <Link href={withNext("/forgot-password", next)}>
@@ -461,7 +461,7 @@ export function SignUp() {
           </button>
         </form>
       ) : null}
-      <p className="rp-help signin-footnote">
+      <p className="mt-1 mb-0 text-sm text-text-muted signin-footnote">
         Already have an account?{" "}
         <Link href={withNext("/sign-in", next)}>Sign in</Link>
       </p>
@@ -505,7 +505,7 @@ export function ForgotPassword() {
               className="auth-form"
               onSubmit={(event) => void submit(event)}
             >
-              <p className="rp-help">
+              <p className="mt-1 mb-0 text-sm text-text-muted">
                 We’ll email you a link to choose a new password.
               </p>
               <EmailField value={email} onChange={setEmail} />
@@ -520,7 +520,7 @@ export function ForgotPassword() {
           ) : null}
         </>
       )}
-      <p className="rp-help signin-footnote">
+      <p className="mt-1 mb-0 text-sm text-text-muted signin-footnote">
         <Link href={withNext("/sign-in", next)}>Back to sign in</Link>
       </p>
     </AuthLayout>
@@ -538,7 +538,7 @@ function LinkProblem({ kind }: { kind: LinkError }) {
       {kind === "other_browser" ? (
         <>
           <p>Your email is confirmed. Sign in to continue.</p>
-          <p className="rp-help">
+          <p className="mt-1 mb-0 text-sm text-text-muted">
             Open the reset link on the device where you asked for it, or ask for
             a new one.
           </p>

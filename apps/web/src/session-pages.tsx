@@ -97,11 +97,11 @@ export function CreateGroup() {
   );
   return (
     <DetailPage back="/workspace" backLabel="Your groups" className="form-page">
-      <div className="page-head">
+      <div className="mb-4">
         <h1>Start a group.</h1>
       </div>
       <form
-        className="rp-card"
+        className="rounded-lg border border-border bg-surface p-5"
         onSubmit={(e) => {
           e.preventDefault();
           mutation.run("/api/groups", { name, visibility });
@@ -397,7 +397,7 @@ function Editor({
       : null;
   return (
     <DetailPage back="/sessions" backLabel="Sessions" className="form-page">
-      <div className="page-head">
+      <div className="mb-4">
         <h1 ref={header} tabIndex={-1}>
           {terminal
             ? record?.state === "cancelled"
@@ -416,7 +416,7 @@ function Editor({
         </Notice>
       ) : null}
       {url ? (
-        <div className="rp-card share-panel">
+        <div className="rounded-lg border border-border bg-surface p-5 share-panel">
           <div>
             <p>Anyone with the link can see this session.</p>
             <a className="share-url" href={url}>
@@ -451,7 +451,7 @@ function Editor({
               Open shared page
             </Link>
           </div>
-          <p role="status" className="rp-help">
+          <p role="status" className="mt-1 mb-0 text-sm text-text-muted">
             {copy}
           </p>
         </div>
@@ -493,7 +493,7 @@ function Editor({
       ) : null}
       <form
         noValidate
-        className="rp-card"
+        className="rounded-lg border border-border bg-surface p-5"
         onSubmit={(e) =>
           submit(e, record?.state === "published" ? "update" : "publish")
         }
@@ -900,7 +900,10 @@ function DeleteDraft({
     onPending(working);
   }, [working, onPending]);
   return (
-    <section className="rp-card" aria-label="Delete draft">
+    <section
+      className="rounded-lg border border-border bg-surface p-5"
+      aria-label="Delete draft"
+    >
       <button
         type="button"
         className={buttonClass()}
@@ -915,7 +918,7 @@ function DeleteDraft({
         title="Delete this draft?"
       >
         <p>It can&apos;t be undone.</p>
-        <div className="fee-actions">
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             className={buttonClass()}
@@ -963,10 +966,10 @@ function SessionTicket({ shared }: { shared: SharedSession }) {
   const mapHref = d.mapsLink || mapsUrl(d.location);
   return (
     <Ticket date={start}>
-      <div className="rp-ticket__time">
+      <div className="font-semibold tabular-nums">
         {start ? `${start.time} – ${end?.time ?? "?"}` : "Time to be decided"}
       </div>
-      <div className="rp-ticket__meta">{d.location}</div>
+      <div className="text-sm text-text-muted">{d.location}</div>
       {mapHref ? (
         <a
           className={buttonClass({ variant: "link" })}
@@ -997,7 +1000,7 @@ function SessionHead({
   return (
     <div className="session-head">
       {/* Group and activity share one line, so the title stands alone. */}
-      <span className="rp-kicker session-kicker">
+      <span className="mb-1 block text-sm font-semibold text-text-muted session-kicker">
         {shared.details.activity ? (
           <ActivityIcon
             icon={
@@ -1011,7 +1014,7 @@ function SessionHead({
         Hosted by {shared.groupName}
         {shared.details.activity ? ` · ${shared.details.activity}` : ""}
         {shared.details.access === "private" ? (
-          <span className="session-private">
+          <span className="inline-flex items-center gap-0.5">
             {" · "}
             <LockSimpleIcon size={14} aria-hidden="true" />
             Private
@@ -1023,10 +1026,7 @@ function SessionHead({
       </h1>
       {/* Secondary, so Share stays the one primary action (D-15). */}
       {manageHref ? (
-        <Link
-          className={buttonClass({ size: "sm" })}
-          href={manageHref}
-        >
+        <Link className={buttonClass({ size: "sm" })} href={manageHref}>
           <PencilSimpleIcon size={16} aria-hidden="true" />
           Manage session
         </Link>
@@ -1052,7 +1052,10 @@ function Availability({
 }) {
   const { counts } = shared;
   return (
-    <div className="rp-card availability" role="status">
+    <div
+      className="rounded-lg border border-border bg-surface p-5 availability"
+      role="status"
+    >
       {shared.state === "cancelled" ? (
         <p>
           Previously registered: {counts.confirmedSeats}{" "}
@@ -1065,7 +1068,7 @@ function Availability({
         />
       )}
       {shared.state === "published" && counts.waitingParties > 0 ? (
-        <p className="rp-help">
+        <p className="mt-1 mb-0 text-sm text-text-muted">
           {counts.waitingParties}{" "}
           {counts.waitingParties === 1 ? "party is" : "parties are"} waiting and
           will get the next places, in order.
@@ -1157,7 +1160,7 @@ function SessionFacts({ shared }: { shared: SharedSession }) {
 function GoodToKnow({ shared }: { shared: SharedSession }) {
   if (!shared.details.instructions) return null;
   return (
-    <div className="rp-card session-instructions">
+    <div className="rounded-lg border border-border bg-surface p-5 session-instructions">
       <h2>Good to know</h2>
       <p>{shared.details.instructions}</p>
     </div>
@@ -1346,7 +1349,7 @@ export function SharedSessionPage() {
           <SessionHead shared={shared} heading={heading} />
           <aside className="session-side" aria-label="Places and registration">
             <Availability shared={shared} onRefresh={result.retry} />
-            <div className="rp-card registration-note">
+            <div className="rounded-lg border border-border bg-surface p-5 registration-note">
               {/* Open needs no heading: the button says what to do. */}
               {shared.registrationWindow === "open" ? null : (
                 <h2>

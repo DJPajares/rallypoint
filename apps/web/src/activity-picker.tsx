@@ -48,8 +48,8 @@ export function ActivityPicker({
   ];
   const typing = other || (!named && value.trim() !== "") || !listed.length;
   return (
-    <div className="rp-field">
-      <span id="activity-label" className="rp-field__label">
+    <div className="mb-4">
+      <span id="activity-label" className="block text-sm font-semibold">
         Activity
       </span>
       <ChoiceTiles

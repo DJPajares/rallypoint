@@ -63,7 +63,7 @@ function QrImage({ slug, revision }: { slug: string; revision: number }) {
   const image = useQrImage(slug, revision);
   if (image.failed)
     return (
-      <p className="rp-help">
+      <p className="mt-1 mb-0 text-sm text-text-muted">
         The QR image couldn’t load. Use the instructions above.
       </p>
     );
@@ -89,13 +89,16 @@ export function HowToPay({
   instructions: PaymentInstructions;
 }) {
   return (
-    <section className="rp-card how-to-pay" aria-labelledby="how-to-pay">
+    <section
+      className="rounded-lg border border-border bg-surface p-5 how-to-pay"
+      aria-labelledby="how-to-pay"
+    >
       <h2 id="how-to-pay">How to pay</h2>
       <p className="payment-text">{instructions.text}</p>
       {instructions.hasImage ? (
         <QrImage slug={slug} revision={instructions.imageRevision} />
       ) : null}
-      <p className="rp-help">{outside}</p>
+      <p className="mt-1 mb-0 text-sm text-text-muted">{outside}</p>
     </section>
   );
 }
@@ -213,7 +216,7 @@ export function PaymentInstructionsEditor({
 
   return (
     <section
-      className="rp-card payment-editor"
+      className="rounded-lg border border-border bg-surface p-5 payment-editor"
       aria-labelledby="payment-editor"
     >
       <h2 id="payment-editor">Payment instructions</h2>
@@ -241,7 +244,7 @@ export function PaymentInstructionsEditor({
               aria-describedby="payment-text-help"
             />
           </Field>
-          <div className="fee-actions">
+          <div className="flex flex-wrap gap-2">
             <button
               className={buttonClass({ variant: "primary" })}
               disabled={!draft.trim()}
@@ -301,9 +304,13 @@ export function PaymentInstructionsEditor({
         </div>
       ) : null}
       {instructions ? (
-        <p className="rp-help">Last changed by {instructions.updatedBy}.</p>
+        <p className="mt-1 mb-0 text-sm text-text-muted">
+          Last changed by {instructions.updatedBy}.
+        </p>
       ) : null}
-      {emailNote ? <p className="rp-help">{emailNote}</p> : null}
+      {emailNote ? (
+        <p className="mt-1 mb-0 text-sm text-text-muted">{emailNote}</p>
+      ) : null}
       {mutation.error ? <Notice>{mutation.error}</Notice> : null}
       {uploadError ? <Notice>{uploadError}</Notice> : null}
       {mutation.recovery}

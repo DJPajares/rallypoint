@@ -5,7 +5,6 @@ import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
 import { PaperPlaneTiltIcon } from "@phosphor-icons/react/dist/csr/PaperPlaneTilt";
 import {
   buttonClass,
-  cx,
   ListGroup,
   ListRow,
   Notice,
@@ -59,7 +58,7 @@ const tint = (name: string) =>
 function Avatar({ name }: { name: string }) {
   return (
     <span
-      className="game-avatar"
+      className="grid size-9 place-items-center rounded-full font-heading text-xs font-bold text-on-brand"
       style={{ background: tint(name) }}
       aria-hidden="true"
     >
@@ -83,7 +82,7 @@ function SentNote({ party }: { party: RosterParty }) {
   const words = partyNoteWords(party);
   if (!words) return null;
   return (
-    <span className="game-row__note">
+    <span className="flex items-center gap-1">
       <PaperPlaneTiltIcon size={14} aria-hidden="true" /> {words}
     </span>
   );
@@ -142,7 +141,7 @@ function ConfirmedRow({
         seat && party.id ? (
           <button
             type="button"
-            className={cx("check-toggle", here && "is-on")}
+            className="grid size-touch place-items-center rounded-full border-2 border-border-strong bg-transparent p-0 text-on-chrome transition-colors duration-150 ease-standard disabled:cursor-progress disabled:opacity-60 aria-pressed:border-chrome aria-pressed:bg-chrome"
             aria-pressed={here}
             aria-label={
               here
@@ -165,7 +164,7 @@ function ConfirmedRow({
       }
     >
       {mutation.error || mutation.uncertain ? (
-        <div className="game-row-recovery">
+        <div className="px-3 pb-3">
           {mutation.error ? <Notice>{mutation.error}</Notice> : null}
           {mutation.recovery}
         </div>
@@ -241,7 +240,7 @@ function ReleaseConfirm({
           {said.reference ? ` · ref ${said.reference}` : ""}.
         </p>
       ) : null}
-      <div className="fee-actions">
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           className={buttonClass()}
@@ -311,7 +310,7 @@ function RemoveConfirm({
             : ""}
       </p>
       <p>They can’t rejoin from the link. You can invite them back.</p>
-      <div className="fee-actions">
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           className={buttonClass()}
@@ -366,8 +365,8 @@ function PartyDetails({
   const labelId = `sheet-party-${party.id}`;
   const said = tracked ? partyNoteWords(party) : "";
   return (
-    <div className="party-details">
-      <p id={labelId} className="party-details__meta">
+    <div className="grid gap-4">
+      <p id={labelId} className="m-0 text-text-muted">
         {party.seats} {party.seats === 1 ? "seat" : "seats"} ·{" "}
         {party.state === "waitlisted" && queue
           ? `waiting, number ${queue} in line`
@@ -394,7 +393,7 @@ function PartyDetails({
           ))
         : null}
       {said && party.paymentNote ? (
-        <p className="party-details__sent">
+        <p className="m-0 flex items-center gap-1 text-text-muted">
           <PaperPlaneTiltIcon size={16} aria-hidden="true" /> {said} ·{" "}
           {when(party.paymentNote.sentAt)}
         </p>
@@ -441,7 +440,9 @@ function PartyDetails({
         />
       ) : null}
       {tracked && party.state === "waitlisted" ? (
-        <p className="rp-help">Waiting is free until a place opens.</p>
+        <p className="mt-1 mb-0 text-sm text-text-muted">
+          Waiting is free until a place opens.
+        </p>
       ) : null}
       {party.id && party.removable ? (
         <div>
@@ -457,9 +458,11 @@ function PartyDetails({
         </div>
       ) : null}
       {party.emails?.length ? (
-        <div className="party-details__emails">
-          <h3>Emails</h3>
-          <ul>
+        <div>
+          <h3 className="mt-0 mb-1 text-text-muted [font-size:inherit]">
+            Emails
+          </h3>
+          <ul className="m-0 grid list-none gap-1 p-0 text-text-muted">
             {party.emails.map((email) => (
               <li key={email.kind}>
                 {emailKindLabel(email.kind)}: {emailWords(email)}
@@ -528,14 +531,17 @@ export function GameDay({
     />
   );
   return (
-    <section className="game-day" aria-labelledby="game-day-title">
+    <section
+      className="mt-6 grid gap-3 [&_h2]:m-0 [&_h3]:mt-3 [&_h3]:mb-0 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:tracking-wide [&_h3]:text-text-muted [&_h3]:uppercase **:data-[slot=row-title]:whitespace-normal **:data-[slot=title-pill]:ml-1"
+      aria-labelledby="game-day-title"
+    >
       <h2 id="game-day-title">People</h2>
       {gaveAway ? (
         <p
           ref={gaveAwayNote}
           tabIndex={-1}
           role="status"
-          className="game-day__status"
+          className="m-0 text-sm"
         >
           {gaveAway}
         </p>
@@ -547,7 +553,9 @@ export function GameDay({
             value: (
               <>
                 {summary.here}
-                <small>/{summary.expected}</small>
+                <small className="text-base text-text-muted">
+                  /{summary.expected}
+                </small>
               </>
             ),
           },
@@ -579,7 +587,7 @@ export function GameDay({
           ))}
         </ListGroup>
       ) : (
-        <p className="rp-help">
+        <p className="mt-1 mb-0 text-sm text-text-muted">
           {filter === "not_here"
             ? "Everyone with a place is here."
             : filter === "to_pay"

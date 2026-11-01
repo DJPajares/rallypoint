@@ -44,20 +44,26 @@ export function AccessList({
     })),
   ];
   return (
-    <div className="access-list">
+    <div className="grid justify-items-start gap-3">
       {empty ? (
-        <p className="rp-help">
+        <p className="mt-1 mb-0 text-sm text-text-muted">
           Only you and your co-hosts can see it until you add people or invite
           them.
         </p>
       ) : (
-        <ul className="access-list__chips" aria-label="Who can see it">
+        <ul
+          className="m-0 flex list-none flex-wrap gap-2 p-0"
+          aria-label="Who can see it"
+        >
           {chips.map((chip) => (
-            <li key={chip.key} className="access-chip">
+            <li
+              key={chip.key}
+              className="inline-flex items-center gap-1 rounded-full border border-border py-1 pr-1 pl-3 text-sm"
+            >
               <span>{chip.name}</span>
               <button
                 type="button"
-                className="access-chip__remove"
+                className="inline-grid min-h-8 min-w-8 place-items-center rounded-full border-0 bg-transparent text-base text-inherit"
                 aria-label={`Remove ${chip.name}`}
                 disabled={disabled}
                 onClick={chip.remove}
@@ -132,10 +138,13 @@ function AccessOptions({
           <section aria-labelledby="access-groups">
             <h3 id="access-groups">Your groups</h3>
             {options.data.groups.length ? (
-              <ul className="join-requests__list">
+              <ul className="m-0 grid list-none gap-3 p-0">
                 {options.data.groups.map((g) => (
-                  <li key={g.id} className="join-request access-option">
-                    <p className="join-request__name">
+                  <li
+                    key={g.id}
+                    className="grid gap-2 [&_p]:m-0 grid-cols-[1fr_auto] items-center"
+                  >
+                    <p className="flex flex-wrap items-center gap-1 **:data-[slot=title-pill]:ml-0">
                       <strong>{g.name}</strong>
                     </p>
                     <AddButton
@@ -152,7 +161,7 @@ function AccessOptions({
                 ))}
               </ul>
             ) : (
-              <p className="rp-help">
+              <p className="mt-1 mb-0 text-sm text-text-muted">
                 {shown
                   ? "No group by that name."
                   : "You're not in any groups yet."}
@@ -162,10 +171,13 @@ function AccessOptions({
           <section aria-labelledby="access-people">
             <h3 id="access-people">People you know</h3>
             {options.data.people.length ? (
-              <ul className="join-requests__list">
+              <ul className="m-0 grid list-none gap-3 p-0">
                 {options.data.people.map((p) => (
-                  <li key={p.profileId} className="join-request access-option">
-                    <p className="join-request__name">
+                  <li
+                    key={p.profileId}
+                    className="grid gap-2 [&_p]:m-0 grid-cols-[1fr_auto] items-center"
+                  >
+                    <p className="flex flex-wrap items-center gap-1 **:data-[slot=title-pill]:ml-0">
                       <strong>{p.name}</strong>
                       <TitlePill title={p.title} />
                     </p>
@@ -186,7 +198,7 @@ function AccessOptions({
                 ))}
               </ul>
             ) : (
-              <p className="rp-help">
+              <p className="mt-1 mb-0 text-sm text-text-muted">
                 {shown ? "Nobody by that name." : "Nobody to add yet."}
               </p>
             )}

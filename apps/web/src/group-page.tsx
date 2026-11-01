@@ -106,7 +106,7 @@ export function GroupPage() {
   const status = (
     <>
       {said ? (
-        <p ref={note} tabIndex={-1} role="status" className="game-day__status">
+        <p ref={note} tabIndex={-1} role="status" className="m-0 text-sm">
           {said}
         </p>
       ) : null}
@@ -205,7 +205,9 @@ export function GroupPage() {
             ? "Join this group"
             : "Ask to join"}
         </button>
-        <p className="rp-help">The admin accepts or declines each request.</p>
+        <p className="mt-1 mb-0 text-sm text-text-muted">
+          The admin accepts or declines each request.
+        </p>
       </div>
     ) : null
   ) : null;
@@ -265,38 +267,40 @@ export function GroupPage() {
                 subtitle={`Played ${r.played} · Hosted ${r.hosted}`}
               >
                 {confirm === `decline:${r.id}` ? null : (
-                    <div className="group-request__actions">
-                      <button
-                        type="button"
-                        className={buttonClass({ size: "sm" })}
-                        disabled={busy}
-                        aria-label={`Decline ${r.name}`}
-                        onClick={() => setConfirm(`decline:${r.id}`)}
-                      >
-                        Decline
-                      </button>
-                      <button
-                        type="button"
-                        className={buttonClass({ size: "sm" })}
-                        disabled={busy}
-                        aria-label={`Accept ${r.name}`}
-                        onClick={() =>
-                          run(
-                            "requests/answer",
-                            { requestId: r.id, action: "accept" },
-                            `${r.name} is in.`,
-                          )
-                        }
-                      >
-                        <CheckIcon size={16} aria-hidden="true" />
-                        Accept
-                      </button>
-                    </div>
+                  <div className="group-request__actions">
+                    <button
+                      type="button"
+                      className={buttonClass({ size: "sm" })}
+                      disabled={busy}
+                      aria-label={`Decline ${r.name}`}
+                      onClick={() => setConfirm(`decline:${r.id}`)}
+                    >
+                      Decline
+                    </button>
+                    <button
+                      type="button"
+                      className={buttonClass({ size: "sm" })}
+                      disabled={busy}
+                      aria-label={`Accept ${r.name}`}
+                      onClick={() =>
+                        run(
+                          "requests/answer",
+                          { requestId: r.id, action: "accept" },
+                          `${r.name} is in.`,
+                        )
+                      }
+                    >
+                      <CheckIcon size={16} aria-hidden="true" />
+                      Accept
+                    </button>
+                  </div>
                 )}
                 {confirm === `decline:${r.id}` ? (
                   <div className="group-confirm">
-                    <p>Decline {r.name}? They can’t ask again for this group.</p>
-                    <div className="fee-actions">
+                    <p>
+                      Decline {r.name}? They can’t ask again for this group.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
                         className={buttonClass()}
@@ -331,23 +335,32 @@ export function GroupPage() {
       {upcoming.length ? (
         <section className="group-section" aria-labelledby="group-upcoming">
           <h2 id="group-upcoming">Coming up</h2>
-          <ul className="rp-list">
+          <ul className="m-0 list-none overflow-hidden rounded-lg bg-surface p-0 shadow-sm">
             {upcoming.map((s) => (
-              <li key={s.slug} className="rp-row">
-                <div className="rp-row__line">
-                  <Link className="rp-row__main" href={`/s/${s.slug}`}>
-                    <span className="rp-row__lead">
+              <li
+                key={s.slug}
+                className="border-t border-border first:border-t-0"
+              >
+                <div className="flex min-h-13 items-center gap-2 pr-3">
+                  <Link
+                    className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-2 pr-1 pl-3 text-left text-inherit no-underline [font:inherit] [a&]:hover:bg-surface-sunken [button&]:cursor-pointer [button&]:hover:bg-surface-sunken focus-visible:-outline-offset-3"
+                    href={`/s/${s.slug}`}
+                  >
+                    <span className="inline-flex flex-none">
                       <DateTile iso={s.startsAt} timeZone={s.timeZone} />
                     </span>
-                    <span className="rp-row__text">
-                      <span className="rp-row__title">{s.title}</span>
-                      <span className="rp-row__sub">
+                    <span className="grid min-w-0">
+                      <span className="truncate font-semibold">{s.title}</span>
+                      <span className="text-sm text-text-muted">
                         {when(s.startsAt, s.timeZone)}
                         {s.activity ? ` · ${s.activity}` : ""}
                       </span>
                     </span>
                   </Link>
-                  <span className="rp-row__trail" aria-hidden="true">
+                  <span
+                    className="inline-flex flex-none items-center gap-2"
+                    aria-hidden="true"
+                  >
                     <CaretRightIcon size={18} />
                   </span>
                 </div>
@@ -395,8 +408,7 @@ export function GroupPage() {
             inviteLink ? (
               <div className="group-invite-link">
                 <p>
-                  Anyone with the link can ask to join. You accept each
-                  request.
+                  Anyone with the link can ask to join. You accept each request.
                 </p>
                 <button
                   type="button"
@@ -411,7 +423,7 @@ export function GroupPage() {
                   <LinkSimpleIcon size={18} aria-hidden="true" />
                   Copy invite link
                 </button>
-                <p role="status" className="rp-help">
+                <p role="status" className="mt-1 mb-0 text-sm text-text-muted">
                   {copied}
                 </p>
               </div>
@@ -429,7 +441,7 @@ export function GroupPage() {
           {confirm === "leave" ? (
             <div className="group-confirm">
               <p>Leave {group.name}? You can ask to join again later.</p>
-              <div className="fee-actions">
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   className={buttonClass()}
@@ -473,7 +485,7 @@ export function GroupPage() {
               <Face name={selected.name} size="lg" />
               <div>
                 <TitlePill title={selected.title} />
-                <p className="rp-help">
+                <p className="mt-1 mb-0 text-sm text-text-muted">
                   {selected.role === "admin" ? "Admin" : "Member"}
                 </p>
               </div>
@@ -493,7 +505,7 @@ export function GroupPage() {
                     Remove {selected.name} from the group? They can ask to join
                     again.
                   </p>
-                  <div className="fee-actions">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
                       className={buttonClass()}

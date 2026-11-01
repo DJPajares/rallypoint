@@ -49,12 +49,12 @@ export function EditGroupForm({ group }: { group: GroupSummary }) {
   const held = saving || removing;
   return (
     <>
-      <header className="group-edit__head">
+      <header className="mb-6 flex items-center gap-4 [&_h1]:m-0">
         <GroupCrest id={group.id} name={name.trim() || group.name} />
         <h1>Edit group</h1>
       </header>
       <form
-        className="group-edit"
+        className="[&_fieldset]:grid [&_fieldset]:gap-6"
         onSubmit={(e) => {
           e.preventDefault();
           if (renamed)
@@ -77,8 +77,8 @@ export function EditGroupForm({ group }: { group: GroupSummary }) {
               autoComplete="organization"
             />
           </Field>
-          <div className="group-edit__choice">
-            <p id="group-visibility" className="rp-field__label">
+          <div className="grid gap-2 [&>p]:m-0">
+            <p id="group-visibility" className="block text-sm font-semibold">
               Who can find it
             </p>
             <ChoiceTiles
@@ -100,7 +100,9 @@ export function EditGroupForm({ group }: { group: GroupSummary }) {
                 },
               ]}
             />
-            <p className="rp-help">{visibilityHelp(visibility)}</p>
+            <p className="mt-1 mb-0 text-sm text-text-muted">
+              {visibilityHelp(visibility)}
+            </p>
           </div>
           <StickyActions>
             {/* A disabled fieldset doesn't stop links, so hold this one still while saving. */}
@@ -125,9 +127,12 @@ export function EditGroupForm({ group }: { group: GroupSummary }) {
         {saveVisibility.error ? <Notice>{saveVisibility.error}</Notice> : null}
         {saveVisibility.recovery}
       </form>
-      <section className="group-edit__remove" aria-labelledby="remove-group">
+      <section
+        className="mt-10 grid justify-items-start gap-2 border-t border-border pt-6 [&_h2]:m-0 [&_h2]:text-lg [&_p]:m-0"
+        aria-labelledby="remove-group"
+      >
         <h2 id="remove-group">Remove group</h2>
-        <p className="rp-help">
+        <p className="mt-1 mb-0 text-sm text-text-muted">
           It disappears for everyone in it. Past sessions and badges stay.
         </p>
         <button
@@ -147,7 +152,7 @@ export function EditGroupForm({ group }: { group: GroupSummary }) {
           <p>
             It disappears for everyone in it. Past sessions and badges stay.
           </p>
-          <div className="fee-actions">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               className={buttonClass()}
