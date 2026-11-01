@@ -30,7 +30,7 @@
 
 ## Profile: actions row (owner feedback, 2026-11-01)
 
-Sign out leaves the Account section and becomes an icon-only button at the end of the Edit / Share row. It's named "Sign out" for screen readers and has a tooltip, and any sign-out error appears right under the row. The row stays on one line: below 25rem the buttons read "Edit" and "Share", with "profile" kept for screen readers. A long activity name wraps, and its level drops under the name. Account keeps only "Signed in as …".
+Sign out leaves the Account section and becomes an icon-only button at the end of the Edit / Share row. It's named "Sign out" for screen readers and has a tooltip, and any sign-out error appears right under the row. The row stays on one line: below 25rem the buttons read "Edit" and "Share", with "profile" kept for screen readers. A long activity name wraps, and its level drops under the name. The Account section is gone. The account email now sits under the name in small muted text, for the owner only: the public profile never carries an email, so a shared link shows no contact details.
 
 ## Unchanged
 

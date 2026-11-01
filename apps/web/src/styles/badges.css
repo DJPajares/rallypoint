@@ -176,6 +176,15 @@
 .profile-head h1 {
   margin: 0;
 }
+/* The owner's email, quiet under the name; it sits close to the name it
+   belongs to. Never shown on a public profile. */
+.profile-email {
+  max-width: 100%;
+  margin: calc(var(--space-2) * -1) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
 .profile-head .title-pill {
   margin-left: 0;
   font-size: var(--text-sm);
@@ -485,25 +494,6 @@ button.badge-shelf__item:focus-visible {
   margin: var(--space-2) 0 0;
   font-weight: var(--weight-semibold);
   text-align: center;
-}
-
-.profile-account {
-  display: grid;
-  gap: var(--space-4);
-  padding: var(--space-4);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
-}
-.profile-account p {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
-  overflow-wrap: anywhere;
-}
-.profile-account strong {
-  color: var(--color-text);
-  font-size: var(--text-md);
 }
 
 /* Editing a profile (P-32): name card, then activity rows you tap on, each

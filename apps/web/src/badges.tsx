@@ -536,7 +536,11 @@ interface OwnerParts {
   moreActions?: ReactNode;
   /** A problem with one of those actions, shown right under the row. */
   actionsNotice?: ReactNode;
-  footer: ReactNode;
+  /**
+   * The account's email, under the name. Owner only: the public profile
+   * never carries it, so a shared link shows no contact details.
+   */
+  email: string | null;
 }
 
 const dateLabel = (value: string) =>
@@ -638,6 +642,7 @@ function ProfileView({
       <div className="profile-head">
         <RingAvatar name={name} size="lg" />
         <h1>{name || "Your profile"}</h1>
+        {owner?.email ? <p className="profile-email">{owner.email}</p> : null}
         {title ? <TitlePill title={title} /> : null}
         {owner ? (
           <div className="profile-actions">
@@ -739,7 +744,6 @@ function ProfileView({
           </ul>
         </>
       )}
-      {owner?.footer}
     </section>
   );
 }
@@ -833,20 +837,7 @@ export function ProfilePage() {
           actionsNotice: account.error ? (
             <Notice>{account.error}</Notice>
           ) : null,
-          footer: (
-            <>
-              <div className="section-head">
-                <h2>Account</h2>
-              </div>
-              <div className="profile-account">
-                <p>
-                  Signed in as
-                  <br />
-                  <strong>{session?.user.email ?? "your account"}</strong>
-                </p>
-              </div>
-            </>
-          ),
+          email: session?.user.email ?? null,
         }}
       />
       <BadgeDetails
