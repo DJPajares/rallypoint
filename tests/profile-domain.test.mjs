@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  levelChoices,
   levelLabel,
   normalizeProfile,
   playsLine,
@@ -173,4 +174,41 @@ test("a catalog activity keeps its spelling and is not one of your own", () => {
   });
   assert.equal(r.ok, true);
   assert.equal(r.value.activities[0].name, "Volleyball");
+});
+
+test("level choices: the scale in order, each with this activity's meaning, then No rating", () => {
+  const badminton = {
+    levels: {
+      beginner: "Learning grips and serves.",
+      intermediate: "Steady rallies.",
+      advanced: "Plays matches with tactics.",
+    },
+  };
+  assert.deepEqual(levelChoices(badminton), [
+    {
+      value: "beginner",
+      label: "Beginner",
+      meaning: "Learning grips and serves.",
+    },
+    {
+      value: "intermediate",
+      label: "Intermediate",
+      meaning: "Steady rallies.",
+    },
+    {
+      value: "advanced",
+      label: "Advanced",
+      meaning: "Plays matches with tactics.",
+    },
+    { value: "", label: "No rating", meaning: "Leave it blank for now." },
+  ]);
+});
+
+test("level choices: an activity without descriptions still lists every level", () => {
+  const choices = levelChoices(null);
+  assert.deepEqual(
+    choices.map((c) => c.value),
+    ["beginner", "intermediate", "advanced", ""],
+  );
+  assert.ok(choices.slice(0, 3).every((c) => c.meaning === ""));
 });

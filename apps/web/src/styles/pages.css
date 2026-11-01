@@ -336,13 +336,6 @@
   align-items: center;
   gap: var(--space-1);
 }
-.level-choice {
-  display: grid;
-  gap: var(--space-1);
-}
-.level-choice__meaning {
-  margin: 0;
-}
 .session-head > h1 {
   margin-bottom: var(--space-4);
 }
