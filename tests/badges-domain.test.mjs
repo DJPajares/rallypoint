@@ -1,8 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  badgeAbout,
   badgeCatalog,
+  badgeOrEmpty,
   badgeStates,
+  firstStep,
   isBadgeKey,
   levelColors,
   levelLabel,
@@ -361,5 +364,58 @@ test("newestUnseen leads with the badge shown as your title", () => {
     key: "host",
     level: 1,
     more: 1,
+  });
+});
+
+test("every badge says what it counts and how to earn level 1, in plain words", () => {
+  const steps = Object.fromEntries(
+    badgeCatalog.map((b) => [b.key, firstStep(b.key)]),
+  );
+  assert.deepEqual(steps, {
+    rally: "Join a session and get checked in.",
+    steady: "Play in 2 different months.",
+    "new-faces": "Play alongside 5 different people.",
+    "plus-one": "Bring a guest who gets checked in.",
+    host: "Run check-in at a session.",
+    "full-house": "Run a session where every spot is taken.",
+  });
+  for (const b of badgeCatalog) {
+    const about = badgeAbout(b.key);
+    assert.match(about, /^Counts .+\.$/, b.key);
+    // D-13: no internal terms in what people read.
+    assert.doesNotMatch(
+      `${about} ${firstStep(b.key)}`,
+      /threshold|level_|badge_|null|undefined/i,
+    );
+  }
+});
+
+test("first steps follow the level-1 numbers, so the words and counts stay in step", () => {
+  for (const b of badgeCatalog) {
+    const n = b.thresholds[0];
+    if (n > 1) assert.ok(firstStep(b.key).includes(String(n)), b.key);
+  }
+});
+
+test("a badge missing from a response reads as not started, never as nothing", () => {
+  const view = {
+    badges: [
+      {
+        key: "rally",
+        current: 3,
+        levels: [{ level: 1, earnedAt: "2026-10-01T00:00:00Z", seen: true }],
+      },
+    ],
+  };
+  assert.equal(badgeOrEmpty(view, "rally").current, 3);
+  assert.deepEqual(badgeOrEmpty(view, "host"), {
+    key: "host",
+    current: 0,
+    levels: [],
+  });
+  assert.deepEqual(badgeOrEmpty(null, "steady"), {
+    key: "steady",
+    current: 0,
+    levels: [],
   });
 });

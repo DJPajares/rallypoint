@@ -361,6 +361,31 @@ button.badge-shelf__item:focus-visible {
   font-size: var(--text-xs);
   white-space: nowrap;
 }
+.badge-details .badge-details__about {
+  margin: 0;
+  max-width: 32ch;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+/* The first step for a badge not started yet: words lead, not colour. */
+.badge-details__start {
+  display: grid;
+  gap: var(--space-0);
+  width: 100%;
+  margin: var(--space-2) 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+  text-align: center;
+}
+.badge-details__start p {
+  margin: 0;
+  font-weight: var(--weight-semibold);
+}
+.badge-details__start .badge-details__start-label {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
 .badge-details .badge-details__next {
   margin: var(--space-2) 0 0;
   font-weight: var(--weight-semibold);

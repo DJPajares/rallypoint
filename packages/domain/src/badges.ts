@@ -280,6 +280,60 @@ export function levelSentence(key: BadgeKey, level: Level): string {
   }
 }
 
+/** What a badge counts, in one plain line, for its sheet. */
+export function badgeAbout(key: BadgeKey): string {
+  switch (key) {
+    case "rally":
+      return "Counts the sessions you’ve been checked in at.";
+    case "steady":
+      return "Counts the different months you’ve played in.";
+    case "new-faces":
+      return "Counts the different people you’ve played alongside.";
+    case "plus-one":
+      return "Counts the times a guest you brought showed up.";
+    case "host":
+      return "Counts the sessions where you ran check-in.";
+    case "full-house":
+      return "Counts the sessions you ran where every spot was taken.";
+  }
+}
+
+/** How to earn level 1, as the first thing to do; numbers follow the catalog. */
+export function firstStep(key: BadgeKey): string {
+  const n = badgeDefinition(key).thresholds[0];
+  switch (key) {
+    case "rally":
+      return "Join a session and get checked in.";
+    case "steady":
+      return `Play in ${n} different months.`;
+    case "new-faces":
+      return `Play alongside ${n} different people.`;
+    case "plus-one":
+      return "Bring a guest who gets checked in.";
+    case "host":
+      return "Run check-in at a session.";
+    case "full-house":
+      return "Run a session where every spot is taken.";
+  }
+}
+
+/**
+ * One badge's state from a response, or not started when it is missing, so
+ * every badge on your shelf can open its sheet.
+ */
+export function badgeOrEmpty(
+  view: { badges?: unknown } | null | undefined,
+  key: BadgeKey,
+): BadgeState {
+  return (
+    badgeStates(view).find((b) => b.key === key) ?? {
+      key,
+      current: 0,
+      levels: [],
+    }
+  );
+}
+
 /** What is left before the next level, in plain words. */
 export function progressLabel(key: BadgeKey, left: number): string {
   switch (key) {
