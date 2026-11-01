@@ -37,7 +37,7 @@ import type {
   RosterTitle,
 } from "@rallypoint/domain/badges";
 import type { Identity } from "@rallypoint/domain/contracts";
-import { levelLabel } from "@rallypoint/domain/profile";
+import { levelLabel, levelStep } from "@rallypoint/domain/profile";
 import type {
   MyProfile,
   ProfileActivity,
@@ -46,6 +46,7 @@ import type {
 import {
   ActivityIcon,
   buttonClass,
+  iconButtonClass,
   cx,
   EmptyState,
   Notice,
@@ -445,33 +446,75 @@ export function RingAvatar({
 }
 
 /**
- * What the person plays, each with its activity's icon (D-23). Owner and
- * visitors read the same words: each level is marked as their own rating.
+ * What the person plays, in a card of its own (D-15/D-23): each activity with
+ * its icon and its level in words, backed by a three-step meter. Levels are
+ * the person's own rating, said once in the heading. Owner and visitors read
+ * the same card; an owner with nothing added gets a way to add some.
  */
-function Plays({ activities }: { activities: ProfileActivity[] }) {
+function Plays({
+  activities,
+  owner,
+}: {
+  /** Null until loaded, so an empty card never flashes first. */
+  activities: ProfileActivity[] | null;
+  owner: boolean;
+}) {
   const { catalog } = useActivities();
-  if (!activities.length) return null;
+  if (!activities || (!activities.length && !owner)) return null;
   return (
-    <div className="profile-plays">
-      <span id="profile-plays-label">Plays:</span>
-      <ul aria-labelledby="profile-plays-label">
-        {activities.map((a) => (
-          <li key={a.name}>
-            <ActivityIcon
-              icon={
-                catalog?.find((c) => c.key === a.key)?.icon ??
-                a.key ??
-                "general"
-              }
-              size={16}
-            />
-            {a.level
-              ? `${a.name} (${levelLabel[a.level]} · self-rated)`
-              : a.name}
-          </li>
-        ))}
-      </ul>
-    </div>
+    <section className="plays" aria-labelledby="plays-title">
+      <div className="section-head">
+        <h2 id="plays-title">Plays</h2>
+        {activities.some((a) => a.level) ? (
+          <span className="plays__note">Self-rated</span>
+        ) : null}
+      </div>
+      {activities.length ? (
+        <ul className="rp-list plays__list">
+          {activities.map((a) => (
+            <li key={a.name} className="rp-row plays__row">
+              <span className="plays__icon" aria-hidden="true">
+                <ActivityIcon
+                  icon={
+                    catalog?.find((c) => c.key === a.key)?.icon ??
+                    a.key ??
+                    "general"
+                  }
+                  size={22}
+                />
+              </span>
+              <span className="plays__body">
+                <span className="plays__name">{a.name}</span>
+                <span className="plays__level">
+                  <span
+                    className="plays__meter"
+                    data-step={levelStep(a.level)}
+                    aria-hidden="true"
+                  >
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                  {a.level ? levelLabel[a.level] : "Not rated"}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="plays__empty">
+          <p>
+            Add the activities you play, so hosts know what to invite you to.
+          </p>
+          <Link
+            className={buttonClass({ variant: "secondary", size: "sm" })}
+            href="/profile/edit"
+          >
+            Add activities
+          </Link>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -489,7 +532,15 @@ interface OwnerParts {
   titleControl?: ReactNode;
   /** Opens a badge's levels; the public shelf is not interactive. */
   onOpen: (key: BadgeKey) => void;
-  footer: ReactNode;
+  /** More actions at the end of the Edit/Share row, such as Sign out. */
+  moreActions?: ReactNode;
+  /** A problem with one of those actions, shown right under the row. */
+  actionsNotice?: ReactNode;
+  /**
+   * The account's email, under the name. Owner only: the public profile
+   * never carries it, so a shared link shows no contact details.
+   */
+  email: string | null;
 }
 
 const dateLabel = (value: string) =>
@@ -582,7 +633,7 @@ function ProfileView({
   title: RosterTitle | null;
   badges: ShelfBadge[];
   stats: BadgesView["stats"];
-  activities: ProfileActivity[];
+  activities: ProfileActivity[] | null;
   owner?: OwnerParts;
 }) {
   const shelf = owner ? badges : badges.filter((b) => b.level > 0);
@@ -591,8 +642,8 @@ function ProfileView({
       <div className="profile-head">
         <RingAvatar name={name} size="lg" />
         <h1>{name || "Your profile"}</h1>
+        {owner?.email ? <p className="profile-email">{owner.email}</p> : null}
         {title ? <TitlePill title={title} /> : null}
-        <Plays activities={activities} />
         {owner ? (
           <div className="profile-actions">
             <Link
@@ -600,12 +651,18 @@ function ProfileView({
               href="/profile/edit"
             >
               <PencilSimpleIcon size={18} aria-hidden="true" />
-              Edit profile
+              <span>
+                Edit<span className="wide-only"> profile</span>
+              </span>
             </Link>
             {owner.profileId ? (
               <ShareButton
                 title={`${name} on RallyPoint`}
-                label="Share profile"
+                label={
+                  <span>
+                    Share<span className="wide-only"> profile</span>
+                  </span>
+                }
                 url={
                   typeof window === "undefined"
                     ? undefined
@@ -613,10 +670,19 @@ function ProfileView({
                 }
               />
             ) : null}
+            {owner.moreActions}
           </div>
         ) : null}
+        {owner?.actionsNotice}
       </div>
-      {owner?.status ?? (
+      {/* Plays follows the numbers; while those load or fail, it follows the
+          message that stands in for them, so it never disappears. */}
+      {owner?.status ? (
+        <>
+          {owner.status}
+          <Plays activities={activities} owner />
+        </>
+      ) : (
         <>
           <StatRow
             items={[
@@ -628,6 +694,7 @@ function ProfileView({
               },
             ]}
           />
+          <Plays activities={activities} owner={!!owner} />
           {shelf.length ? (
             <div className="section-head">
               <h2>Badges</h2>
@@ -677,7 +744,6 @@ function ProfileView({
           </ul>
         </>
       )}
-      {owner?.footer}
     </section>
   );
 }
@@ -737,7 +803,7 @@ export function ProfilePage() {
         title={rosterTitle(view?.title)}
         badges={shelf}
         stats={view?.stats ?? { played: 0, hosted: 0, groups: 0 }}
-        activities={profile.data?.profile.activities ?? []}
+        activities={profile.data?.profile.activities ?? null}
         owner={{
           profileId: identity.data?.profileId ?? null,
           status,
@@ -755,30 +821,23 @@ export function ProfilePage() {
               Choose title
             </button>
           ) : null,
-          footer: (
-            <>
-              <div className="section-head">
-                <h2>Account</h2>
-              </div>
-              <div className="profile-account">
-                <p>
-                  Signed in as
-                  <br />
-                  <strong>{session?.user.email ?? "your account"}</strong>
-                </p>
-                {account.error ? <Notice>{account.error}</Notice> : null}
-                <button
-                  type="button"
-                  className={buttonClass({ wide: true })}
-                  onClick={() => void account.signOut()}
-                  disabled={account.leaving}
-                >
-                  <SignOutIcon size={20} aria-hidden="true" />
-                  {account.leaving ? "Signing out…" : "Sign out"}
-                </button>
-              </div>
-            </>
+          // Icon only, so its name and tooltip say what it does.
+          moreActions: (
+            <button
+              type="button"
+              className={cx(iconButtonClass(), "profile-actions__icon")}
+              aria-label={account.leaving ? "Signing out…" : "Sign out"}
+              title="Sign out"
+              onClick={() => void account.signOut()}
+              disabled={account.leaving}
+            >
+              <SignOutIcon size={20} aria-hidden="true" />
+            </button>
           ),
+          actionsNotice: account.error ? (
+            <Notice>{account.error}</Notice>
+          ) : null,
+          email: session?.user.email ?? null,
         }}
       />
       <BadgeDetails
