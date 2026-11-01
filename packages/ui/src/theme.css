@@ -450,10 +450,15 @@
   [data-slot="sheet"] p {
     font-size: var(--text-sm);
   }
+  /* The drawer is left out: Base UI measures its own transition to tell a
+     swipe-to-close from a drag that should spring back, and it already keeps
+     motion short and tied to the finger. */
   @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
+    :where(*, *::before, *::after):not(
+      [data-swipe-axis],
+      [data-swipe-axis] *,
+      [data-slot="drawer-overlay"]
+    ) {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;

@@ -58,13 +58,15 @@ export function Sheet({
           finalFocus={opener}
           data-slot="sheet"
         >
+          {/* The title bar stays outside the scrolling content, so dragging it
+              always moves the sheet, never the content (like native sheets). */}
+          <div className="flex flex-none items-center justify-between gap-3 px-5 pt-1 pb-2">
+            <DrawerPrimitive.Title className={titleClass}>
+              {title}
+            </DrawerPrimitive.Title>
+            <DrawerPrimitive.Close {...closeProps} />
+          </div>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[calc(24px+var(--safe-bottom))]">
-            <div className={headClass}>
-              <DrawerPrimitive.Title className={titleClass}>
-                {title}
-              </DrawerPrimitive.Title>
-              <DrawerPrimitive.Close {...closeProps} />
-            </div>
             {children}
           </div>
         </DrawerContent>

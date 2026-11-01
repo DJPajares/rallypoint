@@ -23,15 +23,21 @@ export function buttonClass({
   size = "md",
   wide = false,
 }: ButtonStyle = {}) {
-  return buttonVariants({
-    variant: variants[variant],
-    size: size === "sm" ? "sm" : "default",
-    wide,
-  });
+  // Through cn, so a variant's colours replace the base ones instead of
+  // both landing in the list.
+  return cn(
+    buttonVariants({
+      variant: variants[variant],
+      size: size === "sm" ? "sm" : "default",
+      wide,
+    }),
+  );
 }
 /** A round icon-only button look; `flat` drops the floating shadow. */
 export function iconButtonClass(flat = false) {
-  return buttonVariants({ variant: flat ? "flat" : "floating", size: "icon" });
+  return cn(
+    buttonVariants({ variant: flat ? "flat" : "floating", size: "icon" }),
+  );
 }
 /** The default surface for grouped content; `accent` is the graphite block. */
 export function cardClass(tone: "default" | "accent" = "default") {
