@@ -1,9 +1,9 @@
 import { Suspense } from "react";
-import { Pending } from "@rallypoint/ui";
+import { SessionSkeleton } from "@/skeletons";
 import { SharedSessionPage } from "@/session-pages";
 export default function Page() {
   return (
-    <Suspense fallback={<Pending />}>
+    <Suspense fallback={<SessionSkeleton />}>
       <SharedSessionPage />
     </Suspense>
   );

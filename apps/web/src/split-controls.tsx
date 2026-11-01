@@ -1,12 +1,7 @@
 "use client";
+import { ListSkeleton } from "./skeletons";
 import { useEffect, useRef, useState } from "react";
-import {
-  AffixInput,
-  buttonClass,
-  Field,
-  Notice,
-  Pending,
-} from "@rallypoint/ui";
+import { AffixInput, buttonClass, Field, Notice } from "@rallypoint/ui";
 import { currencies } from "@rallypoint/domain/session";
 import type {
   ManagedSplitClaim,
@@ -152,7 +147,7 @@ export function SplitControls({
       if (!controller.signal.aborted) setBusy(false);
     }
   }
-  if (result.loading) return <Pending>Loading the split…</Pending>;
+  if (result.loading) return <ListSkeleton label="Loading the split…" />;
   if (result.error) return <Notice retry={result.retry}>{result.error}</Notice>;
   if (!managed || !summary) return null;
   const money = (n: number) => splitMoney(summary.currency, n),

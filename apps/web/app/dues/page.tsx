@@ -1,10 +1,12 @@
 import { Suspense } from "react";
-import { Pending } from "@rallypoint/ui";
+import { TabSkeleton } from "@/skeletons";
 import { DuesPage, RequireAuth } from "@/screens";
 export default function Page() {
   return (
-    <Suspense fallback={<Pending />}>
-      <RequireAuth>
+    <Suspense fallback={<TabSkeleton label="Loading your dues…" rows={3} />}>
+      <RequireAuth
+        fallback={<TabSkeleton label="Loading your dues…" rows={3} />}
+      >
         <DuesPage />
       </RequireAuth>
     </Suspense>

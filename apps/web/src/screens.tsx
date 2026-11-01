@@ -1,4 +1,10 @@
 "use client";
+import {
+  FormSkeleton,
+  ListSkeleton,
+  PageSkeleton,
+  UpNextSkeleton,
+} from "./skeletons";
 import { Fragment, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
@@ -35,7 +41,6 @@ import {
   EmptyState,
   ListGroup,
   Notice,
-  Pending,
   Segmented,
   SpotsMeter,
   Ticket,
@@ -49,7 +54,7 @@ function Redirect({ href }: { href: string; replace?: boolean }) {
   useEffect(() => {
     router.replace(href);
   }, [router, href]);
-  return <Pending>Opening your page…</Pending>;
+  return <PageSkeleton label="Opening your page…" />;
 }
 /** The public front door. Signed-in visitors continue to their own Home. */
 export function Landing() {
@@ -128,12 +133,19 @@ export function Landing() {
     </div>
   );
 }
-export function RequireAuth({ children }: { children: ReactNode }) {
+export function RequireAuth({
+  children,
+  fallback = <PageSkeleton />,
+}: {
+  children: ReactNode;
+  /** The page's own skeleton, shown while sign-in is checked. */
+  fallback?: ReactNode;
+}) {
   const { session, loading, error } = useAuth();
   const pathname = usePathname();
   const params = useSearchParams();
   const search = params.toString() ? `?${params}` : "";
-  if (loading) return <Pending />;
+  if (loading) return fallback;
   if (error) return <Notice>{error}</Notice>;
   return session ? (
     <Fragment key={session.user.id}>{children}</Fragment>
@@ -189,7 +201,7 @@ export function HomeDashboard() {
         <Notice retry={identity.retry}>{identity.error}</Notice>
       ) : null}
       {sessions.loading ? (
-        <Pending>Finding what's next…</Pending>
+        <UpNextSkeleton />
       ) : sessions.error ? (
         <Notice retry={sessions.retry}>{sessions.error}</Notice>
       ) : next ? (
@@ -238,7 +250,7 @@ export function HomeDashboard() {
           ) : null}
         </div>
         {workspace.loading ? (
-          <Pending>Finding your groups…</Pending>
+          <ListSkeleton label="Finding your groups…" />
         ) : workspace.error ? (
           <Notice retry={workspace.retry}>{workspace.error}</Notice>
         ) : (
@@ -406,7 +418,7 @@ export function SessionsPage() {
         onCreate={upcoming.length || pastTotal ? openCreate : undefined}
       />
       {sessions.loading ? (
-        <Pending>Finding your sessions…</Pending>
+        <ListSkeleton label="Finding your sessions…" rows={4} />
       ) : sessions.error ? (
         <Notice retry={sessions.retry}>{sessions.error}</Notice>
       ) : !upcoming.length && !pastTotal ? (
@@ -544,7 +556,7 @@ export function DuesPage() {
         <h1>Dues</h1>
       </div>
       {result.loading ? (
-        <Pending>Loading your dues…</Pending>
+        <ListSkeleton label="Loading your dues…" />
       ) : result.error ? (
         <Notice retry={result.retry}>{result.error}</Notice>
       ) : !dues.length && !claims.length ? (
@@ -630,7 +642,7 @@ export function Workspace() {
         }
       />
       {workspace.loading ? (
-        <Pending>Finding your groups…</Pending>
+        <ListSkeleton label="Finding your groups…" rows={4} />
       ) : workspace.error ? (
         <Notice retry={workspace.retry}>{workspace.error}</Notice>
       ) : groups.length ? (
@@ -685,7 +697,7 @@ export function EditGroup() {
       className="mx-auto max-w-form"
     >
       {result.loading ? (
-        <Pending>Opening your group…</Pending>
+        <FormSkeleton label="Opening your group…" fields={2} />
       ) : result.error ? (
         <>
           <h1>Group unavailable</h1>

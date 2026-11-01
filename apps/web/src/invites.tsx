@@ -1,4 +1,5 @@
 "use client";
+import { ListSkeleton } from "./skeletons";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
@@ -9,7 +10,6 @@ import {
   ListGroup,
   ListRow,
   Notice,
-  Pending,
   Sheet,
 } from "@rallypoint/ui";
 import type {
@@ -334,7 +334,7 @@ function Candidates({
     false,
     String(round),
   );
-  if (candidates.loading) return <Pending>Finding people…</Pending>;
+  if (candidates.loading) return <ListSkeleton label="Finding people…" />;
   if (candidates.error)
     return <Notice retry={candidates.retry}>{candidates.error}</Notice>;
   if (!candidates.data?.people.length)

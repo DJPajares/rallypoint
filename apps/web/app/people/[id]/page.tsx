@@ -1,9 +1,9 @@
 import { Suspense } from "react";
-import { Pending } from "@rallypoint/ui";
+import { ProfileSkeleton } from "@/skeletons";
 import { PersonProfilePage } from "@/badges";
 export default function Page() {
   return (
-    <Suspense fallback={<Pending />}>
+    <Suspense fallback={<ProfileSkeleton label="Opening the profile…" />}>
       <PersonProfilePage />
     </Suspense>
   );

@@ -1,11 +1,11 @@
 import { Suspense } from "react";
-import { Pending } from "@rallypoint/ui";
+import { ProfileSkeleton } from "@/skeletons";
 import { RequireAuth } from "@/screens";
 import { ProfilePage } from "@/badges";
 export default function Page() {
   return (
-    <Suspense fallback={<Pending />}>
-      <RequireAuth>
+    <Suspense fallback={<ProfileSkeleton label="Opening your profile…" />}>
+      <RequireAuth fallback={<ProfileSkeleton label="Opening your profile…" />}>
         <ProfilePage />
       </RequireAuth>
     </Suspense>

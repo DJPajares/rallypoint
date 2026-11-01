@@ -1,4 +1,5 @@
 "use client";
+import { FormSkeleton } from "./skeletons";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -26,7 +27,6 @@ import {
   Field,
   Input,
   Notice,
-  Pending,
   Sheet,
   useToast,
 } from "@rallypoint/ui";
@@ -152,7 +152,7 @@ export function EditProfile() {
         backLabel="Profile"
         className="mx-auto max-w-form"
       >
-        <Pending>Opening your profile…</Pending>
+        <FormSkeleton label="Opening your profile…" fields={3} />
       </DetailPage>
     );
   if (profile.error || !profile.data)

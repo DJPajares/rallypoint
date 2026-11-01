@@ -1,13 +1,7 @@
 "use client";
+import { ListSkeleton } from "./skeletons";
 import { useEffect, useState } from "react";
-import {
-  buttonClass,
-  Field,
-  Input,
-  Notice,
-  Pending,
-  Sheet,
-} from "@rallypoint/ui";
+import { buttonClass, Field, Input, Notice, Sheet } from "@rallypoint/ui";
 import type { SessionAccessList } from "@rallypoint/domain/session";
 import { useApi } from "./use-api";
 import { TitlePill } from "./badges";
@@ -137,7 +131,7 @@ function AccessOptions({
         />
       </Field>
       {options.loading ? (
-        <Pending>Finding groups and people…</Pending>
+        <ListSkeleton label="Finding groups and people…" />
       ) : options.error ? (
         <Notice retry={options.retry}>{options.error}</Notice>
       ) : options.data ? (
