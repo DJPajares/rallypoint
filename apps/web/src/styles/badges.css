@@ -182,12 +182,6 @@
 }
 /* What they play: a card of rows under the profile head. The tint matches
    the "Playing" state in Edit profile; the meter climbs like the levels. */
-.plays {
-  margin-bottom: var(--space-6);
-}
-.plays .section-head {
-  margin-top: 0;
-}
 .plays__note {
   padding: var(--space-0) var(--space-2);
   border: var(--border-width) solid var(--color-border);
@@ -214,13 +208,21 @@
   background: var(--color-success-bg);
   color: var(--color-success);
 }
-.plays__name {
+/* Name and level share the line; when both don't fit, the level drops under
+   the name instead of the name losing letters. */
+.plays__body {
+  display: flex;
   flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-0) var(--space-3);
   min-width: 0;
-  overflow: hidden;
+}
+.plays__name {
+  min-width: 0;
   font-weight: var(--weight-semibold);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .plays__level {
   display: inline-flex;
@@ -270,12 +272,38 @@
   margin: 0;
   color: var(--color-text-muted);
 }
+/* Sign out sits at the end of the row, as tall as the buttons beside it. */
+.profile-actions__icon {
+  width: var(--size-control);
+  height: var(--size-control);
+}
+/* One line, even on a phone: Edit and Share share the room, Sign out keeps
+   its size. */
 .profile-actions {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
   gap: var(--space-2);
+  width: 100%;
+  max-width: 26rem;
   margin-top: var(--space-2);
+}
+.profile-actions > .rp-button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 var(--space-3);
+}
+/* On a narrow phone the buttons read "Edit" and "Share"; "profile" stays in
+   their names for screen readers, so the full name still includes the label. */
+@media (max-width: 25rem) {
+  .profile-actions .wide-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
 }
 /* Initials in the brand ring: the profile head and the menu's Profile chip. */
 .ring-avatar {

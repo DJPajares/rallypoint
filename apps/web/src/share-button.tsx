@@ -1,4 +1,5 @@
 "use client";
+import type { ReactNode } from "react";
 import { buttonClass } from "@rallypoint/ui";
 import { useState } from "react";
 import { ShareNetworkIcon } from "@phosphor-icons/react/dist/csr/ShareNetwork";
@@ -14,7 +15,7 @@ export function ShareButton({
   primary?: boolean;
   /** What to share; the current page when left out. */
   url?: string;
-  label?: string;
+  label?: ReactNode;
 }) {
   const [status, setStatus] = useState("");
   async function share() {

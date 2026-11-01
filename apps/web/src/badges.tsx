@@ -46,6 +46,7 @@ import type {
 import {
   ActivityIcon,
   buttonClass,
+  iconButtonClass,
   cx,
   EmptyState,
   Notice,
@@ -482,18 +483,20 @@ function Plays({
                   size={22}
                 />
               </span>
-              <span className="plays__name">{a.name}</span>
-              <span className="plays__level">
-                <span
-                  className="plays__meter"
-                  data-step={levelStep(a.level)}
-                  aria-hidden="true"
-                >
-                  <span />
-                  <span />
-                  <span />
+              <span className="plays__body">
+                <span className="plays__name">{a.name}</span>
+                <span className="plays__level">
+                  <span
+                    className="plays__meter"
+                    data-step={levelStep(a.level)}
+                    aria-hidden="true"
+                  >
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                  {a.level ? levelLabel[a.level] : "Not rated"}
                 </span>
-                {a.level ? levelLabel[a.level] : "Not rated"}
               </span>
             </li>
           ))}
@@ -529,6 +532,10 @@ interface OwnerParts {
   titleControl?: ReactNode;
   /** Opens a badge's levels; the public shelf is not interactive. */
   onOpen: (key: BadgeKey) => void;
+  /** More actions at the end of the Edit/Share row, such as Sign out. */
+  moreActions?: ReactNode;
+  /** A problem with one of those actions, shown right under the row. */
+  actionsNotice?: ReactNode;
   footer: ReactNode;
 }
 
@@ -639,12 +646,18 @@ function ProfileView({
               href="/profile/edit"
             >
               <PencilSimpleIcon size={18} aria-hidden="true" />
-              Edit profile
+              <span>
+                Edit<span className="wide-only"> profile</span>
+              </span>
             </Link>
             {owner.profileId ? (
               <ShareButton
                 title={`${name} on RallyPoint`}
-                label="Share profile"
+                label={
+                  <span>
+                    Share<span className="wide-only"> profile</span>
+                  </span>
+                }
                 url={
                   typeof window === "undefined"
                     ? undefined
@@ -652,11 +665,19 @@ function ProfileView({
                 }
               />
             ) : null}
+            {owner.moreActions}
           </div>
         ) : null}
+        {owner?.actionsNotice}
       </div>
-      <Plays activities={activities} owner={!!owner} />
-      {owner?.status ?? (
+      {/* Plays follows the numbers; while those load or fail, it follows the
+          message that stands in for them, so it never disappears. */}
+      {owner?.status ? (
+        <>
+          {owner.status}
+          <Plays activities={activities} owner />
+        </>
+      ) : (
         <>
           <StatRow
             items={[
@@ -668,6 +689,7 @@ function ProfileView({
               },
             ]}
           />
+          <Plays activities={activities} owner={!!owner} />
           {shelf.length ? (
             <div className="section-head">
               <h2>Badges</h2>
@@ -795,6 +817,22 @@ export function ProfilePage() {
               Choose title
             </button>
           ) : null,
+          // Icon only, so its name and tooltip say what it does.
+          moreActions: (
+            <button
+              type="button"
+              className={cx(iconButtonClass(), "profile-actions__icon")}
+              aria-label={account.leaving ? "Signing out…" : "Sign out"}
+              title="Sign out"
+              onClick={() => void account.signOut()}
+              disabled={account.leaving}
+            >
+              <SignOutIcon size={20} aria-hidden="true" />
+            </button>
+          ),
+          actionsNotice: account.error ? (
+            <Notice>{account.error}</Notice>
+          ) : null,
           footer: (
             <>
               <div className="section-head">
@@ -806,16 +844,6 @@ export function ProfilePage() {
                   <br />
                   <strong>{session?.user.email ?? "your account"}</strong>
                 </p>
-                {account.error ? <Notice>{account.error}</Notice> : null}
-                <button
-                  type="button"
-                  className={buttonClass({ wide: true })}
-                  onClick={() => void account.signOut()}
-                  disabled={account.leaving}
-                >
-                  <SignOutIcon size={20} aria-hidden="true" />
-                  {account.leaving ? "Signing out…" : "Sign out"}
-                </button>
               </div>
             </>
           ),

@@ -21,12 +21,16 @@
 
 ## Profile: Plays card (owner feedback, 2026-11-01)
 
-"Plays" moves out of the profile head into its own card below it, like the other sections:
+"Plays" moves out of the profile head into its own card, placed after the stats card (or after the message standing in for the stats while they load or fail), like the other sections:
 
 - one row per activity: its icon in a tinted circle (the same tint as "Playing" in Edit profile), its name, a three-step meter and the level in words ("Not rated" when blank);
 - "Self-rated" is said once, beside the heading;
 - visitors see the same card when the person plays something;
 - an owner with no activities gets a short prompt and an "Add activities" link, shown only after the profile loads.
+
+## Profile: actions row (owner feedback, 2026-11-01)
+
+Sign out leaves the Account section and becomes an icon-only button at the end of the Edit / Share row. It's named "Sign out" for screen readers and has a tooltip, and any sign-out error appears right under the row. The row stays on one line: below 25rem the buttons read "Edit" and "Share", with "profile" kept for screen readers. A long activity name wraps, and its level drops under the name. Account keeps only "Signed in as …".
 
 ## Unchanged
 
