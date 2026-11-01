@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { LockSimpleIcon } from "@phosphor-icons/react/dist/csr/LockSimple";
-import { buttonClass, Field, Notice, Pending } from "@rallypoint/ui";
+import { buttonClass, Field, Input, Notice, Pending } from "@rallypoint/ui";
 import { sessionHref, statusLabel } from "@rallypoint/domain/my-sessions";
 import type { MySessionRow } from "@rallypoint/domain/my-sessions";
 import { useApi } from "./use-api";
@@ -36,7 +36,7 @@ export function SearchPage() {
   }, []);
   return (
     <section
-      className="page grid gap-4 [&_section]:grid [&_section]:gap-3"
+      className="grid gap-4 [&_section]:grid [&_section]:gap-3"
       aria-labelledby="search-title"
     >
       <div className="mb-4">
@@ -47,7 +47,7 @@ export function SearchPage() {
         label="Search groups and your sessions"
         help="Type at least 2 letters."
       >
-        <input
+        <Input
           id="search"
           type="search"
           aria-describedby="search-help"

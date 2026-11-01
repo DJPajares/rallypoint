@@ -12,6 +12,7 @@ import {
   Avatar,
   Badge,
   Button,
+  cx,
   Card,
   CheckField,
   DateTimeField,
@@ -21,6 +22,7 @@ import {
   Help,
   IconButton,
   IconTile,
+  Input,
   Kicker,
   Lede,
   Notice,
@@ -43,7 +45,7 @@ const colors = [
   "text-muted",
   "border",
   "border-strong",
-  "accent",
+  "chrome",
   "stub",
   "action",
   "link",
@@ -53,12 +55,20 @@ const colors = [
   "danger",
 ];
 const space = [1, 2, 3, 4, 5, 6, 8, 10, 12, 16];
-const type = ["xs", "sm", "md", "lg", "xl", "2xl"];
-const radii = ["xs", "sm", "md", "lg", "xl", "full"];
+const type = ["xs", "sm", "base", "lg", "xl", "2xl"];
+// Literal class names, so Tailwind sees and generates each one.
+const radii = [
+  ["xs", "rounded-xs"],
+  ["sm", "rounded-sm"],
+  ["md", "rounded-md"],
+  ["lg", "rounded-lg"],
+  ["xl", "rounded-xl"],
+  ["full", "rounded-full"],
+] as const;
 /**
  * Every token and library component on one page, in both themes via the
  * floating menu's theme switch. Look here before adding a new style: if a
- * piece already exists, use it; if a value is missing, add it to tokens.css.
+ * piece already exists, use it; if a value is missing, add it to theme.css.
  */
 export function DesignCatalog() {
   const [sheet, setSheet] = useState(false);
@@ -68,20 +78,23 @@ export function DesignCatalog() {
   const [guests, setGuests] = useState(true);
   const [guest, setGuest] = useState(false);
   return (
-    <section className="page catalog">
+    <section className="[&_h2]:mt-10">
       <div className="mb-4">
         <Kicker>@rallypoint/ui</Kicker>
         <h1>Design system</h1>
         <Lede>
-          Tokens and components. Change a value in tokens.css and every screen
+          Tokens and components. Change a value in theme.css and every screen
           follows.
         </Lede>
       </div>
 
       <h2>Colour</h2>
-      <div className="catalog-grid">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
         {colors.map((name) => (
-          <div key={name} className="catalog-swatch">
+          <div
+            key={name}
+            className="grid gap-2 text-xs [&_span]:h-16 [&_span]:rounded-md [&_span]:border [&_span]:border-border"
+          >
             <span style={{ background: `var(--color-${name})` }} />
             <code>--color-{name}</code>
           </div>
@@ -92,13 +105,13 @@ export function DesignCatalog() {
       <Card className="grid gap-3">
         <span
           style={{ fontSize: "var(--text-display-lg)" }}
-          className="catalog-display"
+          className="font-heading leading-tight font-bold tracking-tight"
         >
           Display large
         </span>
         <span
           style={{ fontSize: "var(--text-display-md)" }}
-          className="catalog-display"
+          className="font-heading leading-tight font-bold tracking-tight"
         >
           Display medium
         </span>
@@ -112,18 +125,21 @@ export function DesignCatalog() {
       <h2>Space and radius</h2>
       <Card className="grid gap-3">
         {space.map((step) => (
-          <div key={step} className="catalog-row">
+          <div
+            key={step}
+            className="flex items-center gap-3 text-xs [&_code]:min-w-22.5"
+          >
             <code>--space-{step}</code>
             <span
-              className="catalog-bar"
+              className="h-3 rounded-xs bg-chrome"
               style={{ width: `var(--space-${step})` }}
             />
           </div>
         ))}
-        <div className="catalog-radii">
-          {radii.map((name) => (
+        <div className="mt-3 flex flex-wrap gap-4 text-center text-xs">
+          {radii.map(([name, rounded]) => (
             <div key={name}>
-              <span style={{ borderRadius: `var(--radius-${name})` }} />
+              <span className={cx("mb-1 block h-12 w-16 bg-stub", rounded)} />
               <code>{name}</code>
             </div>
           ))}
@@ -131,7 +147,7 @@ export function DesignCatalog() {
       </Card>
 
       <h2>Buttons</h2>
-      <Card className="catalog-wrap">
+      <Card className="flex flex-wrap items-center gap-3">
         <Button variant="primary">Primary action</Button>
         <Button>Secondary</Button>
         <Button variant="accent">Accent</Button>
@@ -146,9 +162,9 @@ export function DesignCatalog() {
       </Card>
 
       <h2>Surfaces</h2>
-      <div className="group-grid">
+      <div className="grid gap-3 md:grid-cols-2 desk:grid-cols-3">
         <Card className="grid gap-3">
-          <div className="catalog-wrap">
+          <div className="flex flex-wrap items-center gap-3">
             <IconTile>
               <UsersThreeIcon size={24} />
             </IconTile>
@@ -186,7 +202,7 @@ export function DesignCatalog() {
       </div>
 
       <h2>Session pieces</h2>
-      <div className="group-grid">
+      <div className="grid gap-3 md:grid-cols-2 desk:grid-cols-3">
         <Ticket
           date={{ weekday: "Thu", day: "5", month: "Nov", time: "7:00 PM" }}
         >
@@ -203,13 +219,13 @@ export function DesignCatalog() {
 
       <h2>Forms</h2>
       <Card>
-        <div className="form-grid">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-x-4 gap-y-0">
           <Field
             id="catalog-title"
             label="Session title"
             help="Shown on the shared page."
           >
-            <input
+            <Input
               id="catalog-title"
               placeholder="Sunday morning badminton"
               aria-describedby="catalog-title-help"
@@ -219,7 +235,7 @@ export function DesignCatalog() {
             <DateTimeField id="catalog-when" value={when} onChange={setWhen} />
           </Field>
         </div>
-        <div className="form-grid">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-x-4 gap-y-0">
           <Field id="catalog-seats" label="Capacity, in seats">
             <NumberStepper
               id="catalog-seats"

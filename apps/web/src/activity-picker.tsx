@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
-import { ActivityIcon, ChoiceTiles } from "@rallypoint/ui";
+import { ActivityIcon, ChoiceTiles, Input } from "@rallypoint/ui";
 import type { Tile } from "@rallypoint/ui";
 import { matchActivity } from "@rallypoint/domain/activities";
 import type { Activity } from "@rallypoint/domain/activities";
@@ -72,7 +72,7 @@ export function ActivityPicker({
         disabled={disabled}
       />
       {typing ? (
-        <input
+        <Input
           ref={text}
           id="activity"
           aria-label="Your activity"

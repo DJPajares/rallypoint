@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { buttonClass, Field, Notice } from "@rallypoint/ui";
+import { buttonClass, Field, Input, Notice } from "@rallypoint/ui";
 import { feeLabel } from "@rallypoint/domain/session";
 import type { SharedSession } from "@rallypoint/domain/session";
 import type {
@@ -173,7 +173,7 @@ export function GuestChange({
           <fieldset disabled={busy}>
             <legend>Add a guest</legend>
             <Field id="add-guest-name" label="Guest name (optional)">
-              <input
+              <Input
                 id="add-guest-name"
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}

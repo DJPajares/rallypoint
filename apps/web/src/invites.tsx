@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   buttonClass,
   Field,
+  Input,
   ListGroup,
   ListRow,
   Notice,
@@ -269,7 +270,7 @@ export function InvitePanel({
           label="Search people you know"
           help="People who joined your sessions or share a group with you."
         >
-          <input
+          <Input
             id={`invite-search-${kind}`}
             aria-describedby={`invite-search-${kind}-help`}
             value={query}

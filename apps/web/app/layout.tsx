@@ -5,10 +5,6 @@ import { Bricolage_Grotesque, Inter } from "next/font/google";
 import { themeColor } from "@rallypoint/ui";
 import { Providers } from "./providers";
 import "./globals.css";
-import "@/styles/frame.css";
-import "@/styles/pages.css";
-import "@/styles/badges.css";
-import "@/styles/game-day.css";
 const display = Bricolage_Grotesque({
   subsets: ["latin"],
   variable: "--font-display-family",

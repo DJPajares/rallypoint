@@ -2,7 +2,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { buttonClass, ChoiceTiles, Field, Notice, Sheet } from "@rallypoint/ui";
+import {
+  buttonClass,
+  ChoiceTiles,
+  Field,
+  Input,
+  Notice,
+  Sheet,
+} from "@rallypoint/ui";
 import { GlobeHemisphereWestIcon } from "@phosphor-icons/react/dist/csr/GlobeHemisphereWest";
 import { LockSimpleIcon } from "@phosphor-icons/react/dist/csr/LockSimple";
 import type {
@@ -68,7 +75,7 @@ export function EditGroupForm({ group }: { group: GroupSummary }) {
       >
         <fieldset disabled={held}>
           <Field id="group-name" label="Group name">
-            <input
+            <Input
               id="group-name"
               value={name}
               onChange={(e) => setName(e.target.value)}

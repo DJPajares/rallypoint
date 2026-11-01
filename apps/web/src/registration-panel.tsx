@@ -20,6 +20,8 @@ import { InvitePanel } from "./invites";
 import { GuestChange } from "./guest-change";
 import {
   buttonClass,
+  cx,
+  Input,
   CheckField,
   Field,
   Notice,
@@ -83,10 +85,17 @@ function SentNote({
       reference: action === "mark" ? reference : "",
     });
   return (
-    <div ref={box} className="sent-note">
+    <div
+      ref={box}
+      className="grid gap-3 [&_fieldset]:grid [&_fieldset]:gap-3 [&_form]:grid [&_form]:gap-3 [&_p]:m-0"
+    >
       {note ? (
         <>
-          <p id="sent-note-text" role="status" className="sent-note__said">
+          <p
+            id="sent-note-text"
+            role="status"
+            className="m-0 flex items-center gap-2 font-semibold"
+          >
             <PaperPlaneTiltIcon size={18} aria-hidden="true" />
             <span>
               You said you sent it
@@ -115,7 +124,7 @@ function SentNote({
         >
           <fieldset disabled={busy}>
             <Field id="payment-reference" label="Payment reference (optional)">
-              <input
+              <Input
                 id="payment-reference"
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
@@ -227,7 +236,7 @@ export function RegistrationPanel({
     // On game day the time, place and notes stay put while the read is out.
     return gameDay ? (
       <section
-        className="registration-panel game-day-panel"
+        className="grid gap-3 [&>p]:m-0 [&>p]:text-sm gap-4 **:data-[slot=facts]:mb-0 **:data-[slot=session-instructions]:mb-0"
         aria-label="Your registration"
       >
         {gameDay.details}
@@ -367,7 +376,7 @@ export function RegistrationPanel({
         {!gameDay || (phone && sheetOpen) ? requestState : null}
       </>
     );
-    if (!phone) return <div className="action-area">{body}</div>;
+    if (!phone) return <div className="grid gap-3 [&_p]:text-sm">{body}</div>;
     // On game day the trigger waits under More, with no sticky bar.
     if (gameDay)
       return (
@@ -560,7 +569,7 @@ export function RegistrationPanel({
     ) : null;
   // The viewer's own request while it waits, or how it ended.
   const requestBlock = ownRequest ? (
-    <div className="own-status">
+    <div className="grid gap-3 [&>p]:m-0 [&>p]:text-sm **:data-[slot=badge]:mb-1">
       <StatusBanner
         tone={ownRequest.state === "pending" ? "warning" : "neutral"}
         icon={
@@ -691,12 +700,12 @@ export function RegistrationPanel({
         !(own.state === "waitlisted" && !own.fee && !own.splitClaim));
     return (
       <section
-        className="registration-panel game-day-panel"
+        className="grid gap-3 [&>p]:m-0 [&>p]:text-sm gap-4 **:data-[slot=facts]:mb-0 **:data-[slot=session-instructions]:mb-0"
         aria-label="Your registration"
       >
         {/* The headline already says where they stand, and the ticket below
             carries the date, so the banner holds just the one line. */}
-        <div className="own-status">
+        <div className="grid gap-3 [&>p]:m-0 [&>p]:text-sm **:data-[slot=badge]:mb-1">
           <StatusBanner tone={ownTone} icon={ownIcon}>
             <h2 ref={statusHeading} tabIndex={-1}>
               {gameDayHeadline(own)}
@@ -704,7 +713,7 @@ export function RegistrationPanel({
           </StatusBanner>
         </div>
         {gameDay.details}
-        <div className="rounded-lg border border-border bg-surface p-5 game-day-coming">
+        <div className="rounded-lg border border-border bg-surface p-5 grid grid-cols-[1fr_auto] items-center justify-items-start gap-1 [&>p]:m-0 [&>p]:font-semibold">
           <p>{comingLine(view.counts.confirmedSeats, Number(d.capacity))}</p>
           {view.rosterAllowed ? (
             <>
@@ -717,14 +726,18 @@ export function RegistrationPanel({
               >
                 {"See who's coming"}
               </button>
-              <div id="game-day-roster" className="roster" hidden={!rosterOpen}>
+              <div
+                id="game-day-roster"
+                className="col-span-full justify-self-stretch [&_h2]:text-xl [&_ul]:m-0 [&_ul]:list-none [&_ul]:p-0 [&_li]:grid [&_li]:gap-0.5 [&_li]:border-t [&_li]:border-border [&_li]:py-2 [&_li]:text-sm [&_li_span]:text-text-muted"
+                hidden={!rosterOpen}
+              >
                 {rosterList}
               </div>
             </>
           ) : null}
         </div>
         {showFee ? (
-          <div className="rounded-lg border border-border bg-surface p-5 game-day-fee">
+          <div className="rounded-lg border border-border bg-surface p-5 grid gap-3 [&>p]:m-0">
             {feeBlock}
           </div>
         ) : null}
@@ -732,7 +745,7 @@ export function RegistrationPanel({
         {/* Held open while a request's error or recovery shows, so a
             collapsed More can't hide it. */}
         <details
-          className="game-day-more"
+          className="group/more border-t border-border [&>summary]:flex [&>summary]:min-h-touch [&>summary]:cursor-pointer [&>summary]:list-none [&>summary]:items-center [&>summary]:gap-2 [&>summary]:font-semibold [&>summary::-webkit-details-marker]:hidden"
           open={moreOpen || requestShowing}
           onToggle={(e) => setMoreOpen(e.currentTarget.open)}
         >
@@ -743,12 +756,12 @@ export function RegistrationPanel({
           >
             More
             <CaretDownIcon
-              className="game-day-more__caret"
+              className="transition-transform duration-200 ease-standard group-open/more:rotate-180"
               size={18}
               aria-hidden="true"
             />
           </summary>
-          <div className="game-day-more__body">
+          <div className="grid justify-items-start gap-4 py-3 *:justify-self-stretch [&>a]:justify-self-start [&>button]:justify-self-start">
             {gameDay.more}
             <ShareButton title={d.title} />
             {guestChange}
@@ -768,9 +781,12 @@ export function RegistrationPanel({
     );
   }
   return (
-    <section className="registration-panel" aria-label="Your registration">
+    <section
+      className="grid gap-3 [&>p]:m-0 [&>p]:text-sm"
+      aria-label="Your registration"
+    >
       {own ? (
-        <div className="own-status">
+        <div className="grid gap-3 [&>p]:m-0 [&>p]:text-sm **:data-[slot=badge]:mb-1">
           <StatusBanner tone={ownTone} icon={ownIcon}>
             <span className="inline-flex items-center gap-1 rounded-full bg-surface-sunken px-3 py-0.5 text-xs font-semibold text-text-muted bg-current/14 text-inherit">
               {event.state !== "published"
@@ -864,7 +880,7 @@ export function RegistrationPanel({
                   </CheckField>
                   {guest ? (
                     <Field id="guest-name" label="Guest name (optional)">
-                      <input
+                      <Input
                         id="guest-name"
                         value={guestName}
                         onChange={(e) => setGuestName(e.target.value)}
@@ -958,7 +974,7 @@ export function RegistrationPanel({
           "primary",
         )
       ) : !own ? (
-        <div className="own-status">
+        <div className="grid gap-3 [&>p]:m-0 [&>p]:text-sm **:data-[slot=badge]:mb-1">
           <StatusBanner tone="neutral" icon={<LockSimpleIcon size={22} />}>
             <h2>
               {event.registrationWindow === "closed"
@@ -990,7 +1006,7 @@ export function RegistrationPanel({
       {!hasAction && mutation.error ? <Notice>{mutation.error}</Notice> : null}
       {!hasAction ? mutation.recovery : null}
       <button
-        className={buttonClass({ variant: "link" })}
+        className={cx(buttonClass({ variant: "link" }), "justify-self-end")}
         disabled={mutation.busy || mutation.uncertain}
         onClick={refresh}
       >
@@ -1053,7 +1069,7 @@ export function RegistrationPanel({
           onUndoReview={setUndoPartyId}
         />
       ) : view.rosterAllowed ? (
-        <section className="rounded-lg border border-border bg-surface p-5 roster">
+        <section className="rounded-lg border border-border bg-surface p-5 [&_h2]:text-xl [&_ul]:m-0 [&_ul]:list-none [&_ul]:p-0 [&_li]:grid [&_li]:gap-0.5 [&_li]:border-t [&_li]:border-border [&_li]:py-2 [&_li]:text-sm [&_li_span]:text-text-muted">
           <h2>
             {event.state === "cancelled"
               ? "Registration records"

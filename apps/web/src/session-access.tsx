@@ -1,6 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
-import { buttonClass, Field, Notice, Pending, Sheet } from "@rallypoint/ui";
+import {
+  buttonClass,
+  Field,
+  Input,
+  Notice,
+  Pending,
+  Sheet,
+} from "@rallypoint/ui";
 import type { SessionAccessList } from "@rallypoint/domain/session";
 import { useApi } from "./use-api";
 import { TitlePill } from "./badges";
@@ -120,7 +127,7 @@ function AccessOptions({
         label="Search"
         help="Your groups and people you know."
       >
-        <input
+        <Input
           id="access-search"
           aria-describedby="access-search-help"
           value={query}
