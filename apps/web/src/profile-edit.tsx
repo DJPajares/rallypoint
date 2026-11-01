@@ -25,6 +25,7 @@ import {
   Notice,
   Pending,
   Sheet,
+  useToast,
 } from "@rallypoint/ui";
 import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
@@ -170,7 +171,11 @@ function EditForm({
   const listed = catalog.filter((a) => a.listed);
   const { session } = useAuth();
   const router = useRouter();
-  const [initial] = useState(() => startingDraft(profile, listed));
+  const toast = useToast();
+  // What is saved now: the page stays open after a save, so the next save and
+  // the "changed" check compare against this, not the profile first loaded.
+  const [saved, setSaved] = useState(profile);
+  const [initial, setInitial] = useState(() => startingDraft(profile, listed));
   const [draft, setDraft] = useState(initial);
   const [errors, setErrors] = useState<ProfileError[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
@@ -247,7 +252,7 @@ function EditForm({
           // An untouched sign-in name stays linked to the account, so a later
           // change to it still shows; anything else becomes the saved name.
           name:
-            !profile.nameIsCustom && result.value.name === profile.name
+            !saved.nameIsCustom && result.value.name === saved.name
               ? ""
               : (result.value.name ?? ""),
           activities: result.value.activities,
@@ -256,10 +261,20 @@ function EditForm({
       });
       const body = await response.json();
       if (response.ok) {
-        router.push("/profile?saved=1");
-        return;
-      }
-      if (Array.isArray(body.errors) && body.errors.length)
+        // Stay on the page, showing what was stored (spelling tidied by the
+        // server), with nothing left unsaved.
+        const stored = body.profile as MyProfile;
+        const next = startingDraft(stored, listed);
+        next.custom = next.custom.map((row) => ({
+          ...row,
+          id: nextId.current++,
+        }));
+        setSaved(stored);
+        setInitial(next);
+        setDraft(next);
+        toast("Profile saved.");
+        focus.current = "save";
+      } else if (Array.isArray(body.errors) && body.errors.length)
         showErrors(body.errors as ProfileError[]);
       else if (response.status >= 500) unconfirmed();
       else {

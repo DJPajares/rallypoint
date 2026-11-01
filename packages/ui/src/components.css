@@ -608,3 +608,119 @@ a.rp-row__main {
     transition: none;
   }
 }
+
+/* Toasts (Base UI Toast): pop in at the top, stack with the newest in front,
+   leave on their own or with a swipe. The icon and words carry the tone. */
+.rp-toasts {
+  position: fixed;
+  z-index: var(--layer-skip);
+  top: calc(var(--space-3) + var(--safe-top));
+  left: 50%;
+  width: min(calc(100vw - 2 * var(--space-4)), 24rem);
+  transform: translateX(-50%);
+}
+.rp-toast {
+  --peek: var(--space-2);
+  --shrink: calc(max(0, 1 - (var(--toast-index) * 0.06)));
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: calc(100 - var(--toast-index));
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+  transform-origin: top center;
+  transform: translateX(var(--toast-swipe-movement-x))
+    translateY(
+      calc(var(--toast-swipe-movement-y) + (var(--toast-index) * var(--peek)))
+    )
+    scale(var(--shrink));
+  transition:
+    transform var(--duration-base) var(--ease-standard),
+    opacity var(--duration-base) var(--ease-standard);
+  user-select: none;
+}
+/* Hovered or focused, the stack opens into a list. */
+.rp-toast[data-expanded] {
+  transform: translateX(var(--toast-swipe-movement-x))
+    translateY(
+      calc(
+        var(--toast-offset-y) + (var(--toast-index) * var(--peek)) +
+          var(--toast-swipe-movement-y)
+      )
+    );
+}
+.rp-toast[data-swiping] {
+  transition: none;
+}
+.rp-toast[data-starting-style],
+.rp-toast[data-ending-style] {
+  opacity: 0;
+  transform: translateY(-150%);
+}
+.rp-toast[data-ending-style][data-swipe-direction="right"] {
+  transform: translateX(calc(var(--toast-swipe-movement-x) + 150%));
+}
+.rp-toast[data-limited] {
+  opacity: 0;
+}
+.rp-toast__content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+}
+/* Only the front toast's words show while stacked. */
+.rp-toast:not([data-expanded]) .rp-toast__content[data-behind] {
+  opacity: 0;
+}
+.rp-toast__icon {
+  display: inline-flex;
+  flex: none;
+}
+.rp-toast[data-type="success"] .rp-toast__icon {
+  color: var(--color-success);
+}
+.rp-toast[data-type="danger"] .rp-toast__icon {
+  color: var(--color-danger);
+}
+.rp-toast__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+.rp-toast__close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.rp-toast__close:hover {
+  background: var(--color-surface-sunken);
+}
+.rp-toast__close:focus-visible {
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: calc(var(--focus-width) * -1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rp-toast {
+    transition: opacity var(--duration-fast) linear;
+  }
+  .rp-toast[data-starting-style],
+  .rp-toast[data-ending-style] {
+    transform: none;
+  }
+}
