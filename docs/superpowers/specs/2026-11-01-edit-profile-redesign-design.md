@@ -9,7 +9,7 @@
 
 ## The design (D-15 "Quiet, not boring", D-21 one orange action)
 
-- **Name** — one field. Help: anyone with your profile link sees your name and activities.
+- **Name** — one field. Help: anyone with your profile link sees your name, what you play and your levels (self-ratings are public on purpose, so others can gauge level; "No rating" keeps one private).
 - **Activities you play** — one inset list (`rp-list`) of the catalog's listed activities (`/api/activities`, D-23).
   - Each row is one tap target: the activity icon, its name and a trailing state that uses words and an icon, not colour alone: **＋ Add** when off and **✓ Playing** when on. Underneath it is a native checkbox named by the activity.
   - When on, the row's subtitle shows the rating ("Intermediate" or "Not rated"), and a level choice opens directly below: native radios for Beginner, Intermediate and Advanced. Each shows its description for that activity, followed by **No rating**. Arrow keys move between them, and the group is named "Your Badminton level".

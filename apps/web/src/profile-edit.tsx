@@ -361,7 +361,8 @@ function EditForm({
               ) : null}
             </Field>
             <p id="profile-visible" className="rp-help">
-              Anyone with your profile link sees your name and what you play.
+              Anyone with your profile link sees your name, what you play and
+              your levels.
             </p>
           </div>
 
