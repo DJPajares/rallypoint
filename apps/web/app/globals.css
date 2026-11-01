@@ -1,0 +1,10 @@
+/* The app's one stylesheet entry (D-24): Tailwind, shadcn's variants and
+   animations, then the RallyPoint theme. */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@rallypoint/ui/shadcn.css";
+@import "@rallypoint/ui/theme.css";
+
+/* Tailwind reads class names from the app and the shared UI package. */
+@source "../src";
+@source "../../../packages/ui/src";

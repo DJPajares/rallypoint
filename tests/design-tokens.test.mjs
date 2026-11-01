@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-// The look is decided in packages/ui/src/tokens.css (and tokens.ts for the
+// The look is decided in packages/ui/src/theme.css (and tokens.ts for the
 // few values JavaScript needs). Everywhere else must use
 // its tokens, so a restyle stays a one-file change.
 const roots = ["packages/ui/src", "apps/web/src", "apps/web/app"];
@@ -11,7 +11,7 @@ const files = roots.flatMap(function walk(dir) {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) return walk(path);
     return /\.(css|tsx?)$/.test(entry.name) &&
-      !/packages\/ui\/src\/tokens\.(css|ts)$/.test(path)
+      !/packages\/ui\/src\/(theme\.css|tokens\.ts|shadcn\.css)$/.test(path)
       ? [path]
       : [];
   });
@@ -22,6 +22,10 @@ const rules = [
   ["a literal font-size", /font-size:(?!\s*(?:var\(|inherit))/],
   ["a literal border-radius", /border-radius:(?![^;]*var\(|\s*(?:0|inherit);)/],
   ["a literal box-shadow", /box-shadow:(?!\s*(?:var\(|none))/],
+  // Tailwind (D-24): theme utilities only, never one-off values.
+  ["an arbitrary colour class", /-\[(?:#|rgba?\(|hsla?\(|oklch\()/],
+  ["an arbitrary font size class", /\btext-\[\d/],
+  ["an arbitrary radius class", /\brounded(?:-[a-z]+)?-\[\d/],
 ];
 test("styles use design tokens instead of literal values", () => {
   const problems = [];

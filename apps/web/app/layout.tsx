@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Bricolage_Grotesque, Inter } from "next/font/google";
 import { themeColor } from "@rallypoint/ui";
 import { Providers } from "./providers";
+import "./globals.css";
 import "@rallypoint/ui/styles.css";
 import "@/styles/frame.css";
 import "@/styles/pages.css";

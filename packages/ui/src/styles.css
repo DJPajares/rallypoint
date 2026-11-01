@@ -1,5 +1,3 @@
-/* Import once, from the app's root layout. */
-@import "./tokens.css";
-@import "./base.css";
+/* Legacy component styles, removed as components move to Tailwind (D-24). */
 @import "./components.css";
 @import "./fields.css";

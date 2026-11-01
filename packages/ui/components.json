@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "base-nova",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "../../apps/web/app/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true
+  },
+  "iconLibrary": "phosphor",
+  "aliases": {
+    "components": "@rallypoint/ui/components",
+    "utils": "@rallypoint/ui/lib/utils",
+    "hooks": "@rallypoint/ui/hooks",
+    "lib": "@rallypoint/ui/lib",
+    "ui": "@rallypoint/ui/components/ui"
+  }
+}
