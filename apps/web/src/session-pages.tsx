@@ -13,6 +13,7 @@ import { RegistrationPanel } from "./registration-panel";
 import { PaymentInstructionsEditor } from "./payment-instructions";
 import { ActivityPicker } from "./activity-picker";
 import { AccessList } from "./session-access";
+import { ArrowsClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowsClockwise";
 import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import { ClockCountdownIcon } from "@phosphor-icons/react/dist/csr/ClockCountdown";
 import { CoinsIcon } from "@phosphor-icons/react/dist/csr/Coins";
@@ -29,6 +30,7 @@ import {
   ActivityIcon,
   AffixInput,
   buttonClass,
+  cx,
   DateTimeField,
   Field,
   Input,
@@ -1265,6 +1267,7 @@ function SignedInSession({
             onChanged={setChanged}
             onChange={onChange}
             mainTarget={main}
+            lastView={lastView}
             gameDay={
               gameDay ? { details: null, notes: null, more: null } : undefined
             }
@@ -1394,6 +1397,17 @@ export function SharedSessionPage() {
                   <ShareButton title={d.title} />
                 </StickyActions>
               </div>
+              <button
+                type="button"
+                className={cx(
+                  buttonClass({ variant: "link" }),
+                  "justify-self-end",
+                )}
+                onClick={result.retry}
+              >
+                <ArrowsClockwiseIcon size={18} aria-hidden="true" />
+                Refresh
+              </button>
             </aside>
             <div className={mainClass}>
               <SessionFacts shared={shared} />

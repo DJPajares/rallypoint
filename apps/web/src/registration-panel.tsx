@@ -176,6 +176,7 @@ export function RegistrationPanel({
   onChange,
   gameDay,
   mainTarget,
+  lastView,
 }: {
   event: SharedSession;
   view: RegistrationView | null;
@@ -199,6 +200,11 @@ export function RegistrationPanel({
    * then. Left out, the tools stay in the panel.
    */
   mainTarget?: HTMLElement | null;
+  /**
+   * The last view known, kept while a read is out. A host's card stays up
+   * from it, so Share and Manage session stay in reach.
+   */
+  lastView?: RegistrationView | null;
 }) {
   const [guest, setGuest] = useState(false),
     [guestName, setGuestName] = useState("");
@@ -216,9 +222,10 @@ export function RegistrationPanel({
   const joinArea = useRef<HTMLDivElement>(null);
   // Revealing the join form moves focus into it, so it isn't lost.
   useEffect(() => {
-    if (hostJoining)
+    // A phone's sheet moves focus itself.
+    if (hostJoining && !phone)
       joinArea.current?.querySelector<HTMLElement>("input, button")?.focus();
-  }, [hostJoining]);
+  }, [hostJoining, phone]);
   const mutation = useMutation<{ registration: RegistrationView }>((value) => {
     setSheetOpen(false);
     onChanged(value.registration);
@@ -248,6 +255,67 @@ export function RegistrationPanel({
     onRefresh();
     onChange();
   }
+  // The host's card. While a read is out it keeps Share and Manage session
+  // from the last known view; Invite, Join and Refresh wait for a live one.
+  function hostCard(sessionId: string | undefined, live?: { join: boolean }) {
+    return (
+      <div className="grid justify-items-start gap-3 rounded-lg border border-border bg-surface p-5">
+        <div className="flex items-center justify-between gap-2 justify-self-stretch">
+          <h2 className="m-0 text-lg">You’re hosting</h2>
+          {live ? (
+            <button
+              type="button"
+              className={iconButtonClass()}
+              aria-label="Refresh"
+              title="Refresh"
+              disabled={mutation.busy || mutation.uncertain}
+              onClick={refresh}
+            >
+              <ArrowsClockwiseIcon size={18} aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap gap-2 max-[520px]:w-full max-[520px]:*:w-full">
+          {event.state === "published" ? (
+            <ShareButton title={d.title} primary />
+          ) : null}
+          {sessionId ? (
+            <Link
+              className={buttonClass()}
+              href={`/sessions/${sessionId}/edit`}
+            >
+              <PencilSimpleIcon size={18} aria-hidden="true" />
+              Manage session
+            </Link>
+          ) : null}
+          {live && sessionId && event.state === "published" ? (
+            <button
+              type="button"
+              className={buttonClass()}
+              aria-haspopup="dialog"
+              onClick={() => setInviting(true)}
+            >
+              <UserPlusIcon size={18} aria-hidden="true" />
+              Invite people
+            </button>
+          ) : null}
+        </div>
+        {live?.join ? (
+          <button
+            type="button"
+            className={buttonClass({ variant: "link" })}
+            onClick={() => {
+              setHostJoining(true);
+              // On a phone the join form lives in a sheet: open it now.
+              if (phone) setSheetOpen(true);
+            }}
+          >
+            Join as a player
+          </button>
+        ) : null}
+      </div>
+    );
+  }
   // A read in flight or failed has no view, unless a change already gave one.
   if (!view) {
     const wait = loading ? (
@@ -255,6 +323,13 @@ export function RegistrationPanel({
     ) : error ? (
       <Notice retry={refresh}>{error}</Notice>
     ) : null;
+    if (lastView?.canManage)
+      return (
+        <section className="grid gap-3" aria-label="Your registration">
+          {hostCard(lastView.sessionId)}
+          {wait}
+        </section>
+      );
     // On game day the time, place and notes stay put while the read is out.
     return gameDay ? (
       <section
@@ -726,7 +801,7 @@ export function RegistrationPanel({
         className="grid gap-3 [&>p]:m-0 [&>p]:text-sm gap-4 **:data-[slot=facts]:mb-0 **:data-[slot=session-instructions]:mb-0"
         aria-label="Your registration"
       >
-        {/* The headline already says where they stand, and the ticket below
+        {/* The headline already says where they stand, and the hero above
             carries the date, so the banner holds just the one line. */}
         <div className="grid gap-3 [&>p]:m-0 [&>p]:text-sm **:data-[slot=badge]:mb-1">
           <StatusBanner tone={ownTone} icon={ownIcon}>
@@ -845,7 +920,11 @@ export function RegistrationPanel({
           invites={view.invites ?? []}
           sheetOpen={inviting}
           onSheetChange={setInviting}
-          onChanged={refresh}
+          onChanged={() => {
+            // The sheet closes once the invite is sent.
+            setInviting(false);
+            refresh();
+          }}
         />
       ) : null}
       {view.canManage && event.state !== "cancelled" ? (
@@ -872,61 +951,11 @@ export function RegistrationPanel({
       className="grid gap-3 [&>p]:m-0 [&>p]:text-sm"
       aria-label="Your registration"
     >
-      {host ? (
-        <div className="grid justify-items-start gap-3 rounded-lg border border-border bg-surface p-5">
-          <div className="flex items-center justify-between gap-2 justify-self-stretch">
-            <h2 className="m-0 text-lg">You’re hosting</h2>
-            <button
-              type="button"
-              className={iconButtonClass()}
-              aria-label="Refresh"
-              title="Refresh"
-              disabled={mutation.busy || mutation.uncertain}
-              onClick={refresh}
-            >
-              <ArrowsClockwiseIcon size={18} aria-hidden="true" />
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2 max-[520px]:w-full max-[520px]:*:w-full">
-            {event.state === "published" ? (
-              <ShareButton title={d.title} primary />
-            ) : null}
-            {view.sessionId ? (
-              <Link
-                className={buttonClass()}
-                href={`/sessions/${view.sessionId}/edit`}
-              >
-                <PencilSimpleIcon size={18} aria-hidden="true" />
-                Manage session
-              </Link>
-            ) : null}
-            {view.sessionId && event.state === "published" ? (
-              <button
-                type="button"
-                className={buttonClass()}
-                aria-haspopup="dialog"
-                onClick={() => setInviting(true)}
-              >
-                <UserPlusIcon size={18} aria-hidden="true" />
-                Invite people
-              </button>
-            ) : null}
-          </div>
-          {joinHidden && canJoin ? (
-            <button
-              type="button"
-              className={buttonClass({ variant: "link" })}
-              onClick={() => {
-                setHostJoining(true);
-                // On a phone the join form lives in a sheet: open it now.
-                if (phone) setSheetOpen(true);
-              }}
-            >
-              Join as a player
-            </button>
-          ) : null}
-        </div>
-      ) : null}
+      {host
+        ? hostCard(view.sessionId, {
+            join: joinHidden && canJoin,
+          })
+        : null}
       {own ? (
         <div className="grid gap-3 [&>p]:m-0 [&>p]:text-sm **:data-[slot=badge]:mb-1">
           <StatusBanner tone={ownTone} icon={ownIcon}>
@@ -1169,10 +1198,7 @@ export function RegistrationPanel({
       {/* A host refreshes from their card; everyone else from this link. */}
       {host ? null : (
         <button
-          className={cx(
-            buttonClass({ variant: "link" }),
-            "justify-self-end max-md:hidden",
-          )}
+          className={cx(buttonClass({ variant: "link" }), "justify-self-end")}
           disabled={mutation.busy || mutation.uncertain}
           onClick={refresh}
         >
