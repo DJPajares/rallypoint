@@ -2,13 +2,14 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { activityFor, matchActivity } from "@rallypoint/domain/activities";
 import type { Activity } from "@rallypoint/domain/activities";
 import {
+  levelChoices,
   levelLabel,
   normalizeProfile,
-  skillLevels,
 } from "@rallypoint/domain/profile";
 import type {
   MyProfile,
@@ -17,8 +18,9 @@ import type {
   SkillLevel,
 } from "@rallypoint/domain/profile";
 import {
+  ActivityIcon,
   buttonClass,
-  CheckField,
+  cx,
   Field,
   Notice,
   Pending,
@@ -83,42 +85,48 @@ function activitiesOf(draft: Draft): ProfileActivity[] {
 const snapshot = (draft: Draft) =>
   JSON.stringify({ name: draft.name, activities: activitiesOf(draft) });
 
-/** A level choice, with what the chosen level means for this activity. */
-function LevelSelect({
-  id,
-  label,
+/**
+ * The self-rating for one activity: every level with what it means for that
+ * activity, shown before choosing, then "No rating". Native radios, so arrow
+ * keys move between them and the group is announced by its legend.
+ */
+function LevelPick({
+  name,
+  activityName,
+  activity,
   value,
   onChange,
-  activity,
 }: {
-  id: string;
-  label: string;
+  name: string;
+  activityName: string;
+  activity: Activity | null;
   value: Level;
   onChange: (value: Level) => void;
-  activity: Activity | null;
 }) {
-  const meaning = value && activity ? activity.levels[value] : "";
   return (
-    <span className="level-choice">
-      <select
-        aria-label={label}
-        aria-describedby={meaning ? `${id}-meaning` : undefined}
-        value={value}
-        onChange={(event) => onChange(event.target.value as Level)}
-      >
-        <option value="">No level</option>
-        {skillLevels.map((level) => (
-          <option key={level} value={level}>
-            {levelLabel[level]}
-          </option>
-        ))}
-      </select>
-      {meaning ? (
-        <span id={`${id}-meaning`} className="rp-help level-choice__meaning">
-          {meaning}
-        </span>
-      ) : null}
-    </span>
+    <fieldset className="level-pick">
+      <legend className="level-pick__legend">
+        Your level
+        <span className="rp-sr-only"> in {activityName}</span>
+      </legend>
+      {levelChoices(activity).map((choice) => (
+        <label key={choice.value || "none"} className="level-pick__option">
+          <input
+            type="radio"
+            name={name}
+            value={choice.value}
+            checked={value === choice.value}
+            onChange={() => onChange(choice.value)}
+          />
+          <span className="level-pick__text">
+            <span className="level-pick__label">{choice.label}</span>
+            {choice.meaning ? (
+              <span className="level-pick__meaning">{choice.meaning}</span>
+            ) : null}
+          </span>
+        </label>
+      ))}
+    </fieldset>
   );
 }
 
@@ -191,6 +199,14 @@ function EditForm({
     else document.getElementById(target)?.focus();
   });
 
+  // Closing or reloading the tab with changes gets the browser's own warning.
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
   function showErrors(next: ProfileError[]) {
     setErrors(next);
     focus.current = next.some((e) => e.field === "name")
@@ -240,7 +256,7 @@ function EditForm({
       });
       const body = await response.json();
       if (response.ok) {
-        router.push("/profile");
+        router.push("/profile?saved=1");
         return;
       }
       if (Array.isArray(body.errors) && body.errors.length)
@@ -303,99 +319,159 @@ function EditForm({
       <div className="page-head">
         <h1>Edit profile</h1>
       </div>
-      <form className="rp-card" noValidate onSubmit={save}>
+      <form className="profile-form" noValidate onSubmit={save}>
         <fieldset disabled={busy}>
-          <Field id="profile-name" label="Name">
-            <input
-              ref={nameInput}
-              id="profile-name"
-              value={draft.name}
-              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-              autoComplete="nickname"
-              aria-invalid={nameError ? true : undefined}
-              aria-describedby={nameError ? "profile-name-error" : undefined}
-            />
-            {nameError ? (
-              <p id="profile-name-error" className="profile-error">
-                {nameError}
-              </p>
-            ) : null}
-          </Field>
-          <fieldset
-            className="profile-activities"
-            aria-describedby={
-              activityError
-                ? "activities-error activities-help"
-                : "activities-help"
-            }
-          >
-            <legend className="rp-field__label">Activities</legend>
-            {listed.map(({ name, ...activity }) => {
-              const preset = draft.presets[name]!;
-              return (
-                <div key={name} className="activity-row">
-                  <CheckField
-                    checked={preset.on}
-                    onCheckedChange={(on) => setPreset(name, { on })}
-                  >
-                    {name}
-                  </CheckField>
-                  {preset.on ? (
-                    <LevelSelect
-                      id={`level-${activity.key}`}
-                      label={`${name} level`}
-                      value={preset.level}
-                      onChange={(level) => setPreset(name, { level })}
-                      activity={{ name, ...activity }}
-                    />
-                  ) : null}
-                </div>
-              );
-            })}
-            <div role="group" aria-label="Your own activities">
-              {draft.custom.map((row, index) => (
-                <div key={row.id} className="activity-row activity-row--own">
-                  <input
-                    id={`custom-${row.id}`}
-                    aria-label={`Your own activity ${index + 1}`}
-                    aria-invalid={activityError ? true : undefined}
-                    value={row.name}
-                    onChange={(e) =>
-                      setCustom(row.id, { name: e.target.value })
-                    }
-                  />
-                  <LevelSelect
-                    id={`level-custom-${row.id}`}
-                    label={`${row.name.trim() || `Your own activity ${index + 1}`} level`}
-                    value={row.level}
-                    onChange={(level) => setCustom(row.id, { level })}
-                    activity={activityFor(catalog, row.name)}
-                  />
-                  <button
-                    type="button"
-                    className={buttonClass({ variant: "link" })}
-                    aria-label={`Remove ${row.name.trim() || `your own activity ${index + 1}`}`}
-                    onClick={() => removeCustom(row.id)}
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-              {draft.custom.length < maxCustom ? (
-                <button
-                  ref={addButton}
-                  type="button"
-                  className={buttonClass({ variant: "secondary" })}
-                  onClick={addCustom}
-                >
-                  <PlusIcon size={18} aria-hidden="true" />
-                  Add your own
-                </button>
+          <div className="rp-card">
+            <Field id="profile-name" label="Name">
+              <input
+                ref={nameInput}
+                id="profile-name"
+                value={draft.name}
+                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                autoComplete="nickname"
+                aria-invalid={nameError ? true : undefined}
+                aria-describedby={
+                  nameError
+                    ? "profile-name-error profile-visible"
+                    : "profile-visible"
+                }
+              />
+              {nameError ? (
+                <p id="profile-name-error" className="profile-error">
+                  {nameError}
+                </p>
               ) : null}
-            </div>
-            <p id="activities-help" className="rp-help">
-              Your own rating.
+            </Field>
+            <p id="profile-visible" className="rp-help">
+              Anyone with your profile link sees your name and what you play.
             </p>
+          </div>
+
+          <section aria-labelledby="plays-heading">
+            <div className="section-head">
+              <h2 id="plays-heading">Activities you play</h2>
+            </div>
+            <p className="rp-help profile-form__lede">
+              Tap what you play, then rate yourself honestly. A rating is
+              optional.
+            </p>
+            <ul className="rp-list" aria-labelledby="plays-heading">
+              {listed.map((activity) => {
+                const { name, key } = activity;
+                const preset = draft.presets[name]!;
+                return (
+                  <li
+                    key={key}
+                    className={cx("rp-row play-row", preset.on && "is-on")}
+                  >
+                    <label className="play-row__toggle">
+                      <input
+                        type="checkbox"
+                        className="rp-sr-only"
+                        checked={preset.on}
+                        onChange={(e) =>
+                          setPreset(name, { on: e.target.checked })
+                        }
+                      />
+                      <span className="play-row__icon" aria-hidden="true">
+                        <ActivityIcon icon={activity.icon} size={22} />
+                      </span>
+                      <span className="rp-row__text">
+                        <span className="rp-row__title">{name}</span>
+                        {preset.on ? (
+                          <span className="rp-row__sub">
+                            {preset.level
+                              ? levelLabel[preset.level]
+                              : "Not rated"}
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="play-row__state" aria-hidden="true">
+                        {preset.on ? (
+                          <>
+                            <CheckIcon size={16} weight="bold" />
+                            Playing
+                          </>
+                        ) : (
+                          <>
+                            <PlusIcon size={16} weight="bold" />
+                            Add
+                          </>
+                        )}
+                      </span>
+                    </label>
+                    {preset.on ? (
+                      <LevelPick
+                        name={`level-${key}`}
+                        activityName={name}
+                        activity={activity}
+                        value={preset.level}
+                        onChange={(level) => setPreset(name, { level })}
+                      />
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+
+          <section aria-labelledby="own-heading">
+            <div className="section-head">
+              <h2 id="own-heading">Something else?</h2>
+            </div>
+            <p className="rp-help profile-form__lede">
+              Add up to {maxCustom} activities that aren’t listed.
+            </p>
+            {draft.custom.length ? (
+              <ul className="rp-list" aria-labelledby="own-heading">
+                {draft.custom.map((row, index) => {
+                  const label = `Your own activity ${index + 1}`;
+                  const named = row.name.trim() || label.toLowerCase();
+                  return (
+                    <li key={row.id} className="rp-row own-row">
+                      <div className="own-row__line">
+                        <input
+                          id={`custom-${row.id}`}
+                          aria-label={label}
+                          aria-invalid={activityError ? true : undefined}
+                          placeholder="Activity name"
+                          value={row.name}
+                          onChange={(e) =>
+                            setCustom(row.id, { name: e.target.value })
+                          }
+                        />
+                        <button
+                          type="button"
+                          className={buttonClass({ variant: "link" })}
+                          aria-label={`Remove ${named}`}
+                          onClick={() => removeCustom(row.id)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <LevelPick
+                        name={`level-custom-${row.id}`}
+                        activityName={row.name.trim() || label}
+                        activity={activityFor(catalog, row.name)}
+                        value={row.level}
+                        onChange={(level) => setCustom(row.id, { level })}
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+            {draft.custom.length < maxCustom ? (
+              <button
+                ref={addButton}
+                type="button"
+                className={cx(buttonClass({ variant: "secondary" }), "own-add")}
+                onClick={addCustom}
+              >
+                <PlusIcon size={18} aria-hidden="true" />
+                Add your own
+              </button>
+            ) : null}
             {activityError ? (
               <p
                 ref={activitiesError}
@@ -406,9 +482,9 @@ function EditForm({
                 {activityError}
               </p>
             ) : null}
-          </fieldset>
-          <p className="rp-help">Anyone with your profile link can see this.</p>
-          <p className="rp-help">
+          </section>
+
+          <p className="rp-help profile-form__account">
             Signed in as {session?.user.email ?? "your account"}
           </p>
           {problem ? <Notice>{problem}</Notice> : null}
@@ -417,6 +493,7 @@ function EditForm({
               ref={saveButton}
               type="submit"
               className={buttonClass({ variant: "primary" })}
+              aria-busy={busy || undefined}
             >
               {busy ? "Saving…" : "Save"}
             </button>

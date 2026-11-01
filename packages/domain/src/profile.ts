@@ -14,6 +14,31 @@ export const levelLabel: Record<SkillLevel, string> = {
   advanced: "Advanced",
 };
 
+/** One self-rating choice: a level ("" for no rating) and what it means. */
+export interface LevelChoice {
+  value: SkillLevel | "";
+  label: string;
+  meaning: string;
+}
+
+/**
+ * The self-rating choices for an activity, in scale order, each with what it
+ * means for that activity so people can pick honestly; then "No rating",
+ * because a rating is always optional.
+ */
+export function levelChoices(
+  activity: Pick<Activity, "levels"> | null,
+): LevelChoice[] {
+  return [
+    ...skillLevels.map((level) => ({
+      value: level,
+      label: levelLabel[level],
+      meaning: activity?.levels[level] ?? "",
+    })),
+    { value: "", label: "No rating", meaning: "Leave it blank for now." },
+  ];
+}
+
 export interface ProfileActivity {
   name: string;
   level: SkillLevel | null;
