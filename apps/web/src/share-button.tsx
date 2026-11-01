@@ -1,6 +1,6 @@
 "use client";
 import type { ReactNode } from "react";
-import { buttonClass } from "@rallypoint/ui";
+import { buttonClass, cx } from "@rallypoint/ui";
 import { useState } from "react";
 import { ShareNetworkIcon } from "@phosphor-icons/react/dist/csr/ShareNetwork";
 /** Native share sheet where the device has one; otherwise copy the link. */
@@ -9,6 +9,7 @@ export function ShareButton({
   primary = false,
   url,
   label = "Share",
+  className,
 }: {
   title: string;
   /** The page's one orange action, for organizers whose main job is sharing. */
@@ -16,6 +17,8 @@ export function ShareButton({
   /** What to share; the current page when left out. */
   url?: string;
   label?: ReactNode;
+  /** Extra classes for the button, such as its size in a row of actions. */
+  className?: string;
 }) {
   const [status, setStatus] = useState("");
   async function share() {
@@ -42,13 +45,16 @@ export function ShareButton({
     <>
       <button
         type="button"
-        className={buttonClass({ variant: primary ? "primary" : "secondary" })}
+        className={cx(
+          buttonClass({ variant: primary ? "primary" : "secondary" }),
+          className,
+        )}
         onClick={() => void share()}
       >
         <ShareNetworkIcon size={18} aria-hidden="true" />
         {label}
       </button>
-      <span role="status" className="rp-sr-only">
+      <span role="status" className="sr-only">
         {status}
       </span>
     </>

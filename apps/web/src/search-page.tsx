@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { LockSimpleIcon } from "@phosphor-icons/react/dist/csr/LockSimple";
-import { buttonClass, Field, Notice, Pending } from "@rallypoint/ui";
+import { buttonClass, Field, Input, Notice, Pending } from "@rallypoint/ui";
 import { sessionHref, statusLabel } from "@rallypoint/domain/my-sessions";
 import type { MySessionRow } from "@rallypoint/domain/my-sessions";
 import { useApi } from "./use-api";
@@ -35,8 +35,11 @@ export function SearchPage() {
     document.title = "Search · RallyPoint";
   }, []);
   return (
-    <section className="page search" aria-labelledby="search-title">
-      <div className="page-head">
+    <section
+      className="grid gap-4 [&_section]:grid [&_section]:gap-3"
+      aria-labelledby="search-title"
+    >
+      <div className="mb-4">
         <h1 id="search-title">Search</h1>
       </div>
       <Field
@@ -44,7 +47,7 @@ export function SearchPage() {
         label="Search groups and your sessions"
         help="Type at least 2 letters."
       >
-        <input
+        <Input
           id="search"
           type="search"
           aria-describedby="search-help"
@@ -56,12 +59,10 @@ export function SearchPage() {
           onChange={(e) => setQuery(e.target.value)}
         />
       </Field>
-      <p className="rp-help" role="status">
+      <p className="mt-1 mb-0 text-sm text-text-muted" role="status">
         {shown.length >= 2 ? status : ""}
       </p>
-      {shown.length >= 2 ? (
-        <Found query={shown} onStatus={setStatus} />
-      ) : null}
+      {shown.length >= 2 ? <Found query={shown} onStatus={setStatus} /> : null}
     </section>
   );
 }
@@ -93,14 +94,17 @@ function Found({
       {sessions.length ? (
         <section aria-labelledby="search-sessions">
           <h2 id="search-sessions">Your sessions</h2>
-          <ul className="join-requests__list">
+          <ul className="m-0 grid list-none gap-3 p-0">
             {sessions.map((s) => {
               const past = !!s.endsAt && Date.parse(s.endsAt) <= now;
               return (
-                <li key={s.slug} className="join-request access-option">
-                  <p className="join-request__name">
+                <li
+                  key={s.slug}
+                  className="grid gap-2 [&_p]:m-0 grid-cols-[1fr_auto] items-center"
+                >
+                  <p className="flex flex-wrap items-center gap-1 **:data-[slot=title-pill]:ml-0">
                     <strong>{s.title || "Untitled session"}</strong>
-                    <span className="join-request__facts">
+                    <span className="text-sm text-text-muted">
                       {s.startsAt ? `${when(s.startsAt, s.timeZone)} · ` : ""}
                       {statusLabel(s, past)}
                     </span>
@@ -121,21 +125,21 @@ function Found({
       {groups.length ? (
         <section aria-labelledby="search-groups">
           <h2 id="search-groups">Groups</h2>
-          <ul className="join-requests__list">
+          <ul className="m-0 grid list-none gap-3 p-0">
             {groups.map((g, i) => (
               <li
                 key={g.id ?? `private-${i}`}
-                className="join-request access-option"
+                className="grid gap-2 [&_p]:m-0 grid-cols-[1fr_auto] items-center"
               >
-                <p className="join-request__name">
+                <p className="flex flex-wrap items-center gap-1 **:data-[slot=title-pill]:ml-0">
                   <strong>{g.name}</strong>
-                  <span className="join-request__facts">
+                  <span className="text-sm text-text-muted">
                     {g.viewerRole ? (
                       "Your group"
                     ) : g.visibility === "public" ? (
                       "Public"
                     ) : (
-                      <span className="session-private">
+                      <span className="inline-flex items-center gap-0.5">
                         <LockSimpleIcon size={14} aria-hidden="true" />
                         Private · join by invite
                       </span>

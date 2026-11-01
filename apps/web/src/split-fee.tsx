@@ -33,7 +33,7 @@ export function SplitFee({
             ? "No amount due"
             : "Session cost";
   return (
-    <div className="split-fee">
+    <div className="grid min-w-0 gap-3 [&_p]:m-0 [&_summary]:cursor-pointer [&_summary]:font-medium">
       <p>
         <strong>
           {status}
@@ -50,7 +50,7 @@ export function SplitFee({
       {!cancelled &&
       summary.phase === "estimating" &&
       (!claim || (claim.eligible && !claim.waived)) ? (
-        <p className="rp-help">
+        <p className="mt-1 mb-0 text-sm text-text-muted">
           {summary.payingSeats === 0 ? "No split yet. " : ""}
           {money(summary.totalMinor)} total · {summary.payingSeats} paying{" "}
           {summary.payingSeats === 1 ? "seat" : "seats"}, including retained
@@ -59,10 +59,12 @@ export function SplitFee({
         </p>
       ) : null}
       {claim?.waived || (claim && !claim.eligible) ? (
-        <p className="rp-help">Nothing is due for this party.</p>
+        <p className="mt-1 mb-0 text-sm text-text-muted">
+          Nothing is due for this party.
+        </p>
       ) : null}
       {!cancelled && !claim && summary.estimatedSeatRange ? (
-        <p className="rp-help">
+        <p className="mt-1 mb-0 text-sm text-text-muted">
           Current estimate per seat:{" "}
           {money(summary.estimatedSeatRange.minMinor)}
           {summary.estimatedSeatRange.minMinor !==
@@ -73,7 +75,7 @@ export function SplitFee({
         </p>
       ) : null}
       {!cancelled && !claim && summary.phase !== "estimating" ? (
-        <p className="rp-help">
+        <p className="mt-1 mb-0 text-sm text-text-muted">
           {money(summary.totalMinor)} total · {summary.payingSeats} paying
           seats.{" "}
           {summary.phase === "unallocated"
@@ -82,12 +84,14 @@ export function SplitFee({
         </p>
       ) : null}
       {fee?.markedPaid ? (
-        <p className="rp-help">Marked paid by the organizer.</p>
+        <p className="mt-1 mb-0 text-sm text-text-muted">
+          Marked paid by the organizer.
+        </p>
       ) : null}
       {history.length ? (
         <details>
           <summary>Your amount changes</summary>
-          <ul className="split-history">
+          <ul className="grid list-none gap-3 p-0 [&_li]:wrap-anywhere [&_ul]:list-disc [&_ul]:pl-4">
             {history.map((h, i) => (
               <li key={`${h.at}:${i}`}>
                 {h.previousMinor === null

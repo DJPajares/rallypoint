@@ -32,7 +32,10 @@ export function CancelSession({
     onPending(mutation.busy || mutation.uncertain);
   }, [mutation.busy, mutation.uncertain, onPending]);
   return (
-    <section className="rp-card" aria-label="Cancel session">
+    <section
+      className="rounded-lg border border-border bg-surface p-5"
+      aria-label="Cancel session"
+    >
       <button
         type="button"
         className={buttonClass()}
@@ -56,7 +59,7 @@ export function CancelSession({
             outside RallyPoint.
           </p>
         ) : null}
-        <div className="fee-actions">
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             className={buttonClass()}
@@ -96,9 +99,11 @@ export function CancelledRoster({ slug }: { slug: string }) {
   const roster = result.data.registration.roster;
   const emails = cancellationEmailWords(result.data.registration.emailSummary);
   return (
-    <section className="rp-card roster">
+    <section className="rounded-lg border border-border bg-surface p-5 [&_h2]:text-xl [&_ul]:m-0 [&_ul]:list-none [&_ul]:p-0 [&_li]:grid [&_li]:gap-0.5 [&_li]:border-t [&_li]:border-border [&_li]:py-2 [&_li]:text-sm [&_li_span]:text-text-muted">
       <h2>Registration records</h2>
-      {emails ? <p className="rp-help">{emails}</p> : null}
+      {emails ? (
+        <p className="mt-1 mb-0 text-sm text-text-muted">{emails}</p>
+      ) : null}
       {roster.length ? (
         <ul>
           {roster.map((p) => (

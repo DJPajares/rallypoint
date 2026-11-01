@@ -74,35 +74,43 @@ export function JoinRequests({
   if (!requests.length && !said && !mutation.error && !mutation.uncertain)
     return null;
   return (
-    <section className="join-requests" aria-labelledby="join-requests-title">
+    <section
+      className="mt-6 grid gap-3 [&_h2]:m-0"
+      aria-labelledby="join-requests-title"
+    >
       <h2 id="join-requests-title">
         Requests{requests.length ? ` (${requests.length})` : ""}
       </h2>
       {said ? (
-        <p ref={note} tabIndex={-1} role="status" className="game-day__status">
+        <p ref={note} tabIndex={-1} role="status" className="m-0 text-sm">
           {said}
         </p>
       ) : null}
       {mutation.error ? <Notice>{mutation.error}</Notice> : null}
       {mutation.recovery}
-      <ul className="join-requests__list">
+      <ul className="m-0 grid list-none gap-3 p-0">
         {requests.map((r) => (
-          <li key={r.id} className="rp-card join-request">
-            <p className="join-request__name">
+          <li
+            key={r.id}
+            className="rounded-lg border border-border bg-surface p-5 grid gap-2 [&_p]:m-0"
+          >
+            <p className="flex flex-wrap items-center gap-1 **:data-[slot=title-pill]:ml-0">
               <strong>
                 <PersonName name={r.name} profileId={r.profileId} />
               </strong>
               <TitlePill title={r.title} />
             </p>
-            <p className="join-request__facts">
+            <p className="text-sm text-text-muted">
               {r.level ? `${levelLabel[r.level]} · ` : ""}
               Played {r.played} · Hosted {r.hosted}
             </p>
-            <p className="join-request__facts">
+            <p className="text-sm text-text-muted">
               Played in your sessions: {r.playedWithYou}
             </p>
             {r.seats === 2 ? <p>+1: {r.guestName || "Guest"}</p> : null}
-            <p className="join-request__facts">Asked {asked(r.askedAt, now)}</p>
+            <p className="text-sm text-text-muted">
+              Asked {asked(r.askedAt, now)}
+            </p>
             <p>
               <strong>
                 {r.needsConfirm
@@ -113,8 +121,8 @@ export function JoinRequests({
               </strong>
             </p>
             {declining === r.id ? (
-              <div className="fee-actions">
-                <p className="join-request__confirm">
+              <div className="flex flex-wrap gap-2">
+                <p className="basis-full">
                   Decline {r.name}? They can’t ask again for this session.
                 </p>
                 <button
@@ -135,7 +143,7 @@ export function JoinRequests({
                 </button>
               </div>
             ) : (
-              <div className="fee-actions">
+              <div className="flex flex-wrap gap-2">
                 {r.needsConfirm ? null : (
                   <button
                     type="button"
@@ -161,8 +169,8 @@ export function JoinRequests({
       </ul>
       {requests.length >= 2 ? (
         declining === "rest" ? (
-          <div className="fee-actions">
-            <p className="join-request__confirm">
+          <div className="flex flex-wrap gap-2">
+            <p className="basis-full">
               Decline all {requests.length} requests? They can’t ask again for
               this session.
             </p>

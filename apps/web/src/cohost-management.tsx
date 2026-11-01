@@ -26,9 +26,12 @@ function People({
 }) {
   const label = action === "add" ? "Make co-host" : "Remove co-host";
   return (
-    <ul className="cohost-list">
+    <ul className="m-0 grid list-none gap-3 p-0">
       {people.map((person) => (
-        <li key={person.profileId} className="rp-card cohost-row">
+        <li
+          key={person.profileId}
+          className="rounded-lg border border-border bg-surface p-5 flex flex-wrap items-center gap-3 **:data-[slot=person-link]:min-w-0 **:data-[slot=person-link]:flex-[1_1_10rem] **:data-[slot=person-link]:wrap-anywhere"
+        >
           <PersonName name={person.name} profileId={person.profileId} />
           <button
             type="button"
@@ -62,7 +65,7 @@ function Candidates({
 }) {
   const [more, setMore] = useState(false);
   return (
-    <div className="stack">
+    <div className="grid gap-3">
       <People
         people={state.candidates}
         action="add"
@@ -187,10 +190,12 @@ function Editor({
   );
   return (
     <DetailPage back={`/sessions/${groupId}/edit`} backLabel="Back to session">
-      <div className="page-head">
+      <div className="mb-4">
         {state ? (
           <>
-            <span className="rp-badge">Organizer</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface-sunken px-3 py-0.5 text-xs font-semibold text-text-muted">
+              Organizer
+            </span>
             <p>Hosted by {state.group.name}</p>
           </>
         ) : null}
@@ -211,7 +216,7 @@ function Editor({
           ) : null}
           <p>Co-hosts can manage this session, its payments and check-in.</p>
           <section aria-labelledby="current-cohosts">
-            <div className="section-head">
+            <div className="mt-8 mb-3 flex items-center justify-between gap-3 [&_h2]:m-0">
               <h2 id="current-cohosts">Current co-hosts</h2>
             </div>
             {state.assigned.length ? (
@@ -226,7 +231,7 @@ function Editor({
             )}
           </section>
           <section aria-labelledby="choose-cohost">
-            <div className="section-head">
+            <div className="mt-8 mb-3 flex items-center justify-between gap-3 [&_h2]:m-0">
               <h2 id="choose-cohost">Choose a co-host</h2>
             </div>
             {state.candidates.length ? (
@@ -254,7 +259,7 @@ function Editor({
               {remove?.name} will lose access to manage this session, payments
               and check-in. Their session registrations stay as they are.
             </p>
-            <div className="fee-actions">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 className={buttonClass()}

@@ -1,4 +1,5 @@
 import type { GroupMember } from "@rallypoint/domain/contracts";
+import { cn } from "@rallypoint/ui";
 
 // Shared pictures for groups, people and sessions (owner, 2026-10-30): the
 // same crest, faces and date tile on Home, Sessions, Groups and group pages.
@@ -9,6 +10,16 @@ const tone = (key: string) => {
   for (const ch of key) n = (n * 31 + ch.charCodeAt(0)) >>> 0;
   return (n % 6) + 1;
 };
+/** The gradient for each tone, as a background image. */
+const toneClass = [
+  "",
+  "bg-(image:--avatar-1)",
+  "bg-(image:--avatar-2)",
+  "bg-(image:--avatar-3)",
+  "bg-(image:--avatar-4)",
+  "bg-(image:--avatar-5)",
+  "bg-(image:--avatar-6)",
+];
 const initials = (name: string) =>
   name
     .trim()
@@ -18,10 +29,30 @@ const initials = (name: string) =>
     .join("")
     .toUpperCase() || "?";
 
-/** The group's mark: its initials on a gradient chosen by the group. */
-export function GroupCrest({ id, name }: { id: string; name: string }) {
+/**
+ * The group's mark: its initials on a gradient chosen by the group. `sm` is
+ * the flat 44px version that leads a list row.
+ */
+export function GroupCrest({
+  id,
+  name,
+  size = "lg",
+}: {
+  id: string;
+  name: string;
+  size?: "lg" | "sm";
+}) {
   return (
-    <span className="group-crest" data-tone={tone(id)} aria-hidden="true">
+    <span
+      className={cn(
+        "grid aspect-square place-items-center font-heading font-bold tracking-[0.02em] text-on-brand",
+        toneClass[tone(id)],
+        size === "lg"
+          ? "w-21 rounded-xl text-2xl shadow-sm max-[520px]:w-16 max-[520px]:text-xl"
+          : "w-11 rounded-md text-base",
+      )}
+      aria-hidden="true"
+    >
       {initials(name)}
     </span>
   );
@@ -30,8 +61,12 @@ export function GroupCrest({ id, name }: { id: string; name: string }) {
 export function Face({ name, size }: { name: string; size?: "lg" }) {
   return (
     <span
-      className={size === "lg" ? "group-face group-face--lg" : "group-face"}
-      data-tone={tone(name)}
+      data-slot="face"
+      className={cn(
+        "inline-grid flex-none place-items-center rounded-full font-heading font-bold text-on-brand",
+        toneClass[tone(name)],
+        size === "lg" ? "size-control text-xl" : "size-control-sm text-base",
+      )}
       aria-hidden="true"
     >
       {initials(name).slice(0, 1)}
@@ -42,7 +77,10 @@ export function Face({ name, size }: { name: string; size?: "lg" }) {
 /** Up to five members' faces, overlapping; the count beside them says the rest. */
 export function FaceStack({ members }: { members: GroupMember[] }) {
   return (
-    <span className="group-faces" aria-hidden="true">
+    <span
+      className="inline-flex *:data-[slot=face]:size-7 *:data-[slot=face]:border-2 *:data-[slot=face]:border-bg *:data-[slot=face]:text-xs *:data-[slot=face]:not-first:-ms-2"
+      aria-hidden="true"
+    >
       {members.slice(0, 5).map((m) => (
         <Face key={m.profileId ?? m.name} name={m.name} />
       ))}
@@ -50,8 +88,19 @@ export function FaceStack({ members }: { members: GroupMember[] }) {
   );
 }
 
-/** A session's day as a small calendar tile, in its own time zone (D-13). */
-export function DateTile({ iso, timeZone }: { iso: string; timeZone: string }) {
+/**
+ * A session's day as a small calendar tile, in its own time zone (D-13).
+ * `today` rings it in orange; `hero` is the large orange tile of Up next.
+ */
+export function DateTile({
+  iso,
+  timeZone,
+  variant = "default",
+}: {
+  iso: string;
+  timeZone: string;
+  variant?: "default" | "today" | "hero";
+}) {
   const parts = new Intl.DateTimeFormat("en", {
     timeZone,
     month: "short",
@@ -59,10 +108,33 @@ export function DateTile({ iso, timeZone }: { iso: string; timeZone: string }) {
   }).formatToParts(new Date(iso));
   const part = (type: string) => parts.find((p) => p.type === type)?.value;
   return (
-    <span className="group-date" aria-hidden="true">
-      <span className="group-date__month">{part("month")}</span>
-      <span className="group-date__day">{part("day")}</span>
+    <span
+      className={cn(
+        "inline-grid w-11 place-items-center rounded-sm bg-surface-sunken py-1 leading-[1.1]",
+        variant === "today" &&
+          "text-link outline-2 -outline-offset-2 outline-action",
+        variant === "hero" &&
+          "w-19 rounded-lg bg-action py-3 text-on-action max-[520px]:w-16",
+      )}
+      aria-hidden="true"
+    >
+      <span
+        className={cn(
+          "text-xs text-text-muted",
+          variant === "today" && "text-link",
+          variant === "hero" && "text-sm font-semibold text-on-action",
+        )}
+      >
+        {part("month")}
+      </span>
+      <span
+        className={cn(
+          "font-heading text-lg font-bold",
+          variant === "hero" && "text-2xl",
+        )}
+      >
+        {part("day")}
+      </span>
     </span>
   );
 }
-

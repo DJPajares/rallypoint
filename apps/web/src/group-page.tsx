@@ -106,7 +106,7 @@ export function GroupPage() {
   const status = (
     <>
       {said ? (
-        <p ref={note} tabIndex={-1} role="status" className="game-day__status">
+        <p ref={note} tabIndex={-1} role="status" className="m-0 text-sm">
           {said}
         </p>
       ) : null}
@@ -130,7 +130,7 @@ export function GroupPage() {
     return (
       <DetailPage back="/workspace" backLabel="Your groups">
         {status}
-        <div className="own-status">
+        <div className="grid gap-3 [&>p]:m-0 [&>p]:text-sm **:data-[slot=badge]:mb-1">
           <StatusBanner tone="neutral" icon={<LockSimpleIcon size={22} />}>
             <h1>This group is private.</h1>
             <p>
@@ -161,7 +161,7 @@ export function GroupPage() {
   const action = left ? (
     <p>You left this group.</p>
   ) : admin ? (
-    <div className="group-actions">
+    <div className="flex items-center gap-2 max-[520px]:[&>button]:flex-1">
       <button
         type="button"
         className={buttonClass({ variant: "primary" })}
@@ -181,7 +181,7 @@ export function GroupPage() {
     </div>
   ) : group.viewerRole === null ? (
     request?.state === "pending" ? (
-      <div className="own-status">
+      <div className="grid justify-items-start gap-3 [&>p]:m-0 [&>p]:text-sm **:data-[slot=badge]:mb-1 *:justify-self-stretch [&>button]:justify-self-start">
         <StatusBanner tone="warning" icon={<HourglassIcon size={22} />}>
           <h2>Request sent. The admin will accept or decline it.</h2>
         </StatusBanner>
@@ -192,7 +192,7 @@ export function GroupPage() {
         <h2>The admin didn’t accept your request.</h2>
       </StatusBanner>
     ) : group.canAsk ? (
-      <div className="group-action">
+      <div className="grid justify-items-start gap-2 max-[520px]:[&>button]:justify-self-stretch">
         <button
           type="button"
           className={buttonClass({ variant: "primary" })}
@@ -205,7 +205,9 @@ export function GroupPage() {
             ? "Join this group"
             : "Ask to join"}
         </button>
-        <p className="rp-help">The admin accepts or declines each request.</p>
+        <p className="mt-1 mb-0 text-sm text-text-muted">
+          The admin accepts or declines each request.
+        </p>
       </div>
     ) : null
   ) : null;
@@ -214,13 +216,13 @@ export function GroupPage() {
     <DetailPage
       back="/workspace"
       backLabel="Your groups"
-      className="group-page"
+      className="grid content-start gap-5"
     >
-      <header className="group-hero">
+      <header className="grid grid-cols-[auto_1fr] items-start gap-4">
         <GroupCrest id={group.id} name={group.name} />
-        <div className="group-hero__text">
+        <div className="grid min-w-0 gap-2 [&_h1]:m-0 [&_h1]:text-display-md [&_h1]:leading-[1.05] [&_h1]:wrap-anywhere">
           <h1>{group.name}</h1>
-          <p className="group-hero__meta">
+          <p className="m-0 flex flex-wrap items-center gap-2 text-text-muted">
             {group.visibility === "private" ? (
               <LockSimpleIcon size={16} aria-hidden="true" />
             ) : (
@@ -234,7 +236,7 @@ export function GroupPage() {
             ) : null}
           </p>
           {memberCount !== undefined ? (
-            <p className="group-hero__people">
+            <p className="m-0 flex flex-wrap items-center gap-2 text-text-muted">
               {members?.length ? <FaceStack members={members} /> : null}
               {memberCount} {memberCount === 1 ? "member" : "members"}
             </p>
@@ -245,7 +247,10 @@ export function GroupPage() {
       {action}
 
       {requests.length ? (
-        <section className="group-section" aria-labelledby="group-requests">
+        <section
+          className="grid gap-3 [&_h2]:m-0 [&_h2]:text-lg"
+          aria-labelledby="group-requests"
+        >
           <h2 id="group-requests">
             {requests.length === 1
               ? "1 person wants to join"
@@ -265,38 +270,40 @@ export function GroupPage() {
                 subtitle={`Played ${r.played} · Hosted ${r.hosted}`}
               >
                 {confirm === `decline:${r.id}` ? null : (
-                    <div className="group-request__actions">
-                      <button
-                        type="button"
-                        className={buttonClass({ size: "sm" })}
-                        disabled={busy}
-                        aria-label={`Decline ${r.name}`}
-                        onClick={() => setConfirm(`decline:${r.id}`)}
-                      >
-                        Decline
-                      </button>
-                      <button
-                        type="button"
-                        className={buttonClass({ size: "sm" })}
-                        disabled={busy}
-                        aria-label={`Accept ${r.name}`}
-                        onClick={() =>
-                          run(
-                            "requests/answer",
-                            { requestId: r.id, action: "accept" },
-                            `${r.name} is in.`,
-                          )
-                        }
-                      >
-                        <CheckIcon size={16} aria-hidden="true" />
-                        Accept
-                      </button>
-                    </div>
+                  <div className="flex gap-2 pr-3 pb-3 pl-15">
+                    <button
+                      type="button"
+                      className={buttonClass({ size: "sm" })}
+                      disabled={busy}
+                      aria-label={`Decline ${r.name}`}
+                      onClick={() => setConfirm(`decline:${r.id}`)}
+                    >
+                      Decline
+                    </button>
+                    <button
+                      type="button"
+                      className={buttonClass({ size: "sm" })}
+                      disabled={busy}
+                      aria-label={`Accept ${r.name}`}
+                      onClick={() =>
+                        run(
+                          "requests/answer",
+                          { requestId: r.id, action: "accept" },
+                          `${r.name} is in.`,
+                        )
+                      }
+                    >
+                      <CheckIcon size={16} aria-hidden="true" />
+                      Accept
+                    </button>
+                  </div>
                 )}
                 {confirm === `decline:${r.id}` ? (
-                  <div className="group-confirm">
-                    <p>Decline {r.name}? They can’t ask again for this group.</p>
-                    <div className="fee-actions">
+                  <div className="grid gap-2 px-4 pt-3 pb-4 [&_p]:m-0">
+                    <p>
+                      Decline {r.name}? They can’t ask again for this group.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
                         className={buttonClass()}
@@ -329,25 +336,37 @@ export function GroupPage() {
       ) : null}
 
       {upcoming.length ? (
-        <section className="group-section" aria-labelledby="group-upcoming">
+        <section
+          className="grid gap-3 [&_h2]:m-0 [&_h2]:text-lg"
+          aria-labelledby="group-upcoming"
+        >
           <h2 id="group-upcoming">Coming up</h2>
-          <ul className="rp-list">
+          <ul className="m-0 list-none overflow-hidden rounded-lg bg-surface p-0 shadow-sm">
             {upcoming.map((s) => (
-              <li key={s.slug} className="rp-row">
-                <div className="rp-row__line">
-                  <Link className="rp-row__main" href={`/s/${s.slug}`}>
-                    <span className="rp-row__lead">
+              <li
+                key={s.slug}
+                className="border-t border-border first:border-t-0"
+              >
+                <div className="flex min-h-13 items-center gap-2 pr-3">
+                  <Link
+                    className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-2 pr-1 pl-3 text-left text-inherit no-underline [font:inherit] [a&]:hover:bg-surface-sunken [button&]:cursor-pointer [button&]:hover:bg-surface-sunken focus-visible:-outline-offset-3"
+                    href={`/s/${s.slug}`}
+                  >
+                    <span className="inline-flex flex-none">
                       <DateTile iso={s.startsAt} timeZone={s.timeZone} />
                     </span>
-                    <span className="rp-row__text">
-                      <span className="rp-row__title">{s.title}</span>
-                      <span className="rp-row__sub">
+                    <span className="grid min-w-0">
+                      <span className="truncate font-semibold">{s.title}</span>
+                      <span className="text-sm text-text-muted">
                         {when(s.startsAt, s.timeZone)}
                         {s.activity ? ` · ${s.activity}` : ""}
                       </span>
                     </span>
                   </Link>
-                  <span className="rp-row__trail" aria-hidden="true">
+                  <span
+                    className="inline-flex flex-none items-center gap-2"
+                    aria-hidden="true"
+                  >
                     <CaretRightIcon size={18} />
                   </span>
                 </div>
@@ -358,7 +377,10 @@ export function GroupPage() {
       ) : null}
 
       {members?.length ? (
-        <section className="group-section" aria-labelledby="group-members">
+        <section
+          className="grid gap-3 [&_h2]:m-0 [&_h2]:text-lg"
+          aria-labelledby="group-members"
+        >
           <h2 id="group-members">Members</h2>
           <ListGroup>
             {members.map((m) => (
@@ -393,10 +415,9 @@ export function GroupPage() {
           onSheetChange={setInviting}
           sheetTop={
             inviteLink ? (
-              <div className="group-invite-link">
+              <div className="mb-4 grid justify-items-start gap-2 border-b border-border pb-4 [&_p]:m-0">
                 <p>
-                  Anyone with the link can ask to join. You accept each
-                  request.
+                  Anyone with the link can ask to join. You accept each request.
                 </p>
                 <button
                   type="button"
@@ -411,7 +432,7 @@ export function GroupPage() {
                   <LinkSimpleIcon size={18} aria-hidden="true" />
                   Copy invite link
                 </button>
-                <p role="status" className="rp-help">
+                <p role="status" className="mt-1 mb-0 text-sm text-text-muted">
                   {copied}
                 </p>
               </div>
@@ -425,11 +446,11 @@ export function GroupPage() {
       ) : null}
 
       {group.viewerRole === "member" && !left ? (
-        <div className="group-leave">
+        <div className="pt-2">
           {confirm === "leave" ? (
-            <div className="group-confirm">
+            <div className="grid gap-2 px-4 pt-3 pb-4 [&_p]:m-0">
               <p>Leave {group.name}? You can ask to join again later.</p>
-              <div className="fee-actions">
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   className={buttonClass()}
@@ -468,12 +489,12 @@ export function GroupPage() {
         title={selected ? selected.name : "Member"}
       >
         {selected ? (
-          <div className="group-member-sheet">
-            <div className="group-member-sheet__who">
+          <div className="grid justify-items-start gap-4">
+            <div className="flex items-center gap-3 [&_p]:m-0">
               <Face name={selected.name} size="lg" />
               <div>
                 <TitlePill title={selected.title} />
-                <p className="rp-help">
+                <p className="mt-1 mb-0 text-sm text-text-muted">
                   {selected.role === "admin" ? "Admin" : "Member"}
                 </p>
               </div>
@@ -488,12 +509,12 @@ export function GroupPage() {
             ) : null}
             {admin && selected.role === "member" ? (
               confirm === `remove:${selected.profileId}` ? (
-                <div className="group-confirm">
+                <div className="grid gap-2 px-4 pt-3 pb-4 [&_p]:m-0">
                   <p>
                     Remove {selected.name} from the group? They can ask to join
                     again.
                   </p>
-                  <div className="fee-actions">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
                       className={buttonClass()}

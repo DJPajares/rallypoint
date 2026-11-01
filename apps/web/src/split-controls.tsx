@@ -159,7 +159,7 @@ export function SplitControls({
     blocked = !!preview?.blockedPaidPartyIds.length;
   return (
     <section
-      className="rp-card split-controls"
+      className="rounded-lg border border-border bg-surface p-5 my-5 grid min-w-0 gap-3 [&_p]:m-0 [&_fieldset]:grid [&_fieldset]:gap-3 [&_summary]:cursor-pointer [&_summary]:font-medium"
       aria-label="Manage session cost"
     >
       <h2 ref={managerHeading} tabIndex={-1}>
@@ -171,11 +171,11 @@ export function SplitControls({
         {finalized ? "Finalized" : "Estimated"}
       </p>
       {finalized ? (
-        <p className="rp-help">
+        <p className="mt-1 mb-0 text-sm text-text-muted">
           Uncovered cost: {money(managed.uncoveredMinor)}
         </p>
       ) : (
-        <p className="rp-help">
+        <p className="mt-1 mb-0 text-sm text-text-muted">
           Finalize once the session starts. Payment tracking follows the final
           split.
         </p>
@@ -241,7 +241,10 @@ export function SplitControls({
         ) : null}
       </fieldset>
       {preview ? (
-        <section className="split-preview" aria-label="Split preview">
+        <section
+          className="grid gap-3 border-t border-border pt-4 [&_ul]:grid [&_ul]:list-none [&_ul]:gap-3 [&_ul]:p-0 [&_li]:flex [&_li]:flex-wrap [&_li]:justify-between [&_li]:gap-2"
+          aria-label="Split preview"
+        >
           <h3 ref={heading} tabIndex={-1}>
             {finalized ? "Review the changes" : "Review the final split"}
           </h3>
@@ -323,7 +326,7 @@ export function SplitControls({
       {managed.history.length ? (
         <details>
           <summary>Pricing history</summary>
-          <ul className="split-history">
+          <ul className="grid list-none gap-3 p-0 [&_li]:wrap-anywhere [&_ul]:list-disc [&_ul]:pl-4">
             {managed.history.map((h) => (
               <li key={h.runId}>
                 <strong>
@@ -373,7 +376,7 @@ export function PendingSplitControls({
     onDone(v.registration),
   );
   return (
-    <div className="fee-controls">
+    <div className="mt-1 grid gap-1 [&_strong]:text-text">
       <strong>
         {claim.waived
           ? "Waived"

@@ -1,0 +1,114 @@
+/* The app's one stylesheet entry (D-24): Tailwind, shadcn's variants and
+   animations, then the RallyPoint theme. */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@rallypoint/ui/shadcn.css";
+@import "@rallypoint/ui/theme.css";
+
+/* Tailwind reads class names from the app and the shared UI package. */
+@source "../src";
+@source "../../../packages/ui/src";
+
+/* App-wide pieces utilities can't express cleanly (D-24). */
+
+/* Translucent bars that let content blur through. */
+@utility glass {
+  background: color-mix(
+    in srgb,
+    var(--color-bg) var(--glass-opacity),
+    transparent
+  );
+  backdrop-filter: var(--glass-filter);
+  -webkit-backdrop-filter: var(--glass-filter);
+}
+@utility glass-surface {
+  background: color-mix(
+    in srgb,
+    var(--color-surface) var(--glass-opacity),
+    transparent
+  );
+  backdrop-filter: var(--glass-filter);
+  -webkit-backdrop-filter: var(--glass-filter);
+}
+
+/* The phone tab bar's notch around the create button. The surface is a
+   masked layer of its own, because the mask that carves the notch would
+   otherwise carve the create button away with it; the hairline is a second
+   layer cut to the same silhouette 1px larger. */
+@utility nav-notch {
+  position: absolute;
+  inset: 0;
+  --notch-tile: 160px;
+  --notch-band: 64px;
+  -webkit-mask-image:
+    var(--notch-shape), linear-gradient(black, black),
+    linear-gradient(black, black), linear-gradient(black, black);
+  mask-image:
+    var(--notch-shape), linear-gradient(black, black),
+    linear-gradient(black, black), linear-gradient(black, black);
+  -webkit-mask-position:
+    50% 0,
+    0 0,
+    100% 0,
+    0 100%;
+  mask-position:
+    50% 0,
+    0 0,
+    100% 0,
+    0 100%;
+  -webkit-mask-size:
+    var(--notch-tile) var(--notch-band),
+    calc(50% - var(--notch-tile) / 2 + 1px) var(--notch-band),
+    calc(50% - var(--notch-tile) / 2 + 1px) var(--notch-band),
+    100% calc(100% - var(--notch-band) + 1px);
+  mask-size:
+    var(--notch-tile) var(--notch-band),
+    calc(50% - var(--notch-tile) / 2 + 1px) var(--notch-band),
+    calc(50% - var(--notch-tile) / 2 + 1px) var(--notch-band),
+    100% calc(100% - var(--notch-band) + 1px);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+@utility nav-notch-edge {
+  top: -1px;
+  background: var(--color-border-strong);
+  --notch-shape: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 64'><path fill='black' d='M0 0H29.404A13 13 0 0 1 42.053 10A39 39 0 0 0 117.947 10A13 13 0 0 1 130.596 0H160V64H0Z'/></svg>");
+}
+@utility nav-notch-surface {
+  background: color-mix(
+    in srgb,
+    var(--color-bg) var(--glass-opacity),
+    transparent
+  );
+  backdrop-filter: var(--glass-filter);
+  -webkit-backdrop-filter: var(--glass-filter);
+  --notch-shape: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 64'><path fill='black' d='M0 0H29.404A12 12 0 0 1 41.08 9.2308A40 40 0 0 0 118.92 9.2308A12 12 0 0 1 130.596 0H160V64H0Z'/></svg>");
+}
+
+/* Animations: the floating menu's icon spin and item pop-in, and the earned
+   badge. Reduced motion stops them (theme.css). */
+@theme {
+  --animate-fab-spin: fab-spin 200ms var(--ease-standard);
+  --animate-fab-in: fab-in 200ms var(--ease-standard) both;
+  /* The one moment a level is earned (D-16). */
+  --animate-medallion-in: medallion-in 520ms cubic-bezier(0.2, 0.9, 0.3, 1.25)
+    both;
+  @keyframes medallion-in {
+    from {
+      opacity: 0;
+      transform: scale(0.6) rotate(-12deg);
+    }
+  }
+  @keyframes fab-spin {
+    from {
+      opacity: 0;
+      transform: rotate(-90deg);
+    }
+  }
+  @keyframes fab-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.88);
+    }
+  }
+}

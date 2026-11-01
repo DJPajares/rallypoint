@@ -48,11 +48,18 @@ function PageFocus() {
 }
 function Brand({ href }: { href: string }) {
   return (
-    <Link href={href} className="brand" aria-label="RallyPoint home">
-      <span className="brand-mark" aria-hidden="true">
-        r<span>.</span>
+    <Link
+      href={href}
+      className="mr-auto inline-flex items-center gap-2 font-heading text-xl font-bold tracking-tight text-text no-underline"
+      aria-label="RallyPoint home"
+    >
+      <span
+        className="inline-flex size-brand-mark items-center justify-center rounded-sm bg-brand-graphite pb-1 text-2xl leading-none text-on-brand"
+        aria-hidden="true"
+      >
+        r<span className="text-brand-orange">.</span>
       </span>
-      <span className="brand-word">RallyPoint</span>
+      <span>RallyPoint</span>
     </Link>
   );
 }
@@ -67,7 +74,8 @@ function CreateButton({
   href: string | null;
   onPick: () => void;
 }) {
-  const className = "create-bottom";
+  const className =
+    "absolute top-[calc(var(--spacing-create)/-2)] left-1/2 z-2 inline-flex size-create -translate-x-1/2 items-center justify-center rounded-full border-0 bg-action text-on-action shadow-lift transition-[background-color,box-shadow,transform] duration-200 ease-standard hover:bg-action-hover hover:shadow-lift-hover focus-visible:outline-offset-4 active:translate-y-px";
   const content = <PlusIcon size={28} aria-hidden="true" />;
   // Inside a group the button goes straight to that group's form; elsewhere it
   // asks which group first. Same place, same icon, either way.
@@ -107,23 +115,28 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <FrameContext value={frame}>
       <div
-        className="app"
+        className="group/app"
         data-signed-in={signedIn || undefined}
+        data-signed-out={!signedIn || undefined}
         data-detail={detailDepth > 0 || undefined}
       >
-        <a className="skip-link" href="#main">
+        <a
+          className="fixed top-[calc(12px+var(--safe-top))] left-[calc(12px+var(--safe-left))] z-(--layer-skip) -translate-y-[calc(100%+24px+var(--safe-top))] rounded-full bg-chrome px-4 py-2 font-semibold text-on-chrome no-underline transition-transform duration-200 ease-standard focus:translate-y-0"
+          href="#main"
+        >
           Skip to content
         </a>
-        <header className="topbar">
-          <div className="topbar-inner">
+        <header className="glass sticky top-0 z-(--layer-bar) border-b border-border pt-(--safe-top) group-data-signed-in/app:max-md:hidden max-md:static max-md:border-b-0 max-md:bg-transparent max-md:backdrop-filter-none">
+          <div className="mx-auto flex h-topbar max-w-layout items-center gap-2 pr-[calc(var(--layout-gutter)+var(--spacing-touch)+12px)] pl-(--layout-gutter)">
             <Brand href={signedIn ? "/home" : "/"} />
             {signedIn ? (
-              <nav aria-label="Main" className="topnav">
+              <nav aria-label="Main" className="flex items-center gap-0.5">
                 {destinations.map(({ key, href, label }) => (
                   <Link
                     key={key}
                     href={href}
                     aria-current={isActive(pathname, href) ? "page" : undefined}
+                    className="relative inline-flex min-h-touch items-center rounded-full px-3 text-sm font-medium text-text-muted no-underline transition-colors duration-150 ease-standard hover:bg-surface-sunken hover:text-text aria-[current=page]:text-text aria-[current=page]:after:absolute aria-[current=page]:after:inset-x-3 aria-[current=page]:after:-bottom-[calc((var(--spacing-topbar)-var(--spacing-touch))/2)] aria-[current=page]:after:h-0.75 aria-[current=page]:after:rounded-t-xs aria-[current=page]:after:bg-chrome md:max-desk:px-2"
                   >
                     {label}
                   </Link>
@@ -133,32 +146,45 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <FloatingMenu signedIn={signedIn} />
-        <main id="main">
+        <main
+          id="main"
+          className="mx-auto max-w-layout pt-8 pr-[max(var(--layout-gutter),var(--safe-right))] pb-10 pl-[max(var(--layout-gutter),var(--safe-left))] md:max-desk:pt-6 desk:pt-10 desk:pb-12 max-md:pt-[calc(var(--safe-top)+var(--spacing-touch)+16px)] max-md:pb-[calc(var(--layout-bottombar)+var(--safe-bottom)+var(--spacing-create)/2+8px)] group-data-signed-out/app:max-md:pt-3 group-data-detail/app:max-md:pb-[calc(var(--safe-bottom)+112px)]"
+        >
           <PageFocus />
           {children}
         </main>
         {signedIn ? (
-          <div className="bottombar">
+          <div className="fixed inset-x-0 bottom-0 z-(--layer-bar) hidden h-[calc(var(--layout-bottombar)+var(--safe-bottom))] max-md:block group-data-detail/app:max-md:hidden">
             {/* The bar only sizes and positions. Its surface is a separate
                 masked layer, because the mask that carves the notch would
                 otherwise carve the create button away with it. The hairline is
                 its own layer cut to the same silhouette 1px larger, because a
                 border-top can only draw the flat part. */}
-            <span className="nav-notch-edge" aria-hidden="true" />
-            <span className="nav-notch-surface" aria-hidden="true" />
-            <nav aria-label="Main">
-              <ul>
+            <span className="nav-notch nav-notch-edge" aria-hidden="true" />
+            <span className="nav-notch nav-notch-surface" aria-hidden="true" />
+            <nav
+              aria-label="Main"
+              className="relative z-1 mx-auto h-full max-w-bar px-[max(8px,var(--safe-left),var(--safe-right))] pt-2 pb-(--safe-bottom)"
+            >
+              <ul className="m-0 grid list-none grid-cols-5 gap-1 p-0">
                 {destinations.map(({ key, href, label }, index) => {
                   const Icon = icons[key];
                   const active = isActive(pathname, href);
                   return (
-                    <li key={key} className={index > 1 ? "after-create" : ""}>
+                    <li
+                      key={key}
+                      className={index === 2 ? "col-start-4" : undefined}
+                    >
                       <Link
                         href={href}
                         aria-current={active ? "page" : undefined}
+                        className="relative flex min-h-tab flex-col items-center justify-center gap-1 rounded-sm p-1 text-xs font-medium text-text-muted no-underline transition-colors duration-200 ease-standard aria-[current=page]:font-semibold aria-[current=page]:text-chrome"
                       >
                         {active ? (
-                          <span className="nav-indicator" aria-hidden="true" />
+                          <span
+                            className="absolute -top-2 left-1/2 -ml-3 h-0.75 w-6 rounded-b-xs bg-chrome"
+                            aria-hidden="true"
+                          />
                         ) : null}
                         <Icon
                           size={24}

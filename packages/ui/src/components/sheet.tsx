@@ -1,23 +1,25 @@
 "use client";
-import { useEffect, useId, useRef } from "react";
-import type { PointerEvent, ReactNode } from "react";
+import { useLayoutEffect, useRef } from "react";
+import type { ReactNode } from "react";
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { Drawer as DrawerPrimitive } from "@base-ui/react/drawer";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
+import { iconButtonClass } from "../classes";
 import { useIsPhone } from "../media";
+import { Dialog, DialogContent } from "./ui/dialog";
+import { Drawer, DrawerContent } from "./ui/drawer";
 
-/** How far down, or how fast, a swipe must go to close the sheet. */
-const closeFraction = 0.25;
-const closeDistance = 120;
-const flickSpeed = 0.5; // px per ms
-
-const reducedMotion = () =>
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const titleClass = "m-0 text-xl";
+const headClass =
+  "sticky top-0 z-1 -mx-5 mb-2 flex items-center justify-between gap-3 bg-surface px-5 pt-3 pb-2";
 
 /**
- * A native modal dialog: the browser traps focus, closes it on Escape and
- * returns focus to whatever opened it. Anchored to the bottom edge on phones,
- * where its handle and title bar can be swiped down to close it. The page
- * behind doesn't scroll while it's open (see .rp-sheet in components.css).
- * Children mount only while open, so a sheet's data loads when it is wanted.
+ * A sheet for one focused job (D-15). On phones it's shadcn's Drawer: it
+ * slides up from the bottom and swipes down to close. Elsewhere it's shadcn's
+ * Dialog, a centred card. Either way the page behind is locked, Escape and
+ * the backdrop close it, focus starts on Close and returns to whatever had it
+ * when the sheet opened. Children mount only while open, so a sheet's data
+ * loads when it is wanted.
  */
 export function Sheet({
   open,
@@ -30,131 +32,63 @@ export function Sheet({
   title: ReactNode;
   children: ReactNode;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  const closeButton = useRef<HTMLButtonElement>(null);
-  const titleId = useId();
   const phone = useIsPhone();
-  const drag = useRef<{
-    id: number;
-    startY: number;
-    lastY: number;
-    lastTime: number;
-    speed: number;
-  } | null>(null);
-
-  useEffect(() => {
-    const element = dialog.current;
-    if (!element) return;
-    if (open && !element.open) {
-      // A sheet swiped away last time starts from its resting place.
-      element.style.transform = "";
-      element.style.transition = "";
-      element.showModal();
-      // Start on Close, even when the title holds a link, so a stray Enter
-      // dismisses the sheet instead of leaving the page.
-      closeButton.current?.focus();
-    } else if (!open && element.open) element.close();
+  const closeButton = useRef<HTMLButtonElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
+  // Remember what had focus before the sheet takes it, to hand it back.
+  useLayoutEffect(() => {
+    if (open && document.activeElement instanceof HTMLElement)
+      opener.current = document.activeElement;
   }, [open]);
+  const onOpenChange = (next: boolean) => {
+    if (!next) onClose();
+  };
+  const closeProps = {
+    ref: closeButton,
+    "aria-label": "Close",
+    className: iconButtonClass(true),
+    children: <XIcon size={20} aria-hidden="true" />,
+  };
 
-  function move(to: string, animate: boolean, done?: () => void) {
-    const element = dialog.current;
-    if (!element) return;
-    const smooth = animate && !reducedMotion();
-    element.style.transition = smooth
-      ? "transform var(--duration-base) var(--ease-standard)"
-      : "none";
-    element.style.transform = to;
-    if (!done) return;
-    if (!smooth) return done();
-    // Finish on the transition's end, or shortly after if it never comes.
-    let finished = false;
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      done();
-    };
-    element.addEventListener("transitionend", finish, { once: true });
-    setTimeout(finish, 400);
-  }
-
-  // Swipe down on the handle and title bar (phones only). The sheet follows
-  // the finger; past a quarter of its height, or on a quick flick, it closes,
-  // otherwise it springs back. Buttons and links in the bar still just work.
-  function onPointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (!phone || event.button !== 0) return;
-    if ((event.target as HTMLElement).closest("button, a, input")) return;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    drag.current = {
-      id: event.pointerId,
-      startY: event.clientY,
-      lastY: event.clientY,
-      lastTime: event.timeStamp,
-      speed: 0,
-    };
-  }
-  function onPointerMove(event: PointerEvent<HTMLDivElement>) {
-    const state = drag.current;
-    if (!state || state.id !== event.pointerId) return;
-    const elapsed = event.timeStamp - state.lastTime;
-    if (elapsed > 0) state.speed = (event.clientY - state.lastY) / elapsed;
-    state.lastY = event.clientY;
-    state.lastTime = event.timeStamp;
-    // Only downward; pulling up stays put.
-    const down = Math.max(0, event.clientY - state.startY);
-    move(`translateY(${down}px)`, false);
-  }
-  function onPointerUp(event: PointerEvent<HTMLDivElement>) {
-    const state = drag.current;
-    if (!state || state.id !== event.pointerId) return;
-    drag.current = null;
-    const element = dialog.current;
-    if (!element) return;
-    const down = Math.max(0, event.clientY - state.startY);
-    const far = Math.min(closeDistance, element.offsetHeight * closeFraction);
-    if (down > far || (down > 0 && state.speed > flickSpeed))
-      move("translateY(100%)", true, onClose);
-    else move("", true);
-  }
-  function onPointerCancel(event: PointerEvent<HTMLDivElement>) {
-    if (drag.current?.id !== event.pointerId) return;
-    drag.current = null;
-    move("", true);
-  }
-
-  return (
-    <dialog
-      ref={dialog}
-      className="rp-sheet"
-      aria-labelledby={titleId}
-      onClose={onClose}
-      onClick={(event) => {
-        // A click on the dialog box itself (not its content) is the backdrop.
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      {open ? (
-        <div className="rp-sheet__body">
-          <div
-            className="rp-sheet__head"
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={onPointerCancel}
-          >
-            <h2 id={titleId}>{title}</h2>
-            <button
-              ref={closeButton}
-              type="button"
-              className="rp-icon-button rp-icon-button--flat"
-              aria-label="Close"
-              onClick={onClose}
-            >
-              <XIcon size={20} aria-hidden="true" />
-            </button>
+  if (phone)
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange} showSwipeHandle>
+        <DrawerContent
+          initialFocus={closeButton}
+          finalFocus={opener}
+          data-slot="sheet"
+        >
+          {/* The title bar stays outside the scrolling content, so dragging it
+              always moves the sheet, never the content (like native sheets). */}
+          <div className="flex flex-none items-center justify-between gap-3 px-5 pt-1 pb-2">
+            <DrawerPrimitive.Title className={titleClass}>
+              {title}
+            </DrawerPrimitive.Title>
+            <DrawerPrimitive.Close {...closeProps} />
           </div>
-          {children}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[calc(24px+var(--safe-bottom))]">
+            {children}
+          </div>
+        </DrawerContent>
+      </Drawer>
+    );
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        showCloseButton={false}
+        initialFocus={closeButton}
+        finalFocus={opener}
+        data-slot="sheet"
+        className="block px-5 pt-2 pb-6"
+      >
+        <div className={headClass}>
+          <DialogPrimitive.Title className={titleClass}>
+            {title}
+          </DialogPrimitive.Title>
+          <DialogPrimitive.Close {...closeProps} />
         </div>
-      ) : null}
-    </dialog>
+        {children}
+      </DialogContent>
+    </Dialog>
   );
 }

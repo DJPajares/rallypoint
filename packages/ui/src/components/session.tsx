@@ -1,4 +1,7 @@
 import type { ReactNode } from "react";
+import { cn } from "../lib/utils";
+const dayClass =
+  "my-0.5 font-heading text-2xl leading-none tracking-tight tabular-nums";
 export interface TicketDate {
   weekday: string;
   day: string;
@@ -7,15 +10,18 @@ export interface TicketDate {
 }
 export function TicketStub({ date }: { date: TicketDate | null }) {
   return (
-    <span className="rp-ticket__stub" aria-hidden="true">
+    <span
+      className="flex min-w-stub flex-none flex-col items-center justify-center bg-stub px-2 py-3 text-xs font-semibold tracking-wide text-on-stub uppercase"
+      aria-hidden="true"
+    >
       {date ? (
         <>
           <span>{date.weekday}</span>
-          <strong className="rp-ticket__day rp-nums">{date.day}</strong>
+          <strong className={dayClass}>{date.day}</strong>
           <span>{date.month}</span>
         </>
       ) : (
-        <strong className="rp-ticket__day">?</strong>
+        <strong className={dayClass}>?</strong>
       )}
     </span>
   );
@@ -29,17 +35,19 @@ export function Ticket({
   children: ReactNode;
 }) {
   return (
-    <div className="rp-ticket">
+    <div className="flex items-stretch overflow-hidden rounded-lg border border-border bg-surface">
       <TicketStub date={date} />
-      <div className="rp-ticket__body">{children}</div>
+      <div className="min-w-0 flex-1 border-l-2 border-dashed border-border px-4 py-3">
+        {children}
+      </div>
     </div>
   );
 }
 export function TicketTime({ children }: { children: ReactNode }) {
-  return <div className="rp-ticket__time">{children}</div>;
+  return <div className="font-semibold tabular-nums">{children}</div>;
 }
 export function TicketMeta({ children }: { children: ReactNode }) {
-  return <div className="rp-ticket__meta">{children}</div>;
+  return <div className="text-sm text-text-muted">{children}</div>;
 }
 /**
  * Taken and open seats: one dot per seat up to 24, a bar beyond that.
@@ -55,30 +63,36 @@ export function SpotsMeter({
   const seats = Number.isFinite(capacity) && capacity > 0 ? capacity : 0;
   const open = Math.max(seats - taken, 0);
   return (
-    <div className="rp-spots">
-      <p className="rp-spots__text">
+    <div>
+      <p className="mb-3 flex justify-between gap-3 text-sm tabular-nums">
         <strong>
           {taken} of {seats} {seats === 1 ? "seat" : "seats"} taken
         </strong>
-        <span>{open === 0 ? "Full" : `${open} left`}</span>
+        <span className="text-text-muted">
+          {open === 0 ? "Full" : `${open} left`}
+        </span>
       </p>
       {seats > 0 && seats <= 24 ? (
-        <div className="rp-spots__dots" aria-hidden="true">
+        <div className="flex flex-wrap gap-1" aria-hidden="true">
           {Array.from({ length: seats }, (_, i) => (
             <span
               key={i}
-              className={
+              className={cn(
+                "size-dot rounded-full",
                 i < taken
-                  ? "rp-spots__dot rp-spots__dot--taken"
-                  : "rp-spots__dot"
-              }
+                  ? "bg-chrome"
+                  : "border-2 border-dashed border-border-strong",
+              )}
             />
           ))}
         </div>
       ) : seats > 0 ? (
-        <div className="rp-spots__bar" aria-hidden="true">
+        <div
+          className="h-2 overflow-hidden rounded-full border border-dashed border-border-strong bg-surface-sunken"
+          aria-hidden="true"
+        >
           <span
-            className="rp-spots__fill"
+            className="block h-full bg-chrome"
             style={{
               width: `${Math.min(100, Math.round((taken / seats) * 100))}%`,
             }}

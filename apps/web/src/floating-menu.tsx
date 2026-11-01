@@ -15,7 +15,15 @@ import { RingAvatar } from "./badges";
 import { useScrollingDown } from "./frame";
 import { toggleAppearance, useAppearance } from "./theme";
 import { useApi } from "./use-api";
-import { EmptyState, iconButtonClass, Sheet } from "@rallypoint/ui";
+import { cn, EmptyState, iconButtonClass, Sheet } from "@rallypoint/ui";
+// A menu item: a label pill beside a round icon. Hover and keyboard focus
+// show on the icon, which is the part that looks like a button.
+const fabAction =
+  "group/action inline-flex items-center gap-2 border-0 bg-transparent p-0 text-sm font-semibold text-text no-underline focus-visible:outline-none [&>span:first-child]:rounded-full [&>span:first-child]:border [&>span:first-child]:border-border [&>span:first-child]:bg-surface [&>span:first-child]:px-3 [&>span:first-child]:py-1 [&>span:first-child]:shadow-sm";
+const fabIcon = cn(
+  iconButtonClass(),
+  "group-hover/action:bg-surface-sunken group-focus-visible/action:outline-3 group-focus-visible/action:outline-offset-3 group-focus-visible/action:outline-focus",
+);
 /**
  * Initials of the name people see, which the profile can change. Loaded when
  * the menu opens, so it is never stale; the account name fills in meanwhile.
@@ -92,14 +100,14 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
     <button
       key="theme"
       type="button"
-      className="fab-action"
+      className={fabAction}
       onClick={() => {
         toggleAppearance(appearance);
         collapseAndRestoreFocus();
       }}
     >
       <span>{appearance === "dark" ? "Light mode" : "Dark mode"}</span>
-      <span className={iconButtonClass()} aria-hidden="true">
+      <span className={fabIcon} aria-hidden="true">
         {appearance === "dark" ? <SunIcon size={20} /> : <MoonIcon size={20} />}
       </span>
     </button>
@@ -109,23 +117,23 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
         // One search for groups and your own sessions.
         <Link
           key="search"
-          className="fab-action"
+          className={fabAction}
           href="/search"
           onClick={collapse}
         >
           <span>Search</span>
-          <span className={iconButtonClass()} aria-hidden="true">
+          <span className={fabIcon} aria-hidden="true">
             <MagnifyingGlassIcon size={20} />
           </span>
         </Link>,
         <button
           key="updates"
           type="button"
-          className="fab-action"
+          className={fabAction}
           onClick={() => openSheet("updates")}
         >
           <span>Updates</span>
-          <span className={iconButtonClass()} aria-hidden="true">
+          <span className={fabIcon} aria-hidden="true">
             <BellIcon size={20} />
           </span>
         </button>,
@@ -133,13 +141,16 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
         // Profile and account are one place: your badges, then sign-in details.
         <Link
           key="profile"
-          className="fab-action"
+          className={fabAction}
           href="/profile"
           onClick={collapse}
         >
           <span>Profile</span>
           <span
-            className={`${iconButtonClass()} fab-avatar`}
+            className={cn(
+              fabIcon,
+              "overflow-hidden p-0 group-hover/action:bg-transparent group-hover/action:**:data-[slot=avatar-face]:bg-surface-sunken",
+            )}
             aria-hidden="true"
           >
             <MenuAvatar />
@@ -150,12 +161,12 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
         themeAction,
         <Link
           key="sign-in"
-          className="fab-action"
+          className={fabAction}
           href={`/sign-in?next=${encodeURIComponent(pathname)}`}
           onClick={collapse}
         >
           <span>Sign in</span>
-          <span className={iconButtonClass()} aria-hidden="true">
+          <span className={fabIcon} aria-hidden="true">
             <SignInIcon size={20} />
           </span>
         </Link>,
@@ -164,7 +175,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
     <>
       <div
         ref={wrapper}
-        className="fab"
+        className="fixed top-[calc(var(--safe-top)+(var(--spacing-topbar)-var(--spacing-touch))/2)] right-[max(var(--layout-gutter),var(--safe-right))] z-(--layer-float) flex flex-col items-end gap-2 transition-[transform,opacity] duration-200 ease-standard min-[1232px]:right-[calc((100vw-var(--layout-max))/2+var(--layout-gutter))] max-md:top-[calc(var(--safe-top)+12px)] group-data-signed-out/app:max-md:top-[calc(var(--safe-top)+(var(--spacing-topbar)-var(--spacing-touch))/2)] max-md:data-hidden:pointer-events-none max-md:data-hidden:-translate-y-[calc(100%+12px+var(--safe-top))] max-md:data-hidden:opacity-0"
         data-hidden={hidden || undefined}
         onFocusCapture={reveal}
         onKeyDown={(event) => {
@@ -176,7 +187,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
         <button
           ref={trigger}
           type="button"
-          className={`${iconButtonClass()} fab-trigger`}
+          className={iconButtonClass()}
           aria-expanded={expanded}
           aria-controls="quick-actions"
           aria-label={expanded ? "Close menu" : "Open menu"}
@@ -186,7 +197,10 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
         >
           {/* The icon swaps inside a box that never moves, so the target stays
               put under a finger that is already on it. */}
-          <span className="fab-icon" key={expanded ? "close" : "open"}>
+          <span
+            className="inline-flex animate-fab-spin"
+            key={expanded ? "close" : "open"}
+          >
             {expanded ? <XIcon size={22} /> : <ListIcon size={22} />}
           </span>
         </button>
@@ -195,12 +209,12 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
             id="quick-actions"
             role="group"
             aria-label="Quick actions"
-            className="fab-stack"
+            className="flex flex-col items-end gap-2"
           >
             {actions.map((action, index) => (
               <div
                 key={action.key}
-                className="fab-item"
+                className="animate-fab-in"
                 style={{ animationDelay: `${index * 40}ms` }}
               >
                 {action}

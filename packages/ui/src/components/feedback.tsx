@@ -1,20 +1,36 @@
 "use client";
 import type { ReactNode } from "react";
-import { CircleNotchIcon } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle";
-import { cx } from "../cx";
+import { cn } from "../lib/utils";
+import { buttonClass } from "../classes";
+import { Alert } from "./ui/alert";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+} from "./ui/empty";
+import { Spinner } from "./ui/spinner";
+/** Something is loading; the words say what. */
 export function Pending({
   children = "Getting things ready…",
 }: {
   children?: ReactNode;
 }) {
   return (
-    <p role="status" className="rp-pending">
-      <CircleNotchIcon className="rp-spin" size={20} aria-hidden="true" />
+    <p role="status" className="flex items-center gap-2 text-text-muted">
+      <Spinner
+        role={undefined}
+        aria-label={undefined}
+        aria-hidden="true"
+        className="size-5"
+      />
       {children}
     </p>
   );
 }
+/** A problem the person should know about, with a way to try again. */
 export function Notice({
   children,
   retry,
@@ -25,20 +41,24 @@ export function Notice({
   tone?: "danger" | "warning";
 }) {
   return (
-    <div
-      className={cx("rp-notice", tone === "warning" && "rp-notice--warning")}
-      role="alert"
-    >
-      <WarningCircleIcon size={22} aria-hidden="true" />
+    <Alert variant={tone} className="my-4 flex items-start gap-2">
+      <WarningCircleIcon className="shrink-0" size={22} aria-hidden="true" />
       <div>
         {children}
         {retry ? (
-          <button className="rp-button rp-button--link" onClick={retry}>
+          <button
+            type="button"
+            className={cn(
+              buttonClass({ variant: "link" }),
+              "flex min-h-10 text-inherit",
+            )}
+            onClick={retry}
+          >
             Try again
           </button>
         ) : null}
       </div>
-    </div>
+    </Alert>
   );
 }
 export type Tone = "success" | "warning" | "neutral" | "danger";
@@ -53,14 +73,19 @@ export function StatusBanner({
   children: ReactNode;
 }) {
   return (
-    <div className={`rp-status rp-tone-${tone}`}>
-      <span className="rp-status__icon" aria-hidden="true">
+    <Alert
+      variant={tone}
+      role={undefined}
+      className="flex items-start gap-2 rounded-lg text-base [&_h2]:mb-0.5 [&_h2]:text-xl [&_h2]:text-inherit [&_p]:m-0"
+    >
+      <span className="mt-0.5 inline-flex" aria-hidden="true">
         {icon}
       </span>
       <div>{children}</div>
-    </div>
+    </Alert>
   );
 }
+/** Nothing here yet: an icon, a heading, what will appear, and an action. */
 export function EmptyState({
   icon,
   title,
@@ -76,13 +101,20 @@ export function EmptyState({
 }) {
   const Heading = headingLevel === 1 ? "h1" : "h2";
   return (
-    <div className="rp-empty">
-      <span className="rp-empty__icon" aria-hidden="true">
-        {icon}
-      </span>
-      <Heading>{title}</Heading>
-      <p>{children}</p>
-      {action}
-    </div>
+    <Empty className="mx-auto my-6 max-w-110 gap-0 px-5 py-8">
+      <EmptyHeader className="max-w-none gap-0">
+        <EmptyMedia
+          className="mb-4 size-16 rounded-xl bg-action font-bold text-on-action"
+          aria-hidden="true"
+        >
+          {icon}
+        </EmptyMedia>
+        <Heading>{title}</Heading>
+        <EmptyDescription className="text-base text-text-muted">
+          <p>{children}</p>
+        </EmptyDescription>
+      </EmptyHeader>
+      {action ? <EmptyContent>{action}</EmptyContent> : null}
+    </Empty>
   );
 }

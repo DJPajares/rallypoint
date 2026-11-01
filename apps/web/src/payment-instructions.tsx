@@ -1,6 +1,13 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { buttonClass, Field, Notice, Pending } from "@rallypoint/ui";
+import {
+  buttonClass,
+  Field,
+  Input,
+  Notice,
+  Pending,
+  Textarea,
+} from "@rallypoint/ui";
 import { instructionsEmailWords } from "@rallypoint/domain/game-day";
 import type {
   ManagedPaymentInstructions,
@@ -63,7 +70,7 @@ function QrImage({ slug, revision }: { slug: string; revision: number }) {
   const image = useQrImage(slug, revision);
   if (image.failed)
     return (
-      <p className="rp-help">
+      <p className="mt-1 mb-0 text-sm text-text-muted">
         The QR image couldn’t load. Use the instructions above.
       </p>
     );
@@ -72,7 +79,7 @@ function QrImage({ slug, revision }: { slug: string; revision: number }) {
     // An object URL from memory; next/image can't optimize it.
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      className="payment-qr"
+      className="h-auto w-[min(100%,240px)] justify-self-start! rounded-sm bg-qr-backdrop"
       src={image.url}
       alt="Payment QR code"
       onError={image.fail}
@@ -89,13 +96,16 @@ export function HowToPay({
   instructions: PaymentInstructions;
 }) {
   return (
-    <section className="rp-card how-to-pay" aria-labelledby="how-to-pay">
+    <section
+      className="rounded-lg border border-border bg-surface p-5 grid justify-items-start gap-3 *:m-0 *:justify-self-stretch"
+      aria-labelledby="how-to-pay"
+    >
       <h2 id="how-to-pay">How to pay</h2>
-      <p className="payment-text">{instructions.text}</p>
+      <p className="whitespace-pre-line wrap-anywhere">{instructions.text}</p>
       {instructions.hasImage ? (
         <QrImage slug={slug} revision={instructions.imageRevision} />
       ) : null}
-      <p className="rp-help">{outside}</p>
+      <p className="mt-1 mb-0 text-sm text-text-muted">{outside}</p>
     </section>
   );
 }
@@ -213,7 +223,7 @@ export function PaymentInstructionsEditor({
 
   return (
     <section
-      className="rp-card payment-editor"
+      className="rounded-lg border border-border bg-surface p-5 my-4 grid justify-items-start gap-3 *:m-0 *:justify-self-stretch"
       aria-labelledby="payment-editor"
     >
       <h2 id="payment-editor">Payment instructions</h2>
@@ -230,7 +240,7 @@ export function PaymentInstructionsEditor({
             label="How to pay"
             help="Only people booked in this session see this. Payment happens outside RallyPoint."
           >
-            <textarea
+            <Textarea
               id="payment-text"
               rows={3}
               maxLength={1000}
@@ -241,7 +251,7 @@ export function PaymentInstructionsEditor({
               aria-describedby="payment-text-help"
             />
           </Field>
-          <div className="fee-actions">
+          <div className="flex flex-wrap gap-2">
             <button
               className={buttonClass({ variant: "primary" })}
               disabled={!draft.trim()}
@@ -261,7 +271,7 @@ export function PaymentInstructionsEditor({
         </fieldset>
       </form>
       {instructions ? (
-        <div className="payment-qr-field">
+        <div className="grid justify-items-start gap-3 *:m-0 *:justify-self-stretch">
           <Field
             id="payment-qr"
             label={
@@ -271,7 +281,7 @@ export function PaymentInstructionsEditor({
             }
             help="PNG, JPEG or WebP, up to 1 MB. The written instructions still show if it can’t load."
           >
-            <input
+            <Input
               ref={fileInput}
               id="payment-qr"
               type="file"
@@ -301,14 +311,18 @@ export function PaymentInstructionsEditor({
         </div>
       ) : null}
       {instructions ? (
-        <p className="rp-help">Last changed by {instructions.updatedBy}.</p>
+        <p className="mt-1 mb-0 text-sm text-text-muted">
+          Last changed by {instructions.updatedBy}.
+        </p>
       ) : null}
-      {emailNote ? <p className="rp-help">{emailNote}</p> : null}
+      {emailNote ? (
+        <p className="mt-1 mb-0 text-sm text-text-muted">{emailNote}</p>
+      ) : null}
       {mutation.error ? <Notice>{mutation.error}</Notice> : null}
       {uploadError ? <Notice>{uploadError}</Notice> : null}
       {mutation.recovery}
       {status ? (
-        <p className="save-status" role="status">
+        <p className="mt-3 font-semibold text-success" role="status">
           {status}
         </p>
       ) : null}

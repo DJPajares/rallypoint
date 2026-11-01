@@ -1,5 +1,5 @@
 "use client";
-import { buttonClass } from "@rallypoint/ui";
+import { buttonClass, cx } from "@rallypoint/ui";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./auth-context";
 export function useMutation<T>(done: (result: T) => void) {
@@ -78,7 +78,7 @@ export function useMutation<T>(done: (result: T) => void) {
       void send(path, next);
     },
     recovery: job ? (
-      <div className="request-recovery">
+      <div className="my-4 rounded-sm bg-warning-bg p-4 text-warning">
         <p>
           The result has not been confirmed. Your submitted details and request
           key are preserved while this page stays open.
@@ -86,7 +86,7 @@ export function useMutation<T>(done: (result: T) => void) {
         <button
           type="button"
           disabled={busy}
-          className={buttonClass()}
+          className={cx(buttonClass(), "mr-3")}
           onClick={() => void send(job.path, job.body, true)}
         >
           Check result
@@ -94,7 +94,7 @@ export function useMutation<T>(done: (result: T) => void) {
         <button
           type="button"
           disabled={busy}
-          className={buttonClass({ variant: "link" })}
+          className={cx(buttonClass({ variant: "link" }), "text-inherit")}
           onClick={() => void send(job.path, job.body)}
         >
           Retry same request

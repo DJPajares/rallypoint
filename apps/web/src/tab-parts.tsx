@@ -1,7 +1,7 @@
 "use client";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { buttonClass, Pill } from "@rallypoint/ui";
+import { buttonClass, cx, Pill } from "@rallypoint/ui";
 import { CalendarDotsIcon } from "@phosphor-icons/react/dist/csr/CalendarDots";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import type { Tone } from "@rallypoint/ui";
@@ -35,13 +35,18 @@ export function TabHero({
   onCreate?: () => void;
 }) {
   return (
-    <header className="tab-hero">
+    <header className="grid grid-cols-[1fr_auto] items-end gap-x-4 gap-y-2 *:col-start-1 [&_h1]:m-0 [&_h1]:text-display-md [&_h1]:leading-[1.05]">
       <h1>{title}</h1>
-      {summary ? <p className="tab-hero__summary">{summary}</p> : null}
+      {summary ? (
+        <p className="m-0 text-base text-text-muted">{summary}</p>
+      ) : null}
       {onCreate ? (
         <button
           type="button"
-          className={`${buttonClass({ variant: "primary" })} tab-hero__action`}
+          className={cx(
+            buttonClass({ variant: "primary" }),
+            "col-start-2! row-span-2 row-start-1 hidden md:inline-flex",
+          )}
           onClick={onCreate}
         >
           <PlusIcon size={18} weight="bold" aria-hidden="true" />
@@ -103,33 +108,45 @@ export function SessionRow({
     </>
   );
   return (
-    <li className={today ? "rp-row tab-row tab-row--today" : "rp-row tab-row"}>
-      <div className="rp-row__line">
-        <Link className="rp-row__main" href={sessionHref(row)}>
-          <span className="rp-row__lead">
+    <li className="border-t border-border first:border-t-0">
+      <div className="flex min-h-13 items-center gap-2">
+        <Link
+          className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-2 pr-3 pl-3 text-left text-inherit no-underline [font:inherit] [a&]:hover:bg-surface-sunken [button&]:cursor-pointer [button&]:hover:bg-surface-sunken focus-visible:-outline-offset-3"
+          href={sessionHref(row)}
+        >
+          <span className="inline-flex flex-none">
             {row.startsAt ? (
-              <DateTile iso={row.startsAt} timeZone={row.timeZone} />
+              <DateTile
+                iso={row.startsAt}
+                timeZone={row.timeZone}
+                variant={today ? "today" : "default"}
+              />
             ) : (
-              <span className="group-date" aria-hidden="true">
+              <span
+                className="inline-grid w-11 place-items-center rounded-sm bg-surface-sunken py-1 leading-[1.1]"
+                aria-hidden="true"
+              >
                 <CalendarDotsIcon size={22} />
               </span>
             )}
           </span>
-          <span className="rp-row__text">
-            <span className="rp-row__title">
+          <span className="grid min-w-0 flex-1">
+            <span className="truncate font-semibold">
               {row.title || "Untitled session"}
               {speakDate && row.startsAt ? (
-                <span className="rp-sr-only">, {spokenDay(row)}</span>
+                <span className="sr-only">, {spokenDay(row)}</span>
               ) : null}
             </span>
-            <span className="rp-row__sub">{where || row.groupName}</span>
+            <span className="truncate text-sm text-text-muted">
+              {where || row.groupName}
+            </span>
             {/* On a phone the pills sit under the line, so titles keep room. */}
-            <span className="tab-row__pills tab-row__pills--below">
+            <span className="mt-1 hidden flex-wrap gap-1 max-[520px]:flex">
               {pills}
             </span>
           </span>
-          <span className="rp-row__trail">
-            <span className="tab-row__pills tab-row__pills--beside">
+          <span className="inline-flex flex-none items-center gap-2 text-text-muted">
+            <span className="inline-flex flex-wrap gap-1 max-[520px]:hidden">
               {pills}
             </span>
             <CaretRightIcon size={16} aria-hidden="true" />
@@ -150,22 +167,25 @@ export function GroupRow({ group }: { group: GroupSummary }) {
       : "",
   ].filter(Boolean);
   return (
-    <li className="rp-row tab-row">
-      <div className="rp-row__line">
-        <Link className="rp-row__main" href={`/groups/${group.id}`}>
-          <span className="rp-row__lead tab-row__crest">
-            <GroupCrest id={group.id} name={group.name} />
+    <li className="border-t border-border first:border-t-0">
+      <div className="flex min-h-13 items-center gap-2">
+        <Link
+          className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-2 pr-3 pl-3 text-left text-inherit no-underline [font:inherit] [a&]:hover:bg-surface-sunken [button&]:cursor-pointer [button&]:hover:bg-surface-sunken focus-visible:-outline-offset-3"
+          href={`/groups/${group.id}`}
+        >
+          <span className="inline-flex flex-none">
+            <GroupCrest id={group.id} name={group.name} size="sm" />
           </span>
-          <span className="rp-row__text">
-            <span className="rp-row__title">{group.name}</span>
-            <span className="rp-row__sub tab-row__facts">
+          <span className="grid min-w-0 flex-1">
+            <span className="truncate font-semibold">{group.name}</span>
+            <span className="inline-flex items-center gap-1 truncate text-sm text-text-muted">
               {group.visibility === "private" ? (
                 <LockSimpleIcon size={14} aria-hidden="true" />
               ) : null}
               {facts.join(" · ")}
             </span>
           </span>
-          <span className="rp-row__trail">
+          <span className="inline-flex flex-none items-center gap-2 text-text-muted">
             <CaretRightIcon size={16} aria-hidden="true" />
           </span>
         </Link>
@@ -183,26 +203,29 @@ export function UpNext({ row, now }: { row: MySessionRow; now: number }) {
   const time = fromLocal(row.startLocal)?.time;
   const soon = startsIn(row.startsAt, row.endsAt, now);
   return (
-    <Link className="up-next" href={sessionHref(row)}>
-      <span className="up-next__date">
+    <Link
+      className="grid grid-cols-[auto_1fr_auto] items-center gap-5 rounded-xl border border-border bg-surface p-6 text-inherit no-underline shadow-sm hover:border-border-strong focus-visible:shadow-focus focus-visible:outline-none max-[520px]:grid-cols-[auto_1fr] max-[520px]:gap-4 max-[520px]:p-5"
+      href={sessionHref(row)}
+    >
+      <span>
         {row.startsAt ? (
-          <DateTile iso={row.startsAt} timeZone={row.timeZone} />
+          <DateTile iso={row.startsAt} timeZone={row.timeZone} variant="hero" />
         ) : null}
       </span>
-      <span className="up-next__body">
-        <span className="up-next__eyebrow">
+      <span className="grid min-w-0 gap-1">
+        <span className="text-sm font-semibold text-link">
           Up next{soon ? ` · ${soon}` : ""}
         </span>
-        <span className="up-next__title">
+        <span className="font-heading text-display-sm leading-[1.15] font-bold wrap-anywhere">
           {row.title || "Untitled session"}
           {row.startsAt ? (
-            <span className="rp-sr-only">, {spokenDay(row)}</span>
+            <span className="sr-only">, {spokenDay(row)}</span>
           ) : null}
         </span>
-        <span className="up-next__where">
+        <span className="text-text-muted">
           {[time, row.location].filter(Boolean).join(" · ") || row.groupName}
         </span>
-        <span className="up-next__pills">
+        <span className="mt-2 flex flex-wrap gap-2">
           <Pill tone={statusTone[row.status]}>{statusLabel(row, false)}</Pill>
           {row.waitingCount ? (
             <Pill tone="warning">{row.waitingCount} waiting</Pill>
@@ -218,7 +241,11 @@ export function UpNext({ row, now }: { row: MySessionRow; now: number }) {
           ) : null}
         </span>
       </span>
-      <CaretRightIcon className="up-next__go" size={22} aria-hidden="true" />
+      <CaretRightIcon
+        className="text-text-muted max-[520px]:hidden"
+        size={22}
+        aria-hidden="true"
+      />
     </Link>
   );
 }
