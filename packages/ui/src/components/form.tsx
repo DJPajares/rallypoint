@@ -1,5 +1,9 @@
 import type { ReactNode } from "react";
-import { cx } from "../cx";
+import { cn } from "../lib/utils";
+import { Label } from "./ui/label";
+import { helpClass } from "./text";
+/** The class list for a label that names a group (radios, tiles), not one control. */
+export const fieldLabelClass = "block text-sm font-semibold";
 /**
  * A label above its control, with optional help below. The label gets the id
  * `${id}-label` and the help `${id}-help`; point the control's
@@ -19,22 +23,27 @@ export function Field({
   className?: string;
 }) {
   return (
-    <div className={cx("rp-field", className)}>
-      <label id={`${id}-label`} htmlFor={id}>
+    <div data-slot="field" className={cn("mb-4", className)}>
+      <Label
+        id={`${id}-label`}
+        htmlFor={id}
+        className="block leading-normal font-semibold"
+      >
         {label}
-      </label>
+      </Label>
       {children}
       {help ? (
-        <p id={`${id}-help`} className="rp-help">
+        <p id={`${id}-help`} className={helpClass}>
           {help}
         </p>
       ) : null}
     </div>
   );
 }
+/** A quiet "or" between alternatives, with hairlines either side. */
 export function Divider({ children }: { children: ReactNode }) {
   return (
-    <div className="rp-divider">
+    <div className="mt-5 mb-2 flex items-center gap-3 text-xs font-semibold text-text-muted before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">
       <span>{children}</span>
     </div>
   );

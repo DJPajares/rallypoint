@@ -10,7 +10,6 @@
     ".": "./src/index.ts",
     "./theme.css": "./src/theme.css",
     "./shadcn.css": "./src/shadcn.css",
-    "./styles.css": "./src/styles.css",
     "./lib/*": "./src/lib/*.ts",
     "./components/ui/*": "./src/components/ui/*.tsx"
   },

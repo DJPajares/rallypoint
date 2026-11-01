@@ -1,10 +1,17 @@
 export { themeColor } from "./tokens";
 export { cx } from "./cx";
+export { cn } from "./lib/utils";
+export {
+  bareInputClass,
+  controlBoxClass,
+  controlClass,
+  popupClass,
+} from "./control";
 export { buttonClass, cardClass, iconButtonClass } from "./classes";
 export type { ButtonStyle, ButtonVariant } from "./classes";
 export { Button, IconButton } from "./components/button";
 export { Avatar, Badge, Card, IconTile } from "./components/surface";
-export { Help, Kicker, Lede } from "./components/text";
+export { Help, helpClass, Kicker, Lede } from "./components/text";
 export {
   EmptyState,
   Notice,
@@ -20,7 +27,7 @@ export {
   TicketTime,
 } from "./components/session";
 export type { TicketDate } from "./components/session";
-export { Divider, Field } from "./components/form";
+export { Divider, Field, fieldLabelClass } from "./components/form";
 export {
   AffixInput,
   CheckField,
@@ -42,7 +49,23 @@ export {
   Pill,
   Segmented,
   StatRow,
+  listClass,
+  rowClass,
+  rowLineClass,
+  rowMainClass,
+  rowLeadClass,
+  rowTextClass,
+  rowTitleClass,
+  rowSubClass,
+  rowTrailClass,
+  toneClass,
 } from "./components/list";
+// shadcn/ui primitives screens use directly (D-24).
+export { Input } from "./components/ui/input";
+export { Textarea } from "./components/ui/textarea";
+export { Label } from "./components/ui/label";
+export { Separator } from "./components/ui/separator";
+export { Skeleton } from "./components/ui/skeleton";
 export { ActivityIcon } from "./components/activity-icon";
 export { ChoiceTiles } from "./components/choice-tiles";
 export type { Tile } from "./components/choice-tiles";

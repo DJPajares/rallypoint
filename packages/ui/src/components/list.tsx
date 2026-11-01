@@ -1,8 +1,28 @@
 "use client";
 import { useRef } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
-import { cx } from "../cx";
+import { cn } from "../lib/utils";
 import type { Tone } from "./feedback";
+
+/** Class lists for screens that lay out their own rows (D-15/D-17). */
+export const listClass =
+  "m-0 list-none overflow-hidden rounded-lg bg-surface p-0 shadow-sm";
+export const rowClass = "border-t border-border first:border-t-0";
+export const rowLineClass = "flex min-h-13 items-center gap-2 pr-3";
+export const rowMainClass =
+  "flex min-h-13 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-2 pr-1 pl-3 text-left text-inherit no-underline [font:inherit] [a&]:hover:bg-surface-sunken [button&]:cursor-pointer [button&]:hover:bg-surface-sunken focus-visible:-outline-offset-3";
+export const rowLeadClass = "inline-flex flex-none";
+export const rowTextClass = "grid min-w-0";
+export const rowTitleClass = "truncate font-semibold";
+export const rowSubClass = "text-sm text-text-muted";
+export const rowTrailClass = "inline-flex flex-none items-center gap-2";
+/** A status colour pair; the words and icon carry the meaning. */
+export const toneClass: Record<Tone, string> = {
+  success: "bg-success-bg text-success",
+  warning: "bg-warning-bg text-warning",
+  neutral: "bg-neutral-bg text-neutral",
+  danger: "bg-danger-bg text-danger",
+};
 
 // The quiet building blocks (PRD D-15/D-17): repeated things are rows in one
 // inset group, not a card each.
@@ -15,7 +35,7 @@ export function ListGroup({
   children: ReactNode;
 }) {
   return (
-    <ul className="rp-list" aria-label={label}>
+    <ul className={listClass} aria-label={label}>
       {children}
     </ul>
   );
@@ -52,27 +72,25 @@ export function ListRow({
 }) {
   const body = (
     <>
-      {leading ? <span className="rp-row__lead">{leading}</span> : null}
-      <span className="rp-row__text">
-        <span className="rp-row__title">{title}</span>
-        {subtitle ? <span className="rp-row__sub">{subtitle}</span> : null}
+      {leading ? <span className={rowLeadClass}>{leading}</span> : null}
+      <span className={rowTextClass}>
+        <span className={rowTitleClass}>{title}</span>
+        {subtitle ? <span className={rowSubClass}>{subtitle}</span> : null}
       </span>
     </>
   );
   return (
-    <li className={cx("rp-row", className)}>
-      <div className="rp-row__line">
+    <li className={cn(rowClass, className)}>
+      <div className={rowLineClass}>
         {onSelect ? (
-          <button type="button" className="rp-row__main" onClick={onSelect}>
+          <button type="button" className={rowMainClass} onClick={onSelect}>
             {body}
-            {selectHint ? (
-              <span className="rp-sr-only">{selectHint}</span>
-            ) : null}
+            {selectHint ? <span className="sr-only">{selectHint}</span> : null}
           </button>
         ) : (
-          <div className="rp-row__main">{body}</div>
+          <div className={rowMainClass}>{body}</div>
         )}
-        {trailing ? <span className="rp-row__trail">{trailing}</span> : null}
+        {trailing ? <span className={rowTrailClass}>{trailing}</span> : null}
       </div>
       {children}
     </li>
@@ -90,7 +108,12 @@ export function Pill({
   children: ReactNode;
 }) {
   return (
-    <span className={`rp-pill rp-tone-${tone}`}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs leading-[1.6] font-semibold whitespace-nowrap",
+        toneClass[tone],
+      )}
+    >
       {icon ? <span aria-hidden="true">{icon}</span> : null}
       {children}
     </span>
@@ -104,11 +127,16 @@ export function StatRow({
   items: Array<{ label: string; value: ReactNode }>;
 }) {
   return (
-    <dl className="rp-stats">
+    <dl className="m-0 grid auto-cols-fr grid-flow-col rounded-lg bg-surface shadow-sm">
       {items.map((item) => (
-        <div key={item.label}>
-          <dt>{item.label}</dt>
-          <dd>{item.value}</dd>
+        <div
+          key={item.label}
+          className="flex flex-col-reverse border-l border-border py-3 text-center first:border-l-0"
+        >
+          <dt className="text-xs text-text-muted">{item.label}</dt>
+          <dd className="m-0 font-heading text-2xl leading-tight font-extrabold tabular-nums">
+            {item.value}
+          </dd>
         </div>
       ))}
     </dl>
@@ -145,7 +173,11 @@ export function Segmented<T extends string>({
     refs.current[next]?.focus();
   }
   return (
-    <div className="rp-segmented" role="radiogroup" aria-label={label}>
+    <div
+      className="flex rounded-md bg-surface-sunken p-0.5"
+      role="radiogroup"
+      aria-label={label}
+    >
       {options.map((option, index) => (
         <button
           key={option.value}
@@ -156,7 +188,7 @@ export function Segmented<T extends string>({
           role="radio"
           aria-checked={option.value === value}
           tabIndex={option.value === value ? 0 : -1}
-          className="rp-segmented__option"
+          className="min-h-control-sm flex-1 rounded-sm border-0 bg-transparent px-2 py-1 text-sm font-semibold text-text-muted transition-colors duration-150 ease-standard focus-visible:outline-offset-0.5 aria-checked:bg-surface aria-checked:text-text aria-checked:shadow-sm"
           onClick={() => onChange(option.value)}
           onKeyDown={(event) => onKeyDown(event, index)}
         >

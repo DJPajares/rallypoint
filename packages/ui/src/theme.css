@@ -339,7 +339,10 @@
 /* System dark unless the switch says light; or the switch says dark. */
 @custom-variant dark {
   @media (prefers-color-scheme: dark) {
-    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+    &:where(
+      :root:not([data-theme="light"]),
+      :root:not([data-theme="light"]) *
+    ) {
       @slot;
     }
   }

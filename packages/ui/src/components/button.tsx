@@ -1,7 +1,8 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { cx } from "../cx";
+import { cn } from "../lib/utils";
 import { buttonClass, iconButtonClass } from "../classes";
 import type { ButtonStyle } from "../classes";
+/** A button in one of RallyPoint's looks (shadcn's Button styles). */
 export function Button({
   variant,
   size,
@@ -11,7 +12,7 @@ export function Button({
 }: ButtonStyle & ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
-      className={cx(buttonClass({ variant, size, wide }), className)}
+      className={cn(buttonClass({ variant, size, wide }), className)}
       {...props}
     />
   );
@@ -32,7 +33,7 @@ export function IconButton({
     <button
       type="button"
       aria-label={label}
-      className={cx(iconButtonClass(flat), className)}
+      className={cn(iconButtonClass(flat), className)}
       {...props}
     >
       {children}

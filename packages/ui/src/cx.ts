@@ -1,4 +1,2 @@
-/** Joins class names, skipping empty ones. */
-export function cx(...names: Array<string | false | null | undefined>) {
-  return names.filter(Boolean).join(" ");
-}
+/** Joins class names; later Tailwind classes win over earlier conflicting ones. */
+export { cn as cx } from "./lib/utils";

@@ -1,21 +1,30 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { Checkbox } from "@base-ui/react/checkbox";
 import { NumberField } from "@base-ui/react/number-field";
-import { Popover } from "@base-ui/react/popover";
-import { Select } from "@base-ui/react/select";
-import { Switch } from "@base-ui/react/switch";
+import { Popover as PopoverPrimitive } from "@base-ui/react/popover";
 import { DayPicker } from "react-day-picker";
 import { CalendarBlankIcon } from "@phosphor-icons/react/dist/csr/CalendarBlank";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
 import { CaretLeftIcon } from "@phosphor-icons/react/dist/csr/CaretLeft";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
-import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
 import { MinusIcon } from "@phosphor-icons/react/dist/csr/Minus";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
+import { cn } from "../lib/utils";
+import { buttonClass } from "../classes";
+import { bareInputClass, controlBoxClass, controlClass } from "../control";
 import { useIsPhone } from "../media";
 import { Sheet } from "./sheet";
+import { Checkbox } from "./ui/checkbox";
+import { PopoverContent } from "./ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { Switch } from "./ui/switch";
 import {
   formatLocalDateTime,
   joinLocalDateTime,
@@ -29,6 +38,9 @@ interface ControlProps {
   disabled?: boolean;
   "aria-describedby"?: string;
 }
+
+const caretClass =
+  "ml-auto inline-flex flex-none text-text-muted transition-transform duration-150 ease-standard in-data-popup-open:rotate-180";
 
 /**
  * A date and time on the session's own wall clock, stored as the same
@@ -67,7 +79,7 @@ export function DateTimeField({
   const label = formatLocalDateTime(value);
   const trigger = {
     id,
-    className: "rp-control rp-picker-trigger",
+    className: cn(controlClass, "cursor-pointer"),
     disabled,
     // The field's label plus the chosen value, so "Starts, Thu, Nov 5 ·
     // 7:00 PM" is announced rather than the label alone.
@@ -75,27 +87,32 @@ export function DateTimeField({
     "aria-describedby": describedBy,
     children: (
       <>
-        <CalendarBlankIcon size={20} aria-hidden="true" />
+        <CalendarBlankIcon
+          className="flex-none text-text-muted"
+          size={20}
+          aria-hidden="true"
+        />
         <span
           id={`${id}-value`}
-          className={label ? "rp-nums" : "rp-placeholder"}
+          className={cn(
+            "min-w-0 flex-1 truncate",
+            label ? "tabular-nums" : "text-text-muted",
+          )}
         >
           {label ?? placeholder}
         </span>
-        <CaretDownIcon
-          className="rp-picker-caret"
-          size={16}
-          aria-hidden="true"
-        />
+        <CaretDownIcon className={caretClass} size={16} aria-hidden="true" />
       </>
     ),
   };
-  const panel = (done: ReactNode) => (
+  const done = buttonClass({ variant: "primary", size: "sm" });
+  const panel = (doneButton: ReactNode) => (
     <DateTimePanel
       value={value}
       onChange={onChange}
       defaultTime={defaultTime}
-      done={done}
+      done={doneButton}
+      inSheet={phone}
     />
   );
   if (phone)
@@ -111,11 +128,7 @@ export function DateTimeField({
         />
         <Sheet open={open} onClose={close} title={title}>
           {panel(
-            <button
-              type="button"
-              className="rp-button rp-button--primary rp-button--sm"
-              onClick={close}
-            >
+            <button type="button" className={done} onClick={close}>
               Done
             </button>,
           )}
@@ -123,46 +136,65 @@ export function DateTimeField({
       </>
     );
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
-      <Popover.Trigger {...trigger} />
-      <Popover.Portal>
-        <Popover.Positioner
-          className="rp-positioner"
-          sideOffset={8}
-          align="start"
-          collisionPadding={12}
-        >
-          <Popover.Popup className="rp-popover rp-datetime">
-            <Popover.Title className="rp-sr-only">{title}</Popover.Title>
-            {panel(
-              <Popover.Close className="rp-button rp-button--primary rp-button--sm">
-                Done
-              </Popover.Close>,
-            )}
-          </Popover.Popup>
-        </Popover.Positioner>
-      </Popover.Portal>
-    </Popover.Root>
+    <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
+      <PopoverPrimitive.Trigger {...trigger} />
+      <PopoverContent
+        align="start"
+        sideOffset={8}
+        className="w-auto max-w-[calc(100vw-24px)]"
+      >
+        <PopoverPrimitive.Title className="sr-only">
+          {title}
+        </PopoverPrimitive.Title>
+        {panel(
+          <PopoverPrimitive.Close className={done}>
+            Done
+          </PopoverPrimitive.Close>,
+        )}
+      </PopoverContent>
+    </PopoverPrimitive.Root>
   );
 }
+
+// The calendar's look, by react-day-picker part. Day cells carry data-today,
+// data-selected, data-outside and data-disabled, which style their button.
+const navButton =
+  "inline-flex size-control-sm items-center justify-center rounded-full border-0 bg-transparent p-0 text-text hover:bg-surface-sunken disabled:text-text-muted disabled:opacity-50";
+const calendarClasses = {
+  root: "relative flex-none",
+  month_caption: "flex h-control-sm items-center pl-2 font-semibold",
+  nav: "absolute top-0 right-0 z-1 flex gap-1",
+  button_previous: navButton,
+  button_next: navButton,
+  month_grid: "mt-1 border-collapse",
+  weekday: "h-control-sm w-day text-xs font-semibold text-text-muted",
+  day: "group/day py-0.5 text-center",
+  day_button:
+    "size-day rounded-full border-0 bg-transparent p-0 text-sm text-text tabular-nums transition-colors duration-150 ease-standard hover:bg-surface-sunken group-data-today/day:font-bold group-data-today/day:shadow-ring-chrome group-data-selected/day:bg-action group-data-selected/day:font-bold group-data-selected/day:text-on-action group-data-selected/day:shadow-none group-data-outside/day:text-text-muted group-data-outside/day:opacity-55 group-data-disabled/day:cursor-not-allowed group-data-disabled/day:opacity-35",
+  hidden: "invisible",
+};
 
 function DateTimePanel({
   value,
   onChange,
   defaultTime,
   done,
+  inSheet,
 }: {
   value: string;
   onChange: (value: string) => void;
   defaultTime: string;
   done: ReactNode;
+  inSheet: boolean;
 }) {
   const { date, time } = splitLocalDateTime(value);
   return (
     <>
-      <div className="rp-datetime__body">
+      <div
+        className={cn("flex gap-3 max-md:flex-col", inSheet && "items-center")}
+      >
         <DayPicker
-          className="rp-calendar"
+          classNames={calendarClasses}
           mode="single"
           selected={date ?? undefined}
           defaultMonth={date ?? undefined}
@@ -182,14 +214,15 @@ function DateTimePanel({
         <TimeSlots
           value={time}
           disabled={!date}
+          inSheet={inSheet}
           onPick={(slot) => date && onChange(joinLocalDateTime(date, slot))}
         />
       </div>
-      <div className="rp-popover__footer">
+      <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
         {value ? (
           <button
             type="button"
-            className="rp-button rp-button--link"
+            className={cn(buttonClass({ variant: "link" }), "min-h-control-sm")}
             onClick={() => onChange("")}
           >
             Clear
@@ -206,10 +239,12 @@ function DateTimePanel({
 function TimeSlots({
   value,
   disabled,
+  inSheet,
   onPick,
 }: {
   value: string | null;
   disabled: boolean;
+  inSheet: boolean;
   onPick: (slot: string) => void;
 }) {
   const list = useRef<HTMLDivElement>(null);
@@ -230,7 +265,11 @@ function TimeSlots({
   return (
     <div
       ref={list}
-      className="rp-timeslots"
+      // A column beside the calendar; on a phone one swipeable row under it.
+      className={cn(
+        "flex max-h-popover-list w-24 flex-col gap-1 overflow-y-auto overscroll-contain p-1 [scrollbar-width:thin] max-md:max-h-none max-md:w-auto max-md:max-w-[calc(var(--spacing-day)*7)] max-md:flex-row max-md:overflow-x-auto max-md:overflow-y-hidden",
+        inSheet && "self-stretch max-md:max-w-none",
+      )}
       role="group"
       aria-label={disabled ? "Time (pick a date first)" : "Time"}
     >
@@ -238,7 +277,7 @@ function TimeSlots({
         <button
           key={slot.value}
           type="button"
-          className="rp-timeslot rp-nums"
+          className="min-h-control-sm flex-none rounded-full border border-border bg-surface px-3 text-sm whitespace-nowrap text-text tabular-nums transition-colors duration-150 ease-standard not-disabled:hover:border-text-muted disabled:cursor-not-allowed disabled:opacity-45 aria-pressed:border-transparent aria-pressed:bg-action aria-pressed:font-bold aria-pressed:text-on-action"
           aria-pressed={slot.value === value}
           data-anchor={slot.value === "18:00" || undefined}
           disabled={disabled}
@@ -256,7 +295,7 @@ export interface Option {
   label: string;
 }
 
-/** A short list of fixed choices, styled like the other controls. */
+/** A short list of fixed choices, styled like the other controls (shadcn Select). */
 export function SelectField({
   id,
   value,
@@ -270,50 +309,28 @@ export function SelectField({
   options: Option[];
 }) {
   return (
-    <Select.Root
+    <Select
       items={options}
       value={value}
       onValueChange={(next) => next !== null && onChange(String(next))}
       disabled={disabled}
     >
-      <Select.Trigger
-        id={id}
-        className="rp-control rp-picker-trigger"
-        aria-describedby={describedBy}
-      >
-        <Select.Value className="rp-select-value" />
-        <Select.Icon className="rp-picker-caret">
-          <CaretDownIcon size={16} aria-hidden="true" />
-        </Select.Icon>
-      </Select.Trigger>
-      <Select.Portal>
-        <Select.Positioner
-          className="rp-positioner"
-          sideOffset={8}
-          alignItemWithTrigger={false}
-          collisionPadding={12}
-        >
-          <Select.Popup className="rp-popover rp-listbox">
-            <Select.List>
-              {options.map((option) => (
-                <Select.Item
-                  key={option.value}
-                  value={option.value}
-                  className="rp-option"
-                >
-                  <Select.ItemText>{option.label}</Select.ItemText>
-                  <Select.ItemIndicator className="rp-option__check">
-                    <CheckIcon size={16} aria-hidden="true" />
-                  </Select.ItemIndicator>
-                </Select.Item>
-              ))}
-            </Select.List>
-          </Select.Popup>
-        </Select.Positioner>
-      </Select.Portal>
-    </Select.Root>
+      <SelectTrigger id={id} aria-describedby={describedBy}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent sideOffset={8} alignItemWithTrigger={false}>
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
+
+const stepButton =
+  "inline-flex size-control-sm flex-none items-center justify-center rounded-full border-0 bg-transparent p-0 text-text-muted not-disabled:hover:bg-surface-sunken not-disabled:hover:text-text disabled:cursor-not-allowed disabled:opacity-40";
 
 /**
  * A whole number with − and + buttons. The form keeps text, so the value goes
@@ -344,21 +361,18 @@ export function NumberStepper({
       step={1}
       disabled={disabled}
     >
-      <NumberField.Group className="rp-control rp-stepper">
-        <NumberField.Decrement
-          className="rp-stepper__button"
-          aria-label="Decrease"
-        >
+      <NumberField.Group className={cn(controlClass, controlBoxClass, "px-1")}>
+        <NumberField.Decrement className={stepButton} aria-label="Decrease">
           <MinusIcon size={18} aria-hidden="true" />
         </NumberField.Decrement>
         <NumberField.Input
-          className="rp-bare rp-stepper__input rp-nums"
+          className={cn(
+            bareInputClass,
+            "text-center font-semibold tabular-nums",
+          )}
           aria-describedby={describedBy}
         />
-        <NumberField.Increment
-          className="rp-stepper__button"
-          aria-label="Increase"
-        >
+        <NumberField.Increment className={stepButton} aria-label="Increase">
           <PlusIcon size={18} aria-hidden="true" />
         </NumberField.Increment>
       </NumberField.Group>
@@ -373,14 +387,14 @@ export function AffixInput({
   ...props
 }: { prefix: ReactNode } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
-    <div className="rp-control rp-affix">
-      <span className="rp-affix__text" aria-hidden="true">
+    <div className={cn(controlClass, controlBoxClass)}>
+      <span
+        className="flex-none border-r border-border pr-3 text-sm font-semibold text-text-muted"
+        aria-hidden="true"
+      >
         {prefix}
       </span>
-      <input
-        className={`rp-bare rp-affix__input ${className ?? ""}`}
-        {...props}
-      />
+      <input className={cn(bareInputClass, className)} {...props} />
     </div>
   );
 }
@@ -400,21 +414,20 @@ export function SwitchField({
   description?: ReactNode;
 }) {
   return (
-    <label className="rp-toggle-row">
-      <span className="rp-toggle-row__text">
-        <span className="rp-toggle-row__label">{children}</span>
+    <label className="mt-4 mb-1 flex cursor-pointer items-center justify-between gap-4 rounded-md border border-border bg-surface px-4 py-3">
+      <span className="grid gap-0.5">
+        <span className="font-semibold">{children}</span>
         {description ? (
-          <span className="rp-toggle-row__description">{description}</span>
+          <span className="text-sm font-normal text-text-muted">
+            {description}
+          </span>
         ) : null}
       </span>
-      <Switch.Root
-        className="rp-switch"
+      <Switch
         checked={checked}
         onCheckedChange={onCheckedChange}
         disabled={disabled}
-      >
-        <Switch.Thumb className="rp-switch__thumb" />
-      </Switch.Root>
+      />
     </label>
   );
 }
@@ -432,17 +445,12 @@ export function CheckField({
   children: ReactNode;
 }) {
   return (
-    <label className="rp-check">
-      <Checkbox.Root
-        className="rp-checkbox"
+    <label className="mt-4 mb-1 flex cursor-pointer items-start gap-3 font-medium">
+      <Checkbox
         checked={checked}
         onCheckedChange={onCheckedChange}
         disabled={disabled}
-      >
-        <Checkbox.Indicator className="rp-checkbox__indicator">
-          <CheckIcon size={16} weight="bold" aria-hidden="true" />
-        </Checkbox.Indicator>
-      </Checkbox.Root>
+      />
       <span>{children}</span>
     </label>
   );

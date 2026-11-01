@@ -1,6 +1,6 @@
 /**
  * The few token values JavaScript needs (browser chrome colour, which CSS
- * cannot reach). Keep them equal to --color-bg in tokens.css.
+ * cannot reach). Keep them equal to --color-bg in theme.css.
  */
 export const themeColor = {
   light: "#f6f5f3",
