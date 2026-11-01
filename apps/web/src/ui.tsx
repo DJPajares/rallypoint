@@ -44,7 +44,10 @@ export function DetailPage({
 /** The page's primary actions: pinned above the home indicator on phones, inline elsewhere. */
 export function StickyActions({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-5 flex flex-wrap items-center gap-2 max-md:glass-surface max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-(--layer-sticky) max-md:m-0 max-md:flex-nowrap max-md:border-t max-md:border-border max-md:pt-3 max-md:pr-[max(var(--layout-gutter),var(--safe-right))] max-md:pb-[calc(12px+var(--safe-bottom))] max-md:pl-[max(var(--layout-gutter),var(--safe-left))] max-md:*:data-[slot=button]:flex-1 max-md:[&>button]:flex-1 max-md:[&>a]:flex-1">
+    <div
+      data-slot="sticky-actions"
+      className="mt-5 flex flex-wrap items-center gap-2 max-md:glass-surface max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-(--layer-sticky) max-md:m-0 max-md:flex-nowrap max-md:border-t max-md:border-border max-md:pt-3 max-md:pr-[max(var(--layout-gutter),var(--safe-right))] max-md:pb-[calc(12px+var(--safe-bottom))] max-md:pl-[max(var(--layout-gutter),var(--safe-left))] max-md:*:data-[slot=button]:flex-1 max-md:[&>button]:flex-1 max-md:[&>a]:flex-1"
+    >
       {children}
     </div>
   );

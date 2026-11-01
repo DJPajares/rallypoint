@@ -168,6 +168,7 @@ export function Segmented<T extends string>({
   }
   return (
     <div
+      data-slot="segmented"
       className="flex rounded-md bg-surface-sunken p-0.5"
       role="radiogroup"
       aria-label={label}

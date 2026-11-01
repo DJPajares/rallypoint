@@ -31,6 +31,7 @@ import { useFrame } from "./frame";
 import {
   Badge,
   buttonClass,
+  cx,
   EmptyState,
   ListGroup,
   Notice,
@@ -58,9 +59,9 @@ export function Landing() {
     if (session) router.replace("/home");
   }, [session, router]);
   return (
-    <div className="landing">
-      <section className="landing-hero">
-        <div className="landing-copy">
+    <div>
+      <section className="grid items-center gap-8 desk:min-h-[56dvh] desk:grid-cols-[1.2fr_1fr]">
+        <div className="[&_h1]:mb-4 [&_h1]:text-display-lg [&_h1]:leading-[0.98] [&_h1_span]:text-text-muted">
           <h1>
             Good company.
             <br />
@@ -70,18 +71,25 @@ export function Landing() {
             Bring your people together, then get back to the good part. One
             shared link shows who’s in, what it costs and when to cancel by.
           </p>
-          <Link className={buttonClass({ variant: "primary" })} href="/sign-in">
+          <Link
+            className={cx(buttonClass({ variant: "primary" }), "mt-2")}
+            href="/sign-in"
+          >
             Find your people
             <ArrowRightIcon size={20} aria-hidden="true" />
           </Link>
-          <p className="quiet-note">Sign in once. Keep your group close.</p>
+          <p className="mt-6 text-sm text-text-muted">
+            Sign in once. Keep your group close.
+          </p>
         </div>
-        <div className="landing-art" aria-hidden="true">
-          <div className="landing-card">
-            <span className="mb-1 block text-sm font-semibold text-text-muted">
+        <div className="flex justify-center" aria-hidden="true">
+          <div className="grid w-[min(360px,100%)] -rotate-[1.5deg] gap-3 rounded-xl border border-border bg-surface p-5 shadow-lg">
+            <span className="m-0 block text-sm font-semibold text-text-muted">
               Thursday Pickleball Crew
             </span>
-            <p className="landing-card-title">Thursday night doubles</p>
+            <p className="-mt-1 mb-0 font-heading text-2xl leading-tight font-bold tracking-tight">
+              Thursday night doubles
+            </p>
             <Ticket
               date={{ weekday: "Thu", day: "24", month: "Oct", time: "" }}
             >
@@ -90,14 +98,16 @@ export function Landing() {
                 Riverside Courts · court 3
               </div>
             </Ticket>
-            <div className="rounded-lg border border-border bg-surface p-5">
+            <div className="rounded-lg border border-border bg-surface p-3">
               <SpotsMeter capacity={12} taken={10} />
             </div>
-            <span className="landing-join">Join · 2 spots left</span>
+            <span className="block rounded-full bg-action p-3 text-center font-bold text-on-action">
+              Join · 2 spots left
+            </span>
           </div>
         </div>
       </section>
-      <section className="landing-steps">
+      <section className="mt-12 grid gap-3 md:grid-cols-3">
         {[
           ["Create", "Publish the time, place, seats and fee."],
           ["Share", "Drop one link in the group chat."],
@@ -105,9 +115,11 @@ export function Landing() {
         ].map(([title, body], index) => (
           <div
             key={title}
-            className="rounded-lg border border-border bg-surface p-5 landing-step"
+            className="rounded-lg border border-border bg-surface p-5 [&_h2]:mt-2 [&_h2]:mb-1 [&_h2]:text-xl [&_p]:m-0 [&_p]:text-text-muted"
           >
-            <span className="step-number tabular-nums">{index + 1}</span>
+            <span className="inline-flex size-8 items-center justify-center rounded-full bg-stub font-bold text-on-stub tabular-nums">
+              {index + 1}
+            </span>
             <h2>{title}</h2>
             <p>{body}</p>
           </div>
@@ -158,7 +170,7 @@ export function HomeDashboard() {
     day: "numeric",
   }).format(now);
   return (
-    <section className="page tab-page home-page">
+    <section className="mx-auto grid max-w-form content-start gap-5">
       <TabHero
         title={
           identity.data
@@ -183,7 +195,7 @@ export function HomeDashboard() {
       ) : next ? (
         <UpNext row={next} now={now} />
       ) : (
-        <div className="up-next up-next--empty">
+        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-5 rounded-xl border border-border bg-surface p-6 shadow-sm max-[520px]:grid-cols-[auto_1fr] max-[520px]:gap-4 max-[520px]:p-5">
           <CalendarDotsIcon size={30} aria-hidden="true" />
           <div>
             <h2>Nothing coming up</h2>
@@ -197,8 +209,8 @@ export function HomeDashboard() {
       )}
       <HomeInvites />
       {week.length ? (
-        <section className="tab-section" aria-labelledby="home-week">
-          <div className="tab-section__head">
+        <section className="grid gap-3" aria-labelledby="home-week">
+          <div className="flex items-baseline justify-between gap-3 [&_h2]:m-0 [&_h2]:text-lg">
             <h2 id="home-week">This week</h2>
             <Link className={buttonClass({ variant: "link" })} href="/sessions">
               All sessions
@@ -213,8 +225,8 @@ export function HomeDashboard() {
       ) : null}
       <NextBadge view={badges.data} />
       <EarnedBadgeSheet view={badges.data} />
-      <section className="tab-section" aria-labelledby="home-groups">
-        <div className="tab-section__head">
+      <section className="grid gap-3" aria-labelledby="home-groups">
+        <div className="flex items-baseline justify-between gap-3 [&_h2]:m-0 [&_h2]:text-lg">
           <h2 id="home-groups">Your groups</h2>
           {groups.length > 3 ? (
             <Link
@@ -244,21 +256,21 @@ export function HomeDashboard() {
 /** The quiet way to start a group, as the last row of a groups list. */
 function StartGroupRow() {
   return (
-    <li className="border-t border-border first:border-t-0 tab-row">
-      <div className="flex min-h-13 items-center gap-2 pr-3">
+    <li className="border-t border-border first:border-t-0">
+      <div className="flex min-h-13 items-center gap-2">
         <Link
-          className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-2 pr-1 pl-3 text-left text-inherit no-underline [font:inherit] [a&]:hover:bg-surface-sunken [button&]:cursor-pointer [button&]:hover:bg-surface-sunken focus-visible:-outline-offset-3"
+          className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-2 pr-3 pl-3 text-left text-inherit no-underline [font:inherit] [a&]:hover:bg-surface-sunken [button&]:cursor-pointer [button&]:hover:bg-surface-sunken focus-visible:-outline-offset-3"
           href="/groups/new"
         >
           <span
-            className="inline-flex flex-none tab-row__add"
+            className="grid aspect-square w-11 flex-none place-items-center rounded-md border border-dashed border-border-strong text-text-muted"
             aria-hidden="true"
           >
             <PlusIcon size={20} weight="bold" />
           </span>
-          <span className="grid min-w-0">
+          <span className="grid min-w-0 flex-1">
             <span className="truncate font-semibold">Start a group</span>
-            <span className="text-sm text-text-muted">
+            <span className="truncate text-sm text-text-muted">
               A list of people you play with, public or private.
             </span>
           </span>
@@ -328,7 +340,10 @@ function SessionDays({
   return byDay(rows, past).map((day) => {
     const label = dayLabel(day.key, today, past);
     return (
-      <section key={day.key || "undecided"} className="session-day">
+      <section
+        key={day.key || "undecided"}
+        className="[&_h2]:sticky [&_h2]:top-(--safe-top) [&_h2]:z-1 [&_h2]:m-0 [&_h2]:bg-bg [&_h2]:px-1 [&_h2]:py-2 [&_h2]:text-lg md:[&_h2]:top-topbar"
+      >
         <h2>{label}</h2>
         <ListGroup>
           {day.rows.map((row) => (
@@ -384,7 +399,7 @@ export function SessionsPage() {
   const pastTotal = sessions.data?.pastTotal ?? 0;
   const showing = pastTotal > 0 ? view : "upcoming";
   return (
-    <section className="page tab-page sessions-page">
+    <section className="mx-auto grid max-w-form content-start gap-5 **:data-[slot=segmented]:max-w-80">
       <TabHero
         title="Sessions"
         summary={sessions.data ? sessionsSummary(upcoming, today) : undefined}
@@ -438,7 +453,7 @@ export function SessionsPage() {
           ) : upcoming.length ? (
             <SessionDays rows={upcoming} past={false} today={today} />
           ) : (
-            <p className="mt-1 mb-0 text-sm text-text-muted session-empty">
+            <p className="mt-6 mb-0 text-sm text-text-muted">
               Nothing coming up.
             </p>
           )}
@@ -458,7 +473,7 @@ function DuesRow({ item }: { item: DuesItem }) {
     minute: "2-digit",
   }).format(new Date(item.session.startsAt));
   return (
-    <li className="rounded-lg border border-border bg-surface p-5 dues-item">
+    <li className="rounded-lg border border-border bg-surface p-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 *:[div]:grid *:[div]:gap-0.5 [&>div:first-child]:min-w-0 [&>div:first-child]:flex-[1_1_0] [&_span]:text-sm [&_span]:text-text-muted">
       <div>
         <Link href={`/s/${item.session.slug}`}>
           <strong>{item.session.title}</strong>
@@ -470,7 +485,7 @@ function DuesRow({ item }: { item: DuesItem }) {
           {item.seats === 2 ? " · You and your guest" : ""}
         </span>
       </div>
-      <div className="dues-amount">
+      <div className="justify-items-end tabular-nums">
         {/* A released spot's fee was dropped: no amount, so nothing looks owed. */}
         {item.fee.liabilityState === "released_unpaid" ? null : (
           <strong>
@@ -487,7 +502,7 @@ function DuesRow({ item }: { item: DuesItem }) {
 }
 function SplitDuesRow({ item }: { item: SplitClaimDuesItem }) {
   return (
-    <li className="rounded-lg border border-border bg-surface p-5 dues-item">
+    <li className="rounded-lg border border-border bg-surface p-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 *:[div]:grid *:[div]:gap-0.5 [&>div:first-child]:min-w-0 [&>div:first-child]:flex-[1_1_0] [&_span]:text-sm [&_span]:text-text-muted">
       <div>
         <Link href={`/s/${item.session.slug}`}>
           <strong>{item.session.title}</strong>
@@ -524,7 +539,7 @@ export function DuesPage() {
   );
   const settled = dues.filter((d) => !owing.includes(d));
   return (
-    <section className="page">
+    <section>
       <div className="mb-4">
         <h1>Dues</h1>
       </div>
@@ -543,7 +558,10 @@ export function DuesPage() {
         </EmptyState>
       ) : (
         <>
-          <section className="dues-section" aria-labelledby="dues-owing">
+          <section
+            className="grid gap-3 [&_h2]:m-0 [&_h2]:text-xl"
+            aria-labelledby="dues-owing"
+          >
             <h2 id="dues-owing">To pay</h2>
             {owing.length ? (
               <>
@@ -551,7 +569,7 @@ export function DuesPage() {
                   Pay the organizer directly. They mark it paid here; RallyPoint
                   never collects payments.
                 </p>
-                <ul className="dues-list">
+                <ul className="m-0 grid list-none gap-3 p-0">
                   {owing.map((d) => (
                     <DuesRow key={d.partyId} item={d} />
                   ))}
@@ -564,9 +582,12 @@ export function DuesPage() {
             )}
           </section>
           {estimated.length ? (
-            <section className="dues-section" aria-labelledby="dues-estimated">
+            <section
+              className="grid gap-3 [&_h2]:m-0 [&_h2]:text-xl"
+              aria-labelledby="dues-estimated"
+            >
               <h2 id="dues-estimated">Estimated</h2>
-              <ul className="dues-list">
+              <ul className="m-0 grid list-none gap-3 p-0">
                 {estimated.map((c) => (
                   <SplitDuesRow key={c.partyId} item={c} />
                 ))}
@@ -574,9 +595,12 @@ export function DuesPage() {
             </section>
           ) : null}
           {settled.length || settledClaims.length ? (
-            <section className="dues-section" aria-labelledby="dues-settled">
+            <section
+              className="grid gap-3 [&_h2]:m-0 [&_h2]:text-xl"
+              aria-labelledby="dues-settled"
+            >
               <h2 id="dues-settled">Settled</h2>
-              <ul className="dues-list">
+              <ul className="m-0 grid list-none gap-3 p-0">
                 {settled.map((d) => (
                   <DuesRow key={d.partyId} item={d} />
                 ))}
@@ -596,7 +620,7 @@ export function Workspace() {
   const groups = workspace.data?.groups ?? [];
   const admin = groups.filter((group) => group.role === "admin").length;
   return (
-    <section className="page tab-page groups-page">
+    <section className="mx-auto grid max-w-form content-start gap-5">
       <TabHero
         title="Your groups"
         summary={
@@ -658,7 +682,7 @@ export function EditGroup() {
     <DetailPage
       back={`/groups/${id}`}
       backLabel={group?.name ?? "Your group"}
-      className="form-page"
+      className="mx-auto max-w-form"
     >
       {result.loading ? (
         <Pending>Opening your group…</Pending>
@@ -680,7 +704,7 @@ export function EditGroup() {
 }
 export function NotFound() {
   return (
-    <section className="page">
+    <section>
       <EmptyState
         headingLevel={1}
         icon={<span className="tabular-nums">404</span>}

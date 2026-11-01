@@ -31,7 +31,9 @@ import {
   AffixInput,
   buttonClass,
   DateTimeField,
+  cx,
   Field,
+  Input,
   Notice,
   NumberStepper,
   Pending,
@@ -39,6 +41,7 @@ import {
   SpotsMeter,
   Sheet,
   SwitchField,
+  Textarea,
   Ticket,
 } from "@rallypoint/ui";
 import { DetailPage, StickyActions } from "./ui";
@@ -96,12 +99,16 @@ export function CreateGroup() {
     router.push(`/groups/${result.group?.id ?? result.groupId}`),
   );
   return (
-    <DetailPage back="/workspace" backLabel="Your groups" className="form-page">
+    <DetailPage
+      back="/workspace"
+      backLabel="Your groups"
+      className="mx-auto max-w-form"
+    >
       <div className="mb-4">
         <h1>Start a group.</h1>
       </div>
       <form
-        className="rounded-lg border border-border bg-surface p-5"
+        className="rounded-lg border border-border bg-surface p-5 md:p-8"
         onSubmit={(e) => {
           e.preventDefault();
           mutation.run("/api/groups", { name, visibility });
@@ -109,7 +116,7 @@ export function CreateGroup() {
       >
         <fieldset disabled={mutation.busy || mutation.uncertain}>
           <Field id="group-name" label="Group name">
-            <input
+            <Input
               id="group-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -147,6 +154,14 @@ export function SessionEditor() {
   const { id } = useParams<{ id: string }>();
   return <SessionLoader id={id!} />;
 }
+// The session page: head, then places and registration, then details on a
+// phone; details beside a sticky side panel from tablet up. On game day it's
+// one column of head and the panel.
+const layoutClass =
+  "group/layout grid gap-5 [grid-template-areas:'head'_'side'_'details'] md:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] md:items-start md:gap-x-8 md:[grid-template-areas:'head_side'_'details_side'] desk:grid-cols-[minmax(0,1fr)_380px] desk:gap-x-12";
+const gameDayLayoutClass =
+  "grid-cols-[minmax(0,40rem)] [grid-template-areas:'head'_'side'] md:grid-cols-[minmax(0,40rem)] md:[grid-template-areas:'head'_'side'] desk:grid-cols-[minmax(0,40rem)]";
+
 function SessionLoader({ id }: { id: string }) {
   const result = useApi<{ session: SessionRecord }>(`/api/sessions/${id}`);
   if (result.loading)
@@ -363,7 +378,7 @@ function Editor({
     attrs: Record<string, unknown> = {},
   ) {
     return (
-      <input
+      <Input
         id={key}
         type={type}
         value={String(form[key])}
@@ -396,7 +411,11 @@ function Editor({
       ? `${origin}/s/${record.slug}`
       : null;
   return (
-    <DetailPage back="/sessions" backLabel="Sessions" className="form-page">
+    <DetailPage
+      back="/sessions"
+      backLabel="Sessions"
+      className="mx-auto max-w-form"
+    >
       <div className="mb-4">
         <h1 ref={header} tabIndex={-1}>
           {terminal
@@ -416,14 +435,14 @@ function Editor({
         </Notice>
       ) : null}
       {url ? (
-        <div className="rounded-lg border border-border bg-surface p-5 share-panel">
+        <div className="rounded-lg border border-border bg-surface p-5 mb-4 grid gap-3 [&_p]:mt-2 [&_p]:mb-1 [&_p]:text-sm [&_p]:text-text-muted">
           <div>
             <p>Anyone with the link can see this session.</p>
-            <a className="share-url" href={url}>
+            <a className="font-semibold wrap-anywhere" href={url}>
               {url}
             </a>
           </div>
-          <div className="share-actions">
+          <div className="flex flex-wrap gap-2">
             <button
               className={buttonClass({ variant: "primary" })}
               onClick={() => {
@@ -457,7 +476,7 @@ function Editor({
         </div>
       ) : null}
       {record && record.state !== "draft" ? (
-        <div className="run-again">
+        <div className="mb-4">
           <Link
             className={buttonClass()}
             href={`/sessions/new?from=${record.id}`}
@@ -493,7 +512,7 @@ function Editor({
       ) : null}
       <form
         noValidate
-        className="rounded-lg border border-border bg-surface p-5"
+        className="rounded-lg border border-border bg-surface p-5 md:p-8"
         onSubmit={(e) =>
           submit(e, record?.state === "published" ? "update" : "publish")
         }
@@ -520,7 +539,7 @@ function Editor({
             catalog={catalog}
             disabled={disabledFields}
           />
-          <div className="form-grid">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-x-4 gap-y-0">
             <Field id="startLocal" label="Starts">
               <DateTimeField
                 id="startLocal"
@@ -559,7 +578,7 @@ function Editor({
             label="Google Maps link (optional)"
             help="Paste a share link from Google Maps."
           >
-            <input
+            <Input
               ref={mapsInput}
               id="mapsLink"
               type="url"
@@ -577,7 +596,11 @@ function Editor({
               }
             />
             {mapsError ? (
-              <p id="mapsLink-error" className="field-error" role="alert">
+              <p
+                id="mapsLink-error"
+                className="mt-2 mb-0 text-sm font-medium text-danger"
+                role="alert"
+              >
                 {mapsLinkError}
               </p>
             ) : null}
@@ -587,7 +610,7 @@ function Editor({
             label="Instructions (optional)"
             help="Anyone with the link can read this."
           >
-            <textarea
+            <Textarea
               id="instructions"
               rows={3}
               maxLength={2000}
@@ -598,7 +621,7 @@ function Editor({
               aria-describedby="instructions-help"
             />
           </Field>
-          <div className="form-grid">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-x-4 gap-y-0">
             <Field
               id="capacity"
               label="Capacity, in seats"
@@ -675,7 +698,7 @@ function Editor({
               </>
             ) : null}
           </div>
-          <div className="form-grid">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-x-4 gap-y-0">
             <Field id="openLocal" label="Registration opens">
               <DateTimeField
                 id="openLocal"
@@ -807,7 +830,7 @@ function Editor({
         ) : null}
         {mutation.recovery}
         {notice ? (
-          <p className="save-status" role="status">
+          <p className="mt-3 font-semibold text-success" role="status">
             {notice}
           </p>
         ) : null}
@@ -818,7 +841,7 @@ function Editor({
         title="Change the time or place?"
       >
         <p>Everyone booked can withdraw without a fee until the start.</p>
-        <div className="inline-actions">
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             className={buttonClass()}
@@ -998,9 +1021,9 @@ function SessionHead({
 }) {
   const { catalog } = useActivities();
   return (
-    <div className="session-head">
+    <div className="[grid-area:head] [&>h1]:mb-4 group-data-game-day/layout:[&>h1]:mb-0 [&>h1+a]:mb-4">
       {/* Group and activity share one line, so the title stands alone. */}
-      <span className="mb-1 block text-sm font-semibold text-text-muted session-kicker">
+      <span className="mb-1 inline-flex items-center gap-1 text-sm font-semibold text-text-muted">
         {shared.details.activity ? (
           <ActivityIcon
             icon={
@@ -1053,7 +1076,7 @@ function Availability({
   const { counts } = shared;
   return (
     <div
-      className="rounded-lg border border-border bg-surface p-5 availability"
+      className="rounded-lg border border-border bg-surface p-5"
       role="status"
     >
       {shared.state === "cancelled" ? (
@@ -1068,7 +1091,7 @@ function Availability({
         />
       )}
       {shared.state === "published" && counts.waitingParties > 0 ? (
-        <p className="mt-1 mb-0 text-sm text-text-muted">
+        <p className="mt-2 mb-0 text-sm text-text-muted">
           {counts.waitingParties}{" "}
           {counts.waitingParties === 1 ? "party is" : "parties are"} waiting and
           will get the next places, in order.
@@ -1093,7 +1116,10 @@ function SessionFacts({ shared }: { shared: SharedSession }) {
   // as Pay the organizer. Either way the facts list has its payment line.
   const tracked = (d.paymentMode ?? "organizer") === "organizer";
   return (
-    <dl className="facts">
+    <dl
+      data-slot="facts"
+      className="m-0 mb-5 grid gap-0.5 overflow-hidden rounded-lg border border-border *:[div]:bg-surface *:[div]:px-4 *:[div]:py-3 [&_dd]:mx-0 [&_dd]:mt-0.5 [&_dd]:mb-0 [&_dd]:ml-7 [&_dd]:wrap-anywhere [&_dt]:flex [&_dt]:items-center [&_dt]:gap-2 [&_dt]:text-sm [&_dt]:font-semibold [&_dt]:text-text-muted"
+    >
       {tracked ? (
         <div>
           <dt>
@@ -1160,7 +1186,10 @@ function SessionFacts({ shared }: { shared: SharedSession }) {
 function GoodToKnow({ shared }: { shared: SharedSession }) {
   if (!shared.details.instructions) return null;
   return (
-    <div className="rounded-lg border border-border bg-surface p-5 session-instructions">
+    <div
+      data-slot="session-instructions"
+      className="rounded-lg border border-border bg-surface p-5 mb-4 [&_p]:m-0 [&_p]:whitespace-pre-line"
+    >
       <h2>Good to know</h2>
       <p>{shared.details.instructions}</p>
     </div>
@@ -1212,9 +1241,8 @@ function SignedInSession({
     );
   return (
     <div
-      className={
-        gameDay ? "session-layout session-layout--game-day" : "session-layout"
-      }
+      data-game-day={gameDay || undefined}
+      className={cx(layoutClass, gameDay && gameDayLayoutClass)}
     >
       <SessionHead
         shared={shared}
@@ -1226,7 +1254,10 @@ function SignedInSession({
             : undefined
         }
       />
-      <aside className="session-side" aria-label="Places and registration">
+      <aside
+        className="grid content-start gap-4 [grid-area:side] md:sticky md:top-[calc(var(--spacing-topbar)+24px)] group-data-game-day/layout:static"
+        aria-label="Places and registration"
+      >
         {gameDay ? null : <Availability shared={shared} />}
         <RegistrationPanel
           event={shared}
@@ -1256,7 +1287,7 @@ function SignedInSession({
         />
       </aside>
       {gameDay ? null : (
-        <div className="session-details">
+        <div className="min-w-0 [grid-area:details]">
           <SessionFacts shared={shared} />
           <GoodToKnow shared={shared} />
         </div>
@@ -1314,7 +1345,7 @@ export function SharedSessionPage() {
   const shared = data.session;
   if (isPrivateStub(shared))
     return (
-      <DetailPage back={back} backLabel="Home" className="shared-session">
+      <DetailPage back={back} backLabel="Home">
         <h1 ref={heading} tabIndex={-1}>
           This session is private
         </h1>
@@ -1335,7 +1366,7 @@ export function SharedSessionPage() {
     );
   const d = shared.details;
   return (
-    <DetailPage back={back} backLabel="Home" className="shared-session">
+    <DetailPage back={back} backLabel="Home">
       <EarnedBadgeCheck />
       {session ? (
         <SignedInSession
@@ -1345,11 +1376,14 @@ export function SharedSessionPage() {
           onChange={result.retry}
         />
       ) : (
-        <div className="session-layout">
+        <div className={layoutClass}>
           <SessionHead shared={shared} heading={heading} />
-          <aside className="session-side" aria-label="Places and registration">
+          <aside
+            className="grid content-start gap-4 [grid-area:side] md:sticky md:top-[calc(var(--spacing-topbar)+24px)] group-data-game-day/layout:static"
+            aria-label="Places and registration"
+          >
             <Availability shared={shared} onRefresh={result.retry} />
-            <div className="rounded-lg border border-border bg-surface p-5 registration-note">
+            <div className="rounded-lg border border-border bg-surface p-5 grid gap-3 [&_h2]:m-0 [&_p]:m-0 [&_p]:text-text-muted **:data-[slot=sticky-actions]:mt-1">
               {/* Open needs no heading: the button says what to do. */}
               {shared.registrationWindow === "open" ? null : (
                 <h2>
@@ -1380,7 +1414,7 @@ export function SharedSessionPage() {
               </StickyActions>
             </div>
           </aside>
-          <div className="session-details">
+          <div className="min-w-0 [grid-area:details]">
             <SessionFacts shared={shared} />
             <GoodToKnow shared={shared} />
           </div>
