@@ -22,6 +22,7 @@
 ## Profile: Plays card (owner feedback, 2026-11-01)
 
 "Plays" moves out of the profile head into its own card below it, like the other sections:
+
 - one row per activity: its icon in a tinted circle (the same tint as "Playing" in Edit profile), its name, a three-step meter and the level in words ("Not rated" when blank);
 - "Self-rated" is said once, beside the heading;
 - visitors see the same card when the person plays something;
