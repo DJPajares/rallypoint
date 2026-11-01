@@ -2,6 +2,7 @@
 // Email and password sign-up, sign-in and reset through Supabase Auth (D-22).
 // Supabase sends the confirmation and reset links; every link returns to
 // /auth/callback, and the page to go back to is remembered on this device.
+import { FormSkeleton } from "./skeletons";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import Link from "next/link";
@@ -96,7 +97,7 @@ function AuthLayout({
 /** Shown in place of a form when sign-in can't be offered here. */
 function Unavailable() {
   const { config, loading, error } = useAuth();
-  if (loading) return <Pending />;
+  if (loading) return <FormSkeleton label="Getting things ready…" fields={2} />;
   if (error) return <Notice>{error}</Notice>;
   if (!config?.configured)
     return (
@@ -629,7 +630,8 @@ export function ResetPassword() {
             "Your password wasn’t changed. Please try again."),
     );
   }
-  if (loading || !allowed) return <Pending />;
+  if (loading || !allowed)
+    return <FormSkeleton label="Getting things ready…" fields={2} />;
   return (
     <AuthLayout title="Set a new password">
       {done ? (

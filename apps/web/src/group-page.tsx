@@ -1,4 +1,5 @@
 "use client";
+import { GroupSkeleton } from "./skeletons";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
@@ -8,7 +9,6 @@ import {
   ListGroup,
   ListRow,
   Notice,
-  Pending,
   Pill,
   Sheet,
   StatusBanner,
@@ -92,7 +92,7 @@ export function GroupPage() {
   if (read.loading && !group)
     return (
       <DetailPage back="/workspace" backLabel="Your groups">
-        <Pending>Opening the group…</Pending>
+        <GroupSkeleton />
       </DetailPage>
     );
   if (read.error && !group)

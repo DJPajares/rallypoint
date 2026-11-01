@@ -1,6 +1,7 @@
 "use client";
+import { ListSkeleton } from "./skeletons";
 import { useEffect, useState } from "react";
-import { buttonClass, Notice, Pending, Sheet } from "@rallypoint/ui";
+import { buttonClass, Notice, Sheet } from "@rallypoint/ui";
 import type { SessionRecord } from "@rallypoint/domain/session";
 import { feeLabel } from "@rallypoint/domain/session";
 import { cancellationEmailWords } from "@rallypoint/domain/game-day";
@@ -93,7 +94,8 @@ export function CancelledRoster({ slug }: { slug: string }) {
   const result = useApi<{ registration: RegistrationView }>(
     `/api/registrations/${slug}`,
   );
-  if (result.loading) return <Pending>Opening registration records…</Pending>;
+  if (result.loading)
+    return <ListSkeleton label="Opening registration records…" />;
   if (result.error) return <Notice retry={result.retry}>{result.error}</Notice>;
   if (!result.data?.registration.canManage) return null;
   const roster = result.data.registration.roster;

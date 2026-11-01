@@ -1,8 +1,9 @@
 "use client";
+import { ListSkeleton } from "./skeletons";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { LockSimpleIcon } from "@phosphor-icons/react/dist/csr/LockSimple";
-import { buttonClass, Field, Input, Notice, Pending } from "@rallypoint/ui";
+import { buttonClass, Field, Input, Notice } from "@rallypoint/ui";
 import { sessionHref, statusLabel } from "@rallypoint/domain/my-sessions";
 import type { MySessionRow } from "@rallypoint/domain/my-sessions";
 import { useApi } from "./use-api";
@@ -87,7 +88,7 @@ function Found({
         ? `${count} ${count === 1 ? "result" : "results"} found.`
         : "Nothing found.";
   useEffect(() => onStatus(status), [onStatus, status]);
-  if (found.loading) return <Pending>Searching…</Pending>;
+  if (found.loading) return <ListSkeleton label="Searching…" />;
   if (found.error) return <Notice retry={found.retry}>{found.error}</Notice>;
   return (
     <>

@@ -1,4 +1,5 @@
 "use client";
+import { PanelSkeleton } from "./skeletons";
 import { useState } from "react";
 import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
 import { HourglassIcon } from "@phosphor-icons/react/dist/csr/Hourglass";
@@ -199,6 +200,7 @@ export function DesignCatalog() {
         <Notice retry={() => {}}>The session could not be loaded.</Notice>
         <Notice tone="warning">The result has not been confirmed.</Notice>
         <Pending>Checking your place…</Pending>
+        <PanelSkeleton label="Checking your place…" />
       </div>
 
       <h2>Session pieces</h2>

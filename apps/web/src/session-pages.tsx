@@ -1,4 +1,5 @@
 "use client";
+import { FormSkeleton, SessionSkeleton } from "./skeletons";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { FormEvent, RefObject } from "react";
 import Link from "next/link";
@@ -36,7 +37,6 @@ import {
   Input,
   Notice,
   NumberStepper,
-  Pending,
   Pill,
   SelectField,
   SpotsMeter,
@@ -177,7 +177,7 @@ function SessionLoader({ id }: { id: string }) {
   if (result.loading)
     return (
       <DetailPage back="/workspace" backLabel="Your groups">
-        <Pending>Opening the session…</Pending>
+        <FormSkeleton label="Opening the session…" fields={5} />
       </DetailPage>
     );
   if (result.error)
@@ -204,7 +204,7 @@ function RunAgain({ from }: { from: string }) {
   if (source.loading)
     return (
       <DetailPage back="/sessions" backLabel="Sessions">
-        <Pending>Copying the session…</Pending>
+        <FormSkeleton label="Copying the session…" fields={5} />
       </DetailPage>
     );
   if (source.error || !source.data)
@@ -1316,7 +1316,7 @@ export function SharedSessionPage() {
   if (result.loading && !kept)
     return (
       <DetailPage back={back} backLabel="Home">
-        <Pending>Opening the session…</Pending>
+        <SessionSkeleton />
       </DetailPage>
     );
   if (result.error)

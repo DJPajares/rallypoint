@@ -1,12 +1,12 @@
 import { Suspense } from "react";
-import { Pending } from "@rallypoint/ui";
+import { ListSkeleton } from "@/skeletons";
 import { CohostManagement } from "@/cohost-management";
 import { RequireAuth } from "@/screens";
 
 export default function Page() {
   return (
-    <Suspense fallback={<Pending />}>
-      <RequireAuth>
+    <Suspense fallback={<ListSkeleton label="Loading co-hosts…" />}>
+      <RequireAuth fallback={<ListSkeleton label="Loading co-hosts…" />}>
         <CohostManagement />
       </RequireAuth>
     </Suspense>

@@ -1,4 +1,5 @@
 "use client";
+import { PanelSkeleton } from "./skeletons";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -30,7 +31,6 @@ import {
   CheckField,
   Field,
   Notice,
-  Pending,
   Sheet,
   StatusBanner,
 } from "@rallypoint/ui";
@@ -319,7 +319,7 @@ export function RegistrationPanel({
   // A read in flight or failed has no view, unless a change already gave one.
   if (!view) {
     const wait = loading ? (
-      <Pending>Checking your place…</Pending>
+      <PanelSkeleton label="Checking your place…" />
     ) : error ? (
       <Notice retry={refresh}>{error}</Notice>
     ) : null;

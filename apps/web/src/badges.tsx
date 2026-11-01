@@ -1,4 +1,5 @@
 "use client";
+import { BadgesSkeleton, ProfileSkeleton } from "./skeletons";
 import { useEffect, useId, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import Link from "next/link";
@@ -50,7 +51,6 @@ import {
   cx,
   EmptyState,
   Notice,
-  Pending,
   Sheet,
   StatRow,
 } from "@rallypoint/ui";
@@ -860,7 +860,7 @@ export function ProfilePage() {
   }
   const status =
     badges.loading && !view ? (
-      <Pending>Loading your badges…</Pending>
+      <BadgesSkeleton label="Loading your badges…" />
     ) : badges.error && !view ? (
       <Notice retry={badges.retry}>{badges.error}</Notice>
     ) : undefined;
@@ -986,7 +986,7 @@ export function PersonProfilePage() {
   if (result.loading)
     return (
       <section className="mx-auto max-w-160">
-        <Pending>Opening the profile…</Pending>
+        <ProfileSkeleton label="Opening the profile…" />
       </section>
     );
   if (!profile)

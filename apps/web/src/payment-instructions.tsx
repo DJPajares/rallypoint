@@ -1,4 +1,5 @@
 "use client";
+import { PanelSkeleton } from "./skeletons";
 import { useEffect, useRef, useState } from "react";
 import {
   buttonClass,
@@ -153,7 +154,7 @@ export function PaymentInstructionsEditor({
     return loaded.error ? (
       <Notice retry={loaded.retry}>{loaded.error}</Notice>
     ) : (
-      <Pending>Loading payment instructions…</Pending>
+      <PanelSkeleton label="Loading payment instructions…" />
     );
   const instructions = current.paymentInstructions;
   const emailNote = instructionsEmailWords(

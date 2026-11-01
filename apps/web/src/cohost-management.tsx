@@ -1,4 +1,5 @@
 "use client";
+import { ListSkeleton } from "./skeletons";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import type { CohostPerson, GroupCohosts } from "@rallypoint/domain/contracts";
@@ -204,7 +205,7 @@ function Editor({
         </h1>
       </div>
       {read.loading ? (
-        <Pending>Loading co-hosts…</Pending>
+        <ListSkeleton label="Loading co-hosts…" />
       ) : read.error ? (
         <Notice retry={reload}>{read.error}</Notice>
       ) : state ? (

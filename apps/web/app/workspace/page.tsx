@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import { Pending } from "@rallypoint/ui";
+import { TabSkeleton } from "@/skeletons";
 import { Workspace, RequireAuth } from "@/screens";
 export default function Page() {
   return (
-    <Suspense fallback={<Pending />}>
-      <RequireAuth>
+    <Suspense fallback={<TabSkeleton label="Finding your groups…" />}>
+      <RequireAuth fallback={<TabSkeleton label="Finding your groups…" />}>
         <Workspace />
       </RequireAuth>
     </Suspense>
