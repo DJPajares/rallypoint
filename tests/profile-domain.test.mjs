@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  activitiesSummary,
   levelChoices,
+  levelStep,
   levelLabel,
   normalizeProfile,
   playsLine,
@@ -211,4 +213,22 @@ test("level choices: an activity without descriptions still lists every level", 
     ["beginner", "intermediate", "advanced", ""],
   );
   assert.ok(choices.slice(0, 3).every((c) => c.meaning === ""));
+});
+
+test("a level's step on the three-step meter; no rating is step 0", () => {
+  assert.equal(levelStep("beginner"), 1);
+  assert.equal(levelStep("intermediate"), 2);
+  assert.equal(levelStep("advanced"), 3);
+  assert.equal(levelStep(null), 0);
+});
+
+test("the collapsed summary names each activity with its level, or says none", () => {
+  assert.equal(
+    activitiesSummary([
+      { name: "Badminton", level: "intermediate" },
+      { name: "Tennis", level: null },
+    ]),
+    "Badminton · Intermediate, Tennis",
+  );
+  assert.equal(activitiesSummary([]), "None chosen yet");
 });

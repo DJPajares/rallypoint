@@ -181,3 +181,16 @@ export function playsLine(activities: ProfileActivity[]): string {
   );
   return `Plays: ${items.join(", ")}`;
 }
+
+/** Where a level sits on the three-step meter; 0 when not rated. */
+export function levelStep(level: SkillLevel | null): 0 | 1 | 2 | 3 {
+  return level ? ((skillLevels.indexOf(level) + 1) as 1 | 2 | 3) : 0;
+}
+
+/** One line for a collapsed list: "Badminton · Intermediate, Tennis". */
+export function activitiesSummary(activities: ProfileActivity[]): string {
+  if (activities.length === 0) return "None chosen yet";
+  return activities
+    .map((a) => (a.level ? `${a.name} · ${levelLabel[a.level]}` : a.name))
+    .join(", ");
+}

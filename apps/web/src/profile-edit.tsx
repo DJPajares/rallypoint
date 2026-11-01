@@ -2,11 +2,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
 import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { activityFor, matchActivity } from "@rallypoint/domain/activities";
 import type { Activity } from "@rallypoint/domain/activities";
 import {
+  activitiesSummary,
   levelChoices,
   levelLabel,
   normalizeProfile,
@@ -181,6 +183,7 @@ function EditForm({
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [discarding, setDiscarding] = useState(false);
+  const [playsOpen, setPlaysOpen] = useState(true);
   const focus = useRef<string | null>(null);
   const nextId = useRef(initial.custom.length);
   const nameInput = useRef<HTMLInputElement>(null);
@@ -363,71 +366,100 @@ function EditForm({
           </div>
 
           <section aria-labelledby="plays-heading">
+            {/* Accordion pattern: a button inside the heading opens the list;
+                folded, a summary line stands in for it. */}
             <div className="section-head">
-              <h2 id="plays-heading">Activities you play</h2>
+              <h2 id="plays-heading" className="section-toggle">
+                <button
+                  type="button"
+                  aria-expanded={playsOpen}
+                  aria-controls="plays-panel"
+                  onClick={() => setPlaysOpen((open) => !open)}
+                >
+                  Activities you play
+                  <CaretDownIcon
+                    className="section-toggle__caret"
+                    size={20}
+                    weight="bold"
+                    aria-hidden="true"
+                  />
+                </button>
+              </h2>
             </div>
             <p className="rp-help profile-form__lede">
-              Tap what you play, then rate yourself honestly. A rating is
-              optional.
+              {playsOpen
+                ? "Tap what you play, then rate yourself honestly. A rating is optional."
+                : activitiesSummary(
+                    activitiesOf(draft).filter((a) => a.name in draft.presets),
+                  )}
             </p>
-            <ul className="rp-list" aria-labelledby="plays-heading">
-              {listed.map((activity) => {
-                const { name, key } = activity;
-                const preset = draft.presets[name]!;
-                return (
-                  <li
-                    key={key}
-                    className={cx("rp-row play-row", preset.on && "is-on")}
-                  >
-                    <label className="play-row__toggle">
-                      <input
-                        type="checkbox"
-                        className="rp-sr-only"
-                        checked={preset.on}
-                        onChange={(e) =>
-                          setPreset(name, { on: e.target.checked })
-                        }
-                      />
-                      <span className="play-row__icon" aria-hidden="true">
-                        <ActivityIcon icon={activity.icon} size={22} />
-                      </span>
-                      <span className="rp-row__text">
-                        <span className="rp-row__title">{name}</span>
-                        {preset.on ? (
-                          <span className="rp-row__sub">
-                            {preset.level
-                              ? levelLabel[preset.level]
-                              : "Not rated"}
+            <div
+              id="plays-panel"
+              className="fold"
+              data-open={playsOpen || undefined}
+              inert={!playsOpen}
+            >
+              <div className="fold__inner">
+                <ul className="rp-list" aria-labelledby="plays-heading">
+                  {listed.map((activity) => {
+                    const { name, key } = activity;
+                    const preset = draft.presets[name]!;
+                    return (
+                      <li
+                        key={key}
+                        className={cx("rp-row play-row", preset.on && "is-on")}
+                      >
+                        <label className="play-row__toggle">
+                          <input
+                            type="checkbox"
+                            className="rp-sr-only"
+                            checked={preset.on}
+                            onChange={(e) =>
+                              setPreset(name, { on: e.target.checked })
+                            }
+                          />
+                          <span className="play-row__icon" aria-hidden="true">
+                            <ActivityIcon icon={activity.icon} size={22} />
                           </span>
-                        ) : null}
-                      </span>
-                      <span className="play-row__state" aria-hidden="true">
+                          <span className="rp-row__text">
+                            <span className="rp-row__title">{name}</span>
+                            {preset.on ? (
+                              <span className="rp-row__sub">
+                                {preset.level
+                                  ? levelLabel[preset.level]
+                                  : "Not rated"}
+                              </span>
+                            ) : null}
+                          </span>
+                          <span className="play-row__state" aria-hidden="true">
+                            {preset.on ? (
+                              <>
+                                <CheckIcon size={16} weight="bold" />
+                                Playing
+                              </>
+                            ) : (
+                              <>
+                                <PlusIcon size={16} weight="bold" />
+                                Add
+                              </>
+                            )}
+                          </span>
+                        </label>
                         {preset.on ? (
-                          <>
-                            <CheckIcon size={16} weight="bold" />
-                            Playing
-                          </>
-                        ) : (
-                          <>
-                            <PlusIcon size={16} weight="bold" />
-                            Add
-                          </>
-                        )}
-                      </span>
-                    </label>
-                    {preset.on ? (
-                      <LevelPick
-                        name={`level-${key}`}
-                        activityName={name}
-                        activity={activity}
-                        value={preset.level}
-                        onChange={(level) => setPreset(name, { level })}
-                      />
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
+                          <LevelPick
+                            name={`level-${key}`}
+                            activityName={name}
+                            activity={activity}
+                            value={preset.level}
+                            onChange={(level) => setPreset(name, { level })}
+                          />
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
           </section>
 
           <section aria-labelledby="own-heading">
