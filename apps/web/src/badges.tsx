@@ -8,9 +8,12 @@ import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
 import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
 import { SignOutIcon } from "@phosphor-icons/react/dist/csr/SignOut";
 import {
+  badgeAbout,
   badgeCatalog,
   badgeDefinition,
+  badgeOrEmpty,
   badgeStates,
+  firstStep,
   levelColors,
   levelLabel as badgeLevelLabel,
   levelOf,
@@ -493,7 +496,10 @@ interface OwnerParts {
 const dateLabel = (value: string) =>
   new Date(value).toLocaleDateString(undefined, { dateStyle: "medium" });
 
-/** One badge's five levels, what each needs, and what is next (owner only). */
+/**
+ * One badge's five levels, what each needs, and what is next (owner only). A
+ * badge not started yet says what it counts and the first thing to do.
+ */
 function BadgeDetails({
   state,
   onClose,
@@ -511,6 +517,13 @@ function BadgeDetails({
         <div className="badge-details">
           <Medallion badge={key} level={level} size={96} />
           <p className="badge-details__status">{badgeLevelLabel(level)}</p>
+          <p className="badge-details__about">{badgeAbout(key)}</p>
+          {level === 0 ? (
+            <div className="badge-details__start">
+              <p className="badge-details__start-label">How to earn it</p>
+              <p>{firstStep(key)}</p>
+            </div>
+          ) : null}
           <ol className="badge-levels">
             {definition.thresholds.map((_, i) => {
               const step = (i + 1) as Level;
@@ -542,7 +555,7 @@ function BadgeDetails({
               );
             })}
           </ol>
-          {target !== null ? (
+          {target !== null && state.current > 0 ? (
             <p className="badge-details__next">
               {progressLabel(key, target - state.current)} for level {level + 1}
             </p>
@@ -789,7 +802,7 @@ export function ProfilePage() {
         }}
       />
       <BadgeDetails
-        state={(open && badgeStates(view).find((b) => b.key === open)) || null}
+        state={open ? badgeOrEmpty(view, open) : null}
         onClose={() => setOpen(null)}
       />
       <Sheet
