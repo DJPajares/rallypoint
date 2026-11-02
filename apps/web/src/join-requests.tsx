@@ -92,7 +92,7 @@ export function JoinRequests({
         {requests.map((r) => (
           <li
             key={r.id}
-            className="rounded-lg border border-border bg-surface p-5 grid gap-2 [&_p]:m-0"
+            className="rounded-lg border border-border bg-card p-5 grid gap-2 [&_p]:m-0"
           >
             <p className="flex flex-wrap items-center gap-1 **:data-[slot=title-pill]:ml-0">
               <strong>
@@ -100,15 +100,15 @@ export function JoinRequests({
               </strong>
               <TitlePill title={r.title} />
             </p>
-            <p className="text-sm text-text-muted">
+            <p className="text-sm text-muted-foreground">
               {r.level ? `${levelLabel[r.level]} · ` : ""}
               Played {r.played} · Hosted {r.hosted}
             </p>
-            <p className="text-sm text-text-muted">
+            <p className="text-sm text-muted-foreground">
               Played in your sessions: {r.playedWithYou}
             </p>
             {r.seats === 2 ? <p>+1: {r.guestName || "Guest"}</p> : null}
-            <p className="text-sm text-text-muted">
+            <p className="text-sm text-muted-foreground">
               Asked {asked(r.askedAt, now)}
             </p>
             <p>

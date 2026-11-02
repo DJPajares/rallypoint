@@ -60,7 +60,7 @@ export function SearchPage() {
           onChange={(e) => setQuery(e.target.value)}
         />
       </Field>
-      <p className="mt-1 mb-0 text-sm text-text-muted" role="status">
+      <p className="mt-1 mb-0 text-sm text-muted-foreground" role="status">
         {shown.length >= 2 ? status : ""}
       </p>
       {shown.length >= 2 ? <Found query={shown} onStatus={setStatus} /> : null}
@@ -105,7 +105,7 @@ function Found({
                 >
                   <p className="flex flex-wrap items-center gap-1 **:data-[slot=title-pill]:ml-0">
                     <strong>{s.title || "Untitled session"}</strong>
-                    <span className="text-sm text-text-muted">
+                    <span className="text-sm text-muted-foreground">
                       {s.startsAt ? `${when(s.startsAt, s.timeZone)} · ` : ""}
                       {statusLabel(s, past)}
                     </span>
@@ -134,7 +134,7 @@ function Found({
               >
                 <p className="flex flex-wrap items-center gap-1 **:data-[slot=title-pill]:ml-0">
                   <strong>{g.name}</strong>
-                  <span className="text-sm text-text-muted">
+                  <span className="text-sm text-muted-foreground">
                     {g.viewerRole ? (
                       "Your group"
                     ) : g.visibility === "public" ? (

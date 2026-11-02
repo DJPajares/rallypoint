@@ -70,7 +70,7 @@ export function GuestChange({
       !own.freeWithdrawalAfterChange
     )
       return (
-        <p className="mt-1 mb-0 text-sm text-text-muted">
+        <p className="mt-1 mb-0 text-sm text-muted-foreground">
           After the cutoff your guest’s share stays. Ask the organizer to change
           your guest.
         </p>

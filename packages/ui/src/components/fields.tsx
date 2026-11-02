@@ -40,7 +40,7 @@ interface ControlProps {
 }
 
 const caretClass =
-  "ml-auto inline-flex flex-none text-text-muted transition-transform duration-150 ease-standard in-data-popup-open:rotate-180";
+  "ml-auto inline-flex flex-none text-muted-foreground transition-transform duration-150 ease-standard in-data-popup-open:rotate-180";
 
 /**
  * A date and time on the session's own wall clock, stored as the same
@@ -88,7 +88,7 @@ export function DateTimeField({
     children: (
       <>
         <CalendarBlankIcon
-          className="flex-none text-text-muted"
+          className="flex-none text-muted-foreground"
           size={20}
           aria-hidden="true"
         />
@@ -96,7 +96,7 @@ export function DateTimeField({
           id={`${id}-value`}
           className={cn(
             "min-w-0 flex-1 truncate",
-            label ? "tabular-nums" : "text-text-muted",
+            label ? "tabular-nums" : "text-muted-foreground",
           )}
         >
           {label ?? placeholder}
@@ -159,7 +159,7 @@ export function DateTimeField({
 // The calendar's look, by react-day-picker part. Day cells carry data-today,
 // data-selected, data-outside and data-disabled, which style their button.
 const navButton =
-  "inline-flex size-control-sm items-center justify-center rounded-full border-0 bg-transparent p-0 text-text hover:bg-surface-sunken disabled:text-text-muted disabled:opacity-50";
+  "inline-flex size-control-sm items-center justify-center rounded-full border-0 bg-transparent p-0 text-foreground hover:bg-muted disabled:text-muted-foreground disabled:opacity-50";
 const calendarClasses = {
   root: "relative flex-none",
   month_caption: "flex h-control-sm items-center pl-2 font-semibold",
@@ -167,10 +167,10 @@ const calendarClasses = {
   button_previous: navButton,
   button_next: navButton,
   month_grid: "mt-1 border-collapse",
-  weekday: "h-control-sm w-day text-xs font-semibold text-text-muted",
+  weekday: "h-control-sm w-day text-xs font-semibold text-muted-foreground",
   day: "group/day py-0.5 text-center",
   day_button:
-    "size-day rounded-full border-0 bg-transparent p-0 text-sm text-text tabular-nums transition-colors duration-150 ease-standard hover:bg-surface-sunken group-data-today/day:font-bold group-data-today/day:shadow-ring-chrome group-data-selected/day:bg-action group-data-selected/day:font-bold group-data-selected/day:text-on-action group-data-selected/day:shadow-none group-data-outside/day:text-text-muted group-data-outside/day:opacity-55 group-data-disabled/day:cursor-not-allowed group-data-disabled/day:opacity-35",
+    "size-day rounded-full border-0 bg-transparent p-0 text-sm text-foreground tabular-nums transition-colors duration-150 ease-standard hover:bg-muted group-data-today/day:font-bold group-data-today/day:shadow-ring-chrome group-data-selected/day:bg-primary group-data-selected/day:font-bold group-data-selected/day:text-primary-foreground group-data-selected/day:shadow-none group-data-outside/day:text-muted-foreground group-data-outside/day:opacity-55 group-data-disabled/day:cursor-not-allowed group-data-disabled/day:opacity-35",
   hidden: "invisible",
 };
 
@@ -277,7 +277,7 @@ function TimeSlots({
         <button
           key={slot.value}
           type="button"
-          className="min-h-control-sm flex-none rounded-full border border-border bg-surface px-3 text-sm whitespace-nowrap text-text tabular-nums transition-colors duration-150 ease-standard not-disabled:hover:border-text-muted disabled:cursor-not-allowed disabled:opacity-45 aria-pressed:border-transparent aria-pressed:bg-action aria-pressed:font-bold aria-pressed:text-on-action"
+          className="min-h-control-sm flex-none rounded-full border border-border bg-card px-3 text-sm whitespace-nowrap text-foreground tabular-nums transition-colors duration-150 ease-standard not-disabled:hover:border-muted-foreground disabled:cursor-not-allowed disabled:opacity-45 aria-pressed:border-transparent aria-pressed:bg-primary aria-pressed:font-bold aria-pressed:text-primary-foreground"
           aria-pressed={slot.value === value}
           data-anchor={slot.value === "18:00" || undefined}
           disabled={disabled}
@@ -330,7 +330,7 @@ export function SelectField({
 }
 
 const stepButton =
-  "inline-flex size-control-sm flex-none items-center justify-center rounded-full border-0 bg-transparent p-0 text-text-muted not-disabled:hover:bg-surface-sunken not-disabled:hover:text-text disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex size-control-sm flex-none items-center justify-center rounded-full border-0 bg-transparent p-0 text-muted-foreground not-disabled:hover:bg-muted not-disabled:hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40";
 
 /**
  * A whole number with − and + buttons. The form keeps text, so the value goes
@@ -389,7 +389,7 @@ export function AffixInput({
   return (
     <div className={cn(controlClass, controlBoxClass)}>
       <span
-        className="flex-none border-r border-border pr-3 text-sm font-semibold text-text-muted"
+        className="flex-none border-r border-border pr-3 text-sm font-semibold text-muted-foreground"
         aria-hidden="true"
       >
         {prefix}
@@ -414,11 +414,11 @@ export function SwitchField({
   description?: ReactNode;
 }) {
   return (
-    <label className="mt-4 mb-1 flex cursor-pointer items-center justify-between gap-4 rounded-md border border-border bg-surface px-4 py-3">
+    <label className="mt-4 mb-1 flex cursor-pointer items-center justify-between gap-4 rounded-md border border-border bg-card px-4 py-3">
       <span className="grid gap-0.5">
         <span className="font-semibold">{children}</span>
         {description ? (
-          <span className="text-sm font-normal text-text-muted">
+          <span className="text-sm font-normal text-muted-foreground">
             {description}
           </span>
         ) : null}

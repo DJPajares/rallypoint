@@ -42,7 +42,7 @@ export function iconButtonClass(flat = false) {
 /** The default surface for grouped content; `accent` is the graphite block. */
 export function cardClass(tone: "default" | "accent" = "default") {
   return cn(
-    "rounded-lg border border-border bg-surface p-5",
-    tone === "accent" && "border-transparent bg-stub text-on-stub",
+    "rounded-lg border border-border bg-card p-5",
+    tone === "accent" && "border-transparent bg-stub text-stub-foreground",
   );
 }

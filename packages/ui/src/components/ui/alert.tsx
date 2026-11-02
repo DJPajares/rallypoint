@@ -10,11 +10,11 @@ const alertVariants = cva(
     variants: {
       variant: {
         default: "border border-border bg-card text-card-foreground",
-        destructive: "bg-danger-bg text-danger",
-        danger: "bg-danger-bg text-danger",
-        warning: "bg-warning-bg text-warning",
-        success: "bg-success-bg text-success",
-        neutral: "bg-neutral-bg text-neutral",
+        destructive: "bg-danger text-danger-foreground",
+        danger: "bg-danger text-danger-foreground",
+        warning: "bg-warning text-warning-foreground",
+        success: "bg-success text-success-foreground",
+        neutral: "bg-neutral text-neutral-foreground",
       },
     },
     defaultVariants: {

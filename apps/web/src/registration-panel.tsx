@@ -148,7 +148,7 @@ function SentNote({
             </div>
             <p
               id="sent-note-help"
-              className="mt-1 mb-0 text-sm text-text-muted"
+              className="mt-1 mb-0 text-sm text-muted-foreground"
             >
               The organizer still marks it paid.
             </p>
@@ -259,7 +259,7 @@ export function RegistrationPanel({
   // from the last known view; Invite, Join and Refresh wait for a live one.
   function hostCard(sessionId: string | undefined, live?: { join: boolean }) {
     return (
-      <div className="grid justify-items-start gap-3 rounded-lg border border-border bg-surface p-5">
+      <div className="grid justify-items-start gap-3 rounded-lg border border-border bg-card p-5">
         <div className="flex items-center justify-between gap-2 justify-self-stretch">
           <h2 className="m-0 text-lg">You’re hosting</h2>
           {live ? (
@@ -678,7 +678,7 @@ export function RegistrationPanel({
           )
         }
       >
-        <span className="inline-flex items-center gap-1 rounded-full bg-surface-sunken px-3 py-0.5 text-xs font-semibold text-text-muted bg-current/14 text-inherit">
+        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-0.5 text-xs font-semibold text-muted-foreground bg-current/14 text-inherit">
           {ownRequest.state === "pending"
             ? "Request sent"
             : ownRequest.state === "declined"
@@ -825,7 +825,7 @@ export function RegistrationPanel({
             </button>
             <div
               id="game-day-roster"
-              className="col-span-full justify-self-stretch [&_h2]:text-xl [&_ul]:m-0 [&_ul]:list-none [&_ul]:p-0 [&_li]:grid [&_li]:gap-0.5 [&_li]:border-t [&_li]:border-border [&_li]:py-2 [&_li]:text-sm [&_li_span]:text-text-muted"
+              className="col-span-full justify-self-stretch [&_h2]:text-xl [&_ul]:m-0 [&_ul]:list-none [&_ul]:p-0 [&_li]:grid [&_li]:gap-0.5 [&_li]:border-t [&_li]:border-border [&_li]:py-2 [&_li]:text-sm [&_li_span]:text-muted-foreground"
               hidden={!rosterOpen}
             >
               {rosterList}
@@ -833,7 +833,7 @@ export function RegistrationPanel({
           </div>
         ) : null}
         {showFee ? (
-          <div className="rounded-lg border border-border bg-surface p-5 grid gap-3 [&>p]:m-0">
+          <div className="rounded-lg border border-border bg-card p-5 grid gap-3 [&>p]:m-0">
             {feeBlock}
           </div>
         ) : null}
@@ -959,7 +959,7 @@ export function RegistrationPanel({
       {own ? (
         <div className="grid gap-3 [&>p]:m-0 [&>p]:text-sm **:data-[slot=badge]:mb-1">
           <StatusBanner tone={ownTone} icon={ownIcon}>
-            <span className="inline-flex items-center gap-1 rounded-full bg-surface-sunken px-3 py-0.5 text-xs font-semibold text-text-muted bg-current/14 text-inherit">
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-0.5 text-xs font-semibold text-muted-foreground bg-current/14 text-inherit">
               {event.state !== "published"
                 ? "Your registration record"
                 : own.state === "confirmed"
@@ -1021,7 +1021,7 @@ export function RegistrationPanel({
             className={
               phone
                 ? "contents"
-                : "grid rounded-lg border border-border bg-surface p-5"
+                : "grid rounded-lg border border-border bg-card p-5"
             }
           >
             {actionArea(
@@ -1216,7 +1216,7 @@ export function RegistrationPanel({
       {/* A host's people list is game day (in hostBlocks); the roster is for
           everyone else, and for a host once the session is cancelled. */}
       {view.rosterAllowed && !(host && event.state !== "cancelled") ? (
-        <section className="rounded-lg border border-border bg-surface p-5 [&_h2]:text-xl [&_ul]:m-0 [&_ul]:list-none [&_ul]:p-0 [&_li]:grid [&_li]:gap-0.5 [&_li]:border-t [&_li]:border-border [&_li]:py-2 [&_li]:text-sm [&_li_span]:text-text-muted">
+        <section className="rounded-lg border border-border bg-card p-5 [&_h2]:text-xl [&_ul]:m-0 [&_ul]:list-none [&_ul]:p-0 [&_li]:grid [&_li]:gap-0.5 [&_li]:border-t [&_li]:border-border [&_li]:py-2 [&_li]:text-sm [&_li_span]:text-muted-foreground">
           <h2>
             {event.state === "cancelled"
               ? "Registration records"

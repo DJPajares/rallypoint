@@ -78,7 +78,7 @@ export function useMutation<T>(done: (result: T) => void) {
       void send(path, next);
     },
     recovery: job ? (
-      <div className="my-4 rounded-sm bg-warning-bg p-4 text-warning">
+      <div className="my-4 rounded-sm bg-warning p-4 text-warning-foreground">
         <p>
           The result has not been confirmed. Your submitted details and request
           key are preserved while this page stays open.

@@ -36,7 +36,7 @@ import { useActivities } from "./use-activities";
 import { DetailPage, StickyActions } from "./ui";
 
 const maxCustom = 3;
-const errorClass = "mt-2 mb-0 text-sm font-medium text-danger";
+const errorClass = "mt-2 mb-0 text-sm font-medium text-danger-foreground";
 
 type Level = "" | SkillLevel;
 interface Draft {
@@ -113,7 +113,7 @@ function LevelPick({
       data-slot="level-pick"
       className="m-0 grid min-w-0 gap-1 border-0 pt-0 pr-3 pb-3 pl-16 max-[30rem]:pl-3"
     >
-      <legend className="float-left mb-1 w-full p-0 pt-1 text-sm font-semibold text-text-muted">
+      <legend className="float-left mb-1 w-full p-0 pt-1 text-sm font-semibold text-muted-foreground">
         Your level
         <span className="sr-only"> in {activityName}</span>
       </legend>
@@ -133,7 +133,9 @@ function LevelPick({
           <span className="grid min-w-0 gap-0.5">
             <span className="font-semibold">{choice.label}</span>
             {choice.meaning ? (
-              <span className="text-sm text-text-muted">{choice.meaning}</span>
+              <span className="text-sm text-muted-foreground">
+                {choice.meaning}
+              </span>
             ) : null}
           </span>
         </label>
@@ -360,7 +362,7 @@ function EditForm({
       </div>
       <form noValidate onSubmit={save}>
         <fieldset disabled={busy} className="m-0 min-w-0 border-0 p-0">
-          <div className="rounded-lg border border-border bg-surface p-5">
+          <div className="rounded-lg border border-border bg-card p-5">
             <Field id="profile-name" label="Name">
               <Input
                 ref={nameInput}
@@ -383,7 +385,7 @@ function EditForm({
             </Field>
             <p
               id="profile-visible"
-              className="mt-1 mb-0 text-sm text-text-muted"
+              className="mt-1 mb-0 text-sm text-muted-foreground"
             >
               Anyone with your profile link sees your name, what you play and
               your levels.
@@ -396,7 +398,7 @@ function EditForm({
             <div className="mt-6 mb-1 flex items-center justify-between gap-3 [&_h2]:m-0">
               <h2 id="plays-heading" className="m-0">
                 <button
-                  className="group/toggle -ml-2 inline-flex min-h-touch items-center gap-2 rounded-md border-0 bg-transparent px-2 text-inherit [font:inherit] tracking-[inherit] hover:bg-surface-sunken"
+                  className="group/toggle -ml-2 inline-flex min-h-touch items-center gap-2 rounded-md border-0 bg-transparent px-2 text-inherit [font:inherit] tracking-[inherit] hover:bg-muted"
                   type="button"
                   aria-expanded={playsOpen}
                   aria-controls="plays-panel"
@@ -404,7 +406,7 @@ function EditForm({
                 >
                   Activities you play
                   <CaretDownIcon
-                    className="flex-none text-text-muted transition-transform duration-200 ease-standard group-aria-[expanded=false]/toggle:-rotate-90"
+                    className="flex-none text-muted-foreground transition-transform duration-200 ease-standard group-aria-[expanded=false]/toggle:-rotate-90"
                     size={20}
                     weight="bold"
                     aria-hidden="true"
@@ -412,7 +414,7 @@ function EditForm({
                 </button>
               </h2>
             </div>
-            <p className="mt-0 mb-3 text-sm text-text-muted">
+            <p className="mt-0 mb-3 text-sm text-muted-foreground">
               {playsOpen
                 ? "Tap what you play, then rate yourself honestly. A rating is optional."
                 : activitiesSummary(
@@ -427,7 +429,7 @@ function EditForm({
             >
               <div className="invisible min-h-0 overflow-hidden transition-[visibility] delay-200 duration-0 in-data-open:visible in-data-open:-m-1 in-data-open:p-1 in-data-open:delay-0">
                 <ul
-                  className="m-0 list-none overflow-hidden rounded-lg bg-surface p-0 shadow-sm"
+                  className="m-0 list-none overflow-hidden rounded-lg bg-card p-0 shadow-sm"
                   aria-labelledby="plays-heading"
                 >
                   {listed.map((activity) => {
@@ -439,7 +441,7 @@ function EditForm({
                         data-on={preset.on || undefined}
                         className="group/play border-t border-border first:border-t-0"
                       >
-                        <label className="flex min-h-14 cursor-pointer items-center gap-3 px-3 py-2 hover:bg-surface-sunken has-focus-visible:outline-3 has-focus-visible:-outline-offset-3 has-focus-visible:outline-focus">
+                        <label className="flex min-h-14 cursor-pointer items-center gap-3 px-3 py-2 hover:bg-muted has-focus-visible:outline-3 has-focus-visible:-outline-offset-3 has-focus-visible:outline-ring">
                           <input
                             type="checkbox"
                             className="sr-only"
@@ -449,7 +451,7 @@ function EditForm({
                             }
                           />
                           <span
-                            className="inline-flex size-10 flex-none items-center justify-center rounded-full bg-surface-sunken text-text-muted group-data-on/play:bg-success-bg group-data-on/play:text-success"
+                            className="inline-flex size-10 flex-none items-center justify-center rounded-full bg-muted text-muted-foreground group-data-on/play:bg-success group-data-on/play:text-success-foreground"
                             aria-hidden="true"
                           >
                             <ActivityIcon icon={activity.icon} size={22} />
@@ -459,7 +461,7 @@ function EditForm({
                               {name}
                             </span>
                             {preset.on ? (
-                              <span className="text-sm text-text-muted">
+                              <span className="text-sm text-muted-foreground">
                                 {preset.level
                                   ? levelLabel[preset.level]
                                   : "Not rated"}
@@ -467,7 +469,7 @@ function EditForm({
                             ) : null}
                           </span>
                           <span
-                            className="inline-flex min-h-8 flex-none items-center gap-1 rounded-full border border-border-strong px-3 text-sm font-semibold text-text group-data-on/play:border-success group-data-on/play:bg-success-bg group-data-on/play:text-success"
+                            className="inline-flex min-h-8 flex-none items-center gap-1 rounded-full border border-input px-3 text-sm font-semibold text-foreground group-data-on/play:border-success-foreground group-data-on/play:bg-success group-data-on/play:text-success-foreground"
                             aria-hidden="true"
                           >
                             {preset.on ? (
@@ -504,12 +506,12 @@ function EditForm({
             <div className="mt-6 mb-1 flex items-center justify-between gap-3 [&_h2]:m-0">
               <h2 id="own-heading">Something else?</h2>
             </div>
-            <p className="mt-0 mb-3 text-sm text-text-muted">
+            <p className="mt-0 mb-3 text-sm text-muted-foreground">
               Add up to {maxCustom} activities that aren’t listed.
             </p>
             {draft.custom.length ? (
               <ul
-                className="m-0 list-none overflow-hidden rounded-lg bg-surface p-0 shadow-sm"
+                className="m-0 list-none overflow-hidden rounded-lg bg-card p-0 shadow-sm"
                 aria-labelledby="own-heading"
               >
                 {draft.custom.map((row, index) => {
@@ -576,7 +578,7 @@ function EditForm({
             ) : null}
           </section>
 
-          <p className="mt-6 mb-3 text-sm wrap-anywhere text-text-muted">
+          <p className="mt-6 mb-3 text-sm wrap-anywhere text-muted-foreground">
             Signed in as {session?.user.email ?? "your account"}
           </p>
           {problem ? <Notice>{problem}</Notice> : null}

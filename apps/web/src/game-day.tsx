@@ -58,7 +58,7 @@ const tint = (name: string) =>
 function Avatar({ name }: { name: string }) {
   return (
     <span
-      className="grid size-9 place-items-center rounded-full font-heading text-xs font-bold text-on-brand"
+      className="grid size-9 place-items-center rounded-full font-heading text-xs font-bold text-brand-foreground"
       style={{ background: tint(name) }}
       aria-hidden="true"
     >
@@ -141,7 +141,7 @@ function ConfirmedRow({
         seat && party.id ? (
           <button
             type="button"
-            className="grid size-touch place-items-center rounded-full border-2 border-border-strong bg-transparent p-0 text-on-chrome transition-colors duration-150 ease-standard disabled:cursor-progress disabled:opacity-60 aria-pressed:border-chrome aria-pressed:bg-chrome"
+            className="grid size-touch place-items-center rounded-full border-2 border-input bg-transparent p-0 text-chrome-foreground transition-colors duration-150 ease-standard disabled:cursor-progress disabled:opacity-60 aria-pressed:border-chrome aria-pressed:bg-chrome"
             aria-pressed={here}
             aria-label={
               here
@@ -366,7 +366,7 @@ function PartyDetails({
   const said = tracked ? partyNoteWords(party) : "";
   return (
     <div className="grid gap-4">
-      <p id={labelId} className="m-0 text-text-muted">
+      <p id={labelId} className="m-0 text-muted-foreground">
         {party.seats} {party.seats === 1 ? "seat" : "seats"} ·{" "}
         {party.state === "waitlisted" && queue
           ? `waiting, number ${queue} in line`
@@ -393,7 +393,7 @@ function PartyDetails({
           ))
         : null}
       {said && party.paymentNote ? (
-        <p className="m-0 flex items-center gap-1 text-text-muted">
+        <p className="m-0 flex items-center gap-1 text-muted-foreground">
           <PaperPlaneTiltIcon size={16} aria-hidden="true" /> {said} ·{" "}
           {when(party.paymentNote.sentAt)}
         </p>
@@ -440,7 +440,7 @@ function PartyDetails({
         />
       ) : null}
       {tracked && party.state === "waitlisted" ? (
-        <p className="mt-1 mb-0 text-sm text-text-muted">
+        <p className="mt-1 mb-0 text-sm text-muted-foreground">
           Waiting is free until a place opens.
         </p>
       ) : null}
@@ -459,10 +459,10 @@ function PartyDetails({
       ) : null}
       {party.emails?.length ? (
         <div>
-          <h3 className="mt-0 mb-1 text-text-muted [font-size:inherit]">
+          <h3 className="mt-0 mb-1 text-muted-foreground [font-size:inherit]">
             Emails
           </h3>
-          <ul className="m-0 grid list-none gap-1 p-0 text-text-muted">
+          <ul className="m-0 grid list-none gap-1 p-0 text-muted-foreground">
             {party.emails.map((email) => (
               <li key={email.kind}>
                 {emailKindLabel(email.kind)}: {emailWords(email)}
@@ -532,7 +532,7 @@ export function GameDay({
   );
   return (
     <section
-      className="mt-6 grid gap-3 [&_h2]:m-0 [&_h3]:mt-3 [&_h3]:mb-0 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:tracking-wide [&_h3]:text-text-muted [&_h3]:uppercase **:data-[slot=row-title]:whitespace-normal **:data-[slot=title-pill]:ml-1"
+      className="mt-6 grid gap-3 [&_h2]:m-0 [&_h3]:mt-3 [&_h3]:mb-0 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:tracking-wide [&_h3]:text-muted-foreground [&_h3]:uppercase **:data-[slot=row-title]:whitespace-normal **:data-[slot=title-pill]:ml-1"
       aria-labelledby="game-day-title"
     >
       <h2 id="game-day-title">People</h2>
@@ -553,7 +553,7 @@ export function GameDay({
             value: (
               <>
                 {summary.here}
-                <small className="text-base text-text-muted">
+                <small className="text-base text-muted-foreground">
                   /{summary.expected}
                 </small>
               </>
@@ -587,7 +587,7 @@ export function GameDay({
           ))}
         </ListGroup>
       ) : (
-        <p className="mt-1 mb-0 text-sm text-text-muted">
+        <p className="mt-1 mb-0 text-sm text-muted-foreground">
           {filter === "not_here"
             ? "Everyone with a place is here."
             : filter === "to_pay"

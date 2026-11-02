@@ -11,7 +11,7 @@ import { Drawer, DrawerContent } from "./ui/drawer";
 
 const titleClass = "m-0 text-xl";
 const headClass =
-  "sticky top-0 z-1 -mx-5 mb-2 flex items-center justify-between gap-3 bg-surface px-5 pt-3 pb-2";
+  "sticky top-0 z-1 -mx-5 mb-2 flex items-center justify-between gap-3 bg-card px-5 pt-3 pb-2";
 
 /**
  * A sheet for one focused job (D-15). On phones it's shadcn's Drawer: it

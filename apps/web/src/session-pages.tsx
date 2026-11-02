@@ -109,7 +109,7 @@ export function CreateGroup() {
         <h1>Start a group.</h1>
       </div>
       <form
-        className="rounded-lg border border-border bg-surface p-5 md:p-8"
+        className="rounded-lg border border-border bg-card p-5 md:p-8"
         onSubmit={(e) => {
           e.preventDefault();
           mutation.run("/api/groups", { name, visibility });
@@ -445,7 +445,7 @@ function Editor({
         </Notice>
       ) : null}
       {url ? (
-        <div className="rounded-lg border border-border bg-surface p-5 mb-4 grid gap-3 [&_p]:mt-2 [&_p]:mb-1 [&_p]:text-sm [&_p]:text-text-muted">
+        <div className="rounded-lg border border-border bg-card p-5 mb-4 grid gap-3 [&_p]:mt-2 [&_p]:mb-1 [&_p]:text-sm [&_p]:text-muted-foreground">
           <div>
             <p>Anyone with the link can see this session.</p>
             <a className="font-semibold wrap-anywhere" href={url}>
@@ -480,7 +480,7 @@ function Editor({
               Open shared page
             </Link>
           </div>
-          <p role="status" className="mt-1 mb-0 text-sm text-text-muted">
+          <p role="status" className="mt-1 mb-0 text-sm text-muted-foreground">
             {copy}
           </p>
         </div>
@@ -522,7 +522,7 @@ function Editor({
       ) : null}
       <form
         noValidate
-        className="rounded-lg border border-border bg-surface p-5 md:p-8"
+        className="rounded-lg border border-border bg-card p-5 md:p-8"
         onSubmit={(e) =>
           submit(e, record?.state === "published" ? "update" : "publish")
         }
@@ -608,7 +608,7 @@ function Editor({
             {mapsError ? (
               <p
                 id="mapsLink-error"
-                className="mt-2 mb-0 text-sm font-medium text-danger"
+                className="mt-2 mb-0 text-sm font-medium text-danger-foreground"
                 role="alert"
               >
                 {mapsLinkError}
@@ -840,7 +840,10 @@ function Editor({
         ) : null}
         {mutation.recovery}
         {notice ? (
-          <p className="mt-3 font-semibold text-success" role="status">
+          <p
+            className="mt-3 font-semibold text-success-foreground"
+            role="status"
+          >
             {notice}
           </p>
         ) : null}
@@ -934,7 +937,7 @@ function DeleteDraft({
   }, [working, onPending]);
   return (
     <section
-      className="rounded-lg border border-border bg-surface p-5"
+      className="rounded-lg border border-border bg-card p-5"
       aria-label="Delete draft"
     >
       <button
@@ -1027,7 +1030,7 @@ function SessionHero({
           <DateTile iso={d.startsAt} timeZone={d.timeZone} variant="hero" />
         ) : null}
         <div className="grid min-w-0 gap-1">
-          <span className="inline-flex items-center gap-1 text-sm font-semibold text-text-muted">
+          <span className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground">
             {d.activity ? (
               <ActivityIcon
                 icon={
@@ -1053,7 +1056,7 @@ function SessionHero({
               : "Time to be decided"}
           </p>
           {d.location || mapHref ? (
-            <p className="m-0 flex flex-wrap items-center gap-x-3 text-text-muted">
+            <p className="m-0 flex flex-wrap items-center gap-x-3 text-muted-foreground">
               {d.location}
               {mapHref ? (
                 <a
@@ -1088,7 +1091,7 @@ function SessionHero({
         </Notice>
       ) : null}
       <div
-        className="grid gap-2 rounded-lg border border-border bg-surface p-4 [&_p]:m-0"
+        className="grid gap-2 rounded-lg border border-border bg-card p-4 [&_p]:m-0"
         role="status"
       >
         {shared.state === "cancelled" ? (
@@ -1103,7 +1106,7 @@ function SessionHero({
           />
         )}
         {shared.state === "published" && counts.waitingParties > 0 ? (
-          <p className="text-sm text-text-muted">
+          <p className="text-sm text-muted-foreground">
             {counts.waitingParties}{" "}
             {counts.waitingParties === 1 ? "party is" : "parties are"} waiting
             and will get the next places, in order.
@@ -1123,7 +1126,7 @@ function SessionFacts({ shared }: { shared: SharedSession }) {
   return (
     <dl
       data-slot="facts"
-      className="m-0 mb-5 grid gap-0.5 overflow-hidden rounded-lg border border-border *:[div]:bg-surface *:[div]:px-4 *:[div]:py-3 [&_dd]:mx-0 [&_dd]:mt-0.5 [&_dd]:mb-0 [&_dd]:ml-7 [&_dd]:wrap-anywhere [&_dt]:flex [&_dt]:items-center [&_dt]:gap-2 [&_dt]:text-sm [&_dt]:font-semibold [&_dt]:text-text-muted"
+      className="m-0 mb-5 grid gap-0.5 overflow-hidden rounded-lg border border-border *:[div]:bg-card *:[div]:px-4 *:[div]:py-3 [&_dd]:mx-0 [&_dd]:mt-0.5 [&_dd]:mb-0 [&_dd]:ml-7 [&_dd]:wrap-anywhere [&_dt]:flex [&_dt]:items-center [&_dt]:gap-2 [&_dt]:text-sm [&_dt]:font-semibold [&_dt]:text-muted-foreground"
     >
       {tracked ? (
         <div>
@@ -1193,7 +1196,7 @@ function GoodToKnow({ shared }: { shared: SharedSession }) {
   return (
     <div
       data-slot="session-instructions"
-      className="rounded-lg border border-border bg-surface p-5 mb-4 [&_p]:m-0 [&_p]:whitespace-pre-line"
+      className="rounded-lg border border-border bg-card p-5 mb-4 [&_p]:m-0 [&_p]:whitespace-pre-line"
     >
       <h2>Good to know</h2>
       <p>{shared.details.instructions}</p>
@@ -1367,7 +1370,7 @@ export function SharedSessionPage() {
           <SessionHero shared={shared} heading={heading} />
           <div className={bodyClass}>
             <aside className={sideClass} aria-label="Your place">
-              <div className="rounded-lg border border-border bg-surface p-5 grid gap-3 [&_h2]:m-0 [&_p]:m-0 [&_p]:text-text-muted **:data-[slot=sticky-actions]:mt-1">
+              <div className="rounded-lg border border-border bg-card p-5 grid gap-3 [&_h2]:m-0 [&_p]:m-0 [&_p]:text-muted-foreground **:data-[slot=sticky-actions]:mt-1">
                 {/* Open needs no heading: the button says what to do. */}
                 {shared.registrationWindow === "open" ? null : (
                   <h2>

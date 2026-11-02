@@ -11,7 +11,7 @@ export interface TicketDate {
 export function TicketStub({ date }: { date: TicketDate | null }) {
   return (
     <span
-      className="flex min-w-stub flex-none flex-col items-center justify-center bg-stub px-2 py-3 text-xs font-semibold tracking-wide text-on-stub uppercase"
+      className="flex min-w-stub flex-none flex-col items-center justify-center bg-stub px-2 py-3 text-xs font-semibold tracking-wide text-stub-foreground uppercase"
       aria-hidden="true"
     >
       {date ? (
@@ -35,7 +35,7 @@ export function Ticket({
   children: ReactNode;
 }) {
   return (
-    <div className="flex items-stretch overflow-hidden rounded-lg border border-border bg-surface">
+    <div className="flex items-stretch overflow-hidden rounded-lg border border-border bg-card">
       <TicketStub date={date} />
       <div className="min-w-0 flex-1 border-l-2 border-dashed border-border px-4 py-3">
         {children}
@@ -47,7 +47,7 @@ export function TicketTime({ children }: { children: ReactNode }) {
   return <div className="font-semibold tabular-nums">{children}</div>;
 }
 export function TicketMeta({ children }: { children: ReactNode }) {
-  return <div className="text-sm text-text-muted">{children}</div>;
+  return <div className="text-sm text-muted-foreground">{children}</div>;
 }
 /**
  * Taken and open seats: one dot per seat up to 24, a bar beyond that.
@@ -68,7 +68,7 @@ export function SpotsMeter({
         <strong>
           {taken} of {seats} {seats === 1 ? "seat" : "seats"} taken
         </strong>
-        <span className="text-text-muted">
+        <span className="text-muted-foreground">
           {open === 0 ? "Full" : `${open} left`}
         </span>
       </p>
@@ -79,16 +79,14 @@ export function SpotsMeter({
               key={i}
               className={cn(
                 "size-dot rounded-full",
-                i < taken
-                  ? "bg-chrome"
-                  : "border-2 border-dashed border-border-strong",
+                i < taken ? "bg-chrome" : "border-2 border-dashed border-input",
               )}
             />
           ))}
         </div>
       ) : seats > 0 ? (
         <div
-          className="h-2 overflow-hidden rounded-full border border-dashed border-border-strong bg-surface-sunken"
+          className="h-2 overflow-hidden rounded-full border border-dashed border-input bg-muted"
           aria-hidden="true"
         >
           <span

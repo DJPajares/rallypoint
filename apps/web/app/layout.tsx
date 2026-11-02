@@ -15,9 +15,6 @@ const body = Inter({
   variable: "--font-ui-family",
   display: "swap",
 });
-// Runs before paint so a saved light/dark choice never flashes the other theme.
-// "system" is the absence of the attribute; the CSS media query takes over.
-const themeScript = `try{var t=localStorage.getItem("rallypoint.theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
 export const metadata: Metadata = {
   title: "RallyPoint",
   description:
@@ -43,9 +40,6 @@ export default function Layout({ children }: { children: ReactNode }) {
       className={`${display.variable} ${body.variable}`}
       suppressHydrationWarning
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
       <body>
         <Suspense>
           <Providers>{children}</Providers>

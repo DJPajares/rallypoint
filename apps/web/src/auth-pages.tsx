@@ -83,10 +83,12 @@ function AuthLayout({
       {intro ? (
         <div>
           <h1>{intro.title}</h1>
-          <p className="max-w-reading text-lg text-text-muted">{intro.lede}</p>
+          <p className="max-w-reading text-lg text-muted-foreground">
+            {intro.lede}
+          </p>
         </div>
       ) : null}
-      <div className="rounded-lg border border-border bg-surface p-5 [&_h2]:mb-0">
+      <div className="rounded-lg border border-border bg-card p-5 [&_h2]:mb-0">
         {intro ? <h2>{title}</h2> : <h1>{title}</h1>}
         {children}
       </div>
@@ -117,7 +119,7 @@ function LocalNote() {
   return (
     <>
       <Divider>Local development</Divider>
-      <p className="mt-1 mb-4 text-sm text-text-muted">
+      <p className="mt-1 mb-4 text-sm text-muted-foreground">
         Use a synthetic account. Confirmation and reset emails go to the{" "}
         <a href="http://127.0.0.1:54324" target="_blank" rel="noreferrer">
           local mail inbox
@@ -163,7 +165,7 @@ function PasswordField({
         />
         <button
           type="button"
-          className="inline-flex size-touch flex-none items-center justify-center rounded-full border-0 bg-transparent p-0 text-text-muted hover:text-text focus-visible:-outline-offset-3"
+          className="inline-flex size-touch flex-none items-center justify-center rounded-full border-0 bg-transparent p-0 text-muted-foreground hover:text-foreground focus-visible:-outline-offset-3"
           aria-pressed={shown}
           aria-label={shown ? "Hide password" : "Show password"}
           onClick={() => setShown((value) => !value)}
@@ -319,7 +321,10 @@ export function SignIn() {
             <Notice>{problem}</Notice>
           ) : null}
           {resent ? (
-            <p role="status" className="mt-1 mb-0 text-sm text-text-muted">
+            <p
+              role="status"
+              className="mt-1 mb-0 text-sm text-muted-foreground"
+            >
               Sent. Check your inbox.
             </p>
           ) : null}
@@ -335,7 +340,7 @@ export function SignIn() {
           </button>
         </form>
       ) : null}
-      <p className="mt-5 mb-0 text-sm text-text-muted">
+      <p className="mt-5 mb-0 text-sm text-muted-foreground">
         New here?{" "}
         <Link href={withNext("/sign-up", next)}>Create an account</Link>
       </p>
@@ -399,7 +404,7 @@ export function SignUp() {
           We sent a link to <strong>{email}</strong>. Tap it to finish creating
           your account.
         </p>
-        <p className="mt-1 mb-0 text-sm text-text-muted">
+        <p className="mt-1 mb-0 text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link href={withNext("/sign-in", next)}>Sign in</Link> or{" "}
           <Link href={withNext("/forgot-password", next)}>
@@ -479,7 +484,7 @@ export function SignUp() {
           </button>
         </form>
       ) : null}
-      <p className="mt-5 mb-0 text-sm text-text-muted">
+      <p className="mt-5 mb-0 text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link href={withNext("/sign-in", next)}>Sign in</Link>
       </p>
@@ -520,7 +525,7 @@ export function ForgotPassword() {
           <Unavailable />
           {config?.auth?.password ? (
             <form onSubmit={(event) => void submit(event)}>
-              <p className="mt-1 mb-4 text-sm text-text-muted">
+              <p className="mt-1 mb-4 text-sm text-muted-foreground">
                 We’ll email you a link to choose a new password.
               </p>
               <EmailField value={email} onChange={setEmail} />
@@ -538,7 +543,7 @@ export function ForgotPassword() {
           ) : null}
         </>
       )}
-      <p className="mt-5 mb-0 text-sm text-text-muted">
+      <p className="mt-5 mb-0 text-sm text-muted-foreground">
         <Link href={withNext("/sign-in", next)}>Back to sign in</Link>
       </p>
     </AuthLayout>
@@ -556,7 +561,7 @@ function LinkProblem({ kind }: { kind: LinkError }) {
       {kind === "other_browser" ? (
         <>
           <p>Your email is confirmed. Sign in to continue.</p>
-          <p className="mt-1 mb-0 text-sm text-text-muted">
+          <p className="mt-1 mb-0 text-sm text-muted-foreground">
             Open the reset link on the device where you asked for it, or ask for
             a new one.
           </p>

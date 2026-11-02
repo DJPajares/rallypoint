@@ -121,13 +121,13 @@ export function StatRow({
   items: Array<{ label: string; value: ReactNode }>;
 }) {
   return (
-    <dl className="m-0 grid auto-cols-fr grid-flow-col rounded-lg bg-surface shadow-sm">
+    <dl className="m-0 grid auto-cols-fr grid-flow-col rounded-lg bg-card shadow-sm">
       {items.map((item) => (
         <div
           key={item.label}
           className="flex flex-col-reverse border-l border-border py-3 text-center first:border-l-0"
         >
-          <dt className="text-xs text-text-muted">{item.label}</dt>
+          <dt className="text-xs text-muted-foreground">{item.label}</dt>
           <dd className="m-0 font-heading text-2xl leading-tight font-extrabold tabular-nums">
             {item.value}
           </dd>
@@ -169,7 +169,7 @@ export function Segmented<T extends string>({
   return (
     <div
       data-slot="segmented"
-      className="flex rounded-md bg-surface-sunken p-0.5"
+      className="flex rounded-md bg-muted p-0.5"
       role="radiogroup"
       aria-label={label}
     >
@@ -183,7 +183,7 @@ export function Segmented<T extends string>({
           role="radio"
           aria-checked={option.value === value}
           tabIndex={option.value === value ? 0 : -1}
-          className="min-h-control-sm flex-1 rounded-sm border-0 bg-transparent px-2 py-1 text-sm font-semibold text-text-muted transition-colors duration-150 ease-standard focus-visible:outline-offset-0.5 aria-checked:bg-surface aria-checked:text-text aria-checked:shadow-sm"
+          className="min-h-control-sm flex-1 rounded-sm border-0 bg-transparent px-2 py-1 text-sm font-semibold text-muted-foreground transition-colors duration-150 ease-standard focus-visible:outline-offset-0.5 aria-checked:bg-card aria-checked:text-foreground aria-checked:shadow-sm"
           onClick={() => onChange(option.value)}
           onKeyDown={(event) => onKeyDown(event, index)}
         >

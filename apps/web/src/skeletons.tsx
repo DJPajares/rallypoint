@@ -7,7 +7,7 @@ import { cx, Skeleton } from "@rallypoint/ui";
  * shape of what's coming instead of a spinner, so nothing jumps when the
  * content lands. Each skeleton mirrors its page's real layout. The shapes
  * are decorative; one status line says what's loading for screen readers.
- * Reduced motion stops the pulse (theme.css), leaving still shapes.
+ * Reduced motion stops the pulse (@rallypoint/ui/globals.css), leaving still shapes.
  */
 
 /** One placeholder shape. */
@@ -15,7 +15,7 @@ function Bone({ className }: { className?: string }) {
   return (
     <Skeleton
       aria-hidden="true"
-      className={cx("h-4 rounded-sm bg-surface-sunken", className)}
+      className={cx("h-4 rounded-sm bg-muted", className)}
     />
   );
 }
@@ -51,7 +51,7 @@ function TitleBones() {
 /** Rows like a session or group list: a tile, a title and a line under it. */
 function RowBones({ rows = 3 }: { rows?: number }) {
   return (
-    <div className="overflow-hidden rounded-lg bg-surface shadow-sm">
+    <div className="overflow-hidden rounded-lg bg-card shadow-sm">
       {Array.from({ length: rows }, (_, i) => (
         <div
           key={i}
@@ -77,7 +77,7 @@ function CardBones({
   action?: boolean;
 }) {
   return (
-    <div className="grid gap-3 rounded-lg border border-border bg-surface p-5">
+    <div className="grid gap-3 rounded-lg border border-border bg-card p-5">
       <Bone className="h-5 w-40" />
       {Array.from({ length: lines }, (_, i) => (
         <Bone key={i} className={i === lines - 1 ? "w-3/5" : "w-full"} />
@@ -90,7 +90,7 @@ function CardBones({
 /** Home's Up next card: the date tile beside what, when and where. */
 function UpNextBones() {
   return (
-    <div className="grid grid-cols-[auto_1fr] items-center gap-5 rounded-xl border border-border bg-surface p-6 shadow-sm max-[520px]:gap-4 max-[520px]:p-5">
+    <div className="grid grid-cols-[auto_1fr] items-center gap-5 rounded-xl border border-border bg-card p-6 shadow-sm max-[520px]:gap-4 max-[520px]:p-5">
       <Bone className="h-22 w-19 rounded-lg max-[520px]:w-16" />
       <div className="grid gap-3">
         <Bone className="h-3 w-24" />
@@ -176,7 +176,7 @@ export function SessionSkeleton() {
           <Bone className="w-2/5" />
         </div>
       </div>
-      <div className="grid gap-2 rounded-lg border border-border bg-surface p-4">
+      <div className="grid gap-2 rounded-lg border border-border bg-card p-4">
         <Bone className="w-28" />
         <Bone className="h-3 w-40" />
       </div>

@@ -66,13 +66,13 @@ export function Landing() {
   return (
     <div>
       <section className="grid items-center gap-8 desk:min-h-[56dvh] desk:grid-cols-[1.2fr_1fr]">
-        <div className="[&_h1]:mb-4 [&_h1]:text-display-lg [&_h1]:leading-[0.98] [&_h1_span]:text-text-muted">
+        <div className="[&_h1]:mb-4 [&_h1]:text-display-lg [&_h1]:leading-[0.98] [&_h1_span]:text-muted-foreground">
           <h1>
             Good company.
             <br />
             <span>Great sessions.</span>
           </h1>
-          <p className="max-w-reading text-lg text-text-muted">
+          <p className="max-w-reading text-lg text-muted-foreground">
             Bring your people together, then get back to the good part. One
             shared link shows who’s in, what it costs and when to cancel by.
           </p>
@@ -83,13 +83,13 @@ export function Landing() {
             Find your people
             <ArrowRightIcon size={20} aria-hidden="true" />
           </Link>
-          <p className="mt-6 text-sm text-text-muted">
+          <p className="mt-6 text-sm text-muted-foreground">
             Sign in once. Keep your group close.
           </p>
         </div>
         <div className="flex justify-center" aria-hidden="true">
-          <div className="grid w-[min(360px,100%)] -rotate-[1.5deg] gap-3 rounded-xl border border-border bg-surface p-5 shadow-lg">
-            <span className="m-0 block text-sm font-semibold text-text-muted">
+          <div className="grid w-[min(360px,100%)] -rotate-[1.5deg] gap-3 rounded-xl border border-border bg-card p-5 shadow-lg">
+            <span className="m-0 block text-sm font-semibold text-muted-foreground">
               Thursday Pickleball Crew
             </span>
             <p className="-mt-1 mb-0 font-heading text-2xl leading-tight font-bold tracking-tight">
@@ -99,14 +99,14 @@ export function Landing() {
               date={{ weekday: "Thu", day: "24", month: "Oct", time: "" }}
             >
               <div className="font-semibold tabular-nums">7:00 – 9:00 pm</div>
-              <div className="text-sm text-text-muted">
+              <div className="text-sm text-muted-foreground">
                 Riverside Courts · court 3
               </div>
             </Ticket>
-            <div className="rounded-lg border border-border bg-surface p-3">
+            <div className="rounded-lg border border-border bg-card p-3">
               <SpotsMeter capacity={12} taken={10} />
             </div>
-            <span className="block rounded-full bg-action p-3 text-center font-bold text-on-action">
+            <span className="block rounded-full bg-primary p-3 text-center font-bold text-primary-foreground">
               Join · 2 spots left
             </span>
           </div>
@@ -120,9 +120,9 @@ export function Landing() {
         ].map(([title, body], index) => (
           <div
             key={title}
-            className="rounded-lg border border-border bg-surface p-5 [&_h2]:mt-2 [&_h2]:mb-1 [&_h2]:text-xl [&_p]:m-0 [&_p]:text-text-muted"
+            className="rounded-lg border border-border bg-card p-5 [&_h2]:mt-2 [&_h2]:mb-1 [&_h2]:text-xl [&_p]:m-0 [&_p]:text-muted-foreground"
           >
-            <span className="inline-flex size-8 items-center justify-center rounded-full bg-stub font-bold text-on-stub tabular-nums">
+            <span className="inline-flex size-8 items-center justify-center rounded-full bg-stub font-bold text-stub-foreground tabular-nums">
               {index + 1}
             </span>
             <h2>{title}</h2>
@@ -207,7 +207,7 @@ export function HomeDashboard() {
       ) : next ? (
         <UpNext row={next} now={now} />
       ) : (
-        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-5 rounded-xl border border-border bg-surface p-6 shadow-sm max-[520px]:grid-cols-[auto_1fr] max-[520px]:gap-4 max-[520px]:p-5">
+        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-5 rounded-xl border border-border bg-card p-6 shadow-sm max-[520px]:grid-cols-[auto_1fr] max-[520px]:gap-4 max-[520px]:p-5">
           <CalendarDotsIcon size={30} aria-hidden="true" />
           <div>
             <h2>Nothing coming up</h2>
@@ -271,18 +271,18 @@ function StartGroupRow() {
     <li className="border-t border-border first:border-t-0">
       <div className="flex min-h-13 items-center gap-2">
         <Link
-          className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-2 pr-3 pl-3 text-left text-inherit no-underline [font:inherit] [a&]:hover:bg-surface-sunken [button&]:cursor-pointer [button&]:hover:bg-surface-sunken focus-visible:-outline-offset-3"
+          className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-2 pr-3 pl-3 text-left text-inherit no-underline [font:inherit] [a&]:hover:bg-muted [button&]:cursor-pointer [button&]:hover:bg-muted focus-visible:-outline-offset-3"
           href="/groups/new"
         >
           <span
-            className="grid aspect-square w-11 flex-none place-items-center rounded-md border border-dashed border-border-strong text-text-muted"
+            className="grid aspect-square w-11 flex-none place-items-center rounded-md border border-dashed border-input text-muted-foreground"
             aria-hidden="true"
           >
             <PlusIcon size={20} weight="bold" />
           </span>
           <span className="grid min-w-0 flex-1">
             <span className="truncate font-semibold">Start a group</span>
-            <span className="truncate text-sm text-text-muted">
+            <span className="truncate text-sm text-muted-foreground">
               A list of people you play with, public or private.
             </span>
           </span>
@@ -354,7 +354,7 @@ function SessionDays({
     return (
       <section
         key={day.key || "undecided"}
-        className="[&_h2]:sticky [&_h2]:top-(--safe-top) [&_h2]:z-1 [&_h2]:m-0 [&_h2]:bg-bg [&_h2]:px-1 [&_h2]:py-2 [&_h2]:text-lg md:[&_h2]:top-topbar"
+        className="[&_h2]:sticky [&_h2]:top-(--safe-top) [&_h2]:z-1 [&_h2]:m-0 [&_h2]:bg-background [&_h2]:px-1 [&_h2]:py-2 [&_h2]:text-lg md:[&_h2]:top-topbar"
       >
         <h2>{label}</h2>
         <ListGroup>
@@ -457,7 +457,7 @@ export function SessionsPage() {
             <>
               <SessionDays rows={past} past today={today} />
               {past.length < pastTotal ? (
-                <p className="mt-1 mb-0 text-sm text-text-muted">
+                <p className="mt-1 mb-0 text-sm text-muted-foreground">
                   Your latest {past.length} of {pastTotal}.
                 </p>
               ) : null}
@@ -465,7 +465,7 @@ export function SessionsPage() {
           ) : upcoming.length ? (
             <SessionDays rows={upcoming} past={false} today={today} />
           ) : (
-            <p className="mt-6 mb-0 text-sm text-text-muted">
+            <p className="mt-6 mb-0 text-sm text-muted-foreground">
               Nothing coming up.
             </p>
           )}
@@ -485,7 +485,7 @@ function DuesRow({ item }: { item: DuesItem }) {
     minute: "2-digit",
   }).format(new Date(item.session.startsAt));
   return (
-    <li className="rounded-lg border border-border bg-surface p-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 *:[div]:grid *:[div]:gap-0.5 [&>div:first-child]:min-w-0 [&>div:first-child]:flex-[1_1_0] [&_span]:text-sm [&_span]:text-text-muted">
+    <li className="rounded-lg border border-border bg-card p-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 *:[div]:grid *:[div]:gap-0.5 [&>div:first-child]:min-w-0 [&>div:first-child]:flex-[1_1_0] [&_span]:text-sm [&_span]:text-muted-foreground">
       <div>
         <Link href={`/s/${item.session.slug}`}>
           <strong>{item.session.title}</strong>
@@ -514,7 +514,7 @@ function DuesRow({ item }: { item: DuesItem }) {
 }
 function SplitDuesRow({ item }: { item: SplitClaimDuesItem }) {
   return (
-    <li className="rounded-lg border border-border bg-surface p-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 *:[div]:grid *:[div]:gap-0.5 [&>div:first-child]:min-w-0 [&>div:first-child]:flex-[1_1_0] [&_span]:text-sm [&_span]:text-text-muted">
+    <li className="rounded-lg border border-border bg-card p-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 *:[div]:grid *:[div]:gap-0.5 [&>div:first-child]:min-w-0 [&>div:first-child]:flex-[1_1_0] [&_span]:text-sm [&_span]:text-muted-foreground">
       <div>
         <Link href={`/s/${item.session.slug}`}>
           <strong>{item.session.title}</strong>
@@ -577,7 +577,7 @@ export function DuesPage() {
             <h2 id="dues-owing">To pay</h2>
             {owing.length ? (
               <>
-                <p className="mt-1 mb-0 text-sm text-text-muted">
+                <p className="mt-1 mb-0 text-sm text-muted-foreground">
                   Pay the organizer directly. They mark it paid here; RallyPoint
                   never collects payments.
                 </p>
@@ -588,7 +588,7 @@ export function DuesPage() {
                 </ul>
               </>
             ) : (
-              <p className="mt-1 mb-0 text-sm text-text-muted">
+              <p className="mt-1 mb-0 text-sm text-muted-foreground">
                 Nothing to pay right now.
               </p>
             )}

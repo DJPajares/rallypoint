@@ -45,7 +45,7 @@ function SelectTrigger({
       data-size={size}
       className={cn(
         controlClass,
-        "cursor-pointer select-none *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:flex-1 *:data-[slot=select-value]:truncate data-placeholder:text-text-muted [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        "cursor-pointer select-none *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:flex-1 *:data-[slot=select-value]:truncate data-placeholder:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className,
       )}
       {...props}
@@ -55,7 +55,7 @@ function SelectTrigger({
         render={
           <CaretDownIcon
             aria-hidden="true"
-            className="pointer-events-none ml-auto size-4 text-text-muted transition-transform duration-150 ease-standard in-data-popup-open:rotate-180"
+            className="pointer-events-none ml-auto size-4 text-muted-foreground transition-transform duration-150 ease-standard in-data-popup-open:rotate-180"
           />
         }
       />
@@ -129,7 +129,7 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex min-h-touch w-full cursor-default items-center justify-between gap-3 rounded-sm px-3 text-base outline-none select-none data-disabled:pointer-events-none data-disabled:opacity-50 data-highlighted:bg-surface-sunken data-selected:font-semibold [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        "relative flex min-h-touch w-full cursor-default items-center justify-between gap-3 rounded-sm px-3 text-base outline-none select-none data-disabled:pointer-events-none data-disabled:opacity-50 data-highlighted:bg-muted data-selected:font-semibold [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className,
       )}
       {...props}

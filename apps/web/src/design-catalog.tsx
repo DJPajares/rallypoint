@@ -38,22 +38,28 @@ import {
   TicketMeta,
   TicketTime,
 } from "@rallypoint/ui";
+// shadcn's names first, then the roles RallyPoint adds.
 const colors = [
-  "bg",
-  "surface",
-  "surface-sunken",
-  "text",
-  "text-muted",
+  "background",
+  "foreground",
+  "card",
+  "muted",
+  "muted-foreground",
   "border",
-  "border-strong",
+  "input",
+  "primary",
+  "ring",
   "chrome",
   "stub",
-  "action",
   "link",
   "success",
+  "success-foreground",
   "warning",
+  "warning-foreground",
   "neutral",
+  "neutral-foreground",
   "danger",
+  "danger-foreground",
 ];
 const space = [1, 2, 3, 4, 5, 6, 8, 10, 12, 16];
 const type = ["xs", "sm", "base", "lg", "xl", "2xl"];
@@ -69,7 +75,8 @@ const radii = [
 /**
  * Every token and library component on one page, in both themes via the
  * floating menu's theme switch. Look here before adding a new style: if a
- * piece already exists, use it; if a value is missing, add it to theme.css.
+ * piece already exists, use it; if a value is missing, add it to
+ * packages/ui/src/styles/globals.css.
  */
 export function DesignCatalog() {
   const [sheet, setSheet] = useState(false);
@@ -84,7 +91,7 @@ export function DesignCatalog() {
         <Kicker>@rallypoint/ui</Kicker>
         <h1>Design system</h1>
         <Lede>
-          Tokens and components. Change a value in theme.css and every screen
+          Tokens and components. Change a value in globals.css and every screen
           follows.
         </Lede>
       </div>
@@ -96,8 +103,8 @@ export function DesignCatalog() {
             key={name}
             className="grid gap-2 text-xs [&_span]:h-16 [&_span]:rounded-md [&_span]:border [&_span]:border-border"
           >
-            <span style={{ background: `var(--color-${name})` }} />
-            <code>--color-{name}</code>
+            <span style={{ background: `var(--${name})` }} />
+            <code>--{name}</code>
           </div>
         ))}
       </div>
@@ -130,10 +137,10 @@ export function DesignCatalog() {
             key={step}
             className="flex items-center gap-3 text-xs [&_code]:min-w-22.5"
           >
-            <code>--space-{step}</code>
+            <code>p-{step}</code>
             <span
               className="h-3 rounded-xs bg-chrome"
-              style={{ width: `var(--space-${step})` }}
+              style={{ width: `calc(var(--spacing) * ${step})` }}
             />
           </div>
         ))}

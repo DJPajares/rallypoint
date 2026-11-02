@@ -38,7 +38,7 @@ export function TabHero({
     <header className="grid grid-cols-[1fr_auto] items-end gap-x-4 gap-y-2 *:col-start-1 [&_h1]:m-0 [&_h1]:text-display-md [&_h1]:leading-[1.05]">
       <h1>{title}</h1>
       {summary ? (
-        <p className="m-0 text-base text-text-muted">{summary}</p>
+        <p className="m-0 text-base text-muted-foreground">{summary}</p>
       ) : null}
       {onCreate ? (
         <button
@@ -111,7 +111,7 @@ export function SessionRow({
     <li className="border-t border-border first:border-t-0">
       <div className="flex min-h-13 items-center gap-2">
         <Link
-          className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-2 pr-3 pl-3 text-left text-inherit no-underline [font:inherit] [a&]:hover:bg-surface-sunken [button&]:cursor-pointer [button&]:hover:bg-surface-sunken focus-visible:-outline-offset-3"
+          className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-2 pr-3 pl-3 text-left text-inherit no-underline [font:inherit] [a&]:hover:bg-muted [button&]:cursor-pointer [button&]:hover:bg-muted focus-visible:-outline-offset-3"
           href={sessionHref(row)}
         >
           <span className="inline-flex flex-none">
@@ -123,7 +123,7 @@ export function SessionRow({
               />
             ) : (
               <span
-                className="inline-grid w-11 place-items-center rounded-sm bg-surface-sunken py-1 leading-[1.1]"
+                className="inline-grid w-11 place-items-center rounded-sm bg-muted py-1 leading-[1.1]"
                 aria-hidden="true"
               >
                 <CalendarDotsIcon size={22} />
@@ -137,7 +137,7 @@ export function SessionRow({
                 <span className="sr-only">, {spokenDay(row)}</span>
               ) : null}
             </span>
-            <span className="truncate text-sm text-text-muted">
+            <span className="truncate text-sm text-muted-foreground">
               {where || row.groupName}
             </span>
             {/* On a phone the pills sit under the line, so titles keep room. */}
@@ -145,7 +145,7 @@ export function SessionRow({
               {pills}
             </span>
           </span>
-          <span className="inline-flex flex-none items-center gap-2 text-text-muted">
+          <span className="inline-flex flex-none items-center gap-2 text-muted-foreground">
             <span className="inline-flex flex-wrap gap-1 max-[520px]:hidden">
               {pills}
             </span>
@@ -170,7 +170,7 @@ export function GroupRow({ group }: { group: GroupSummary }) {
     <li className="border-t border-border first:border-t-0">
       <div className="flex min-h-13 items-center gap-2">
         <Link
-          className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-2 pr-3 pl-3 text-left text-inherit no-underline [font:inherit] [a&]:hover:bg-surface-sunken [button&]:cursor-pointer [button&]:hover:bg-surface-sunken focus-visible:-outline-offset-3"
+          className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-2 pr-3 pl-3 text-left text-inherit no-underline [font:inherit] [a&]:hover:bg-muted [button&]:cursor-pointer [button&]:hover:bg-muted focus-visible:-outline-offset-3"
           href={`/groups/${group.id}`}
         >
           <span className="inline-flex flex-none">
@@ -178,14 +178,14 @@ export function GroupRow({ group }: { group: GroupSummary }) {
           </span>
           <span className="grid min-w-0 flex-1">
             <span className="truncate font-semibold">{group.name}</span>
-            <span className="inline-flex items-center gap-1 truncate text-sm text-text-muted">
+            <span className="inline-flex items-center gap-1 truncate text-sm text-muted-foreground">
               {group.visibility === "private" ? (
                 <LockSimpleIcon size={14} aria-hidden="true" />
               ) : null}
               {facts.join(" · ")}
             </span>
           </span>
-          <span className="inline-flex flex-none items-center gap-2 text-text-muted">
+          <span className="inline-flex flex-none items-center gap-2 text-muted-foreground">
             <CaretRightIcon size={16} aria-hidden="true" />
           </span>
         </Link>
@@ -204,7 +204,7 @@ export function UpNext({ row, now }: { row: MySessionRow; now: number }) {
   const soon = startsIn(row.startsAt, row.endsAt, now);
   return (
     <Link
-      className="grid grid-cols-[auto_1fr_auto] items-center gap-5 rounded-xl border border-border bg-surface p-6 text-inherit no-underline shadow-sm hover:border-border-strong focus-visible:shadow-focus focus-visible:outline-none max-[520px]:grid-cols-[auto_1fr] max-[520px]:gap-4 max-[520px]:p-5"
+      className="grid grid-cols-[auto_1fr_auto] items-center gap-5 rounded-xl border border-border bg-card p-6 text-inherit no-underline shadow-sm hover:border-input focus-visible:shadow-focus focus-visible:outline-none max-[520px]:grid-cols-[auto_1fr] max-[520px]:gap-4 max-[520px]:p-5"
       href={sessionHref(row)}
     >
       <span>
@@ -222,7 +222,7 @@ export function UpNext({ row, now }: { row: MySessionRow; now: number }) {
             <span className="sr-only">, {spokenDay(row)}</span>
           ) : null}
         </span>
-        <span className="text-text-muted">
+        <span className="text-muted-foreground">
           {[time, row.location].filter(Boolean).join(" · ") || row.groupName}
         </span>
         <span className="mt-2 flex flex-wrap gap-2">
@@ -242,7 +242,7 @@ export function UpNext({ row, now }: { row: MySessionRow; now: number }) {
         </span>
       </span>
       <CaretRightIcon
-        className="text-text-muted max-[520px]:hidden"
+        className="text-muted-foreground max-[520px]:hidden"
         size={22}
         aria-hidden="true"
       />

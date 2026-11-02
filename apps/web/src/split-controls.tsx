@@ -154,7 +154,7 @@ export function SplitControls({
     blocked = !!preview?.blockedPaidPartyIds.length;
   return (
     <section
-      className="rounded-lg border border-border bg-surface p-5 my-5 grid min-w-0 gap-3 [&_p]:m-0 [&_fieldset]:grid [&_fieldset]:gap-3 [&_summary]:cursor-pointer [&_summary]:font-medium"
+      className="rounded-lg border border-border bg-card p-5 my-5 grid min-w-0 gap-3 [&_p]:m-0 [&_fieldset]:grid [&_fieldset]:gap-3 [&_summary]:cursor-pointer [&_summary]:font-medium"
       aria-label="Manage session cost"
     >
       <h2 ref={managerHeading} tabIndex={-1}>
@@ -166,11 +166,11 @@ export function SplitControls({
         {finalized ? "Finalized" : "Estimated"}
       </p>
       {finalized ? (
-        <p className="mt-1 mb-0 text-sm text-text-muted">
+        <p className="mt-1 mb-0 text-sm text-muted-foreground">
           Uncovered cost: {money(managed.uncoveredMinor)}
         </p>
       ) : (
-        <p className="mt-1 mb-0 text-sm text-text-muted">
+        <p className="mt-1 mb-0 text-sm text-muted-foreground">
           Finalize once the session starts. Payment tracking follows the final
           split.
         </p>
@@ -371,7 +371,7 @@ export function PendingSplitControls({
     onDone(v.registration),
   );
   return (
-    <div className="mt-1 grid gap-1 [&_strong]:text-text">
+    <div className="mt-1 grid gap-1 [&_strong]:text-foreground">
       <strong>
         {claim.waived
           ? "Waived"

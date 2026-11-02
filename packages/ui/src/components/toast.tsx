@@ -36,7 +36,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 // slide in from the top and leave up or to the right, or just fade with
 // reduced motion.
 const toastClass =
-  "absolute inset-x-0 top-0 z-[calc(100-var(--toast-index))] origin-top rounded-lg border border-border bg-surface text-text shadow-lg select-none [--peek:8px] [transition:transform_200ms_var(--ease-standard),opacity_200ms_var(--ease-standard)] transform-[translateX(var(--toast-swipe-movement-x))_translateY(calc(var(--toast-swipe-movement-y)+(var(--toast-index)*var(--peek))))_scale(calc(max(0,1-(var(--toast-index)*0.06))))] data-expanded:transform-[translateX(var(--toast-swipe-movement-x))_translateY(calc(var(--toast-offset-y)+(var(--toast-index)*var(--peek))+var(--toast-swipe-movement-y)))] data-limited:opacity-0 data-swiping:transition-none data-starting-style:opacity-0 data-starting-style:transform-[translateY(-150%)] data-ending-style:opacity-0 data-ending-style:transform-[translateY(-150%)] data-ending-style:data-[swipe-direction=right]:transform-[translateX(calc(var(--toast-swipe-movement-x)+150%))] motion-reduce:[transition:opacity_150ms_linear] motion-reduce:data-starting-style:transform-none motion-reduce:data-ending-style:transform-none";
+  "absolute inset-x-0 top-0 z-[calc(100-var(--toast-index))] origin-top rounded-lg border border-border bg-card text-foreground shadow-lg select-none [--peek:8px] [transition:transform_200ms_var(--ease-standard),opacity_200ms_var(--ease-standard)] transform-[translateX(var(--toast-swipe-movement-x))_translateY(calc(var(--toast-swipe-movement-y)+(var(--toast-index)*var(--peek))))_scale(calc(max(0,1-(var(--toast-index)*0.06))))] data-expanded:transform-[translateX(var(--toast-swipe-movement-x))_translateY(calc(var(--toast-offset-y)+(var(--toast-index)*var(--peek))+var(--toast-swipe-movement-y)))] data-limited:opacity-0 data-swiping:transition-none data-starting-style:opacity-0 data-starting-style:transform-[translateY(-150%)] data-ending-style:opacity-0 data-ending-style:transform-[translateY(-150%)] data-ending-style:data-[swipe-direction=right]:transform-[translateX(calc(var(--toast-swipe-movement-x)+150%))] motion-reduce:[transition:opacity_150ms_linear] motion-reduce:data-starting-style:transform-none motion-reduce:data-ending-style:transform-none";
 
 function ToastList() {
   const { toasts } = Toast.useToastManager();
@@ -51,14 +51,14 @@ function ToastList() {
       >
         <Toast.Content className="flex min-h-control items-center gap-2 py-2 pr-2 pl-4 transition-opacity data-behind:not-in-data-expanded:opacity-0">
           <span
-            className="inline-flex flex-none in-data-[type=danger]:text-danger in-data-[type=success]:text-success"
+            className="inline-flex flex-none in-data-[type=danger]:text-danger-foreground in-data-[type=success]:text-success-foreground"
             aria-hidden="true"
           >
             {icons[tone]}
           </span>
           <Toast.Title className="m-0 min-w-0 flex-1 text-base font-semibold" />
           <Toast.Close
-            className="inline-flex size-touch flex-none items-center justify-center rounded-full border-0 bg-transparent text-text-muted hover:bg-surface-sunken focus-visible:-outline-offset-3"
+            className="inline-flex size-touch flex-none items-center justify-center rounded-full border-0 bg-transparent text-muted-foreground hover:bg-muted focus-visible:-outline-offset-3"
             aria-label="Dismiss"
           >
             <XIcon size={16} aria-hidden="true" />

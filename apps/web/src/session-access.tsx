@@ -47,7 +47,7 @@ export function AccessList({
   return (
     <div className="grid justify-items-start gap-3">
       {empty ? (
-        <p className="mt-1 mb-0 text-sm text-text-muted">
+        <p className="mt-1 mb-0 text-sm text-muted-foreground">
           Only you and your co-hosts can see it until you add people or invite
           them.
         </p>
@@ -162,7 +162,7 @@ function AccessOptions({
                 ))}
               </ul>
             ) : (
-              <p className="mt-1 mb-0 text-sm text-text-muted">
+              <p className="mt-1 mb-0 text-sm text-muted-foreground">
                 {shown
                   ? "No group by that name."
                   : "You're not in any groups yet."}
@@ -199,7 +199,7 @@ function AccessOptions({
                 ))}
               </ul>
             ) : (
-              <p className="mt-1 mb-0 text-sm text-text-muted">
+              <p className="mt-1 mb-0 text-sm text-muted-foreground">
                 {shown ? "Nobody by that name." : "Nobody to add yet."}
               </p>
             )}

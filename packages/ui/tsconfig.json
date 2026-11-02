@@ -1,7 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "paths": {
+      "@rallypoint/ui/*": ["./src/*"]
+    }
   },
   "include": ["src"]
 }

@@ -1,32 +1,19 @@
-/* The app's one stylesheet entry (D-24): Tailwind, shadcn's variants and
-   animations, then the RallyPoint theme. */
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "@rallypoint/ui/shadcn.css";
-@import "@rallypoint/ui/theme.css";
-
-/* Tailwind reads class names from the app and the shared UI package. */
-@source "../src";
-@source "../../../packages/ui/src";
-
-/* App-wide pieces utilities can't express cleanly (D-24). */
+/* The app's one stylesheet entry (D-24): the shared shadcn theme from
+   @rallypoint/ui, then the few app-wide pieces utilities can't express. */
+@import "@rallypoint/ui/globals.css";
 
 /* Translucent bars that let content blur through. */
 @utility glass {
   background: color-mix(
     in srgb,
-    var(--color-bg) var(--glass-opacity),
+    var(--background) var(--glass-opacity),
     transparent
   );
   backdrop-filter: var(--glass-filter);
   -webkit-backdrop-filter: var(--glass-filter);
 }
-@utility glass-surface {
-  background: color-mix(
-    in srgb,
-    var(--color-surface) var(--glass-opacity),
-    transparent
-  );
+@utility glass-card {
+  background: color-mix(in srgb, var(--card) var(--glass-opacity), transparent);
   backdrop-filter: var(--glass-filter);
   -webkit-backdrop-filter: var(--glass-filter);
 }
@@ -71,13 +58,13 @@
 }
 @utility nav-notch-edge {
   top: -1px;
-  background: var(--color-border-strong);
+  background: var(--input);
   --notch-shape: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 64'><path fill='black' d='M0 0H29.404A13 13 0 0 1 42.053 10A39 39 0 0 0 117.947 10A13 13 0 0 1 130.596 0H160V64H0Z'/></svg>");
 }
 @utility nav-notch-surface {
   background: color-mix(
     in srgb,
-    var(--color-bg) var(--glass-opacity),
+    var(--background) var(--glass-opacity),
     transparent
   );
   backdrop-filter: var(--glass-filter);
@@ -86,7 +73,7 @@
 }
 
 /* Animations: the floating menu's icon spin and item pop-in, and the earned
-   badge. Reduced motion stops them (theme.css). */
+   badge. Reduced motion stops them (@rallypoint/ui/globals.css). */
 @theme {
   --animate-fab-spin: fab-spin 200ms var(--ease-standard);
   --animate-fab-in: fab-in 200ms var(--ease-standard) both;

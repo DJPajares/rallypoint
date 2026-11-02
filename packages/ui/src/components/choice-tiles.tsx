@@ -38,7 +38,7 @@ export function ChoiceTiles({
         <label
           key={tile.value}
           className={cn(
-            "group/tile relative flex min-h-tile cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-border bg-surface px-2 py-4 text-center text-text transition-[border-color,box-shadow] duration-150 ease-standard hover:border-border-strong has-checked:border-chrome has-checked:shadow-ring-chrome has-focus-visible:outline-3 has-focus-visible:outline-offset-3 has-focus-visible:outline-focus has-disabled:cursor-default has-disabled:opacity-50",
+            "group/tile relative flex min-h-tile cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-border bg-card px-2 py-4 text-center text-foreground transition-[border-color,box-shadow] duration-150 ease-standard hover:border-input has-checked:border-chrome has-checked:shadow-ring-chrome has-focus-visible:outline-3 has-focus-visible:outline-offset-3 has-focus-visible:outline-ring has-disabled:cursor-default has-disabled:opacity-50",
             tile.wide &&
               "col-span-full min-h-control flex-row md:col-auto md:min-h-tile md:flex-col",
           )}
@@ -53,14 +53,14 @@ export function ChoiceTiles({
             disabled={disabled}
           />
           <span
-            className="inline-flex text-text-muted group-has-checked/tile:text-chrome"
+            className="inline-flex text-muted-foreground group-has-checked/tile:text-chrome"
             aria-hidden="true"
           >
             {tile.icon}
           </span>
           <span className="text-sm font-semibold">{tile.label}</span>
           <span
-            className="absolute top-2 right-2 hidden size-check items-center justify-center rounded-full bg-chrome text-on-chrome group-has-checked/tile:inline-flex"
+            className="absolute top-2 right-2 hidden size-check items-center justify-center rounded-full bg-chrome text-chrome-foreground group-has-checked/tile:inline-flex"
             aria-hidden="true"
           >
             <CheckIcon size={12} weight="bold" />

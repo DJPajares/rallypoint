@@ -2,8 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-// The look is decided in packages/ui/src/theme.css (and tokens.ts for the
-// few values JavaScript needs). Everywhere else must use
+// The look is decided in packages/ui/src/styles/globals.css (and tokens.ts for
+// the few values JavaScript needs). Everywhere else must use
 // its tokens, so a restyle stays a one-file change.
 const roots = ["packages/ui/src", "apps/web/src", "apps/web/app"];
 const files = roots.flatMap(function walk(dir) {
@@ -11,7 +11,7 @@ const files = roots.flatMap(function walk(dir) {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) return walk(path);
     return /\.(css|tsx?)$/.test(entry.name) &&
-      !/packages\/ui\/src\/(theme\.css|tokens\.ts|shadcn\.css)$/.test(path)
+      !/packages\/ui\/src\/(styles\/globals\.css|tokens\.ts)$/.test(path)
       ? [path]
       : [];
   });
@@ -26,6 +26,12 @@ const rules = [
   ["an arbitrary colour class", /-\[(?:#|rgba?\(|hsla?\(|oklch\()/],
   ["an arbitrary font size class", /\btext-\[\d/],
   ["an arbitrary radius class", /\brounded(?:-[a-z]+)?-\[\d/],
+  // Colours use shadcn's names (bg-card, text-muted-foreground, bg-primary);
+  // the old RallyPoint names no longer exist and would render nothing.
+  [
+    "a retired colour name",
+    /(?<![\w-])(?:bg|text|border|ring|outline|fill|stroke|decoration)-(?:surface(?:-sunken)?|text(?:-muted)?|border-strong|on-(?:action|chrome|stub|brand)|action(?:-hover)?|(?:success|warning|neutral|danger)-bg|brand-graphite|focus)(?![\w-])/,
+  ],
 ];
 test("styles use design tokens instead of literal values", () => {
   const problems = [];

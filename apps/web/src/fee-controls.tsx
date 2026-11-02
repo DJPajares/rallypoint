@@ -68,7 +68,7 @@ export function FeeControls({
               ["waive", "Waive fee"],
             ];
   return (
-    <div className="mt-1 grid gap-1 [&_strong]:text-text">
+    <div className="mt-1 grid gap-1 [&_strong]:text-foreground">
       <span>
         <strong>{feeStanding(fee)}</strong> ·{" "}
         {feeLabel({ currency: fee.currency, feeMinor: fee.totalMinor })}
