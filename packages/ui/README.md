@@ -40,7 +40,7 @@ Tailwind's own colour palette is removed, so only these colours exist.
 - Status tones: `success`, `warning`, `neutral` and `danger` are soft surfaces;
   each `-foreground` is the ink on them (`bg-warning text-warning-foreground`).
   Always show the status in words and an icon too, never by colour alone.
-- Scales: `--radius` (sm to 4xl derive from it), `text-*`, `shadow-*`, named
+- Scales: `rounded-*` (RallyPoint's pinned steps; `--radius` equals `rounded-lg`), `text-*`, `shadow-*`, named
   sizes (`size-touch`, `h-control`…), `container-*` widths and `--layer-*`.
 
 ## Components

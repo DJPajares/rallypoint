@@ -17,6 +17,10 @@
  * roles shadcn has no name for are added the way the docs add custom colours:
  * chrome, stub, link, scrim, the status tones and the brand.
  *
+ * Colours stay in hex: the brand spec (PRD D-21) is in hex, and shadcn's
+ * design-system guidance keeps a brand's hex values rather than converting
+ * them to its default OKLCH.
+ *
  * To restyle the app, change a value in :root or .dark.
  */
 
@@ -88,17 +92,23 @@
   --font-heading:
     var(--font-display-family, "Bricolage Grotesque"), var(--font-sans);
 
-  /* Radius: one base value, scaled the way shadcn scales it. */
+  /* Radius: RallyPoint's own scale, so each step is pinned rather than
+     derived from --radius (shadcn's guidance for a brand radius scale).
+     --radius in :root stays equal to rounded-lg. */
   --radius-xs: 4px;
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-2xl: 28px;
+  --radius-3xl: 32px;
+  --radius-4xl: 9999px; /* Pill: badges. */
+}
 
-  /* Elevation: a contact shadow plus an ambient one. */
+/* Elevation overrides Tailwind's shadow scale in @theme, as shadcn's
+   guidance says; the colours resolve per theme on <html>. */
+@theme {
+  /* A contact shadow plus an ambient one. */
   --shadow-sm: 0 1px 2px var(--shadow-color), 0 8px 24px var(--shadow-color);
   --shadow-lg: 0 2px 6px var(--shadow-color), 0 12px 32px var(--shadow-color);
   --shadow-lift:

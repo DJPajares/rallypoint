@@ -116,8 +116,9 @@ describes.
   its surface/`-foreground` pairing: `chrome`, `stub`, `link`, `scrim`,
   `primary-hover`, the status tones `success`, `warning`, `neutral` and
   `danger` (`bg-success text-success-foreground`), and `brand`. Tailwind's own
-  colour palette is removed, so only these exist. The radius scale comes from
-  one `--radius`.
+  colour palette is removed, so only these exist. Colours stay in hex (the
+  brand spec is hex; shadcn's guidance keeps a brand's hex rather than its
+  default OKLCH), and the radius steps are pinned to RallyPoint's scale.
 - **Dark mode:** [`next-themes`](https://ui.shadcn.com/docs/dark-mode/next)
   adds the `dark` class to `<html>`, following the device until someone uses
   the theme switch (saved as `rallypoint.theme`). `apps/web/src/theme.tsx`
