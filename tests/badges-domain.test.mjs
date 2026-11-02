@@ -34,19 +34,23 @@ const state = (key, current, levels = []) => ({
   })),
 });
 
-test("six badges with distinct icons and five rising levels each", () => {
+test("ten badges by family, with distinct icons and five rising levels each", () => {
   assert.deepEqual(
-    badgeCatalog.map((b) => [b.key, b.thresholds]),
+    badgeCatalog.map((b) => [b.key, b.family, b.thresholds]),
     [
-      ["rally", [1, 10, 25, 50, 100]],
-      ["steady", [2, 3, 6, 12, 24]],
-      ["new-faces", [5, 10, 25, 50, 100]],
-      ["plus-one", [1, 3, 5, 10, 20]],
-      ["host", [1, 5, 10, 25, 50]],
-      ["full-house", [1, 3, 10, 25, 50]],
+      ["rally", "playing", [1, 10, 25, 50, 100]],
+      ["steady", "playing", [2, 3, 6, 12, 24]],
+      ["explorer", "playing", [2, 3, 5, 8, 12]],
+      ["all-rounder", "playing", [1, 5, 10, 25, 50]],
+      ["new-faces", "people", [5, 10, 25, 50, 100]],
+      ["crew", "people", [1, 3, 5, 10, 20]],
+      ["plus-one", "people", [1, 3, 5, 10, 20]],
+      ["host", "hosting", [1, 5, 10, 25, 50]],
+      ["full-house", "hosting", [1, 3, 10, 25, 50]],
+      ["open-door", "hosting", [10, 25, 50, 100, 200]],
     ],
   );
-  assert.equal(new Set(badgeCatalog.map((b) => b.glyph)).size, 6);
+  assert.equal(new Set(badgeCatalog.map((b) => b.glyph)).size, 10);
   for (const b of badgeCatalog)
     for (let i = 1; i < 5; i++)
       assert.ok(b.thresholds[i] > b.thresholds[i - 1]);
@@ -186,6 +190,57 @@ test("level copy is plain and fixed", () => {
   assert.equal(medallionLabel("rally", 0), "Rally, not started");
 });
 
+test("the new badges' copy is plain and follows their numbers", () => {
+  assert.equal(
+    levelSentence("explorer", 1),
+    "Played in sessions run by 2 different organizers.",
+  );
+  assert.equal(
+    levelSentence("all-rounder", 1),
+    "You played beyond your main activity.",
+  );
+  assert.equal(
+    levelSentence("all-rounder", 2),
+    "5 sessions beyond your main activity.",
+  );
+  assert.equal(
+    levelSentence("crew", 1),
+    "You’ve played 3 sessions with the same person.",
+  );
+  assert.equal(
+    levelSentence("crew", 2),
+    "You’ve played 3 sessions with 3 different people.",
+  );
+  assert.equal(
+    levelSentence("open-door", 1),
+    "10 different people played at sessions you ran.",
+  );
+  assert.equal(progressLabel("explorer", 1), "1 more organizer");
+  assert.equal(progressLabel("explorer", 3), "3 more organizers");
+  assert.equal(
+    progressLabel("all-rounder", 4),
+    "4 more sessions in another activity",
+  );
+  assert.equal(
+    progressLabel("crew", 1),
+    "1 more person to play 3 sessions with",
+  );
+  assert.equal(
+    progressLabel("open-door", 15),
+    "15 more people at sessions you run",
+  );
+  assert.equal(levelTarget("explorer", 1), "2 organizers");
+  assert.equal(levelTarget("all-rounder", 1), "1 session in other activities");
+  assert.equal(
+    levelTarget("all-rounder", 3),
+    "10 sessions in other activities",
+  );
+  assert.equal(levelTarget("crew", 1), "1 person");
+  assert.equal(levelTarget("crew", 2), "3 people");
+  assert.equal(levelTarget("open-door", 5), "200 people");
+  assert.equal(medallionLabel("open-door", 2), "Open Door, level 2 of 5");
+});
+
 // WCAG relative luminance and contrast.
 const channel = (c) =>
   c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
@@ -215,14 +270,15 @@ test("level colours keep the white icon and the numeral readable", () => {
 });
 
 test("the SQL thresholds match the catalog", async () => {
-  const { readFileSync } = await import("node:fs");
-  const migration = readFileSync(
-    new URL(
-      "../supabase/migrations/20261025090000_badge_levels.sql",
-      import.meta.url,
-    ),
-    "utf8",
-  );
+  const { readdirSync, readFileSync } = await import("node:fs");
+  const folder = new URL("../supabase/migrations/", import.meta.url);
+  // The newest migration that (re)defines the thresholds is the live one.
+  const migration = readdirSync(folder)
+    .filter((name) => name.endsWith(".sql"))
+    .sort()
+    .map((name) => readFileSync(new URL(name, folder), "utf8"))
+    .filter((sql) => /function app\.badge_thresholds\(\)/.test(sql))
+    .at(-1);
   const body = migration.slice(migration.indexOf("app.badge_thresholds()"));
   const rows = [
     ...body
@@ -255,9 +311,24 @@ test("a badge response of another shape reads as empty, so pages keep working mi
   assert.deepEqual(badgeStates(old), []);
   assert.deepEqual(badgeStates(null), []);
   const view = { badges: [state("rally", 1)], titles: [{ id: "first-rally" }] };
-  assert.equal(badgeStates(view), view.badges);
+  assert.deepEqual(badgeStates(view), view.badges);
   assert.equal(newestUnseen(badgeStates(old)), null);
   assert.equal(nextBadge(badgeStates(old)), null);
+});
+
+test("a badge this app doesn't know is dropped, so a newer database can't break the page", () => {
+  const view = {
+    badges: [
+      state("rally", 1, [[1, "2026-10-01T00:00:00Z"]]),
+      state("someday", 4, [[1, "2026-10-02T00:00:00Z"]]),
+    ],
+  };
+  assert.deepEqual(
+    badgeStates(view).map((b) => b.key),
+    ["rally"],
+  );
+  assert.equal(newestUnseen(badgeStates(view)).key, "rally");
+  assert.deepEqual(unseenIds(badgeStates(view)), ["rally:1"]);
 });
 
 test("each badge has five level titles, none of them a badge name", () => {
@@ -309,12 +380,35 @@ test("each badge has five level titles, none of them a badge name", () => {
           "Main Event",
         ],
       ],
-    ],
+      [
+        "explorer",
+        ["Wanderer", "Roamer", "Trailblazer", "Globetrotter", "Pathfinder"],
+      ],
+      [
+        "all-rounder",
+        ["Dabbler", "Switch Hitter", "Versatile", "Multi-Talent", "Decathlete"],
+      ],
+      ["crew", ["Teammate", "Crewmate", "Inner Circle", "Core Crew", "Family"]],
+      [
+        "open-door",
+        [
+          "Welcomer",
+          "Gatherer",
+          "Community Builder",
+          "Scene Maker",
+          "Town Square",
+        ],
+      ],
+    ].sort(
+      (a, b) =>
+        badgeCatalog.findIndex((x) => x.key === a[0]) -
+        badgeCatalog.findIndex((x) => x.key === b[0]),
+    ),
   );
   const names = new Set(badgeCatalog.map((b) => b.name.toLowerCase()));
   const titles = badgeCatalog.flatMap((b) => b.titles);
   for (const title of titles) assert.ok(!names.has(title.toLowerCase()), title);
-  assert.equal(new Set(titles).size, 30);
+  assert.equal(new Set(titles).size, 50);
   assert.equal(levelTitle("rally", 5), "Rally Master");
   assert.equal(levelTitle("host", 3), "Ringleader");
 });
@@ -378,6 +472,10 @@ test("every badge says what it counts and how to earn level 1, in plain words", 
     "plus-one": "Bring a guest who gets checked in.",
     host: "Run check-in at a session.",
     "full-house": "Run a session where every spot is taken.",
+    explorer: "Play in sessions run by 2 different organizers.",
+    "all-rounder": "Play a session in a second activity.",
+    crew: "Play 3 sessions with the same person.",
+    "open-door": "Run sessions that 10 different people play in.",
   });
   for (const b of badgeCatalog) {
     const about = badgeAbout(b.key);

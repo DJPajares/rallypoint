@@ -1,13 +1,32 @@
-// Badges recognise showing up, meeting people and hosting (PRD D-16, P-19).
+// Badges recognise showing up, meeting people and hosting (PRD D-16, P-19;
+// four more from WDL-407).
 // The database decides what is earned from recorded check-ins; this catalog
 // only names and draws them. Nothing here reads payments, no-shows or
 // reliability. Each badge has five levels, and a level has the same colour on
 // every badge.
 export type BadgeKey =
-  "rally" | "steady" | "new-faces" | "plus-one" | "host" | "full-house";
+  | "rally"
+  | "steady"
+  | "explorer"
+  | "all-rounder"
+  | "new-faces"
+  | "crew"
+  | "plus-one"
+  | "host"
+  | "full-house"
+  | "open-door";
 export type BadgeFamily = "playing" | "people" | "hosting";
 export type BadgeGlyph =
-  "rally" | "calendar" | "faces" | "plus" | "host" | "full";
+  | "rally"
+  | "calendar"
+  | "compass"
+  | "split"
+  | "faces"
+  | "rings"
+  | "plus"
+  | "host"
+  | "full"
+  | "door";
 export type Level = 1 | 2 | 3 | 4 | 5;
 export interface BadgeDefinition {
   key: BadgeKey;
@@ -45,11 +64,14 @@ export interface BadgesView {
 }
 
 // The app and its database can ship minutes apart; a response of the other
-// shape reads as no badges rather than breaking the page.
+// shape reads as no badges, and a badge this app doesn't know yet is left
+// out, rather than breaking the page.
 export const badgeStates = (
   view: { badges?: unknown } | null | undefined,
 ): BadgeState[] =>
-  Array.isArray(view?.badges) ? (view.badges as BadgeState[]) : [];
+  Array.isArray(view?.badges)
+    ? (view.badges as BadgeState[]).filter((b) => isBadgeKey(b?.key))
+    : [];
 /** A title from any source, or null when it isn't a badge at level 1 to 5. */
 export function rosterTitle(value: unknown): RosterTitle | null {
   if (!value || typeof value !== "object") return null;
@@ -90,6 +112,28 @@ export const badgeCatalog: readonly BadgeDefinition[] = [
     titles: ["Returner", "Familiar Face", "Fixture", "Year-Rounder", "Lifer"],
   },
   {
+    key: "explorer",
+    name: "Explorer",
+    family: "playing",
+    glyph: "compass",
+    thresholds: [2, 3, 5, 8, 12],
+    titles: ["Wanderer", "Roamer", "Trailblazer", "Globetrotter", "Pathfinder"],
+  },
+  {
+    key: "all-rounder",
+    name: "All-Rounder",
+    family: "playing",
+    glyph: "split",
+    thresholds: [1, 5, 10, 25, 50],
+    titles: [
+      "Dabbler",
+      "Switch Hitter",
+      "Versatile",
+      "Multi-Talent",
+      "Decathlete",
+    ],
+  },
+  {
     key: "new-faces",
     name: "New Faces",
     family: "people",
@@ -102,6 +146,14 @@ export const badgeCatalog: readonly BadgeDefinition[] = [
       "Social Butterfly",
       "Super Connector",
     ],
+  },
+  {
+    key: "crew",
+    name: "Crew",
+    family: "people",
+    glyph: "rings",
+    thresholds: [1, 3, 5, 10, 20],
+    titles: ["Teammate", "Crewmate", "Inner Circle", "Core Crew", "Family"],
   },
   {
     key: "plus-one",
@@ -143,6 +195,20 @@ export const badgeCatalog: readonly BadgeDefinition[] = [
       "Headliner",
       "Sell-Out Star",
       "Main Event",
+    ],
+  },
+  {
+    key: "open-door",
+    name: "Open Door",
+    family: "hosting",
+    glyph: "door",
+    thresholds: [10, 25, 50, 100, 200],
+    titles: [
+      "Welcomer",
+      "Gatherer",
+      "Community Builder",
+      "Scene Maker",
+      "Town Square",
     ],
   },
 ];
@@ -250,6 +316,9 @@ export function nextBadge(
   return open[0] ?? null;
 }
 
+/** Sessions together that make someone part of your Crew (fixed, not a level). */
+const crewSessions = 3;
+
 const plural = (n: number, one: string, many: string) =>
   `${n} ${n === 1 ? one : many}`;
 
@@ -277,6 +346,18 @@ export function levelSentence(key: BadgeKey, level: Level): string {
       return level === 1
         ? "You ran a session where every seat was taken."
         : `${n} sessions you ran were full.`;
+    case "explorer":
+      return `Played in sessions run by ${n} different organizers.`;
+    case "all-rounder":
+      return level === 1
+        ? "You played beyond your main activity."
+        : `${n} sessions beyond your main activity.`;
+    case "crew":
+      return level === 1
+        ? `You’ve played ${crewSessions} sessions with the same person.`
+        : `You’ve played ${crewSessions} sessions with ${n} different people.`;
+    case "open-door":
+      return `${n} different people played at sessions you ran.`;
   }
 }
 
@@ -295,6 +376,14 @@ export function badgeAbout(key: BadgeKey): string {
       return "Counts the sessions where you ran check-in.";
     case "full-house":
       return "Counts the sessions you ran where every spot was taken.";
+    case "explorer":
+      return "Counts the different organizers whose sessions you’ve played in.";
+    case "all-rounder":
+      return "Counts the sessions you’ve played outside your most-played activity.";
+    case "crew":
+      return `Counts the people you’ve played at least ${crewSessions} sessions with.`;
+    case "open-door":
+      return "Counts the different people who’ve played at sessions you ran.";
   }
 }
 
@@ -314,6 +403,14 @@ export function firstStep(key: BadgeKey): string {
       return "Run check-in at a session.";
     case "full-house":
       return "Run a session where every spot is taken.";
+    case "explorer":
+      return `Play in sessions run by ${n} different organizers.`;
+    case "all-rounder":
+      return "Play a session in a second activity.";
+    case "crew":
+      return `Play ${crewSessions} sessions with the same person.`;
+    case "open-door":
+      return `Run sessions that ${n} different people play in.`;
   }
 }
 
@@ -349,6 +446,14 @@ export function progressLabel(key: BadgeKey, left: number): string {
       return `${plural(left, "more session", "more sessions")} to run`;
     case "full-house":
       return `${plural(left, "more full session", "more full sessions")} to run`;
+    case "explorer":
+      return plural(left, "more organizer", "more organizers");
+    case "all-rounder":
+      return `${plural(left, "more session", "more sessions")} in another activity`;
+    case "crew":
+      return `${plural(left, "more person", "more people")} to play ${crewSessions} sessions with`;
+    case "open-door":
+      return `${plural(left, "more person", "more people")} at sessions you run`;
   }
 }
 
@@ -368,6 +473,13 @@ export function levelTarget(key: BadgeKey, level: Level): string {
       return `${plural(n, "session", "sessions")} run`;
     case "full-house":
       return plural(n, "full session", "full sessions");
+    case "explorer":
+      return plural(n, "organizer", "organizers");
+    case "all-rounder":
+      return `${plural(n, "session", "sessions")} in other activities`;
+    case "crew":
+    case "open-door":
+      return plural(n, "person", "people");
   }
 }
 
