@@ -50,7 +50,7 @@ export function SplitFee({
       {!cancelled &&
       summary.phase === "estimating" &&
       (!claim || (claim.eligible && !claim.waived)) ? (
-        <p className="mt-1 mb-0 text-sm text-text-muted">
+        <p className="mt-1 mb-0 text-sm text-muted-foreground">
           {summary.payingSeats === 0 ? "No split yet. " : ""}
           {money(summary.totalMinor)} total · {summary.payingSeats} paying{" "}
           {summary.payingSeats === 1 ? "seat" : "seats"}, including retained
@@ -59,12 +59,12 @@ export function SplitFee({
         </p>
       ) : null}
       {claim?.waived || (claim && !claim.eligible) ? (
-        <p className="mt-1 mb-0 text-sm text-text-muted">
+        <p className="mt-1 mb-0 text-sm text-muted-foreground">
           Nothing is due for this party.
         </p>
       ) : null}
       {!cancelled && !claim && summary.estimatedSeatRange ? (
-        <p className="mt-1 mb-0 text-sm text-text-muted">
+        <p className="mt-1 mb-0 text-sm text-muted-foreground">
           Current estimate per seat:{" "}
           {money(summary.estimatedSeatRange.minMinor)}
           {summary.estimatedSeatRange.minMinor !==
@@ -75,7 +75,7 @@ export function SplitFee({
         </p>
       ) : null}
       {!cancelled && !claim && summary.phase !== "estimating" ? (
-        <p className="mt-1 mb-0 text-sm text-text-muted">
+        <p className="mt-1 mb-0 text-sm text-muted-foreground">
           {money(summary.totalMinor)} total · {summary.payingSeats} paying
           seats.{" "}
           {summary.phase === "unallocated"
@@ -84,7 +84,7 @@ export function SplitFee({
         </p>
       ) : null}
       {fee?.markedPaid ? (
-        <p className="mt-1 mb-0 text-sm text-text-muted">
+        <p className="mt-1 mb-0 text-sm text-muted-foreground">
           Marked paid by the organizer.
         </p>
       ) : null}

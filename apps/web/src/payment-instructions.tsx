@@ -71,7 +71,7 @@ function QrImage({ slug, revision }: { slug: string; revision: number }) {
   const image = useQrImage(slug, revision);
   if (image.failed)
     return (
-      <p className="mt-1 mb-0 text-sm text-text-muted">
+      <p className="mt-1 mb-0 text-sm text-muted-foreground">
         The QR image couldn’t load. Use the instructions above.
       </p>
     );
@@ -98,7 +98,7 @@ export function HowToPay({
 }) {
   return (
     <section
-      className="rounded-lg border border-border bg-surface p-5 grid justify-items-start gap-3 *:m-0 *:justify-self-stretch"
+      className="rounded-lg border border-border bg-card p-5 grid justify-items-start gap-3 *:m-0 *:justify-self-stretch"
       aria-labelledby="how-to-pay"
     >
       <h2 id="how-to-pay">How to pay</h2>
@@ -106,7 +106,7 @@ export function HowToPay({
       {instructions.hasImage ? (
         <QrImage slug={slug} revision={instructions.imageRevision} />
       ) : null}
-      <p className="mt-1 mb-0 text-sm text-text-muted">{outside}</p>
+      <p className="mt-1 mb-0 text-sm text-muted-foreground">{outside}</p>
     </section>
   );
 }
@@ -224,7 +224,7 @@ export function PaymentInstructionsEditor({
 
   return (
     <section
-      className="rounded-lg border border-border bg-surface p-5 my-4 grid justify-items-start gap-3 *:m-0 *:justify-self-stretch"
+      className="rounded-lg border border-border bg-card p-5 my-4 grid justify-items-start gap-3 *:m-0 *:justify-self-stretch"
       aria-labelledby="payment-editor"
     >
       <h2 id="payment-editor">Payment instructions</h2>
@@ -312,18 +312,18 @@ export function PaymentInstructionsEditor({
         </div>
       ) : null}
       {instructions ? (
-        <p className="mt-1 mb-0 text-sm text-text-muted">
+        <p className="mt-1 mb-0 text-sm text-muted-foreground">
           Last changed by {instructions.updatedBy}.
         </p>
       ) : null}
       {emailNote ? (
-        <p className="mt-1 mb-0 text-sm text-text-muted">{emailNote}</p>
+        <p className="mt-1 mb-0 text-sm text-muted-foreground">{emailNote}</p>
       ) : null}
       {mutation.error ? <Notice>{mutation.error}</Notice> : null}
       {uploadError ? <Notice>{uploadError}</Notice> : null}
       {mutation.recovery}
       {status ? (
-        <p className="mt-3 font-semibold text-success" role="status">
+        <p className="mt-3 font-semibold text-success-foreground" role="status">
           {status}
         </p>
       ) : null}

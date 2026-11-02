@@ -9,7 +9,7 @@ const merge = extendTailwindMerge({
     theme: {
       text: ["display-sm", "display-md", "display-lg"],
       shadow: ["lift", "lift-hover", "focus", "ring-chrome"],
-      // Named sizes from theme.css, so size-control replaces size-touch.
+      // Named sizes from styles/globals.css, so size-control replaces size-touch.
       spacing: [
         "touch",
         "control",

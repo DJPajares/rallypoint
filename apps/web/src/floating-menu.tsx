@@ -13,16 +13,16 @@ import type { Identity } from "@rallypoint/domain/contracts";
 import { useAuth } from "./auth-context";
 import { RingAvatar } from "./badges";
 import { useScrollingDown } from "./frame";
-import { toggleAppearance, useAppearance } from "./theme";
+import { useAppearance } from "./theme";
 import { useApi } from "./use-api";
 import { cn, EmptyState, iconButtonClass, Sheet } from "@rallypoint/ui";
 // A menu item: a label pill beside a round icon. Hover and keyboard focus
 // show on the icon, which is the part that looks like a button.
 const fabAction =
-  "group/action inline-flex items-center gap-2 border-0 bg-transparent p-0 text-sm font-semibold text-text no-underline focus-visible:outline-none [&>span:first-child]:rounded-full [&>span:first-child]:border [&>span:first-child]:border-border [&>span:first-child]:bg-surface [&>span:first-child]:px-3 [&>span:first-child]:py-1 [&>span:first-child]:shadow-sm";
+  "group/action inline-flex items-center gap-2 border-0 bg-transparent p-0 text-sm font-semibold text-foreground no-underline focus-visible:outline-none [&>span:first-child]:rounded-full [&>span:first-child]:border [&>span:first-child]:border-border [&>span:first-child]:bg-card [&>span:first-child]:px-3 [&>span:first-child]:py-1 [&>span:first-child]:shadow-sm";
 const fabIcon = cn(
   iconButtonClass(),
-  "group-hover/action:bg-surface-sunken group-focus-visible/action:outline-3 group-focus-visible/action:outline-offset-3 group-focus-visible/action:outline-focus",
+  "group-hover/action:bg-muted group-focus-visible/action:outline-3 group-focus-visible/action:outline-offset-3 group-focus-visible/action:outline-ring",
 );
 /**
  * Initials of the name people see, which the profile can change. Loaded when
@@ -56,7 +56,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
   const [openAt, setOpenAt] = useState<string | null>(null);
   const expanded = openAt === pathname;
   const [sheet, setSheet] = useState<"updates" | null>(null);
-  const appearance = useAppearance();
+  const { appearance, toggle: toggleAppearance } = useAppearance();
   const trigger = useRef<HTMLButtonElement>(null);
   const wrapper = useRef<HTMLDivElement>(null);
   const [scrollingDown, reveal] = useScrollingDown();
@@ -102,7 +102,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
       type="button"
       className={fabAction}
       onClick={() => {
-        toggleAppearance(appearance);
+        toggleAppearance();
         collapseAndRestoreFocus();
       }}
     >
@@ -149,7 +149,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
           <span
             className={cn(
               fabIcon,
-              "overflow-hidden p-0 group-hover/action:bg-transparent group-hover/action:**:data-[slot=avatar-face]:bg-surface-sunken",
+              "overflow-hidden p-0 group-hover/action:bg-transparent group-hover/action:**:data-[slot=avatar-face]:bg-muted",
             )}
             aria-hidden="true"
           >

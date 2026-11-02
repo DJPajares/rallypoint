@@ -11,19 +11,19 @@ export function CreatePicker({ onNavigate }: { onNavigate: () => void }) {
       <ul className="m-0 mb-4 grid list-none gap-2 p-0">
         <li>
           <Link
-            className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-text no-underline hover:bg-surface-sunken [&>span:nth-child(2)]:flex [&>span:nth-child(2)]:flex-1 [&>span:nth-child(2)]:flex-col"
+            className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-foreground no-underline hover:bg-muted [&>span:nth-child(2)]:flex [&>span:nth-child(2)]:flex-1 [&>span:nth-child(2)]:flex-col"
             href="/sessions/new"
             onClick={onNavigate}
           >
             <span
-              className="inline-flex size-icon-tile flex-none items-center justify-center rounded-md bg-surface-sunken text-text"
+              className="inline-flex size-icon-tile flex-none items-center justify-center rounded-md bg-muted text-foreground"
               aria-hidden="true"
             >
               <CalendarPlusIcon size={22} />
             </span>
             <span>
               <strong>New session</strong>
-              <span className="text-sm text-text-muted">
+              <span className="text-sm text-muted-foreground">
                 Share one link to fill it
               </span>
             </span>

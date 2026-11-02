@@ -103,14 +103,26 @@ preview; it points Wrangler at the old build directory.
 ### UI: shadcn/ui and Tailwind CSS
 
 The UI uses [shadcn/ui](https://ui.shadcn.com) on Base UI (`base-nova` style,
-shadcn 4.21.0, `@base-ui/react` 1.8.0) with Tailwind CSS 4 (PRD D-24).
+`shadcn` 4.23.0, `@base-ui/react` 1.8.0) with Tailwind CSS 4 (PRD D-24, D-25),
+laid out as shadcn's [monorepo guide](https://ui.shadcn.com/docs/monorepo)
+describes.
 
-- **Theme:** `packages/ui/src/theme.css` is the one place the look is decided.
-  The RallyPoint design tokens are the Tailwind theme, with light and dark
-  values. Tailwind's own colour palette is removed, so only tokens exist, for
-  example `bg-surface`, `text-text-muted` and `border-border`. shadcn's names
-  (`primary`, `muted`, `card`…) point at the same tokens. The `dark:` variant
-  follows the system setting, or the theme switch when it's set.
+- **Theme:** `packages/ui/src/styles/globals.css` is the one place the look is
+  decided, in shadcn's [theming](https://ui.shadcn.com/docs/theming) format:
+  light values in `:root`, dark values in `.dark`, mapped to utilities by
+  `@theme inline`. Screens use shadcn's names (`bg-background`, `bg-card`,
+  `text-muted-foreground`, `bg-primary text-primary-foreground`,
+  `border-input`, `ring-ring`). RallyPoint roles shadcn has no name for follow
+  its surface/`-foreground` pairing: `chrome`, `stub`, `link`, `scrim`,
+  `primary-hover`, the status tones `success`, `warning`, `neutral` and
+  `danger` (`bg-success text-success-foreground`), and `brand`. Tailwind's own
+  colour palette is removed, so only these exist. Colours stay in hex (the
+  brand spec is hex; shadcn's guidance keeps a brand's hex rather than its
+  default OKLCH), and the radius steps are pinned to RallyPoint's scale.
+- **Dark mode:** [`next-themes`](https://ui.shadcn.com/docs/dark-mode/next)
+  adds the `dark` class to `<html>`, following the device until someone uses
+  the theme switch (saved as `rallypoint.theme`). `apps/web/src/theme.tsx`
+  holds the provider and the switch's hook.
 - **Shared components:**
   - shadcn's components live as source in `packages/ui/src/components/ui/`,
     restyled to RallyPoint (pill buttons, 48px controls);
@@ -119,18 +131,19 @@ shadcn 4.21.0, `@base-ui/react` 1.8.0) with Tailwind CSS 4 (PRD D-24).
     `Notice`, `ListRow` and the rest.
 - **Screens:** they use Tailwind utilities. Join classes with `cn()` (or its
   alias `cx`) so a later class replaces a conflicting earlier one.
-- **`apps/web/app/globals.css`:** imports Tailwind and the theme, and holds the
-  few app-wide pieces utilities can't express: the tab bar notch, glass bars
+- **`apps/web/app/globals.css`:** imports `@rallypoint/ui/globals.css` and holds
+  the few app-wide pieces utilities can't express: the tab bar notch, glass bars
   and animations.
-- **Design-token test:** `tests/design-tokens.test.mjs` refuses literal colours
-  and arbitrary colour, font-size or radius classes.
-- **Adding a shadcn component:** with network access to `ui.shadcn.com`, run
-  `pnpm dlx shadcn@4.21.0 add <name>` from `packages/ui`; `components.json` is
-  set up for the monorepo. Then restyle it to the tokens and remove anything
-  using a colour outside the theme. Where the registry can't be reached, copy
-  the component from the shadcn repository at tag `shadcn@4.21.0`
-  (`apps/v4/registry/bases/base/ui`) and expand its `cn-*` classes from
-  `registry/styles/style-nova.css`, which is what the CLI does.
+- **Design-token test:** `tests/design-tokens.test.mjs` refuses literal colours,
+  arbitrary colour, font-size or radius classes, and the retired pre-shadcn
+  colour names (`bg-surface`, `text-text-muted`…).
+- **Adding a shadcn component:** from `packages/ui`, run
+  `pnpm exec shadcn add <name>`; `components.json` in `packages/ui` and
+  `apps/web` is set up for the monorepo. The CLI writes shadcn's plain styling,
+  so restyle the new file to the RallyPoint look and run Prettier on it.
+  `pnpm exec shadcn add <name> --diff` shows how an existing component differs
+  from shadcn's current version; take changes from it deliberately, since
+  `--overwrite` would drop the RallyPoint restyling.
 - **Catalogue:** `/design` (development only) shows every token and component.
 
 Workspace dependencies use `workspace:*`. Turbo orders package checks and caches

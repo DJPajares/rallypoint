@@ -46,7 +46,7 @@ export function SeatAttendanceControls({
     (s) => s !== seat.state && (s !== "no_show" || ended),
   );
   return (
-    <div className="mt-2 grid gap-1 [&_strong]:text-text">
+    <div className="mt-2 grid gap-1 [&_strong]:text-foreground">
       <span id={labelId}>
         <strong>{name}</strong> · {stateWords[seat.state]}
       </span>

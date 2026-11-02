@@ -155,7 +155,7 @@ export function Medallion({
   return (
     <svg
       data-slot="medallion"
-      className={cx("block flex-none", !colors && "text-border-strong")}
+      className={cx("block flex-none", !colors && "text-input")}
       width={size}
       height={size}
       viewBox="0 0 100 100"
@@ -223,7 +223,7 @@ export function Medallion({
             cx="81"
             cy="81"
             r="13"
-            fill="var(--palette-white)"
+            fill="var(--badge-shine)"
             stroke={colors[1]}
             strokeWidth="3"
           />
@@ -255,7 +255,7 @@ export function PersonName({
   return profileId ? (
     <Link
       data-slot="person-link"
-      className="text-inherit underline decoration-text-muted underline-offset-2 hover:decoration-current focus-visible:rounded-sm focus-visible:shadow-focus focus-visible:outline-none"
+      className="text-inherit underline decoration-muted-foreground underline-offset-2 hover:decoration-current focus-visible:rounded-sm focus-visible:shadow-focus focus-visible:outline-none"
       href={`/people/${profileId}`}
     >
       {name}
@@ -276,7 +276,7 @@ export function TitlePill({ title }: { title: unknown }) {
   return (
     <span
       data-slot="title-pill"
-      className="ml-2 inline-flex max-w-full items-center gap-1 truncate rounded-full border border-border bg-surface-sunken py-0.5 pr-2 pl-0.5 align-middle text-xs leading-[1.6] font-semibold whitespace-nowrap text-text"
+      className="ml-2 inline-flex max-w-full items-center gap-1 truncate rounded-full border border-border bg-muted py-0.5 pr-2 pl-0.5 align-middle text-xs leading-[1.6] font-semibold whitespace-nowrap text-foreground"
     >
       <Medallion badge={shown.key} level={shown.level} size={18} decorative />
       {levelTitle(shown.key, shown.level)}
@@ -429,13 +429,13 @@ export function NextBadge({ view }: { view: BadgesView | null }) {
   if (!next) return null;
   return (
     <Link
-      className="mt-4 flex items-center gap-3 rounded-lg bg-surface px-4 py-3 text-text no-underline shadow-sm transition-shadow duration-150 ease-standard hover:shadow-lg focus-visible:shadow-focus focus-visible:outline-none [&>svg]:text-text-muted"
+      className="mt-4 flex items-center gap-3 rounded-lg bg-card px-4 py-3 text-foreground no-underline shadow-sm transition-shadow duration-150 ease-standard hover:shadow-lg focus-visible:shadow-focus focus-visible:outline-none [&>svg]:text-muted-foreground"
       href="/profile"
     >
       <Ring value={next.current / next.target}>
         <Medallion badge={next.key} level={next.level} size={26} decorative />
       </Ring>
-      <span className="grid min-w-0 flex-1 [&_span]:text-sm [&_span]:text-text-muted [&_strong]:text-base [&_strong]:font-semibold">
+      <span className="grid min-w-0 flex-1 [&_span]:text-sm [&_span]:text-muted-foreground [&_strong]:text-base [&_strong]:font-semibold">
         <strong>{badgeDefinition(next.key).name}</strong>
         <span>{progressLabel(next.key, next.target - next.current)}</span>
       </span>
@@ -452,7 +452,7 @@ const initials = (name: string) =>
     .map((part) => part[0]!.toUpperCase())
     .join("") || "?";
 
-const earnedLine = "m-0 max-w-[26ch] text-text-muted";
+const earnedLine = "m-0 max-w-[26ch] text-muted-foreground";
 const shelfItem =
   "grid min-h-touch w-full content-start justify-items-center gap-1 rounded-md border-0 bg-transparent p-1 text-center text-xs font-semibold text-inherit [font-family:inherit] [button&]:cursor-pointer [button&]:focus-visible:shadow-focus [button&]:focus-visible:outline-none **:data-[slot=medallion]:mb-1";
 
@@ -475,10 +475,10 @@ export function RingAvatar({
       <span
         data-slot="avatar-face"
         className={cx(
-          "grid size-full place-items-center rounded-full bg-surface font-heading font-extrabold text-text",
+          "grid size-full place-items-center rounded-full bg-card font-heading font-extrabold text-foreground",
           size === "lg"
-            ? "border-3 border-bg text-2xl"
-            : "border-2 border-surface text-sm tracking-tight",
+            ? "border-3 border-background text-2xl"
+            : "border-2 border-card text-sm tracking-tight",
         )}
       >
         {initials(name)}
@@ -508,20 +508,20 @@ function Plays({
       <div className="mt-8 mb-3 flex items-center justify-between gap-3 [&_h2]:m-0">
         <h2 id="plays-title">Plays</h2>
         {activities.some((a) => a.level) ? (
-          <span className="rounded-full border border-border px-2 py-0.5 text-xs font-semibold text-text-muted">
+          <span className="rounded-full border border-border px-2 py-0.5 text-xs font-semibold text-muted-foreground">
             Self-rated
           </span>
         ) : null}
       </div>
       {activities.length ? (
-        <ul className="m-0 list-none overflow-hidden rounded-lg bg-surface p-0 shadow-sm">
+        <ul className="m-0 list-none overflow-hidden rounded-lg bg-card p-0 shadow-sm">
           {activities.map((a) => (
             <li
               key={a.name}
               className="flex min-h-15 items-center gap-3 border-t border-border py-2 pr-4 pl-3 first:border-t-0"
             >
               <span
-                className="inline-flex size-10 flex-none items-center justify-center rounded-full bg-success-bg text-success"
+                className="inline-flex size-10 flex-none items-center justify-center rounded-full bg-success text-success-foreground"
                 aria-hidden="true"
               >
                 <ActivityIcon
@@ -537,9 +537,9 @@ function Plays({
                 <span className="min-w-0 font-semibold wrap-anywhere">
                   {a.name}
                 </span>
-                <span className="inline-flex flex-none items-center gap-2 text-sm font-medium text-text-muted">
+                <span className="inline-flex flex-none items-center gap-2 text-sm font-medium text-muted-foreground">
                   <span
-                    className="group/meter inline-flex h-4 items-end gap-0.75 *:w-1.25 *:rounded-full *:bg-border-strong [&>span:nth-child(1)]:h-2 [&>span:nth-child(2)]:h-3 [&>span:nth-child(3)]:h-4 data-[step=1]:[&>span:nth-child(-n+1)]:bg-success data-[step=2]:[&>span:nth-child(-n+2)]:bg-success data-[step=3]:*:bg-success"
+                    className="group/meter inline-flex h-4 items-end gap-0.75 *:w-1.25 *:rounded-full *:bg-input [&>span:nth-child(1)]:h-2 [&>span:nth-child(2)]:h-3 [&>span:nth-child(3)]:h-4 data-[step=1]:[&>span:nth-child(-n+1)]:bg-success-foreground data-[step=2]:[&>span:nth-child(-n+2)]:bg-success-foreground data-[step=3]:*:bg-success-foreground"
                     data-step={levelStep(a.level)}
                     aria-hidden="true"
                   >
@@ -554,7 +554,7 @@ function Plays({
           ))}
         </ul>
       ) : (
-        <div className="grid justify-items-start gap-3 rounded-lg bg-surface p-4 shadow-sm [&_p]:m-0 [&_p]:text-text-muted">
+        <div className="grid justify-items-start gap-3 rounded-lg bg-card p-4 shadow-sm [&_p]:m-0 [&_p]:text-muted-foreground">
           <p>
             Add the activities you play, so hosts know what to invite you to.
           </p>
@@ -618,15 +618,15 @@ function BadgeDetails({
       {state ? (
         <div className="grid justify-items-center gap-2">
           <Medallion badge={key} level={level} size={96} />
-          <p className="m-0 font-semibold text-text-muted">
+          <p className="m-0 font-semibold text-muted-foreground">
             {badgeLevelLabel(level)}
           </p>
-          <p className="m-0 max-w-[32ch] text-center text-text-muted">
+          <p className="m-0 max-w-[32ch] text-center text-muted-foreground">
             {badgeAbout(key)}
           </p>
           {level === 0 ? (
-            <div className="my-2 grid w-full gap-0.5 rounded-md bg-surface-sunken p-3 text-center [&_p]:m-0 [&_p]:font-semibold">
-              <p className="text-sm text-text-muted">How to earn it</p>
+            <div className="my-2 grid w-full gap-0.5 rounded-md bg-muted p-3 text-center [&_p]:m-0 [&_p]:font-semibold">
+              <p className="text-sm text-muted-foreground">How to earn it</p>
               <p>{firstStep(key)}</p>
             </div>
           ) : null}
@@ -638,8 +638,8 @@ function BadgeDetails({
                 <li
                   key={step}
                   className={cx(
-                    "flex min-h-touch items-center gap-3 rounded-md bg-surface-sunken px-3 py-2 text-text-muted",
-                    earned && "text-text",
+                    "flex min-h-touch items-center gap-3 rounded-md bg-muted px-3 py-2 text-muted-foreground",
+                    earned && "text-foreground",
                   )}
                 >
                   <Medallion
@@ -705,7 +705,7 @@ function ProfileView({
         <RingAvatar name={name} size="lg" />
         <h1>{name || "Your profile"}</h1>
         {owner?.email ? (
-          <p className="-mt-2 mb-0 max-w-full text-sm wrap-anywhere text-text-muted">
+          <p className="-mt-2 mb-0 max-w-full text-sm wrap-anywhere text-muted-foreground">
             {owner.email}
           </p>
         ) : null}
@@ -772,7 +772,7 @@ function ProfileView({
             </div>
           ) : null}
           {owner && !badges.some((b) => b.level > 0) ? (
-            <p className="mt-1 mb-0 text-sm text-text-muted">
+            <p className="mt-1 mb-0 text-sm text-muted-foreground">
               Your first badge comes with your first check-in.
             </p>
           ) : null}
@@ -794,9 +794,9 @@ function ProfileView({
                 <li
                   key={b.key}
                   className={cx(
-                    "[&_small]:font-normal [&_small]:text-text-muted",
+                    "[&_small]:font-normal [&_small]:text-muted-foreground",
                     !b.level &&
-                      "[&_span:not([data-slot])]:font-medium [&_span:not([data-slot])]:text-text-muted",
+                      "[&_span:not([data-slot])]:font-medium [&_span:not([data-slot])]:text-muted-foreground",
                   )}
                 >
                   {/* The visible name and level are the accessible name (WCAG 2.5.3). */}
@@ -927,7 +927,7 @@ export function ProfilePage() {
           className="[&_fieldset]:mt-3 [&_fieldset]:mb-4 [&_fieldset]:grid [&_fieldset]:gap-2 [&_label]:flex [&_label]:min-h-touch [&_label]:cursor-pointer [&_label]:items-center [&_label]:gap-3 [&_label]:rounded-md [&_label]:border [&_label]:border-border [&_label]:px-3 [&_label]:py-2 [&_label]:has-checked:border-chrome [&_label]:has-checked:shadow-ring-chrome **:data-[slot=title-pill]:ml-0"
           onSubmit={saveTitle}
         >
-          <p className="mt-1 mb-0 text-sm text-text-muted">
+          <p className="mt-1 mb-0 text-sm text-muted-foreground">
             Shown next to your name on session lists.
           </p>
           <fieldset>
@@ -951,7 +951,7 @@ export function ProfilePage() {
                   checked={choice === t.key}
                   onChange={() => setChoice(t.key)}
                 />
-                <span className="grid min-w-0 justify-items-start gap-0.5 [&_small]:text-xs [&_small]:text-text-muted">
+                <span className="grid min-w-0 justify-items-start gap-0.5 [&_small]:text-xs [&_small]:text-muted-foreground">
                   <TitlePill title={t} />
                   <small>
                     {badgeDefinition(t.key).name} · level {t.level}

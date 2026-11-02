@@ -19,7 +19,7 @@ const badgeVariants = cva(
           "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
         link: "text-primary underline-offset-4 hover:underline",
         /** RallyPoint's quiet label. */
-        muted: "bg-surface-sunken text-text-muted",
+        muted: "bg-muted text-muted-foreground",
         /** Inside a status banner: takes the banner's own colour. */
         inherit: "bg-current/14 text-inherit",
       },

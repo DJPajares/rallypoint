@@ -19,7 +19,7 @@ export function Pending({
   children?: ReactNode;
 }) {
   return (
-    <p role="status" className="flex items-center gap-2 text-text-muted">
+    <p role="status" className="flex items-center gap-2 text-muted-foreground">
       <Spinner
         role={undefined}
         aria-label={undefined}
@@ -104,13 +104,13 @@ export function EmptyState({
     <Empty className="mx-auto my-6 max-w-110 gap-0 px-5 py-8">
       <EmptyHeader className="max-w-none gap-0">
         <EmptyMedia
-          className="mb-4 size-16 rounded-xl bg-action font-bold text-on-action"
+          className="mb-4 size-16 rounded-xl bg-primary font-bold text-primary-foreground"
           aria-hidden="true"
         >
           {icon}
         </EmptyMedia>
         <Heading>{title}</Heading>
-        <EmptyDescription className="text-base text-text-muted">
+        <EmptyDescription className="text-base text-muted-foreground">
           <p>{children}</p>
         </EmptyDescription>
       </EmptyHeader>

@@ -34,7 +34,7 @@ export function CancelSession({
   }, [mutation.busy, mutation.uncertain, onPending]);
   return (
     <section
-      className="rounded-lg border border-border bg-surface p-5"
+      className="rounded-lg border border-border bg-card p-5"
       aria-label="Cancel session"
     >
       <button
@@ -101,10 +101,10 @@ export function CancelledRoster({ slug }: { slug: string }) {
   const roster = result.data.registration.roster;
   const emails = cancellationEmailWords(result.data.registration.emailSummary);
   return (
-    <section className="rounded-lg border border-border bg-surface p-5 [&_h2]:text-xl [&_ul]:m-0 [&_ul]:list-none [&_ul]:p-0 [&_li]:grid [&_li]:gap-0.5 [&_li]:border-t [&_li]:border-border [&_li]:py-2 [&_li]:text-sm [&_li_span]:text-text-muted">
+    <section className="rounded-lg border border-border bg-card p-5 [&_h2]:text-xl [&_ul]:m-0 [&_ul]:list-none [&_ul]:p-0 [&_li]:grid [&_li]:gap-0.5 [&_li]:border-t [&_li]:border-border [&_li]:py-2 [&_li]:text-sm [&_li_span]:text-muted-foreground">
       <h2>Registration records</h2>
       {emails ? (
-        <p className="mt-1 mb-0 text-sm text-text-muted">{emails}</p>
+        <p className="mt-1 mb-0 text-sm text-muted-foreground">{emails}</p>
       ) : null}
       {roster.length ? (
         <ul>

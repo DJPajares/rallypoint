@@ -107,7 +107,7 @@ export function EditGroupForm({ group }: { group: GroupSummary }) {
                 },
               ]}
             />
-            <p className="mt-1 mb-0 text-sm text-text-muted">
+            <p className="mt-1 mb-0 text-sm text-muted-foreground">
               {visibilityHelp(visibility)}
             </p>
           </div>
@@ -139,7 +139,7 @@ export function EditGroupForm({ group }: { group: GroupSummary }) {
         aria-labelledby="remove-group"
       >
         <h2 id="remove-group">Remove group</h2>
-        <p className="mt-1 mb-0 text-sm text-text-muted">
+        <p className="mt-1 mb-0 text-sm text-muted-foreground">
           It disappears for everyone in it. Past sessions and badges stay.
         </p>
         <button

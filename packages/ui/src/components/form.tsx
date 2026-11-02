@@ -43,7 +43,7 @@ export function Field({
 /** A quiet "or" between alternatives, with hairlines either side. */
 export function Divider({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-5 mb-2 flex items-center gap-3 text-xs font-semibold text-text-muted before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">
+    <div className="mt-5 mb-2 flex items-center gap-3 text-xs font-semibold text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">
       <span>{children}</span>
     </div>
   );

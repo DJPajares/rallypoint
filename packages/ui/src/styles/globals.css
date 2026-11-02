@@ -1,0 +1,431 @@
+/*
+ * RallyPoint's theme in shadcn/ui's format (D-24) — the one place the look is
+ * decided. Laid out as https://ui.shadcn.com/docs/theming describes:
+ *
+ *   1. Imports   Tailwind, tw-animate-css and shadcn's own variants.
+ *   2. Theme     @theme inline maps each CSS variable to a Tailwind utility
+ *                (--color-card: var(--card) gives bg-card, text-card...).
+ *                Tailwind's default colour palette is removed, so only these
+ *                colours exist. Type, spacing, shadow and size scales follow.
+ *   3. :root     light values. Each surface colour pairs with a -foreground
+ *                colour for the text and icons on it.
+ *   4. .dark     dark values for the same names. next-themes adds the class
+ *                from the device setting or the theme switch.
+ *   5. Base      element defaults the screens rely on.
+ *
+ * shadcn's names (background, card, primary, muted...) come first. RallyPoint
+ * roles shadcn has no name for are added the way the docs add custom colours:
+ * chrome, stub, link, scrim, the status tones and the brand.
+ *
+ * Colours stay in hex: the brand spec (PRD D-21) is in hex, and shadcn's
+ * design-system guidance keeps a brand's hex values rather than converting
+ * them to its default OKLCH.
+ *
+ * To restyle the app, change a value in :root or .dark.
+ */
+
+/* 1. Imports */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Tailwind reads class names from the app and this package. */
+@source "../../../../apps/web/app";
+@source "../../../../apps/web/src";
+@source "..";
+
+@custom-variant dark (&:is(.dark *));
+
+/* 2. Theme */
+@theme {
+  --color-*: initial;
+}
+
+@theme inline {
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* shadcn/ui */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* RallyPoint */
+  --color-primary-hover: var(--primary-hover);
+  --color-chrome: var(--chrome);
+  --color-chrome-foreground: var(--chrome-foreground);
+  --color-stub: var(--stub);
+  --color-stub-foreground: var(--stub-foreground);
+  --color-link: var(--link);
+  --color-scrim: var(--scrim);
+  --color-qr-backdrop: var(--qr-backdrop);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-neutral: var(--neutral);
+  --color-neutral-foreground: var(--neutral-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-orange: var(--brand-orange);
+
+  /* Type */
+  --font-sans:
+    var(--font-ui-family, Inter), ui-sans-serif, system-ui, sans-serif;
+  --font-heading:
+    var(--font-display-family, "Bricolage Grotesque"), var(--font-sans);
+
+  /* Radius: RallyPoint's own scale, so each step is pinned rather than
+     derived from --radius (shadcn's guidance for a brand radius scale).
+     --radius in :root stays equal to rounded-lg. */
+  --radius-xs: 4px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-2xl: 28px;
+  --radius-3xl: 32px;
+  --radius-4xl: 9999px; /* Pill: badges. */
+}
+
+/* Elevation overrides Tailwind's shadow scale in @theme, as shadcn's
+   guidance says; the colours resolve per theme on <html>. */
+@theme {
+  /* A contact shadow plus an ambient one. */
+  --shadow-sm: 0 1px 2px var(--shadow-color), 0 8px 24px var(--shadow-color);
+  --shadow-lg: 0 2px 6px var(--shadow-color), 0 12px 32px var(--shadow-color);
+  --shadow-lift:
+    0 2px 4px rgb(0 0 0 / 0.14), 0 8px 16px rgb(0 0 0 / 0.16),
+    0 16px 32px rgb(0 0 0 / 0.12);
+  --shadow-lift-hover:
+    0 1px 2px rgb(0 0 0 / 0.14), 0 4px 10px rgb(0 0 0 / 0.16),
+    0 10px 20px rgb(0 0 0 / 0.1);
+  /* Focus halo around a field, and the ring that marks a chosen option. */
+  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--ring) 22%, transparent);
+  --shadow-ring-chrome: inset 0 0 0 2px var(--chrome);
+}
+
+@theme {
+  --text-xs: 12px;
+  --text-xs--line-height: 1.5;
+  --text-sm: 14px;
+  --text-sm--line-height: 1.5;
+  --text-base: 16px;
+  --text-base--line-height: 1.5;
+  --text-lg: 18px;
+  --text-lg--line-height: 1.5;
+  --text-xl: 22px;
+  --text-xl--line-height: 1.3;
+  --text-2xl: 28px;
+  --text-2xl--line-height: 1.2;
+  --text-display-sm: clamp(21px, 3.4vw, 26px);
+  --text-display-sm--line-height: 1.1;
+  --text-display-md: clamp(30px, 6vw, 48px);
+  --text-display-md--line-height: 1.1;
+  --text-display-lg: clamp(42px, 9vw, 76px);
+  --text-display-lg--line-height: 1.1;
+  --leading-tight: 1.1;
+  --leading-normal: 1.5;
+  --tracking-tight: -0.02em;
+  --tracking-wide: 0.06em;
+
+  /* Motion */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Sizing, as spacing names: size-touch, h-control, w-stub... */
+  --spacing-touch: 44px;
+  --spacing-control: 48px;
+  --spacing-control-sm: 36px;
+  --spacing-icon-sm: 18px;
+  --spacing-icon-md: 20px;
+  --spacing-icon-lg: 24px;
+  --spacing-icon-tile: 44px;
+  --spacing-create: 64px;
+  --spacing-stub: 68px;
+  --spacing-dot: 14px;
+  --spacing-check: 22px;
+  --spacing-day: 40px;
+  --spacing-popover-list: 296px;
+  --spacing-brand-mark: 34px;
+  --spacing-tab: 56px;
+  --spacing-tile: 104px;
+  --spacing-topbar: 64px;
+  --spacing-bottombar: 76px;
+
+  /* Widths */
+  --container-layout: 1200px;
+  --container-form: 720px;
+  --container-reading: 60ch;
+  --container-bar: 576px;
+
+  /* Phones are below md (768px); the wide desktop layout starts at desk. */
+  --breakpoint-desk: 75rem;
+}
+
+/* 3. Light */
+:root {
+  color-scheme: light;
+  --radius: 18px;
+
+  --background: #f6f5f3;
+  --foreground: #1c1e21;
+  --card: #ffffff;
+  --card-foreground: #1c1e21;
+  --popover: #ffffff;
+  --popover-foreground: #1c1e21;
+  /* The one primary action per screen. Orange fill, always with dark text:
+     white on orange fails contrast. */
+  --primary: #ff6b1a;
+  --primary-foreground: #1c1e21;
+  --primary-hover: #f25c0a;
+  --secondary: #ecebe8;
+  --secondary-foreground: #1c1e21;
+  --muted: #ecebe8;
+  --muted-foreground: #5c6067;
+  --accent: #ecebe8;
+  --accent-foreground: #1c1e21;
+  --destructive: var(--danger-foreground);
+  --border: #e4e2de;
+  /* Field outlines, and other edges that need to read stronger than border. */
+  --input: #d3d1cc;
+  --ring: #c2410c;
+
+  /* Chrome: active states, selected marks, filled seats. Graphite on light,
+     orange on dark. */
+  --chrome: #25282d;
+  --chrome-foreground: #ffffff;
+  /* The ticket stub and other graphite blocks that stay graphite in dark mode. */
+  --stub: #25282d;
+  --stub-foreground: #ffffff;
+  --link: #c2410c;
+  --scrim: rgb(16 17 19 / 0.45);
+  /* Behind uploaded QR codes: scanners need a light quiet zone in dark mode too. */
+  --qr-backdrop: #ffffff;
+
+  /* Status tones: a soft surface and the ink on it. Always show the status in
+     words and an icon too, never by colour alone. Warning leans yellow so it
+     never reads as the orange action. */
+  --success: #e2f4ea;
+  --success-foreground: #146c43;
+  --warning: #fbf0c9;
+  --warning-foreground: #7a5600;
+  --neutral: #ececea;
+  --neutral-foreground: #55595f;
+  --danger: #fdecea;
+  --danger-foreground: #b42318;
+
+  /* Brand: the mark looks the same in every theme. */
+  --brand: #25282d;
+  --brand-foreground: #ffffff;
+  --brand-orange: #ff6b1a;
+
+  --shadow-color: rgb(28 30 33 / 0.08);
+
+  /* Badges (D-15/D-16): medallion ink and shine, the earned glow, the profile ring. */
+  --badge-ink-dark: #1c1e21;
+  --badge-ink-light: #ffffff;
+  --badge-shine: #ffffff;
+  --badge-glow: #7c68ff;
+  --badge-glow-shadow: rgb(67 48 201 / 0.3);
+  --badge-ring-sky: #4fc3ff;
+  /* Person tints (D-17): the same name keeps the same colour everywhere. */
+  --avatar-1: linear-gradient(135deg, #5ccbff, #2459e6);
+  --avatar-2: linear-gradient(135deg, #ff86b6, #be2470);
+  --avatar-3: linear-gradient(135deg, #ffae52, #e5402a);
+  --avatar-4: linear-gradient(135deg, #4fe0c8, #0e8f8a);
+  --avatar-5: linear-gradient(135deg, #c08bff, #7a2bd6);
+  --avatar-6: linear-gradient(135deg, #ffc93d, #c2620a);
+
+  /* Glass: translucent bars that let content blur through. */
+  --glass-filter: saturate(1.4) blur(14px);
+  --glass-opacity: 94%;
+
+  /* Layout */
+  --layout-max: 1200px;
+  --layout-gutter: 16px;
+  --layout-topbar: 64px;
+  --layout-bottombar: 76px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
+  /* Layers, used as z-(--layer-bar) */
+  --layer-sticky: 25;
+  --layer-bar: 30;
+  --layer-float: 40;
+  --layer-popover: 50;
+  --layer-skip: 100;
+}
+
+/* 4. Dark */
+.dark {
+  color-scheme: dark;
+
+  --background: #101113;
+  --foreground: #efeeec;
+  --card: #1a1b1e;
+  --card-foreground: #efeeec;
+  --popover: #1a1b1e;
+  --popover-foreground: #efeeec;
+  --primary: #ff7a29;
+  --primary-foreground: #101113;
+  --primary-hover: #ff9a57;
+  --secondary: #141517;
+  --secondary-foreground: #efeeec;
+  --muted: #141517;
+  --muted-foreground: #a7a9ad;
+  --accent: #141517;
+  --accent-foreground: #efeeec;
+  --border: #2a2c30;
+  --input: #3d4046;
+  --ring: #ff8a3d;
+
+  --chrome: #ff8a3d;
+  --chrome-foreground: #101113;
+  --stub: #33363c;
+  --link: #ff8a3d;
+  --scrim: rgb(0 0 0 / 0.6);
+
+  --success: #133527;
+  --success-foreground: #7bd6a4;
+  --warning: #352c0c;
+  --warning-foreground: #f2d06b;
+  --neutral: #26282c;
+  --neutral-foreground: #b9bbbf;
+  --danger: #3d1514;
+  --danger-foreground: #ff9b8f;
+
+  --shadow-color: rgb(0 0 0 / 0.35);
+}
+
+/* 5. Base: element defaults. */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    @apply bg-background font-sans;
+  }
+  body {
+    min-width: 320px;
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+  button,
+  a,
+  input,
+  select,
+  label {
+    touch-action: manipulation;
+  }
+  a {
+    color: var(--link);
+    text-underline-offset: 3px;
+  }
+  a:not([class]) {
+    text-decoration: underline;
+  }
+  h1,
+  h2,
+  h3,
+  legend {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    letter-spacing: var(--tracking-tight);
+    line-height: var(--leading-tight);
+    text-wrap: balance;
+  }
+  h1,
+  h2,
+  h3 {
+    margin: 0 0 0.4em;
+  }
+  h1 {
+    font-size: var(--text-display-md);
+  }
+  h2 {
+    font-size: var(--text-display-sm);
+  }
+  h3 {
+    font-size: var(--text-lg);
+  }
+  p {
+    margin: 0 0 0.75em;
+  }
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 3px;
+  }
+  h1:focus,
+  h2:focus {
+    outline: none;
+  }
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+  ::placeholder {
+    color: var(--muted-foreground);
+    opacity: 0.75;
+  }
+  legend {
+    margin-bottom: 12px;
+    font-size: var(--text-xl);
+  }
+  fieldset {
+    min-width: 0;
+  }
+  label {
+    display: block;
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+  /* Sheet paragraphs are small by default; a paragraph's own text size class
+     still wins, because utilities sit in a later layer than this one. */
+  [data-slot="sheet"] p {
+    font-size: var(--text-sm);
+  }
+  /* The drawer is left out: Base UI measures its own transition to tell a
+     swipe-to-close from a drag that should spring back, and it already keeps
+     motion short and tied to the finger. */
+  @media (prefers-reduced-motion: reduce) {
+    :where(*, *::before, *::after):not(
+      [data-swipe-axis],
+      [data-swipe-axis] *,
+      [data-slot="drawer-overlay"]
+    ) {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

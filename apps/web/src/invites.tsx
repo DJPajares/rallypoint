@@ -64,7 +64,7 @@ export function HomeInvites() {
   };
   return (
     <section
-      className="rounded-lg border border-border bg-surface p-5 mt-6 grid gap-3 [&_h2]:m-0"
+      className="rounded-lg border border-border bg-card p-5 mt-6 grid gap-3 [&_h2]:m-0"
       aria-labelledby="home-invites"
     >
       <h2 id="home-invites">Invites ({invites.length})</h2>
@@ -233,12 +233,12 @@ export function InvitePanel({
           {invites.map((invite) => (
             <li
               key={invite.id}
-              className="rounded-lg border border-border bg-surface p-5 grid gap-2 [&_p]:m-0"
+              className="rounded-lg border border-border bg-card p-5 grid gap-2 [&_p]:m-0"
             >
               <p className="flex flex-wrap items-center gap-1 **:data-[slot=title-pill]:ml-0">
                 <strong>{invite.name}</strong>
               </p>
-              <p className="text-sm text-text-muted">
+              <p className="text-sm text-muted-foreground">
                 {stateWords[invite.state]}
               </p>
               {invite.state === "pending" ? (
@@ -263,7 +263,9 @@ export function InvitePanel({
           ))}
         </ul>
       ) : controlled ? null : (
-        <p className="mt-1 mb-0 text-sm text-text-muted">Nobody invited yet.</p>
+        <p className="mt-1 mb-0 text-sm text-muted-foreground">
+          Nobody invited yet.
+        </p>
       )}
       <Sheet
         open={open}
@@ -339,7 +341,7 @@ function Candidates({
     return <Notice retry={candidates.retry}>{candidates.error}</Notice>;
   if (!candidates.data?.people.length)
     return (
-      <p className="mt-1 mb-0 text-sm text-text-muted">
+      <p className="mt-1 mb-0 text-sm text-muted-foreground">
         {query ? "Nobody by that name." : "Nobody to invite yet."}
       </p>
     );

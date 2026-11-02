@@ -31,7 +31,7 @@ function People({
       {people.map((person) => (
         <li
           key={person.profileId}
-          className="rounded-lg border border-border bg-surface p-5 flex flex-wrap items-center gap-3 **:data-[slot=person-link]:min-w-0 **:data-[slot=person-link]:flex-[1_1_10rem] **:data-[slot=person-link]:wrap-anywhere"
+          className="rounded-lg border border-border bg-card p-5 flex flex-wrap items-center gap-3 **:data-[slot=person-link]:min-w-0 **:data-[slot=person-link]:flex-[1_1_10rem] **:data-[slot=person-link]:wrap-anywhere"
         >
           <PersonName name={person.name} profileId={person.profileId} />
           <button
@@ -194,7 +194,7 @@ function Editor({
       <div className="mb-4">
         {state ? (
           <>
-            <span className="inline-flex items-center gap-1 rounded-full bg-surface-sunken px-3 py-0.5 text-xs font-semibold text-text-muted">
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-0.5 text-xs font-semibold text-muted-foreground">
               Organizer
             </span>
             <p>Hosted by {state.group.name}</p>

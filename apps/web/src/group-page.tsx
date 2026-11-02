@@ -205,7 +205,7 @@ export function GroupPage() {
             ? "Join this group"
             : "Ask to join"}
         </button>
-        <p className="mt-1 mb-0 text-sm text-text-muted">
+        <p className="mt-1 mb-0 text-sm text-muted-foreground">
           The admin accepts or declines each request.
         </p>
       </div>
@@ -222,7 +222,7 @@ export function GroupPage() {
         <GroupCrest id={group.id} name={group.name} />
         <div className="grid min-w-0 gap-2 [&_h1]:m-0 [&_h1]:text-display-md [&_h1]:leading-[1.05] [&_h1]:wrap-anywhere">
           <h1>{group.name}</h1>
-          <p className="m-0 flex flex-wrap items-center gap-2 text-text-muted">
+          <p className="m-0 flex flex-wrap items-center gap-2 text-muted-foreground">
             {group.visibility === "private" ? (
               <LockSimpleIcon size={16} aria-hidden="true" />
             ) : (
@@ -236,7 +236,7 @@ export function GroupPage() {
             ) : null}
           </p>
           {memberCount !== undefined ? (
-            <p className="m-0 flex flex-wrap items-center gap-2 text-text-muted">
+            <p className="m-0 flex flex-wrap items-center gap-2 text-muted-foreground">
               {members?.length ? <FaceStack members={members} /> : null}
               {memberCount} {memberCount === 1 ? "member" : "members"}
             </p>
@@ -341,7 +341,7 @@ export function GroupPage() {
           aria-labelledby="group-upcoming"
         >
           <h2 id="group-upcoming">Coming up</h2>
-          <ul className="m-0 list-none overflow-hidden rounded-lg bg-surface p-0 shadow-sm">
+          <ul className="m-0 list-none overflow-hidden rounded-lg bg-card p-0 shadow-sm">
             {upcoming.map((s) => (
               <li
                 key={s.slug}
@@ -349,7 +349,7 @@ export function GroupPage() {
               >
                 <div className="flex min-h-13 items-center gap-2 pr-3">
                   <Link
-                    className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-2 pr-1 pl-3 text-left text-inherit no-underline [font:inherit] [a&]:hover:bg-surface-sunken [button&]:cursor-pointer [button&]:hover:bg-surface-sunken focus-visible:-outline-offset-3"
+                    className="flex min-h-13 min-w-0 flex-1 items-center gap-3 border-0 bg-transparent py-2 pr-1 pl-3 text-left text-inherit no-underline [font:inherit] [a&]:hover:bg-muted [button&]:cursor-pointer [button&]:hover:bg-muted focus-visible:-outline-offset-3"
                     href={`/s/${s.slug}`}
                   >
                     <span className="inline-flex flex-none">
@@ -357,7 +357,7 @@ export function GroupPage() {
                     </span>
                     <span className="grid min-w-0">
                       <span className="truncate font-semibold">{s.title}</span>
-                      <span className="text-sm text-text-muted">
+                      <span className="text-sm text-muted-foreground">
                         {when(s.startsAt, s.timeZone)}
                         {s.activity ? ` · ${s.activity}` : ""}
                       </span>
@@ -432,7 +432,10 @@ export function GroupPage() {
                   <LinkSimpleIcon size={18} aria-hidden="true" />
                   Copy invite link
                 </button>
-                <p role="status" className="mt-1 mb-0 text-sm text-text-muted">
+                <p
+                  role="status"
+                  className="mt-1 mb-0 text-sm text-muted-foreground"
+                >
                   {copied}
                 </p>
               </div>
@@ -494,7 +497,7 @@ export function GroupPage() {
               <Face name={selected.name} size="lg" />
               <div>
                 <TitlePill title={selected.title} />
-                <p className="mt-1 mb-0 text-sm text-text-muted">
+                <p className="mt-1 mb-0 text-sm text-muted-foreground">
                   {selected.role === "admin" ? "Admin" : "Member"}
                 </p>
               </div>

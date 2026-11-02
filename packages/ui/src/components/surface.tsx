@@ -41,7 +41,7 @@ export function Badge({
 export function IconTile({ children }: { children: ReactNode }) {
   return (
     <span
-      className="inline-flex size-icon-tile flex-none items-center justify-center rounded-md bg-surface-sunken text-text"
+      className="inline-flex size-icon-tile flex-none items-center justify-center rounded-md bg-muted text-foreground"
       aria-hidden="true"
     >
       {children}
@@ -52,7 +52,7 @@ export function IconTile({ children }: { children: ReactNode }) {
 export function Avatar({ name }: { name: string }) {
   return (
     <span
-      className="inline-flex size-control flex-none items-center justify-center rounded-full bg-action font-heading text-xl font-bold text-on-action"
+      className="inline-flex size-control flex-none items-center justify-center rounded-full bg-primary font-heading text-xl font-bold text-primary-foreground"
       aria-hidden="true"
     >
       {(name.trim()[0] ?? "?").toUpperCase()}

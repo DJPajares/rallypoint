@@ -50,11 +50,11 @@ function Brand({ href }: { href: string }) {
   return (
     <Link
       href={href}
-      className="mr-auto inline-flex items-center gap-2 font-heading text-xl font-bold tracking-tight text-text no-underline"
+      className="mr-auto inline-flex items-center gap-2 font-heading text-xl font-bold tracking-tight text-foreground no-underline"
       aria-label="RallyPoint home"
     >
       <span
-        className="inline-flex size-brand-mark items-center justify-center rounded-sm bg-brand-graphite pb-1 text-2xl leading-none text-on-brand"
+        className="inline-flex size-brand-mark items-center justify-center rounded-sm bg-brand pb-1 text-2xl leading-none text-brand-foreground"
         aria-hidden="true"
       >
         r<span className="text-brand-orange">.</span>
@@ -75,7 +75,7 @@ function CreateButton({
   onPick: () => void;
 }) {
   const className =
-    "absolute top-[calc(var(--spacing-create)/-2)] left-1/2 z-2 inline-flex size-create -translate-x-1/2 items-center justify-center rounded-full border-0 bg-action text-on-action shadow-lift transition-[background-color,box-shadow,transform] duration-200 ease-standard hover:bg-action-hover hover:shadow-lift-hover focus-visible:outline-offset-4 active:translate-y-px";
+    "absolute top-[calc(var(--spacing-create)/-2)] left-1/2 z-2 inline-flex size-create -translate-x-1/2 items-center justify-center rounded-full border-0 bg-primary text-primary-foreground shadow-lift transition-[background-color,box-shadow,transform] duration-200 ease-standard hover:bg-primary-hover hover:shadow-lift-hover focus-visible:outline-offset-4 active:translate-y-px";
   const content = <PlusIcon size={28} aria-hidden="true" />;
   // Inside a group the button goes straight to that group's form; elsewhere it
   // asks which group first. Same place, same icon, either way.
@@ -121,7 +121,7 @@ export function Shell({ children }: { children: ReactNode }) {
         data-detail={detailDepth > 0 || undefined}
       >
         <a
-          className="fixed top-[calc(12px+var(--safe-top))] left-[calc(12px+var(--safe-left))] z-(--layer-skip) -translate-y-[calc(100%+24px+var(--safe-top))] rounded-full bg-chrome px-4 py-2 font-semibold text-on-chrome no-underline transition-transform duration-200 ease-standard focus:translate-y-0"
+          className="fixed top-[calc(12px+var(--safe-top))] left-[calc(12px+var(--safe-left))] z-(--layer-skip) -translate-y-[calc(100%+24px+var(--safe-top))] rounded-full bg-chrome px-4 py-2 font-semibold text-chrome-foreground no-underline transition-transform duration-200 ease-standard focus:translate-y-0"
           href="#main"
         >
           Skip to content
@@ -136,7 +136,7 @@ export function Shell({ children }: { children: ReactNode }) {
                     key={key}
                     href={href}
                     aria-current={isActive(pathname, href) ? "page" : undefined}
-                    className="relative inline-flex min-h-touch items-center rounded-full px-3 text-sm font-medium text-text-muted no-underline transition-colors duration-150 ease-standard hover:bg-surface-sunken hover:text-text aria-[current=page]:text-text aria-[current=page]:after:absolute aria-[current=page]:after:inset-x-3 aria-[current=page]:after:-bottom-[calc((var(--spacing-topbar)-var(--spacing-touch))/2)] aria-[current=page]:after:h-0.75 aria-[current=page]:after:rounded-t-xs aria-[current=page]:after:bg-chrome md:max-desk:px-2"
+                    className="relative inline-flex min-h-touch items-center rounded-full px-3 text-sm font-medium text-muted-foreground no-underline transition-colors duration-150 ease-standard hover:bg-muted hover:text-foreground aria-[current=page]:text-foreground aria-[current=page]:after:absolute aria-[current=page]:after:inset-x-3 aria-[current=page]:after:-bottom-[calc((var(--spacing-topbar)-var(--spacing-touch))/2)] aria-[current=page]:after:h-0.75 aria-[current=page]:after:rounded-t-xs aria-[current=page]:after:bg-chrome md:max-desk:px-2"
                   >
                     {label}
                   </Link>
@@ -178,7 +178,7 @@ export function Shell({ children }: { children: ReactNode }) {
                       <Link
                         href={href}
                         aria-current={active ? "page" : undefined}
-                        className="relative flex min-h-tab flex-col items-center justify-center gap-1 rounded-sm p-1 text-xs font-medium text-text-muted no-underline transition-colors duration-200 ease-standard aria-[current=page]:font-semibold aria-[current=page]:text-chrome"
+                        className="relative flex min-h-tab flex-col items-center justify-center gap-1 rounded-sm p-1 text-xs font-medium text-muted-foreground no-underline transition-colors duration-200 ease-standard aria-[current=page]:font-semibold aria-[current=page]:text-chrome"
                       >
                         {active ? (
                           <span
