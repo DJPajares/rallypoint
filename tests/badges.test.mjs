@@ -158,6 +158,16 @@ test("badges and titles", async (t) => {
   const markSeen = (a, ids) => request("/api/me/badges/seen", a, { ids });
   const setTitle = (a, badgeId) => request("/api/me/title", a, { badgeId });
   // Booked sessions keep their details; fixtures move a session in time directly.
+  // Fixtures give a session another organizer (its hosting team's owner) or
+  // a listed activity directly.
+  const ownedBy = (s, a) =>
+    sql(
+      `update app.group_roles set user_id='${a.id}' where role='owner' and group_id=(select group_id from app.sessions where id='${s.id}');`,
+    );
+  const activity = (s, key) =>
+    unlocked(
+      `update app.sessions set activity_key=${key ? `'${key}'` : "null"} where id='${s.id}'`,
+    );
   const move = (s, startsAt, timeZone) =>
     unlocked(
       `update app.sessions set details=details||jsonb_build_object('startsAt','${startsAt}','endsAt',('${startsAt}'::timestamptz+interval '2 hours')::text,'timeZone','${timeZone}') where id='${s.id}'`,
@@ -193,10 +203,14 @@ test("badges and titles", async (t) => {
           [
             ["rally", 0, []],
             ["steady", 0, []],
+            ["explorer", 0, []],
+            ["all-rounder", 0, []],
             ["new-faces", 0, []],
+            ["crew", 0, []],
             ["plus-one", 0, []],
             ["host", 0, []],
             ["full-house", 0, []],
+            ["open-door", 0, []],
           ],
         );
         await mark(s, host, party.id, 1, "checked_in", 0);
@@ -208,6 +222,10 @@ test("badges and titles", async (t) => {
         );
         assert.ok(Date.parse(badge(b, "rally").levels[0].earnedAt));
         assert.equal(badge(b, "steady").current, 1);
+        // One organizer is not yet Explorer; a session without a listed
+        // activity is never All-Rounder.
+        assert.equal(badge(b, "explorer").current, 1);
+        assert.equal(badge(b, "all-rounder").current, 0);
         assert.deepEqual(started(b), ["rally"]);
         assert.deepEqual(b.stats, { played: 1, hosted: 0, groups: 0 });
         assert.equal("titles" in b, false);
@@ -303,6 +321,180 @@ test("badges and titles", async (t) => {
         assert.equal(badge(after, "full-house").current, 1);
       },
     );
+
+    await t.test(
+      "Explorer counts different organizers, never yourself, and corrections take it back",
+      async () => {
+        const p = await fresh("explorer"),
+          other = await fresh("explorer-org"),
+          a = await event(),
+          b = await event(),
+          own = await event();
+        ownedBy(b, other);
+        ownedBy(own, p);
+        const pa = await join(a, p),
+          pb = await join(b, p),
+          po = await join(own, p);
+        await mark(a, host, pa.id, 1, "checked_in", 0);
+        await mark(own, host, po.id, 1, "checked_in", 0);
+        let view = await badges(p);
+        assert.equal(badge(view, "explorer").current, 1);
+        assert.deepEqual(levels(view, "explorer"), []);
+        await mark(b, host, pb.id, 1, "checked_in", 0);
+        view = await badges(p);
+        assert.equal(badge(view, "explorer").current, 2);
+        assert.deepEqual(levels(view, "explorer"), [1]);
+        // The public profile shows the level, never who or how many.
+        const { profile } = await (await request("/api/me/profile", p)).json();
+        const shown = (
+          await (await request(`/api/people/${profile.profileId}`, null)).json()
+        ).profile;
+        assert.deepEqual(
+          shown.badges.find((x) => x.key === "explorer"),
+          { key: "explorer", level: 1 },
+        );
+        await mark(b, host, pb.id, 1, "unrecorded", 1);
+        view = await badges(p);
+        assert.equal(badge(view, "explorer").current, 1);
+        assert.deepEqual(levels(view, "explorer"), []);
+      },
+    );
+
+    await t.test(
+      "All-Rounder counts sessions outside your most-played activity; Other never counts",
+      async () => {
+        const p = await fresh("rounder"),
+          plan = [
+            "tennis",
+            "tennis",
+            "badminton",
+            "general",
+            null,
+            "badminton",
+          ],
+          played = [];
+        for (const key of plan) {
+          const s = await event();
+          activity(s, key);
+          played.push([s, await join(s, p)]);
+        }
+        const check = async (i) =>
+          mark(played[i][0], host, played[i][1].id, 1, "checked_in", 0);
+        await check(0);
+        await check(1);
+        let view = await badges(p);
+        assert.equal(badge(view, "all-rounder").current, 0);
+        await check(2);
+        view = await badges(p);
+        assert.equal(badge(view, "all-rounder").current, 1);
+        assert.deepEqual(levels(view, "all-rounder"), [1]);
+        await check(3);
+        await check(4);
+        assert.equal(badge(await badges(p), "all-rounder").current, 1);
+        // Tennis 2, badminton 2: two sessions sit outside the main activity.
+        await check(5);
+        assert.equal(badge(await badges(p), "all-rounder").current, 2);
+        await mark(played[2][0], host, played[2][1].id, 1, "unrecorded", 1);
+        await mark(played[5][0], host, played[5][1].id, 1, "unrecorded", 1);
+        view = await badges(p);
+        assert.equal(badge(view, "all-rounder").current, 0);
+        assert.deepEqual(levels(view, "all-rounder"), []);
+      },
+    );
+
+    await t.test(
+      "Crew counts people checked in with you at three sessions, once each",
+      async () => {
+        const p = await fresh("crew-p"),
+          q = await fresh("crew-q"),
+          r = await fresh("crew-r"),
+          sessions = [];
+        for (let i = 0; i < 3; i++) {
+          const s = await event();
+          const pp = await join(s, p),
+            pq = await join(s, q);
+          await mark(s, host, pp.id, 1, "checked_in", 0);
+          if (i < 2) await mark(s, host, pq.id, 1, "checked_in", 0);
+          sessions.push([s, pq]);
+        }
+        await mark(
+          sessions[0][0],
+          host,
+          (await join(sessions[0][0], r)).id,
+          1,
+          "checked_in",
+          0,
+        );
+        let view = await badges(p);
+        assert.equal(badge(view, "crew").current, 0);
+        const [third, thirdQ] = sessions[2];
+        await mark(third, host, thirdQ.id, 1, "checked_in", 0);
+        for (const person of [p, q]) {
+          view = await badges(person);
+          assert.equal(badge(view, "crew").current, 1);
+          assert.deepEqual(levels(view, "crew"), [1]);
+        }
+        assert.equal(badge(await badges(r), "crew").current, 0);
+        await mark(third, host, thirdQ.id, 1, "unrecorded", 1);
+        view = await badges(p);
+        assert.equal(badge(view, "crew").current, 0);
+        assert.deepEqual(levels(view, "crew"), []);
+      },
+    );
+
+    await t.test(
+      "Open Door counts different people at sessions you ran, not you and not guests",
+      async () => {
+        const runner = await cohost("door"),
+          people = [];
+        for (let i = 0; i < 10; i++) people.push(await fresh(`door-${i}`));
+        const first = await event("12"),
+          second = await event("4");
+        const own = await join(first, runner);
+        await mark(first, runner, own.id, 1, "checked_in", 0);
+        for (const [i, person] of people.slice(0, 9).entries()) {
+          const party = await join(first, person, i === 0 ? 2 : 1);
+          await mark(first, runner, party.id, 1, "checked_in", 0);
+          if (i === 0) await mark(first, runner, party.id, 2, "checked_in", 0);
+        }
+        let view = await badges(runner);
+        assert.equal(badge(view, "open-door").current, 9);
+        assert.deepEqual(levels(view, "open-door"), []);
+        // Someone already counted, at a second session, adds nothing.
+        await mark(
+          second,
+          runner,
+          (await join(second, people[1])).id,
+          1,
+          "checked_in",
+          0,
+        );
+        assert.equal(badge(await badges(runner), "open-door").current, 9);
+        const last = await join(second, people[9]);
+        await mark(second, runner, last.id, 1, "checked_in", 0);
+        view = await badges(runner);
+        assert.equal(badge(view, "open-door").current, 10);
+        assert.deepEqual(levels(view, "open-door"), [1]);
+        await mark(second, runner, last.id, 1, "unrecorded", 1);
+        assert.deepEqual(levels(await badges(runner), "open-door"), []);
+      },
+    );
+
+    await t.test("a new badge can be a title, at its level", async () => {
+      const p = await fresh("new-title"),
+        other = await fresh("new-title-org"),
+        a = await event(),
+        b = await event();
+      ownedBy(b, other);
+      await mark(a, host, (await join(a, p)).id, 1, "checked_in", 0);
+      let r = await setTitle(p, "explorer");
+      assert.equal(r.status, 422);
+      assert.equal(await code(r), "title_not_earned");
+      await mark(b, host, (await join(b, p)).id, 1, "checked_in", 0);
+      r = await setTitle(p, "explorer");
+      assert.equal(r.status, 200);
+      assert.deepEqual((await r.json()).title, { key: "explorer", level: 1 });
+    });
 
     await t.test(
       "Steady counts months by the session's own date and zone",

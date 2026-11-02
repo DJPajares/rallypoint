@@ -133,6 +133,47 @@ function Glyph({ glyph }: { glyph: BadgeGlyph }) {
           )}
         </g>
       );
+    case "compass":
+      return (
+        <>
+          <circle cx="50" cy="50" r="24" {...line} />
+          <path d="M50 33 L57 50 L50 67 L43 50 Z" {...line} strokeWidth={4} />
+          <path d="M50 33 L57 50 H43 Z" fill="currentColor" />
+        </>
+      );
+    case "split":
+      return (
+        <>
+          <path d="M50 25 L75 50 L50 75 L25 50 Z" {...line} />
+          <path
+            d="M50 25 L25 50 L50 75 Z"
+            fill="currentColor"
+            stroke="currentColor"
+            strokeWidth={5}
+            strokeLinejoin="round"
+          />
+        </>
+      );
+    case "rings":
+      return (
+        <>
+          <circle cx="39" cy="50" r="15" {...line} />
+          <circle cx="61" cy="50" r="15" {...line} />
+        </>
+      );
+    case "door":
+      return (
+        <>
+          <path d="M24 74 H76 M38 74 V27 H64 V74" {...line} />
+          <path
+            d="M38 27 L55 33 V70 L38 74 Z"
+            fill="currentColor"
+            stroke="currentColor"
+            strokeWidth={4}
+            strokeLinejoin="round"
+          />
+        </>
+      );
   }
 }
 
