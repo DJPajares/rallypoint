@@ -1,6 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { rankedAlerts } from "../packages/domain/src/ranked-alerts.ts";
+import {
+  rankedAlerts,
+  readFor,
+  settleRead,
+} from "../packages/domain/src/ranked-alerts.ts";
 
 const now = Date.parse("2026-11-03T12:00:00Z");
 const at = (hours) => new Date(now + hours * 3600000).toISOString();
@@ -138,4 +142,43 @@ test("items are ordered by deadline and keys are unique", () => {
     ["widen", "match", "invite"],
   );
   assert.equal(new Set(alerts.map((a) => a.key)).size, alerts.length);
+});
+
+test("an action's own answer removes its item at once", () => {
+  const before = settleRead(null, "u1", {
+    search: search({ state: "matched" }),
+    invites: [],
+    match: match(),
+  });
+  assert.equal(rankedAlerts(readFor(before, "u1"), now).length, 1);
+  const after = settleRead(before, "u1", {
+    operationKey: "k1",
+    search: search({ state: "matched" }),
+    invites: [],
+    match: match({ myAnswer: "accepted" }),
+  });
+  assert.deepEqual(rankedAlerts(readFor(after, "u1"), now), []);
+  assert.equal("operationKey" in readFor(after, "u1"), false);
+});
+
+test("what's known survives a token refresh but never another person", () => {
+  const known = settleRead(null, "u1", {
+    search: null,
+    invites: [invite("t1", 10)],
+    match: null,
+  });
+  assert.equal(readFor(known, "u1").invites.length, 1);
+  assert.equal(readFor(known, "u2"), null);
+  assert.equal(readFor(null, "u1"), null);
+});
+
+test("the version moves only when what's known changes", () => {
+  const read = { search: null, invites: [invite("t1", 10)], match: null };
+  const first = settleRead(null, "u1", read);
+  const same = settleRead(first, "u1", { ...read, operationKey: "k" });
+  assert.equal(same.version, first.version);
+  const changed = settleRead(same, "u1", { ...read, invites: [] });
+  assert.equal(changed.version, first.version + 1);
+  const other = settleRead(changed, "u2", read);
+  assert.equal(other.version, changed.version + 1);
 });

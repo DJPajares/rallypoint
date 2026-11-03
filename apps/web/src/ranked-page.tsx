@@ -30,6 +30,7 @@ import type {
   SearchInvite,
   SearchView,
 } from "@rallypoint/domain/ranked-search";
+import { useRankedAlerts } from "./ranked-alerts";
 import { regionLabel } from "./ranked-labels";
 import { ShareButton } from "./share-button";
 import { ListSkeleton } from "./skeletons";
@@ -68,13 +69,15 @@ const inviteUrl = (token: string) =>
  * the app), and everyone has 48 hours to accept it.
  */
 export function RankedPage() {
-  const [refresh, setRefresh] = useState(0);
-  const mine = useApi<MySearch>("/api/ranked/search", false, String(refresh));
+  // One ranked read for the whole app: the page reloads whenever it changes,
+  // from this page's actions, the alerts on Home and in the menu, or a check.
+  const { version, apply } = useRankedAlerts();
+  const mine = useApi<MySearch>("/api/ranked/search", false, String(version));
   // After an action, focus moves to the card that now says what happened.
   const focusStatus = useRef(false);
-  const reload = () => {
+  const reload = (answer: unknown) => {
     focusStatus.current = true;
-    setRefresh((n) => n + 1);
+    apply(answer as MySearch);
   };
   useEffect(() => {
     document.title = "Ranked · RallyPoint";
@@ -161,7 +164,7 @@ function ActiveSearch({
   onDone,
 }: {
   search: SearchView;
-  onDone: () => void;
+  onDone: (answer: unknown) => void;
 }) {
   const cancel = useMutation<unknown>(onDone);
   const widen = useMutation<unknown>(onDone);
@@ -244,7 +247,7 @@ function EndedSearch({
   onDone,
 }: {
   search: SearchView;
-  onDone: () => void;
+  onDone: (answer: unknown) => void;
 }) {
   const restart = useMutation<unknown>(onDone);
   const why =
@@ -309,7 +312,7 @@ function MatchCard({
   onDone,
 }: {
   match: MatchView;
-  onDone: () => void;
+  onDone: (answer: unknown) => void;
 }) {
   const answer = useMutation<unknown>(onDone);
   const partner = match.players.filter((p) => p.side === "yours" && !p.you);
@@ -436,7 +439,7 @@ function InviteCard({
   onDone,
 }: {
   invite: SearchInvite;
-  onDone: () => void;
+  onDone: (answer: unknown) => void;
 }) {
   const answer = useMutation<unknown>(onDone);
   return (
@@ -492,7 +495,7 @@ const errorFields: Record<SearchError["field"], string> = {
   partner: "partner-known",
 };
 
-function NewSearch({ onDone }: { onDone: () => void }) {
+function NewSearch({ onDone }: { onDone: (answer: unknown) => void }) {
   const areas = useApi<{ regions: Region[] }>("/api/areas", true);
   const [format, setFormat] = useState("singles");
   const [picked, setPicked] = useState(["", "", ""]);

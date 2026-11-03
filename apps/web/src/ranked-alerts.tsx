@@ -12,8 +12,15 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { buttonClass, Notice } from "@rallypoint/ui";
-import { rankedAlerts } from "@rallypoint/domain/ranked-alerts";
-import type { RankedAlert } from "@rallypoint/domain/ranked-alerts";
+import {
+  rankedAlerts,
+  readFor,
+  settleRead,
+} from "@rallypoint/domain/ranked-alerts";
+import type {
+  KnownSearch,
+  RankedAlert,
+} from "@rallypoint/domain/ranked-alerts";
 import type { MySearch } from "@rallypoint/domain/ranked-search";
 import { useAuth } from "./auth-context";
 import { regionLabel } from "./ranked-labels";
@@ -22,10 +29,15 @@ import { useMutation } from "./use-mutation";
 /** How often an open, visible app checks for ranked news (the engine runs every minute). */
 const REFRESH_MS = 60_000;
 
+type Answer = MySearch & { operationKey?: string };
 const RankedAlertsContext = createContext<{
   alerts: RankedAlert[];
+  /** Moves whenever the known ranked read changes, from any source. */
+  version: number;
   refresh: () => void;
-}>({ alerts: [], refresh: () => {} });
+  /** Takes in the read a ranked action answered with. */
+  apply: (answer: Answer) => void;
+}>({ alerts: [], version: 0, refresh: () => {}, apply: () => {} });
 
 export function useRankedAlerts() {
   return useContext(RankedAlertsContext);
@@ -63,13 +75,17 @@ export function RankedAlertsProvider({
 }) {
   const { session } = useAuth();
   const token = enabled ? (session?.access_token ?? "") : "";
+  const user = enabled ? (session?.user.id ?? "") : "";
   const pathname = usePathname();
-  const [known, setKnown] = useState<{
-    token: string;
-    mine: MySearch;
-  } | null>(null);
+  const [known, setKnown] = useState<KnownSearch | null>(null);
   const [tick, setTick] = useState(0);
   const refresh = useCallback(() => setTick((n) => n + 1), []);
+  const apply = useCallback(
+    (answer: Answer) => {
+      if (user) setKnown((prev) => settleRead(prev, user, answer));
+    },
+    [user],
+  );
   useEffect(() => {
     if (!token) return;
     const controller = new AbortController();
@@ -79,13 +95,13 @@ export function RankedAlertsProvider({
     })
       .then((response) => (response.ok ? response.json() : null))
       .then((mine: MySearch | null) => {
-        if (mine && !controller.signal.aborted) setKnown({ token, mine });
+        if (mine && !controller.signal.aborted) apply(mine);
       })
       .catch(() => {});
     return () => controller.abort();
-  }, [token, pathname, tick]);
+  }, [token, pathname, tick, apply]);
   useEffect(() => {
-    if (!token) return;
+    if (!user) return;
     const check = () => {
       if (document.visibilityState === "visible") refresh();
     };
@@ -95,12 +111,13 @@ export function RankedAlertsProvider({
       clearInterval(timer);
       document.removeEventListener("visibilitychange", check);
     };
-  }, [token, refresh]);
-  // Another person's items never outlive their session.
-  const mine = known && known.token === token ? known.mine : null;
+  }, [user, refresh]);
+  // Another person's items never outlive their session; a new token keeps them.
+  const mine = readFor(known, user);
+  const version = known?.version ?? 0;
   const value = useMemo(
-    () => ({ alerts: rankedAlerts(mine), refresh }),
-    [mine, refresh],
+    () => ({ alerts: rankedAlerts(mine), version, refresh, apply }),
+    [mine, version, refresh, apply],
   );
   return <RankedAlertsContext value={value}>{children}</RankedAlertsContext>;
 }
@@ -127,16 +144,18 @@ export function RankedAlertList({
   heading?: boolean;
   empty?: ReactNode;
 }) {
-  const { alerts, refresh } = useRankedAlerts();
+  const { alerts, apply } = useRankedAlerts();
   const [said, setSaid] = useState("");
   const note = useRef<HTMLParagraphElement>(null);
   const message = useRef("");
   useEffect(() => {
     if (said) note.current?.focus();
   }, [said]);
-  const mutation = useMutation<unknown>(() => {
+  // The action's own answer replaces the list, so an answered item can't be
+  // answered again while a check is still on its way.
+  const mutation = useMutation<Answer>((answer) => {
     setSaid(message.current);
-    refresh();
+    apply(answer);
   });
   const busy = mutation.busy || mutation.uncertain;
   if (!alerts.length && !said && !mutation.error) return empty;
@@ -251,6 +270,11 @@ export function RankedAlertList({
                   </button>
                 )}
               </div>
+              {alert.kind === "match" ? (
+                <p className="text-sm text-muted-foreground">
+                  Declining ends your search.
+                </p>
+              ) : null}
             </li>
           ))}
         </ul>

@@ -71,3 +71,40 @@ export function rankedAlerts(
     });
   return alerts.sort((a, b) => Date.parse(a.deadline) - Date.parse(b.deadline));
 }
+
+/**
+ * The last good ranked read for the signed-in person. It is keyed by person,
+ * not by sign-in token, so a routine token refresh keeps it; `version` moves
+ * only when the read itself changes.
+ */
+export interface KnownSearch {
+  user: string;
+  mine: MySearch;
+  version: number;
+}
+
+/** Folds in a fresh read: from a check, or the answer to the player's own action. */
+export function settleRead(
+  prev: KnownSearch | null,
+  user: string,
+  read: MySearch & { operationKey?: string },
+): KnownSearch {
+  const { search, invites, match } = read;
+  const mine: MySearch = { search, invites, match };
+  const version = prev?.version ?? 0;
+  if (
+    prev &&
+    prev.user === user &&
+    JSON.stringify(prev.mine) === JSON.stringify(mine)
+  )
+    return prev;
+  return { user, mine, version: version + 1 };
+}
+
+/** What is known for this person; another person's read is never shown. */
+export function readFor(
+  known: KnownSearch | null,
+  user: string,
+): MySearch | null {
+  return known && known.user === user ? known.mine : null;
+}
