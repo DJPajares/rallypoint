@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   calibratingCategories,
   calibratingLabel,
+  calibratingSpoken,
   rankLabel,
   rankSpoken,
   rankedCategories,
@@ -72,4 +73,15 @@ test("calibration reads as matches played of 5", () => {
     [calibrating],
   );
   assert.equal(calibratingLabel(calibrating), "Calibrating · 3 of 5");
+});
+
+test("calibration is spoken as matches played", () => {
+  assert.equal(
+    calibratingSpoken({
+      activity: "pickleball",
+      format: "doubles",
+      calibrating: 3,
+    }),
+    "Doubles: calibrating, 3 of 5 matches played",
+  );
 });

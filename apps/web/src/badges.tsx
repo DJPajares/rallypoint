@@ -43,6 +43,7 @@ import { levelLabel, levelStep } from "@rallypoint/domain/profile";
 import {
   calibratingCategories,
   calibratingLabel,
+  calibratingSpoken,
   formatName,
   rankLabel,
   rankSpoken,
@@ -397,9 +398,13 @@ function Ranked({ ranks }: { ranks: unknown }) {
                     .map((c) => (
                       <span
                         key={c.format}
+                        data-slot="calibrating-pill"
                         className="inline-flex items-center rounded-full border border-dashed border-border px-2 py-0.5 text-xs leading-[1.6] font-semibold whitespace-nowrap text-muted-foreground"
                       >
-                        {formatName(c.format)} · {calibratingLabel(c)}
+                        <span aria-hidden="true">
+                          {formatName(c.format)} · {calibratingLabel(c)}
+                        </span>
+                        <span className="sr-only">{calibratingSpoken(c)}</span>
                       </span>
                     ))}
                 </span>

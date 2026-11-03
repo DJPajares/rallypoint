@@ -94,3 +94,7 @@ export const rankSpoken = (c: RankedCategory) =>
 /** The owner's progress toward a first medal, e.g. "Calibrating · 3 of 5". */
 export const calibratingLabel = (c: CalibratingCategory) =>
   `Calibrating · ${c.calibrating} of ${calibrationMatches}`;
+
+/** What a screen reader hears, e.g. "Doubles: calibrating, 3 of 5 matches played". */
+export const calibratingSpoken = (c: CalibratingCategory) =>
+  `${formatName(c.format)}: calibrating, ${c.calibrating} of ${calibrationMatches} matches played`;

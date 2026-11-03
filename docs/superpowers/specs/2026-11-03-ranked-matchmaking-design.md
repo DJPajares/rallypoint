@@ -4,15 +4,15 @@ Status: **owner-approved 2026-11-03** ("Approve and proceed"). Approval covers t
 
 ## Intent
 
-Players want to know how good they are and to play people at their level, the way ranked modes work in online games. A player searches for a ranked pickleball match; RallyPoint finds opponents of a similar rank in the areas they chose, which may take days; the players book a court and play; the result moves everyone's rank up or down.
+Players want to know how good they are and to play people at their level, the way ranked modes work in online games. A player searches for a ranked pickleball match; RallyPoint finds opponents of a similar level in the areas they chose, which may take days; the players book a court and play; the result moves everyone's rank up or down.
 
 This replaces WDL-406's co-player vouching idea. The owner chose an automated win/loss rating over nods (2026-11-02: "instead of this nod, can we just have an automated system for ratings… used for matchmaking… think of it like the online games ranked matchmaking").
 
 ## What this changes in the PRD (owner to confirm on approval)
 
-- **D-16** says badges never rank people and WDL-406 excludes ratings and rankings. Ranked play is a new, separate system: badges stay unranked, and ranks come only from ranked matches.
+- **D-16** says badges never rank people and WDL-406 excludes ratings and rankings. Ranked play is a new, separate system: badges stay unranked, and medals come only from ranked matches.
 - **Exclusions / phase 3**: matchmaking puts strangers together. It is not a browse feed: nobody can look people or sessions up; the engine only pairs people who are searching. Leaderboards stay out.
-- **Profile**: the self-rated level (Beginner/Intermediate/Advanced) stays as it is and is never changed by ranked results. The ranked rank is shown separately.
+- **Profile**: the self-rated level (Beginner/Intermediate/Advanced) stays as it is and is never changed by ranked results. The ranked medal is shown separately.
 - **No new emails** (owner rule, 2026-10-28) holds for now; alerts are in-app. Email arrives "at the very late portion of the development" (owner, 2026-11-03).
 - WDL-406 is cancelled or rewritten as this project (owner's choice).
 
@@ -41,7 +41,7 @@ This replaces WDL-406's co-player vouching idea. The owner chose an automated wi
 - One person ends up in two matches at once.
 - "No-show" appears on anyone's public profile.
 - Anyone, owner included, can see or work out a hidden number.
-- The rank and the self-rating blur into one number.
+- The medal and the self-rating blur into one number.
 
 ## Decisions made with the owner
 
@@ -61,7 +61,7 @@ This replaces WDL-406's co-player vouching idea. The owner chose an automated wi
 
 ### Matching
 
-- Start with your own rank only; after 1 day widen to one rank above and below.
+- Matching reads the hidden skill, not the medal (amended 2026-11-03 with the medals). **Builder's call:** start within 100 skill points either way (about one medal's width), and after 1 day widen to 300 (about one medal above and below).
 - Longest-waiting search is matched first.
 - A search lasts 7 days, then ends; restart with one tap.
 - One search at a time per person (singles _or_ doubles).
@@ -108,7 +108,7 @@ Amended 2026-11-03 (owner: "we have to establish our rating system as early as n
 1. **Areas and courts**: planning-area catalog with everyday names; shared court list.
 2. **Rating engine** (large): categories per (activity, format); hidden skill (win/loss updates, doubles averaging, confidence for new/inactive players); hidden standing with calibration; medals and stars. Buildable and testable with synthetic results before matching exists.
 3. **Ranked search**: start, cancel, 7-day expiry; format, areas, courts, times; doubles partner invite and acceptance.
-4. **Matchmaking engine** (large): scheduled pairing on the existing per-minute scheduler with bounded work per run; rank widening; longest-wait priority; 7-day repeat block; never double-matching under concurrent runs; proposals; accept/decline/expiry and requeue.
+4. **Matchmaking engine** (large): scheduled pairing on the existing per-minute scheduler with bounded work per run; skill-band widening; longest-wait priority; 7-day repeat block; never double-matching under concurrent runs; proposals; accept/decline/expiry and requeue.
 5. **In-app alerts**: Home alert and menu count.
 6. **Booking and the match session**: the "I'll book" claim, hand-back, private session creation with split fee, self check-in window, falling back to a casual session on withdrawal.
 7. **Results**: report, confirm, dispute, no-show/forfeit handling, sending confirmed results to the rating engine.

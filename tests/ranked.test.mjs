@@ -55,7 +55,7 @@ const apply = (format, winners, losers, resultId = crypto.randomUUID()) =>
   sql(
     `select app.apply_ranked_result('${resultId}','pickleball','${format}',${ids(winners)},${ids(losers)},now());`,
   );
-// The display scale: what rank thresholds are measured on.
+// The display scale of the hidden skill, as the standing's target reads it.
 function rating(user, format = "singles") {
   const row = sql(
     `select round((173.7178*mu+1500)::numeric,4),round((173.7178*phi)::numeric,4),matches from app.ranked_ratings where user_id='${user}' and activity_key='pickleball' and format='${format}';`,
@@ -182,7 +182,10 @@ test("concurrent results for a shared player both apply", async () => {
     await player("cx2"),
     await player("cy2"),
   ];
-  for (const u of [shared, alone]) preset(u, "singles", 1600, 120);
+  for (const u of [shared, alone]) {
+    preset(u, "singles", 1600, 120);
+    setStanding(u, 1000);
+  }
   for (const u of [x, y, x2, y2]) preset(u, "singles", 1500, 150);
   const run = (opponent) =>
     sqlAsync(
@@ -193,7 +196,7 @@ test("concurrent results for a shared player both apply", async () => {
   apply("singles", [alone], [y2]);
   const state = (u) =>
     sql(
-      `select round(mu::numeric,9),round(phi::numeric,9),round(sigma::numeric,9),matches from app.ranked_ratings where user_id='${u}' and format='singles';`,
+      `select round(mu::numeric,9),round(phi::numeric,9),round(sigma::numeric,9),matches,standing from app.ranked_ratings where user_id='${u}' and format='singles';`,
     );
   assert.equal(state(shared), state(alone));
 });
