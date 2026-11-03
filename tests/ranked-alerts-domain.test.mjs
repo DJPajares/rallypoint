@@ -182,3 +182,66 @@ test("the version moves only when what's known changes", () => {
   const other = settleRead(changed, "u2", read);
   assert.equal(other.version, changed.version + 1);
 });
+
+test("a court to book waits on everyone until someone claims it", () => {
+  const booking = (over = {}) => ({
+    state: "open",
+    bookerName: null,
+    you: false,
+    claimUntil: null,
+    bookBy: at(90),
+    session: null,
+    ...over,
+  });
+  const read = (over) => ({
+    search: search({ state: "matched" }),
+    invites: [],
+    match: match({
+      state: "confirmed",
+      myAnswer: "accepted",
+      booking: booking(over),
+      checkIn: null,
+    }),
+  });
+  assert.deepEqual(rankedAlerts(read({}), now), [
+    {
+      kind: "book",
+      key: "book:m1",
+      matchId: "m1",
+      claimed: false,
+      deadline: at(90),
+    },
+  ]);
+  assert.deepEqual(
+    rankedAlerts(
+      read({
+        state: "claimed",
+        you: true,
+        bookerName: "Me",
+        claimUntil: at(30),
+      }),
+      now,
+    ),
+    [
+      {
+        kind: "book",
+        key: "book:m1",
+        matchId: "m1",
+        claimed: true,
+        deadline: at(30),
+      },
+    ],
+  );
+  assert.deepEqual(
+    rankedAlerts(
+      read({ state: "claimed", bookerName: "Sam", claimUntil: at(30) }),
+      now,
+    ),
+    [],
+  );
+  assert.deepEqual(
+    rankedAlerts(read({ state: "booked", you: true, bookerName: "Me" }), now),
+    [],
+  );
+  assert.deepEqual(rankedAlerts(read({ bookBy: at(-1) }), now), []);
+});

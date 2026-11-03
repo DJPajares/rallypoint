@@ -89,8 +89,26 @@ export interface MatchView {
     side: "yours" | "theirs";
     accepted: boolean;
     you: boolean;
+    /** Checked themselves in to the booked session (WDL-424). */
+    checkedIn: boolean;
   }>;
   myAnswer: "accepted" | null;
+  /** Once everyone has accepted: booking the court (WDL-424). */
+  booking: MatchBooking | null;
+  /** Once booked: when players can check themselves in. */
+  checkIn: { opensAt: string; closesAt: string; you: boolean } | null;
+}
+
+export interface MatchBooking {
+  state: "open" | "claimed" | "booked";
+  bookerName: string | null;
+  /** You are the one booking (or who booked). */
+  you: boolean;
+  /** While claimed: when the booker's 48 hours end. */
+  claimUntil: string | null;
+  /** The match is let go if nobody books by then. */
+  bookBy: string;
+  session: { slug: string; startsAt: string; location: string } | null;
 }
 
 /** What the Ranked page reads. */

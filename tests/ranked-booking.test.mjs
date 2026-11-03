@@ -417,3 +417,30 @@ test("the booker can't cancel or remove players while the match is on", async ()
   assert.equal(removed.status, 409);
   assert.equal(await code(removed), "ranked_match_session");
 });
+
+test("the match card shows who is booking, then the session and check-in times", async () => {
+  const { a, b, id } = await confirmed();
+  let view = (await mine(b)).match;
+  assert.equal(view.booking.state, "open");
+  assert.equal(view.checkIn, null);
+  assert.equal((await claim(a, id)).status, 200);
+  view = (await mine(b)).match;
+  assert.equal(view.booking.state, "claimed");
+  assert.equal(view.booking.bookerName, a.name);
+  assert.equal(view.booking.you, false);
+  assert.ok(view.booking.claimUntil);
+  assert.equal((await mine(a)).match.booking.you, true);
+  assert.equal((await book(a, id)).status, 200);
+  view = (await mine(b)).match;
+  assert.equal(view.booking.state, "booked");
+  assert.ok(view.booking.session.slug);
+  assert.equal(view.booking.session.location, `Synthetic court ${nonce}`);
+  const start = Date.parse(view.booking.session.startsAt);
+  assert.equal(Date.parse(view.checkIn.opensAt), start - 30 * 60000);
+  assert.equal(Date.parse(view.checkIn.closesAt), start + 30 * 60000);
+  assert.equal(view.checkIn.you, false);
+  assert.deepEqual(
+    view.players.map((p) => p.checkedIn),
+    [false, false],
+  );
+});

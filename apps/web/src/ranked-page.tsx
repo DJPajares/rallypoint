@@ -13,6 +13,7 @@ import {
   CheckField,
   ChoiceTiles,
   Field,
+  Input,
   Notice,
   SelectField,
 } from "@rallypoint/ui";
@@ -24,6 +25,7 @@ import {
   searchWindows,
 } from "@rallypoint/domain/ranked-search";
 import type {
+  MatchBooking,
   MatchView,
   MySearch,
   SearchError,
@@ -326,8 +328,8 @@ function MatchCard({
         ? "This match ran out"
         : `${formatLabel(match.format)} match found`;
   const status =
-    match.state === "confirmed"
-      ? "Everyone’s in. Booking the court comes next; if it isn’t booked within 4 days, you’ll all search again."
+    match.state === "confirmed" && match.booking
+      ? bookingStatus(match.booking)
       : match.state === "expired"
         ? "Not everyone accepted in time. Nobody is penalised, and this clears within a minute."
         : match.myAnswer
@@ -400,6 +402,9 @@ function MatchCard({
         </p>
       ) : null}
       {answer.recovery}
+      {match.state === "confirmed" && match.booking ? (
+        <BookingPanel match={match} booking={match.booking} onDone={onDone} />
+      ) : null}
       {open && !match.myAnswer ? (
         <>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -431,6 +436,274 @@ function MatchCard({
         </>
       ) : null}
     </section>
+  );
+}
+
+function bookingStatus(booking: MatchBooking) {
+  if (booking.state === "booked")
+    return booking.you
+      ? "You booked the court. The session is set up for everyone."
+      : `${booking.bookerName ?? "A player"} booked the court. The session is set up for everyone.`;
+  if (booking.state === "claimed")
+    return booking.you
+      ? `You’re booking the court. Enter it by ${dateTimeLabel(booking.claimUntil ?? booking.bookBy)}, or hand it back.`
+      : `${booking.bookerName ?? "A player"} is booking the court.`;
+  return `Everyone’s in. One of you books the court by ${dateTimeLabel(booking.bookBy)}; if nobody does, you’ll all search again.`;
+}
+
+const pad = (n: number) => String(n).padStart(2, "0");
+/** A local date-time field value moved by some minutes. */
+function laterLocal(value: string, minutes: number) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  date.setMinutes(date.getMinutes() + minutes);
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/** Booking the court, then the session and check-in (WDL-424). */
+function BookingPanel({
+  match,
+  booking,
+  onDone,
+}: {
+  match: MatchView;
+  booking: MatchBooking;
+  onDone: (answer: unknown) => void;
+}) {
+  const claim = useMutation<unknown>(onDone);
+  const checkIn = useMutation<unknown>(onDone);
+  // Read once: whether the check-in window is open doesn't need to tick.
+  const [now] = useState(() => Date.now());
+  if (booking.state === "open")
+    return (
+      <div className="mt-4 grid gap-2">
+        {claim.error ? (
+          <p role="alert" className={errorClass}>
+            {claim.error}
+          </p>
+        ) : null}
+        {claim.recovery}
+        <div>
+          <Button
+            variant="primary"
+            disabled={claim.busy}
+            onClick={() =>
+              claim.run(`/api/ranked/matches/${match.id}/claim`, {})
+            }
+          >
+            {claim.busy ? "Claiming…" : "I’ll book the court"}
+          </Button>
+        </div>
+        <p className="m-0 text-sm text-muted-foreground">
+          Book it with the venue first, then enter the court, time and cost
+          here. Tapping this lets the others know you’re on it.
+        </p>
+      </div>
+    );
+  if (booking.state === "claimed")
+    return booking.you ? <BookingForm match={match} onDone={onDone} /> : null;
+  const session = booking.session;
+  const checkWindow = match.checkIn;
+  const opens = checkWindow ? Date.parse(checkWindow.opensAt) : 0;
+  const closes = checkWindow ? Date.parse(checkWindow.closesAt) : 0;
+  return (
+    <div className="mt-2 grid gap-3">
+      {session ? (
+        <dl className="m-0 grid gap-1 text-sm [&_dd]:m-0 [&_dt]:font-semibold">
+          <dt>Court</dt>
+          <dd>{session.location}</dd>
+          <dt>Starts</dt>
+          <dd>{dateTimeLabel(session.startsAt)}</dd>
+        </dl>
+      ) : null}
+      <ul
+        aria-label="Check-in"
+        className="m-0 grid list-none gap-1 p-0 text-sm"
+      >
+        {match.players.map((p, i) => (
+          <li key={p.profileId ?? i} className="flex items-center gap-2">
+            {p.checkedIn ? (
+              <CheckCircleIcon size={18} aria-hidden="true" />
+            ) : (
+              <ClockIcon size={18} aria-hidden="true" />
+            )}
+            {p.you ? "You" : p.name}: {p.checkedIn ? "Checked in" : "Not yet"}
+          </li>
+        ))}
+      </ul>
+      {checkIn.error ? (
+        <p role="alert" className={errorClass}>
+          {checkIn.error}
+        </p>
+      ) : null}
+      {checkIn.recovery}
+      <div className="flex flex-wrap items-center gap-2">
+        {session ? (
+          <Link
+            className={buttonClass({
+              variant: checkWindow?.you ? "primary" : "secondary",
+            })}
+            href={`/s/${session.slug}`}
+          >
+            Open the session
+          </Link>
+        ) : null}
+        {checkWindow && !checkWindow.you && now >= opens && now <= closes ? (
+          <Button
+            variant="primary"
+            disabled={checkIn.busy}
+            onClick={() =>
+              checkIn.run(`/api/ranked/matches/${match.id}/check-in`, {})
+            }
+          >
+            {checkIn.busy ? "Checking in…" : "Check in"}
+          </Button>
+        ) : null}
+      </div>
+      {checkWindow ? (
+        <p className="m-0 text-sm text-muted-foreground">
+          {checkWindow.you
+            ? "You’re checked in."
+            : now < opens
+              ? `Check yourself in here from ${dateTimeLabel(checkWindow.opensAt)}, up to 30 minutes after the start.`
+              : now > closes
+                ? "Check-in has closed."
+                : "Check yourself in when you arrive."}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function BookingForm({
+  match,
+  onDone,
+}: {
+  match: MatchView;
+  onDone: (answer: unknown) => void;
+}) {
+  const book = useMutation<unknown>(onDone);
+  const release = useMutation<unknown>(onDone);
+  const [location, setLocation] = useState(match.court?.name ?? "");
+  const [mapsLink, setMapsLink] = useState(match.court?.mapsUrl ?? "");
+  const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
+  const [cost, setCost] = useState("");
+  const [missing, setMissing] = useState<string | null>(null);
+  const missingRef = useRef<HTMLParagraphElement>(null);
+  const players = match.players.length;
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    const gap = !location.trim()
+      ? "Enter the court you booked."
+      : !start || !end
+        ? "Enter when the booking starts and ends."
+        : !cost.trim()
+          ? "Enter what the court costs in total (0 if it’s free)."
+          : null;
+    setMissing(gap);
+    if (gap) {
+      requestAnimationFrame(() => missingRef.current?.focus());
+      return;
+    }
+    book.run(`/api/ranked/matches/${match.id}/book`, {
+      location: location.trim(),
+      mapsLink: mapsLink.trim(),
+      startLocal: start,
+      endLocal: end,
+      cost: cost.trim(),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    });
+  }
+  return (
+    <form className="mt-4 grid gap-4" onSubmit={submit} noValidate>
+      <Field
+        id="booking-court"
+        label="Court"
+        help={`The court you booked in ${match.area.label}.`}
+      >
+        <Input
+          id="booking-court"
+          value={location}
+          maxLength={300}
+          autoComplete="off"
+          onChange={(e) => setLocation(e.target.value)}
+        />
+      </Field>
+      <Field id="booking-link" label="Maps link (optional)">
+        <Input
+          id="booking-link"
+          type="url"
+          inputMode="url"
+          value={mapsLink}
+          maxLength={500}
+          onChange={(e) => setMapsLink(e.target.value)}
+        />
+      </Field>
+      <Field id="booking-start" label="Starts">
+        <Input
+          id="booking-start"
+          type="datetime-local"
+          value={start}
+          onChange={(e) => {
+            setStart(e.target.value);
+            if (!end) setEnd(laterLocal(e.target.value, 60));
+          }}
+        />
+      </Field>
+      <Field id="booking-end" label="Ends">
+        <Input
+          id="booking-end"
+          type="datetime-local"
+          value={end}
+          onChange={(e) => setEnd(e.target.value)}
+        />
+      </Field>
+      <Field
+        id="booking-cost"
+        label="Court cost in total (SGD)"
+        help={`Split equally between the ${players} players and paid to you.`}
+      >
+        <Input
+          id="booking-cost"
+          inputMode="decimal"
+          value={cost}
+          maxLength={22}
+          onChange={(e) => setCost(e.target.value)}
+        />
+      </Field>
+      {missing ? (
+        <p ref={missingRef} tabIndex={-1} role="alert" className={errorClass}>
+          {missing}
+        </p>
+      ) : null}
+      {book.error ? (
+        <p role="alert" className={errorClass}>
+          {book.error}
+        </p>
+      ) : null}
+      {book.recovery}
+      {release.error ? (
+        <p role="alert" className={errorClass}>
+          {release.error}
+        </p>
+      ) : null}
+      {release.recovery}
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" variant="primary" disabled={book.busy}>
+          {book.busy ? "Setting up…" : "Set up the session"}
+        </Button>
+        <Button
+          type="button"
+          disabled={release.busy || book.busy}
+          onClick={() =>
+            release.run(`/api/ranked/matches/${match.id}/release`, {})
+          }
+        >
+          I can’t book
+        </Button>
+      </div>
+    </form>
   );
 }
 
