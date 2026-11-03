@@ -382,3 +382,37 @@ test("a loss by absence shows publicly only as a rank", async () => {
   const text = sql(`select api.read_profile('${b.profileId}')::text;`);
   assert.doesNotMatch(text, /no[-_ ]?show|absent|missed/i);
 });
+
+test("past the 48 hours, a dispute or a late report can't change what's settled", async () => {
+  const late = await booked();
+  await played(late.id, late.sessionId, [late.a, late.b]);
+  assert.equal((await report(late.a, late.id, true)).status, 200);
+  sql(
+    `update app.ranked_matches set confirm_by = now() - interval '1 minute' where id = '${late.id}';`,
+  );
+  assert.equal((await mine(late.b)).match.result.canAct, false);
+  const dispute = await answerResult(late.b, late.id, false);
+  assert.equal(dispute.status, 409);
+  assert.equal(await code(dispute), "result_settled");
+  assert.equal(outcome(late.id), "completed|-|1");
+  assert.equal(results(late.id), "1");
+  const quiet = await booked();
+  await played(quiet.id, quiet.sessionId, [quiet.a, quiet.b]);
+  run();
+  editDetails(quiet.sessionId, "endsAt", "-48 hours -1 minute");
+  assert.equal((await mine(quiet.a)).match.result.canAct, false);
+  const tardy = await report(quiet.a, quiet.id, true);
+  assert.equal(tardy.status, 409);
+  assert.equal(await code(tardy), "result_settled");
+  assert.equal(outcome(quiet.id), "void|unreported|-");
+});
+
+test("withdrawing after the cutoff counts as absent even after rejoining and checking in", async () => {
+  const { a, b, id, sessionId } = await booked();
+  await played(id, sessionId, [a, b]);
+  sql(`update app.ranked_match_players set no_show_at = now() - interval '1 hour'
+    where match_id = '${id}' and user_id = '${b.id}';`);
+  run();
+  assert.equal(outcome(id), "completed|absent|1");
+  assert.equal((await mine(b)).search.endReason, "match_missed");
+});
