@@ -171,17 +171,31 @@ test("idle time makes the next match move more", async () => {
 });
 
 test("concurrent results for a shared player both apply", async () => {
-  const [shared, x, y] = [
+  // Rows exist already, so the second call waits on the row lock rather than
+  // the first insert. Identical opponents make the order irrelevant, so the
+  // concurrent outcome must equal applying them one after the other.
+  const [shared, x, y, alone, x2, y2] = [
     await player("cs"),
     await player("cx"),
     await player("cy"),
+    await player("cs2"),
+    await player("cx2"),
+    await player("cy2"),
   ];
+  for (const u of [shared, alone]) preset(u, "singles", 1600, 120);
+  for (const u of [x, y, x2, y2]) preset(u, "singles", 1500, 150);
   const run = (opponent) =>
     sqlAsync(
       `select app.apply_ranked_result('${crypto.randomUUID()}','pickleball','singles',${ids([shared])},${ids([opponent])},now());`,
     );
   assert.deepEqual(await Promise.all([run(x), run(y)]), ["t", "t"]);
-  assert.equal(rating(shared).matches, 2);
+  apply("singles", [alone], [x2]);
+  apply("singles", [alone], [y2]);
+  const state = (u) =>
+    sql(
+      `select round(mu::numeric,9),round(phi::numeric,9),round(sigma::numeric,9),matches from app.ranked_ratings where user_id='${u}' and format='singles';`,
+    );
+  assert.equal(state(shared), state(alone));
 });
 
 const base = process.env.RALLYPOINT_TEST_URL ?? "http://127.0.0.1:3000";

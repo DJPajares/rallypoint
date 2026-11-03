@@ -1,6 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { rankLabel, rankedCategories } from "../packages/domain/src/ranked.ts";
+import {
+  rankLabel,
+  rankSpoken,
+  rankedCategories,
+} from "../packages/domain/src/ranked.ts";
 
 test("rankLabel names rank and format", () => {
   assert.equal(
@@ -31,4 +35,11 @@ test("rankedCategories drops unknown ranks and shapes", () => {
   );
   assert.deepEqual(rankedCategories(undefined), []);
   assert.deepEqual(rankedCategories({ ranks: [good] }), []);
+});
+
+test("rankSpoken says it is a rank, without the dot", () => {
+  assert.equal(
+    rankSpoken({ activity: "pickleball", format: "doubles", rank: "Gold" }),
+    "Doubles rank: Gold",
+  );
 });

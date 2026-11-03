@@ -40,7 +40,11 @@ import type {
 } from "@rallypoint/domain/badges";
 import type { Identity } from "@rallypoint/domain/contracts";
 import { levelLabel, levelStep } from "@rallypoint/domain/profile";
-import { rankLabel, rankedCategories } from "@rallypoint/domain/ranked";
+import {
+  rankLabel,
+  rankSpoken,
+  rankedCategories,
+} from "@rallypoint/domain/ranked";
 import type { RankedCategory } from "@rallypoint/domain/ranked";
 import type {
   MyProfile,
@@ -330,8 +334,8 @@ export function TitlePill({ title }: { title: unknown }) {
 
 /**
  * A person's ranks (D-26), e.g. "Gold · Doubles", one pill each. The words
- * carry the meaning; the trophy only decorates. Anything unrecognised shows
- * nothing.
+ * carry the meaning, spoken as "Doubles rank: Gold"; the trophy only
+ * decorates. Anything unrecognised shows nothing.
  */
 export function RankPills({ ranks }: { ranks: unknown }) {
   return rankedCategories(ranks).map((c) => (
@@ -341,7 +345,8 @@ export function RankPills({ ranks }: { ranks: unknown }) {
       className="ml-2 inline-flex max-w-full items-center gap-1 truncate rounded-full border border-border bg-muted px-2 py-0.5 align-middle text-xs leading-[1.6] font-semibold whitespace-nowrap text-foreground"
     >
       <TrophyIcon size={14} weight="fill" aria-hidden="true" />
-      {rankLabel(c)}
+      <span aria-hidden="true">{rankLabel(c)}</span>
+      <span className="sr-only">{rankSpoken(c)}</span>
     </span>
   ));
 }

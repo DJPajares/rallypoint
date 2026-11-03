@@ -45,3 +45,7 @@ const formatName = (format: string) => {
 /** What a rank pill says, e.g. "Gold · Doubles". */
 export const rankLabel = (c: RankedCategory) =>
   `${c.rank} · ${formatName(c.format)}`;
+
+/** What a screen reader hears for a pill, e.g. "Doubles rank: Gold". */
+export const rankSpoken = (c: RankedCategory) =>
+  `${formatName(c.format)} rank: ${c.rank}`;
