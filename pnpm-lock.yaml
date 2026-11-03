@@ -245,6 +245,9 @@ importers:
       '@rallypoint/api':
         specifier: workspace:*
         version: link:../api
+      '@rallypoint/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@rallypoint/domain':
         specifier: workspace:*
         version: link:../../packages/domain
