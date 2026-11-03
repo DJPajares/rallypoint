@@ -53,6 +53,10 @@ export interface SearchView {
     | "match_lapsed"
     | "withdrew_match"
     | "partner_withdrew_match"
+    | "match_won"
+    | "match_lost"
+    | "match_missed"
+    | "match_void"
     | null;
   /** Searching again after a match fell through, for a day afterwards. */
   returned: "declined" | "lapsed" | "unbooked" | "withdrawn" | null;
@@ -97,8 +101,23 @@ export interface MatchView {
   myAnswer: "accepted" | null;
   /** Once everyone has accepted: booking the court (WDL-424). */
   booking: MatchBooking | null;
+  /** Once booked: reporting who won (WDL-425). */
+  result: MatchResult | null;
   /** Once booked: when players can check themselves in. */
   checkIn: { opensAt: string; closesAt: string; you: boolean } | null;
+}
+
+export interface MatchResult {
+  /** "waiting" until check-in closes, 30 minutes after the start. */
+  state: "waiting" | "report" | "reported";
+  reportedBy: "yours" | "theirs" | null;
+  reportedWinner: "yours" | "theirs" | null;
+  /** No report by then and the match doesn't count. */
+  reportBy: string;
+  /** No answer by then and the report stands. */
+  confirmBy: string | null;
+  /** You checked in and it's your turn: report, or answer their report. */
+  canAct: boolean;
 }
 
 export interface MatchBooking {

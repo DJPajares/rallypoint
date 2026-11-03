@@ -132,6 +132,10 @@ function describe(alert: RankedAlert) {
       return alert.claimed
         ? `Enter the court and time for your ranked match by ${dateTimeLabel(alert.deadline)}`
         : `Book the court for your ranked match by ${dateTimeLabel(alert.deadline)}`;
+    case "result":
+      return alert.confirm
+        ? `Confirm the result of your ranked match by ${dateTimeLabel(alert.deadline)}`
+        : `Report who won your ranked match by ${dateTimeLabel(alert.deadline)}`;
     case "widen":
       return `No ranked match yet. Look across all of ${regionLabel(alert.regions)}? Your search runs until ${dateLabel(alert.deadline)}.`;
   }
@@ -232,6 +236,13 @@ export function RankedAlertList({
                     href="/ranked"
                   >
                     {alert.claimed ? "Enter the details" : "Book the court"}
+                  </Link>
+                ) : alert.kind === "result" ? (
+                  <Link
+                    className={buttonClass({ variant: "primary" })}
+                    href="/ranked"
+                  >
+                    {alert.confirm ? "Confirm the result" : "Report the result"}
                   </Link>
                 ) : alert.kind === "invite" ? (
                   <>

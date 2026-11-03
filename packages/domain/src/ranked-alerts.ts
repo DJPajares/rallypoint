@@ -29,6 +29,14 @@ export type RankedAlert =
       deadline: string;
     }
   | {
+      kind: "result";
+      key: string;
+      matchId: string;
+      /** The other side reported: confirm or dispute. Otherwise report. */
+      confirm: boolean;
+      deadline: string;
+    }
+  | {
       kind: "widen";
       key: string;
       searchId: string;
@@ -73,6 +81,25 @@ export function rankedAlerts(
         key: `book:${match.id}`,
         matchId: match.id,
         claimed: booking.state === "claimed",
+        deadline,
+      });
+  }
+  const result = match?.state === "confirmed" ? match.result : null;
+  if (match && result?.canAct) {
+    const confirm =
+      result.state === "reported" && result.reportedBy === "theirs";
+    const deadline =
+      result.state === "report"
+        ? result.reportBy
+        : confirm
+          ? result.confirmBy
+          : null;
+    if (deadline && open(deadline, now))
+      alerts.push({
+        kind: "result",
+        key: `result:${match.id}`,
+        matchId: match.id,
+        confirm,
         deadline,
       });
   }

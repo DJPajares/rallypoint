@@ -39,6 +39,14 @@ export function endedLabel(
       return "You withdrew from the match.";
     case "partner_withdrew_match":
       return `${partner} withdrew from the match.`;
+    case "match_won":
+      return "You won your last match.";
+    case "match_lost":
+      return "You lost your last match.";
+    case "match_missed":
+      return "You didn’t check in, so your last match counted as a loss.";
+    case "match_void":
+      return "Your last match didn’t count, so no ranks changed.";
     case "match_lapsed":
       return "The match ran out before everyone accepted.";
     case "unanswered":
