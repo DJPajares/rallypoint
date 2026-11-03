@@ -147,11 +147,15 @@ test("different areas, formats or windows never pair", async () => {
   search([a], { areas: ["tampines"] });
   search([b], { areas: ["bishan"] });
   assert.equal(run().proposed, 0);
-  sql(`update app.ranked_searches set state = 'cancelled' where state = 'searching';`);
+  sql(
+    `update app.ranked_searches set state = 'cancelled' where state = 'searching';`,
+  );
   search([c], { windows: ["weekday-mornings"] });
   search([d], { windows: ["weekend-evenings"] });
   assert.equal(run().proposed, 0);
-  sql(`update app.ranked_searches set state = 'cancelled' where state = 'searching';`);
+  sql(
+    `update app.ranked_searches set state = 'cancelled' where state = 'searching';`,
+  );
   search([e]);
   search([f, g], { format: "doubles" });
   assert.equal(run().proposed, 0);
@@ -159,11 +163,16 @@ test("different areas, formats or windows never pair", async () => {
 
 test("one side choosing times still pairs, on that side's first time", async () => {
   const [a, b] = [await person(), await person()];
-  search([a], { windows: ["weekend-mornings", "weekday-evenings"], age: "1 hour" });
+  search([a], {
+    windows: ["weekend-mornings", "weekday-evenings"],
+    age: "1 hour",
+  });
   search([b]);
   assert.equal(run().proposed, 1);
   assert.equal(
-    sql(`select time_window from app.ranked_matches where id = '${matchOf(a)}';`),
+    sql(
+      `select time_window from app.ranked_matches where id = '${matchOf(a)}';`,
+    ),
     "weekday-evenings",
   );
 });
@@ -285,7 +294,8 @@ test("a matched search can't be cancelled or replaced", async () => {
     assert.equal(r.status, 200);
   }
   assert.equal(run().proposed, 1);
-  const id = sql(`select id from app.ranked_searches where starter_id = '${a.id}'
+  const id =
+    sql(`select id from app.ranked_searches where starter_id = '${a.id}'
     and state = 'matched';`);
   const cancelled = await request(`/api/ranked/search/${id}/cancel`, a, {
     operationKey: key(),
@@ -346,14 +356,18 @@ test("everyone accepting confirms the match", async () => {
       [a.name, "theirs", true, false],
     ],
   );
-  assert.ok(sql(`select confirmed_at from app.ranked_matches where id = '${id}';`));
+  assert.ok(
+    sql(`select confirmed_at from app.ranked_matches where id = '${id}';`),
+  );
   assert.equal(stateOf(sa), "matched");
   assert.equal(stateOf(sb), "matched");
 });
 
 test("a decline cancels and puts the other side back first with its wait", async () => {
   const { a, b, sa, sb, id } = await paired();
-  const waited = sql(`select started_at from app.ranked_searches where id = '${sa}';`);
+  const waited = sql(
+    `select started_at from app.ranked_searches where id = '${sa}';`,
+  );
   const r = await answer(b, id, false);
   assert.equal(r.status, 200);
   const body = await r.json();
@@ -366,7 +380,9 @@ test("a decline cancels and puts the other side back first with its wait", async
     waited,
   );
   assert.equal(
-    sql(`select state || '|' || end_reason from app.ranked_matches where id = '${id}';`),
+    sql(
+      `select state || '|' || end_reason from app.ranked_matches where id = '${id}';`,
+    ),
     "cancelled|declined",
   );
   assert.equal(matchOf(a), "");
@@ -384,11 +400,15 @@ test("going back to the queue gives back the time spent waiting on answers", asy
   sql(`update app.ranked_searches set matched_at = matched_at - interval '47 hours'
     where match_id = '${id}';`);
   const before = Number(
-    sql(`select extract(epoch from ends_at) from app.ranked_searches where id = '${sa}';`),
+    sql(
+      `select extract(epoch from ends_at) from app.ranked_searches where id = '${sa}';`,
+    ),
   );
   assert.equal((await answer(b, id, false)).status, 200);
   const after = Number(
-    sql(`select extract(epoch from ends_at) from app.ranked_searches where id = '${sa}';`),
+    sql(
+      `select extract(epoch from ends_at) from app.ranked_searches where id = '${sa}';`,
+    ),
   );
   assert.ok(Math.abs(after - before - 47 * 3600) < 120, `${after - before}`);
 });
@@ -396,7 +416,9 @@ test("going back to the queue gives back the time spent waiting on answers", asy
 test("48 hours without every answer lets the proposal lapse", async () => {
   const { a, b, sa, sb, id } = await paired();
   assert.equal((await answer(a, id, true)).status, 200);
-  sql(`update app.ranked_matches set respond_by = now() - interval '1 minute' where id = '${id}';`);
+  sql(
+    `update app.ranked_matches set respond_by = now() - interval '1 minute' where id = '${id}';`,
+  );
   assert.equal((await mine(a)).match.state, "expired");
   const late = await answer(b, id, true);
   assert.equal(late.status, 409);
@@ -405,7 +427,9 @@ test("48 hours without every answer lets the proposal lapse", async () => {
   assert.equal(stateOf(sa), "searching");
   assert.equal(stateOf(sb), "cancelled");
   assert.equal(
-    sql(`select state || '|' || end_reason from app.ranked_matches where id = '${id}';`),
+    sql(
+      `select state || '|' || end_reason from app.ranked_matches where id = '${id}';`,
+    ),
     "cancelled|expired",
   );
   assert.equal(matchOf(a), "");
@@ -441,7 +465,9 @@ test("widening needs three days and only happens on request", async () => {
   let r = await widen(a, sa);
   assert.equal(r.status, 409);
   assert.equal(await code(r), "cannot_widen");
-  sql(`update app.ranked_searches set started_at = started_at - interval '1 day' where id = '${sa}';`);
+  sql(
+    `update app.ranked_searches set started_at = started_at - interval '1 day' where id = '${sa}';`,
+  );
   view = (await mine(a)).search;
   assert.equal(view.canWiden, true);
   assert.deepEqual(view.regions, ["East"]);
