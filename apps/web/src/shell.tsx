@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { CalendarDotsIcon } from "@phosphor-icons/react/dist/csr/CalendarDots";
 import { HouseIcon } from "@phosphor-icons/react/dist/csr/House";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
-import { ReceiptIcon } from "@phosphor-icons/react/dist/csr/Receipt";
+import { TrophyIcon } from "@phosphor-icons/react/dist/csr/Trophy";
 import { UsersThreeIcon } from "@phosphor-icons/react/dist/csr/UsersThree";
 import type { Icon } from "@phosphor-icons/react";
 import { useAuth } from "./auth-context";
@@ -20,7 +20,7 @@ const icons: Record<Destination["key"], Icon> = {
   home: HouseIcon,
   sessions: CalendarDotsIcon,
   groups: UsersThreeIcon,
-  dues: ReceiptIcon,
+  ranked: TrophyIcon,
 };
 function PageFocus() {
   const pathname = usePathname();

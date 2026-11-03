@@ -6,6 +6,7 @@ import { BellIcon } from "@phosphor-icons/react/dist/csr/Bell";
 import { ListIcon } from "@phosphor-icons/react/dist/csr/List";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { MoonIcon } from "@phosphor-icons/react/dist/csr/Moon";
+import { ReceiptIcon } from "@phosphor-icons/react/dist/csr/Receipt";
 import { SignInIcon } from "@phosphor-icons/react/dist/csr/SignIn";
 import { SunIcon } from "@phosphor-icons/react/dist/csr/Sun";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
@@ -124,6 +125,13 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
           <span>Search</span>
           <span className={fabIcon} aria-hidden="true">
             <MagnifyingGlassIcon size={20} />
+          </span>
+        </Link>,
+        // What you owe across sessions; the bottom bar keeps Ranked instead.
+        <Link key="dues" className={fabAction} href="/dues" onClick={collapse}>
+          <span>Dues</span>
+          <span className={fabIcon} aria-hidden="true">
+            <ReceiptIcon size={20} />
           </span>
         </Link>,
         <button
