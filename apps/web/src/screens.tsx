@@ -24,6 +24,7 @@ import { useApi } from "./use-api";
 import type { GroupSummary, Identity } from "@rallypoint/domain/contracts";
 import { EditGroupForm } from "./group-edit";
 import { HomeInvites } from "./invites";
+import { RankedAlertList } from "./ranked-alerts";
 import { feeStanding } from "@rallypoint/domain/registration";
 import { SplitFee } from "./split-fee";
 import type {
@@ -197,6 +198,7 @@ export function HomeDashboard() {
         // With nothing coming up, the empty card offers New session instead.
         onCreate={next ? openCreate : undefined}
       />
+      <RankedAlertList />
       {identity.error ? (
         <Notice retry={identity.retry}>{identity.error}</Notice>
       ) : null}
