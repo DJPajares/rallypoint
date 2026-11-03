@@ -20,7 +20,8 @@
     "./courts": "./src/courts.ts",
     "./ranked-search": "./src/ranked-search.ts",
     "./ranked-alerts": "./src/ranked-alerts.ts",
-    "./ranked-booking": "./src/ranked-booking.ts"
+    "./ranked-booking": "./src/ranked-booking.ts",
+    "./discovery": "./src/discovery.ts"
   },
   "scripts": {
     "lint": "oxlint src",

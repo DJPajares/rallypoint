@@ -76,6 +76,8 @@ export interface MyProfile {
   name: string;
   nameIsCustom: boolean;
   activities: ProfileActivity[];
+  /** Search can find this profile by name (D-27). Public unless turned off. */
+  discoverable?: boolean;
 }
 
 const maxNameLength = 80;
