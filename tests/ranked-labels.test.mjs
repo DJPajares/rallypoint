@@ -27,3 +27,17 @@ test("an ended search says how it ended", () => {
     "It ran out without a match.",
   );
 });
+
+test("an ended search says how the match went, never naming a no-show", () => {
+  const say = (endReason) => endedLabel({ endReason, partner: null });
+  assert.equal(say("match_won"), "You won your last match.");
+  assert.equal(say("match_lost"), "You lost your last match.");
+  assert.equal(
+    say("match_missed"),
+    "You didn’t check in, so your last match counted as a loss.",
+  );
+  assert.equal(
+    say("match_void"),
+    "Your last match didn’t count, so no ranks changed.",
+  );
+});

@@ -26,6 +26,7 @@ import {
 } from "@rallypoint/domain/ranked-search";
 import type {
   MatchBooking,
+  MatchResult,
   MatchView,
   MySearch,
   SearchError,
@@ -561,6 +562,9 @@ function BookingPanel({
           </Button>
         ) : null}
       </div>
+      {match.result ? (
+        <ResultPanel match={match} result={match.result} onDone={onDone} />
+      ) : null}
       {checkWindow ? (
         <p className="m-0 text-sm text-muted-foreground">
           {checkWindow.you
@@ -571,6 +575,116 @@ function BookingPanel({
                 ? "Check-in has closed."
                 : "Check yourself in when you arrive."}
         </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** Who won: one side reports, the other confirms or disputes (WDL-425). */
+function ResultPanel({
+  match,
+  result,
+  onDone,
+}: {
+  match: MatchView;
+  result: MatchResult;
+  onDone: (answer: unknown) => void;
+}) {
+  const send = useMutation<unknown>(onDone);
+  if (result.state === "waiting") return null;
+  const singles = match.format === "singles";
+  const we = singles ? "I" : "We";
+  const error = send.error ? (
+    <p role="alert" className={errorClass}>
+      {send.error}
+    </p>
+  ) : null;
+  if (result.state === "report")
+    return result.canAct ? (
+      <div className="grid gap-2 rounded-md bg-muted p-3">
+        <p className="m-0 font-semibold">Who won?</p>
+        {error}
+        {send.recovery}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="primary"
+            disabled={send.busy}
+            onClick={() =>
+              send.run(`/api/ranked/matches/${match.id}/report`, { won: true })
+            }
+          >
+            {we} won
+          </Button>
+          <Button
+            disabled={send.busy}
+            onClick={() =>
+              send.run(`/api/ranked/matches/${match.id}/report`, {
+                won: false,
+              })
+            }
+          >
+            {we} lost
+          </Button>
+        </div>
+        <p className="m-0 text-sm text-muted-foreground">
+          Report by {dateTimeLabel(result.reportBy)}. The other side confirms;
+          if nobody reports, the match doesn’t count.
+        </p>
+      </div>
+    ) : (
+      <p className="m-0 text-sm text-muted-foreground">
+        Waiting for a result. Only players who checked in can report it.
+      </p>
+    );
+  const theirs = result.reportedBy === "theirs";
+  const youWon = result.reportedWinner === "yours";
+  if (!theirs)
+    return (
+      <p className="m-0 text-sm">
+        You reported a {youWon ? "win" : "loss"}. If the other side doesn’t
+        answer by {dateTimeLabel(result.confirmBy ?? result.reportBy)}, it
+        stands.
+      </p>
+    );
+  return (
+    <div className="grid gap-2 rounded-md bg-muted p-3">
+      <p className="m-0 font-semibold">
+        They say {youWon ? (singles ? "you won" : "your side won") : "they won"}
+        .
+      </p>
+      {error}
+      {send.recovery}
+      {result.canAct ? (
+        <>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="primary"
+              disabled={send.busy}
+              onClick={() =>
+                send.run(`/api/ranked/matches/${match.id}/answer-result`, {
+                  agree: true,
+                })
+              }
+            >
+              Confirm
+            </Button>
+            <Button
+              disabled={send.busy}
+              onClick={() =>
+                send.run(`/api/ranked/matches/${match.id}/answer-result`, {
+                  agree: false,
+                })
+              }
+            >
+              Dispute
+            </Button>
+          </div>
+          <p className="m-0 text-sm text-muted-foreground">
+            Answer by {dateTimeLabel(result.confirmBy ?? result.reportBy)}; if
+            you don’t, it stands. A dispute means the match doesn’t count for
+            anyone.
+          </p>
+        </>
       ) : null}
     </div>
   );

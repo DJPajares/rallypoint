@@ -245,3 +245,74 @@ test("a court to book waits on everyone until someone claims it", () => {
   );
   assert.deepEqual(rankedAlerts(read({ bookBy: at(-1) }), now), []);
 });
+
+test("a result waits on whoever can report or answer it", () => {
+  const read = (result) => ({
+    search: search({ state: "matched" }),
+    invites: [],
+    match: match({
+      state: "confirmed",
+      myAnswer: "accepted",
+      booking: {
+        state: "booked",
+        bookerName: "Me",
+        you: true,
+        claimUntil: null,
+        bookBy: at(90),
+        session: null,
+      },
+      checkIn: null,
+      result: {
+        state: "report",
+        reportedBy: null,
+        reportedWinner: null,
+        reportBy: at(48),
+        confirmBy: null,
+        canAct: true,
+        ...result,
+      },
+    }),
+  });
+  assert.deepEqual(rankedAlerts(read({}), now), [
+    {
+      kind: "result",
+      key: "result:m1",
+      matchId: "m1",
+      confirm: false,
+      deadline: at(48),
+    },
+  ]);
+  assert.deepEqual(
+    rankedAlerts(
+      read({
+        state: "reported",
+        reportedBy: "theirs",
+        reportedWinner: "theirs",
+        confirmBy: at(20),
+      }),
+      now,
+    ),
+    [
+      {
+        kind: "result",
+        key: "result:m1",
+        matchId: "m1",
+        confirm: true,
+        deadline: at(20),
+      },
+    ],
+  );
+  for (const over of [
+    { canAct: false },
+    { state: "waiting" },
+    {
+      state: "reported",
+      reportedBy: "yours",
+      reportedWinner: "yours",
+      confirmBy: at(20),
+      canAct: false,
+    },
+    { reportBy: at(-1) },
+  ])
+    assert.deepEqual(rankedAlerts(read(over), now), [], JSON.stringify(over));
+});
