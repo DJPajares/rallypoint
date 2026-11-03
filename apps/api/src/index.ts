@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { badges } from "./badges";
 import { cohosts } from "./cohosts";
+import { courts } from "./courts";
 import { groups } from "./groups";
 import { invites } from "./invites";
 import { search } from "./search";
@@ -142,6 +143,7 @@ app.route("/", payments);
 app.route("/", badges);
 app.route("/", profiles);
 app.route("/", activities);
+app.route("/", courts);
 app.route("/", cohosts);
 app.route("/", groups);
 app.route("/", invites);
