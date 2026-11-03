@@ -4,6 +4,7 @@
 
 import { matchActivity, skillLevels } from "./activities.ts";
 import type { Activity, SkillLevel } from "./activities.ts";
+import type { RankedCategory } from "./ranked.ts";
 
 export { skillLevels };
 export type { SkillLevel };
@@ -66,6 +67,8 @@ export interface PublicProfile {
   badges: Array<{ key: string; level: number }>;
   stats: { played: number; hosted: number; groups: number };
   activities: ProfileActivity[];
+  /** Ranked categories with a rank (D-26); absent from an older server. */
+  ranks?: RankedCategory[];
 }
 
 export interface MyProfile {

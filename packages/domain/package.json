@@ -15,7 +15,8 @@
     "./game-day": "./src/game-day.ts",
     "./run-again": "./src/run-again.ts",
     "./my-sessions": "./src/my-sessions.ts",
-    "./profile": "./src/profile.ts"
+    "./profile": "./src/profile.ts",
+    "./ranked": "./src/ranked.ts"
   },
   "scripts": {
     "lint": "oxlint src",
