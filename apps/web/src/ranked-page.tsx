@@ -30,6 +30,7 @@ import type {
   SearchInvite,
   SearchView,
 } from "@rallypoint/domain/ranked-search";
+import { regionLabel } from "./ranked-labels";
 import { ShareButton } from "./share-button";
 import { ListSkeleton } from "./skeletons";
 import { useApi } from "./use-api";
@@ -51,10 +52,6 @@ const dateTimeLabel = (value: string) =>
     hour: "numeric",
     minute: "2-digit",
   });
-const regionLabel = (regions: string[]) =>
-  regions.length > 1
-    ? `the ${regions.join(" and ")} regions`
-    : `the ${regions[0] ?? ""} region`;
 const formatLabel = (format: string) =>
   format === "doubles" ? "Doubles" : "Singles";
 const windowLabel = (key: string) =>

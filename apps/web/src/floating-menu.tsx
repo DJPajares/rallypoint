@@ -13,6 +13,7 @@ import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import type { Identity } from "@rallypoint/domain/contracts";
 import { useAuth } from "./auth-context";
 import { RingAvatar } from "./badges";
+import { RankedAlertList, useRankedAlerts } from "./ranked-alerts";
 import { useScrollingDown } from "./frame";
 import { useAppearance } from "./theme";
 import { useApi } from "./use-api";
@@ -58,6 +59,8 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
   const expanded = openAt === pathname;
   const [sheet, setSheet] = useState<"updates" | null>(null);
   const { appearance, toggle: toggleAppearance } = useAppearance();
+  // Ranked items waiting on you (WDL-423): counted on the button.
+  const waiting = useRankedAlerts().alerts.length;
   const trigger = useRef<HTMLButtonElement>(null);
   const wrapper = useRef<HTMLDivElement>(null);
   const [scrollingDown, reveal] = useScrollingDown();
@@ -140,7 +143,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
           className={fabAction}
           onClick={() => openSheet("updates")}
         >
-          <span>Updates</span>
+          <span>{waiting ? `Updates (${waiting})` : "Updates"}</span>
           <span className={fabIcon} aria-hidden="true">
             <BellIcon size={20} />
           </span>
@@ -195,10 +198,16 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
         <button
           ref={trigger}
           type="button"
-          className={iconButtonClass()}
+          className={cn(iconButtonClass(), "relative")}
           aria-expanded={expanded}
           aria-controls="quick-actions"
-          aria-label={expanded ? "Close menu" : "Open menu"}
+          aria-label={
+            expanded
+              ? "Close menu"
+              : waiting
+                ? `Open menu, ${waiting} waiting`
+                : "Open menu"
+          }
           onClick={() =>
             expanded ? collapseAndRestoreFocus() : setOpenAt(pathname)
           }
@@ -211,7 +220,18 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
           >
             {expanded ? <XIcon size={22} /> : <ListIcon size={22} />}
           </span>
+          {waiting && !expanded ? (
+            <span
+              className="absolute -top-1 -right-1 min-w-5 rounded-full bg-primary px-1 text-center text-xs leading-5 font-bold text-primary-foreground"
+              aria-hidden="true"
+            >
+              {waiting}
+            </span>
+          ) : null}
         </button>
+        <span role="status" className="sr-only">
+          {waiting ? `${waiting} waiting` : ""}
+        </span>
         {expanded ? (
           <div
             id="quick-actions"
@@ -236,14 +256,19 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
         onClose={() => setSheet(null)}
         title="Updates"
       >
-        <EmptyState
-          icon={<BellIcon size={32} />}
-          title="Updates are coming"
-          action={null}
-        >
-          Changes to your sessions will collect here in a later release. Until
-          then, a session’s own page always shows its latest status.
-        </EmptyState>
+        <RankedAlertList
+          heading={false}
+          empty={
+            <EmptyState
+              icon={<BellIcon size={32} />}
+              title="Nothing waiting on you"
+              action={null}
+            >
+              Ranked matches, invites and prompts that need you show here and on
+              Home. A session’s own page always shows its latest status.
+            </EmptyState>
+          }
+        />
       </Sheet>
     </>
   );
