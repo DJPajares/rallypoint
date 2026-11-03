@@ -83,3 +83,25 @@
 - [ ] Add an "Implemented for review" note under D-26 context in `PRD.md` (one paragraph, builder's calls listed).
 - [ ] Run the full suite `RALLYPOINT_TEST_URL=http://127.0.0.1:3100 pnpm test` and `pnpm check`; record results.
 - [ ] Commit `docs(prd): note WDL-420 implementation for review`, push, open the PR, move WDL-420 to In Review.
+
+---
+
+## Amendment, 2026-11-03: medals, stars and calibration
+
+The owner replaced the five ranks with Dota-2-inspired medals (design "Rating and medals"). Tasks 1–4 stand; Task 5 replaces the rank layer. Global Constraints change as follows: the hidden Glicko-2 rating is now the **skill**; a second hidden integer, the **standing**, is what players climb; nothing numeric is shown to anyone, owner included; the word "MMR" is never used.
+
+### Task 5: Standing, medals and calibration
+
+**Files:**
+- Create: `supabase/migrations/20261103092000_ranked_medals.sql`
+- Modify: `packages/domain/src/ranked.ts`, `apps/web/src/badges.tsx`, `tests/ranked.test.mjs`, `tests/ranked-domain.test.mjs`
+
+**Interfaces:**
+- Produces: column `app.ranked_ratings.standing integer` (null while calibrating); `app.ranked_target(p_mu double precision) returns integer` = max(0, round(2.5 × (display − 1000))); `app.ranked_next_standing(p_standing integer, p_matches integer, p_mu double precision, p_won boolean) returns integer` (null below 5 matches; at 5, min(target, 1499); after, max(0, standing ± 25 + clamp(round((target − standing) / 20), −10, 10))); `app.ranked_medal(p_standing integer) returns jsonb` `{"medal","stars"}` (Rookie, Contender, Challenger, Veteran, Elite at 500 each, stars = floor(standing mod 500 / 100) + 1; Master from 2500 with stars null); `app.visible_ranks` returns `{"activity","format","medal","stars"}` for calibrated categories; `app.my_ranks(p_user uuid) returns jsonb` adds `{"activity","format","calibrating":n}` for 1–4 matches, used by `api.read_my_badges`; `app.ranked_rank` dropped.
+- Domain: `type MedalName = "Rookie" | "Contender" | "Challenger" | "Veteran" | "Elite" | "Master"`; `RankedCategory { activity; format; medal: MedalName; stars: number | null }`; `CalibratingCategory { activity; format; calibrating: number }`; `rankedCategories`, `calibratingCategories`, `rankLabel` ("Veteran ★★★ · Doubles", "Master · Doubles"), `rankSpoken` ("Doubles: Veteran, 3 of 5 stars", "Doubles: Master"), `calibratingLabel` ("Calibrating · 3 of 5").
+
+- [ ] **Step 1: Failing tests:** `medals and stars follow the standing` (0 Rookie 1; 499 Rookie 5; 500 Contender 1; 1499 Challenger 5; 2499 Elite 5; 2500 Master null); `calibration places no higher than Challenger 5`; `after calibration a match moves about 25, leaning toward skill` (+25/−25 at target, +35/−15 well below target, floor 0); `the owner sees calibration and nobody else does`; profile secrets include `"standing"`; domain label/spoken/calibrating tests.
+- [ ] **Step 2: Run** — expect FAIL.
+- [ ] **Step 3: Implement** the migration (backfill calibrated rows to min(target, 1499)) and domain/UI.
+- [ ] **Step 4: Run** focused tests, then the full suite and `pnpm check`; browser check at 375px.
+- [ ] **Step 5: Commit** `feat(ranked): medals, stars and calibration (WDL-420)`.

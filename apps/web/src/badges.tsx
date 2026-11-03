@@ -8,7 +8,7 @@ import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
 import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
 import { SignOutIcon } from "@phosphor-icons/react/dist/csr/SignOut";
-import { TrophyIcon } from "@phosphor-icons/react/dist/csr/Trophy";
+import { MedalIcon } from "@phosphor-icons/react/dist/csr/Medal";
 import {
   badgeAbout,
   badgeCatalog,
@@ -41,11 +41,13 @@ import type {
 import type { Identity } from "@rallypoint/domain/contracts";
 import { levelLabel, levelStep } from "@rallypoint/domain/profile";
 import {
+  calibratingCategories,
+  calibratingLabel,
+  formatName,
   rankLabel,
   rankSpoken,
   rankedCategories,
 } from "@rallypoint/domain/ranked";
-import type { RankedCategory } from "@rallypoint/domain/ranked";
 import type {
   MyProfile,
   ProfileActivity,
@@ -333,9 +335,9 @@ export function TitlePill({ title }: { title: unknown }) {
 }
 
 /**
- * A person's ranks (D-26), e.g. "Gold · Doubles", one pill each. The words
- * carry the meaning, spoken as "Doubles rank: Gold"; the trophy only
- * decorates. Anything unrecognised shows nothing.
+ * A person's medals (D-26), e.g. "Veteran ★★★ · Doubles", one pill each.
+ * Read aloud as "Doubles: Veteran, 3 of 5 stars"; the icon only decorates.
+ * Anything unrecognised shows nothing.
  */
 export function RankPills({ ranks }: { ranks: unknown }) {
   return rankedCategories(ranks).map((c) => (
@@ -344,7 +346,7 @@ export function RankPills({ ranks }: { ranks: unknown }) {
       data-slot="rank-pill"
       className="ml-2 inline-flex max-w-full items-center gap-1 truncate rounded-full border border-border bg-muted px-2 py-0.5 align-middle text-xs leading-[1.6] font-semibold whitespace-nowrap text-foreground"
     >
-      <TrophyIcon size={14} weight="fill" aria-hidden="true" />
+      <MedalIcon size={14} weight="fill" aria-hidden="true" />
       <span aria-hidden="true">{rankLabel(c)}</span>
       <span className="sr-only">{rankSpoken(c)}</span>
     </span>
@@ -352,14 +354,19 @@ export function RankPills({ ranks }: { ranks: unknown }) {
 }
 
 /**
- * Ranked play, in a card of its own under Plays (D-26): each ranked
- * activity with its ranks. Kept apart from the self-rated levels, which
- * ranked results never change. Nothing shows until a rank is earned.
+ * Ranked play, in a card of its own under Plays (D-26): each activity with
+ * its medals. Kept apart from the self-rated levels, which ranked results
+ * never change. Only the owner's read carries calibration progress, so
+ * visitors see nothing until a first medal.
  */
-function Ranked({ ranks }: { ranks: RankedCategory[] }) {
+function Ranked({ ranks }: { ranks: unknown }) {
   const { catalog } = useActivities();
-  if (!ranks.length) return null;
-  const activities = [...new Set(ranks.map((c) => c.activity))];
+  const medals = rankedCategories(ranks);
+  const calibrating = calibratingCategories(ranks);
+  const activities = [
+    ...new Set([...medals, ...calibrating].map((c) => c.activity)),
+  ];
+  if (!activities.length) return null;
   return (
     <section aria-labelledby="ranked-title">
       <h2 id="ranked-title" className="mt-8 mb-3">
@@ -384,7 +391,17 @@ function Ranked({ ranks }: { ranks: RankedCategory[] }) {
                   {activity?.name ?? key}
                 </span>
                 <span className="inline-flex flex-wrap gap-1.5">
-                  <RankPills ranks={ranks.filter((c) => c.activity === key)} />
+                  <RankPills ranks={medals.filter((c) => c.activity === key)} />
+                  {calibrating
+                    .filter((c) => c.activity === key)
+                    .map((c) => (
+                      <span
+                        key={c.format}
+                        className="inline-flex items-center rounded-full border border-dashed border-border px-2 py-0.5 text-xs leading-[1.6] font-semibold whitespace-nowrap text-muted-foreground"
+                      >
+                        {formatName(c.format)} · {calibratingLabel(c)}
+                      </span>
+                    ))}
                 </span>
               </span>
             </li>
@@ -808,7 +825,8 @@ function ProfileView({
   badges: ShelfBadge[];
   stats: BadgesView["stats"];
   activities: ProfileActivity[] | null;
-  ranks: RankedCategory[];
+  /** The read's raw ranks; anything unrecognised shows nothing. */
+  ranks: unknown;
   owner?: OwnerParts;
 }) {
   const shelf = owner ? badges : badges.filter((b) => b.level > 0);
@@ -992,7 +1010,7 @@ export function ProfilePage() {
         badges={shelf}
         stats={view?.stats ?? { played: 0, hosted: 0, groups: 0 }}
         activities={profile.data?.profile.activities ?? null}
-        ranks={rankedCategories(view?.ranks)}
+        ranks={view?.ranks}
         owner={{
           profileId: identity.data?.profileId ?? null,
           status,
@@ -1141,7 +1159,7 @@ export function PersonProfilePage() {
         badges={shelf}
         stats={profile.stats}
         activities={profile.activities}
-        ranks={rankedCategories(profile.ranks)}
+        ranks={profile.ranks}
       />
     </>
   );

@@ -245,7 +245,7 @@ export interface RegistrationView {
     attendance?: SeatAttendance[];
     /** The badge this person chose to show, while it is still earned. */
     title?: RosterTitle | null;
-    /** Ranks in this session's activity (D-26); empty when unranked. */
+    /** Medals in this session's activity (D-26); empty when none. */
     ranks?: RankedCategory[];
     /** Organizers/co-hosts only; whether this party can be removed right now (P-28). */
     removable?: boolean;

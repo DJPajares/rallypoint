@@ -40,6 +40,7 @@ This replaces WDL-406's co-player vouching idea. The owner chose an automated wi
 - A player can win by lying, by not checking an opponent in, or by farming a friend.
 - One person ends up in two matches at once.
 - "No-show" appears on anyone's public profile.
+- Anyone, owner included, can see or work out a hidden number.
 - The rank and the self-rating blur into one number.
 
 ## Decisions made with the owner
@@ -86,14 +87,15 @@ This replaces WDL-406's co-player vouching idea. The owner chose an automated wi
 - Because check-in is self-service, the booker can't win by not checking someone in. Disputes are only about who won a match that was played.
 - Publicly a no-show is just a loss; "no-show" is never shown.
 
-### Rating and ranks
+### Rating and medals
 
-- The rating goes up on a win and down on a loss; beating a stronger opponent gains more, losing to a weaker one costs more.
-- Doubles: a team's strength is the average of its two players; both partners move.
-- New or long-inactive players move faster until the engine is confident.
-- **Unranked** until 5 confirmed matches in that category, then a rank: **Bronze, Silver, Gold, Platinum, Diamond**. The number stays hidden from everyone.
-- The self-rating may at most influence who an Unranked player meets first; it never sets the rating.
-- **Ranks are public** (owner, 2026-11-03): shown on the public profile and beside the name on rosters, e.g. "Gold · Doubles".
+Amended 2026-11-03 (owner: "we have to establish our rating system as early as now"; Dota 2's ranking as inspiration only, "don't follow the exact ranking system"). Two hidden numbers per player per category; people only ever see a medal and its stars.
+
+- **Skill** (hidden, for matchmaking): Glicko-2. A win raises it and a loss lowers it; beating a stronger opponent gains more. Doubles use each side's average; both partners move. New or long-inactive players move faster until the engine is confident. The self-rating may at most influence who an uncalibrated player meets first; it never sets the skill.
+- **Standing** (hidden, the thing you climb): after calibration it moves about 25 per match, a little more toward your skill when your medal is behind or ahead of it, and never below 0. It never drops while you're away. It is never shown, not even to its owner, and the interface never names it.
+- **Calibration**: the first 5 confirmed matches in a category. The owner sees "Calibrating · 3 of 5"; others see nothing. After the fifth, the standing starts from the skill, capped at the top of Challenger, so a lucky streak can't place anyone high.
+- **Medals** (owner-chosen names): **Rookie, Contender, Challenger, Veteran, Elite**, each with **5 stars**, then **Master** with no stars. Owner chose stars over pips: "it is a skill-based rating anyway".
+- **Public** (owner, 2026-11-03): the medal and stars show on the profile and beside the name on rosters, e.g. "Veteran ★★★ · Doubles". No number anywhere, and the word "MMR" is not used.
 
 ### Alerts
 
@@ -104,7 +106,7 @@ This replaces WDL-406's co-player vouching idea. The owner chose an automated wi
 ## The work, as separate tasks (to be drafted in Linear after approval)
 
 1. **Areas and courts**: planning-area catalog with everyday names; shared court list.
-2. **Rating engine** (large): categories per (activity, format); win/loss updates; doubles averaging; confidence for new/inactive players; Unranked → five ranks. Buildable and testable with synthetic results before matching exists.
+2. **Rating engine** (large): categories per (activity, format); hidden skill (win/loss updates, doubles averaging, confidence for new/inactive players); hidden standing with calibration; medals and stars. Buildable and testable with synthetic results before matching exists.
 3. **Ranked search**: start, cancel, 7-day expiry; format, areas, courts, times; doubles partner invite and acceptance.
 4. **Matchmaking engine** (large): scheduled pairing on the existing per-minute scheduler with bounded work per run; rank widening; longest-wait priority; 7-day repeat block; never double-matching under concurrent runs; proposals; accept/decline/expiry and requeue.
 5. **In-app alerts**: Home alert and menu count.
@@ -126,13 +128,12 @@ Order: 1 → 2 → 3 → 4 → (5 and 6 in parallel) → 7.
 
 - **Confirmed results are final.** Nothing voids a result once confirmed (the 48-hour window is the only way out), so ratings update incrementally and the rating engine needs no history replay. Task 2's "recalculation when a confirmed result is later voided" is dropped.
 - **Nothing hangs forever.** A match that isn't booked within 4 days of everyone accepting is cancelled with no penalty and the players return to the front of the queue. A match nobody reports within 48 hours after its session ends is void. While a player is in a pending match they can't start another search.
-- **Unranked players.** Everyone gets a hidden starting rating; matching always uses the hidden rating, so Unranked and ranked players can meet. For an Unranked player's first search only, the self-rating picks the starting band (Beginner → Bronze, Intermediate → Silver–Gold, Advanced → Platinum; no rating → Silver–Gold). It never changes the rating itself.
+- **Uncalibrated players.** Everyone gets a hidden starting skill; matching always uses the hidden skill, so calibrating and calibrated players can meet. For an uncalibrated player's first search only, the self-rating picks the starting skill band (Beginner low, Intermediate or none middle, Advanced high). It never changes the skill itself.
 - **Doubles teams search at their average** hidden rating, and widening is measured from it.
 
 ## Left to the builder
 
-- The exact rating method. **Builder's call (recommended): Glicko-2**, with a starting rating and confidence that fit "faster for new players"; rank thresholds tuned so the five ranks spread sensibly.
-- Where Unranked categories show on a profile (recommend: only ranked categories show; nothing for Unranked).
+- The exact skill method. **Builder's call: Glicko-2.** The standing scale, step sizes and how the standing leans toward the skill are the builder's, recorded in the PRD.
 - Data model, scheduling cadence within the existing cron, and how replay after a voided result is stored.
 - Exact wording and screen layout, following D-15/D-17 and shadcn components (D-24/D-25).
 - How the planning-area list is sourced and stored (URA names are public).
