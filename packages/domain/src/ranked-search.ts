@@ -43,7 +43,7 @@ export interface SearchView {
   id: string;
   format: SearchFormat;
   state: "waiting_partner" | "searching" | "ended";
-  endReason: "expired" | "cancelled" | "declined" | null;
+  endReason: "expired" | "unanswered" | "cancelled" | "declined" | null;
   /** When a waiting invite lapses, or when searching stops. */
   endsAt: string;
   role: "starter" | "partner";

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -187,7 +187,9 @@ function EndedSearch({
       ? `${search.partner?.name ?? "Your partner"} declined.`
       : search.endReason === "cancelled"
         ? "It was cancelled."
-        : "It ran out without a match.";
+        : search.endReason === "unanswered"
+          ? `${search.partner?.name ?? "Your partner"} didn’t answer in time.`
+          : "It ran out without a match.";
   return (
     <section className={cardClass} aria-labelledby="ended-title">
       <h2 id="ended-title" className="m-0">
@@ -266,6 +268,14 @@ const areaFields = [
   "Another area (optional)",
   "Another area (optional)",
 ];
+// Where each kind of problem is fixed.
+const errorFields: Record<SearchError["field"], string> = {
+  format: "search-area-0",
+  areas: "search-area-0",
+  courts: "search-area-0",
+  windows: "search-area-0",
+  partner: "partner-known",
+};
 
 function NewSearch({ onDone }: { onDone: () => void }) {
   const areas = useApi<{ regions: Region[] }>("/api/areas", true);
@@ -277,6 +287,13 @@ function NewSearch({ onDone }: { onDone: () => void }) {
   const [partner, setPartner] = useState("");
   const [errors, setErrors] = useState<SearchError[]>([]);
   const start = useMutation<unknown>(onDone);
+  // The field to focus once its error has rendered.
+  const focusTo = useRef<string | null>(null);
+  useEffect(() => {
+    if (!focusTo.current) return;
+    document.getElementById(focusTo.current)?.focus();
+    focusTo.current = null;
+  }, [errors]);
   const regions = areas.data?.regions ?? [];
   const chosen = picked.filter(Boolean);
   const errorFor = (field: SearchError["field"]) =>
@@ -302,6 +319,7 @@ function NewSearch({ onDone }: { onDone: () => void }) {
     });
     if (!search.ok) {
       setErrors(search.errors);
+      focusTo.current = errorFields[search.errors[0].field];
       return;
     }
     setErrors([]);
@@ -358,10 +376,7 @@ function NewSearch({ onDone }: { onDone: () => void }) {
                         : undefined
                     }
                     onChange={(next) => {
-                      const nextPicked = picked.map((x, j) =>
-                        j === i ? next : x,
-                      );
-                      setPicked(nextPicked);
+                      setPicked(picked.map((x, j) => (j === i ? next : x)));
                       setCourts([]);
                     }}
                     groups={regions.map((r) => ({
@@ -377,6 +392,24 @@ function NewSearch({ onDone }: { onDone: () => void }) {
                     <p id="search-areas-error" className={errorClass}>
                       {errorFor("areas")}
                     </p>
+                  ) : null}
+                  {i > 0 && picked[i] ? (
+                    <Button
+                      size="sm"
+                      variant="link"
+                      className="mt-1 px-0"
+                      onClick={() => {
+                        // Later areas move up, so the fields stay in order.
+                        const rest = picked.filter((_, j) => j !== i);
+                        setPicked([...rest, ""]);
+                        setCourts([]);
+                      }}
+                    >
+                      Remove{" "}
+                      {regions
+                        .flatMap((r) => r.areas)
+                        .find((a) => a.key === picked[i])?.label ?? "this area"}
+                    </Button>
                   ) : null}
                 </Field>
               ) : null,
@@ -524,15 +557,22 @@ function PartnerChoice({
       </legend>
       <label className="mt-3 flex items-center gap-3 font-medium">
         <input
+          id="partner-known"
           type="radio"
           name="partner-mode"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "partner-error" : undefined}
           checked={mode === "known"}
           onChange={() => onMode("known")}
         />
         Someone you’ve played with
       </label>
       {mode === "known" ? (
-        people.loading ? null : known.length ? (
+        people.loading ? null : people.error ? (
+          <div className="mt-2 ml-7">
+            <Notice retry={people.retry}>{people.error}</Notice>
+          </div>
+        ) : known.length ? (
           <Field id="search-partner" label="Partner" className="mt-3 ml-7">
             <SelectField
               id="search-partner"
@@ -576,11 +616,18 @@ function PartnerChoice({
 /** A doubles invite opened from its link. */
 export function RankedInvitePage() {
   const { token } = useParams<{ token: string }>();
-  const [answered, setAnswered] = useState(false);
+  const [answered, setAnswered] = useState<"accepted" | "declined" | null>(
+    null,
+  );
+  const accepting = useRef(true);
   const opened = useApi<{
-    invite: SearchInvite & { open: boolean; own: boolean };
+    invite:
+      | (SearchInvite & { open: boolean; own: boolean; direct: boolean })
+      | { open: false; starterName?: undefined };
   }>(`/api/ranked/invites/${token}`);
-  const answer = useMutation<unknown>(() => setAnswered(true));
+  const answer = useMutation<unknown>(() =>
+    setAnswered(accepting.current ? "accepted" : "declined"),
+  );
   const invite = opened.data?.invite;
   if (opened.loading)
     return <ListSkeleton label="Opening the invite…" rows={1} />;
@@ -591,9 +638,17 @@ export function RankedInvitePage() {
         <Notice retry={opened.retry}>
           {opened.error ?? "This invite isn’t available."}
         </Notice>
+      ) : !invite.starterName ? (
+        <Notice>
+          This invite has already been answered, cancelled or has run out.
+        </Notice>
       ) : answered ? (
         <div className={cardClass}>
-          <p className="m-0">You’re in. Your search has started.</p>
+          <p className="m-0">
+            {answered === "accepted"
+              ? "You’re in. Your search has started."
+              : "You declined the invite."}
+          </p>
           <Link className={buttonClass({ variant: "primary" })} href="/ranked">
             See your search
           </Link>
@@ -628,12 +683,27 @@ export function RankedInvitePage() {
               <Button
                 variant="primary"
                 disabled={answer.busy}
-                onClick={() =>
-                  answer.run(`/api/ranked/invites/${token}`, { accept: true })
-                }
+                onClick={() => {
+                  accepting.current = true;
+                  answer.run(`/api/ranked/invites/${token}`, { accept: true });
+                }}
               >
                 {answer.busy ? "Joining…" : "Accept"}
               </Button>
+              {invite.direct ? (
+                <Button
+                  className="ml-2"
+                  disabled={answer.busy}
+                  onClick={() => {
+                    accepting.current = false;
+                    answer.run(`/api/ranked/invites/${token}`, {
+                      accept: false,
+                    });
+                  }}
+                >
+                  Decline
+                </Button>
+              ) : null}
             </>
           )}
         </div>

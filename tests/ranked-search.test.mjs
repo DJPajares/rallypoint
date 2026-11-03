@@ -344,3 +344,81 @@ test("only the searchers can see or cancel a search", async () => {
     assert.equal(s.endReason, "cancelled");
   }
 });
+
+test("a direct invite can be declined from its link", async () => {
+  const [a, b] = [await person("dl-a"), await person("dl-b")];
+  await playTogether(a, b);
+  await start(a, { format: "doubles", partner: { profileId: b.profileId } });
+  const token = (await mine(b)).invites[0].token;
+  const { invite } = await (
+    await request(`/api/ranked/invites/${token}`, b)
+  ).json();
+  assert.equal(invite.direct, true);
+  assert.equal((await answer(b, token, false)).status, 200);
+  assert.equal((await mine(a)).search.endReason, "declined");
+});
+
+test("both partners searching again join one search", async () => {
+  const [a, b] = [await person("rs-a"), await person("rs-b")];
+  await playTogether(a, b);
+  await start(a, { format: "doubles", partner: { profileId: b.profileId } });
+  await answer(b, (await mine(b)).invites[0].token, true);
+  const first = (await mine(a)).search;
+  await cancel(a, first.id);
+  const restart = (p) =>
+    request(`/api/ranked/search/${first.id}/restart`, p, {
+      operationKey: key(),
+    });
+  assert.equal((await restart(a)).status, 200);
+  assert.equal((await restart(b)).status, 200);
+  const [sa, sb] = [(await mine(a)).search, (await mine(b)).search];
+  assert.equal(sa.state, "searching");
+  assert.equal(sa.id, sb.id);
+});
+
+test("an invite nobody answered says so", async () => {
+  const a = await person("unans");
+  await start(a, { format: "doubles", partner: { link: true } });
+  const s = (await mine(a)).search;
+  sql(
+    `update app.ranked_searches set ends_at=now()-interval '1 minute' where id='${s.id}';`,
+  );
+  assert.equal((await mine(a)).search.endReason, "unanswered");
+});
+
+test("a used link shows outsiders nothing but that it's closed", async () => {
+  const [a, b, c] = [
+    await person("ul-a"),
+    await person("ul-b"),
+    await person("ul-c"),
+  ];
+  await start(a, { format: "doubles", partner: { link: true } });
+  const token = (await mine(a)).search.inviteToken;
+  await answer(b, token, true);
+  const { invite } = await (
+    await request(`/api/ranked/invites/${token}`, c)
+  ).json();
+  assert.deepEqual(invite, { open: false });
+});
+
+test("two people accepting one link at once: one gets in", async () => {
+  const [a, b, c] = [
+    await person("race-a"),
+    await person("race-b"),
+    await person("race-c"),
+  ];
+  await start(a, { format: "doubles", partner: { link: true } });
+  const token = (await mine(a)).search.inviteToken;
+  const statuses = (
+    await Promise.all([answer(b, token, true), answer(c, token, true)])
+  ).map((r) => r.status);
+  assert.deepEqual(statuses.sort(), [200, 409]);
+});
+
+test("two starts at once leave one search", async () => {
+  const me = await person("race-start");
+  const statuses = (await Promise.all([start(me), start(me)])).map(
+    (r) => r.status,
+  );
+  assert.deepEqual(statuses.sort(), [200, 409]);
+});
