@@ -35,7 +35,7 @@ import { useMutation } from "./use-mutation";
 import { FeeControls } from "./fee-controls";
 import { PendingSplitControls } from "./split-controls";
 import { SeatAttendanceControls } from "./attendance-controls";
-import { PersonName, TitlePill } from "./badges";
+import { PersonName, RankPills, TitlePill } from "./badges";
 
 // The organizer's view on the day (PRD D-17, R2): big numbers, one round
 // check per party, money as a quiet line. Everything else about a person
@@ -123,6 +123,7 @@ function ConfirmedRow({
         <>
           {partyName(party)}
           {party.title ? <TitlePill title={party.title} /> : null}
+          <RankPills ranks={party.ranks} />
         </>
       }
       subtitle={

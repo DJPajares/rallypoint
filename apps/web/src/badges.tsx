@@ -8,6 +8,7 @@ import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
 import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
 import { SignOutIcon } from "@phosphor-icons/react/dist/csr/SignOut";
+import { TrophyIcon } from "@phosphor-icons/react/dist/csr/Trophy";
 import {
   badgeAbout,
   badgeCatalog,
@@ -39,6 +40,12 @@ import type {
 } from "@rallypoint/domain/badges";
 import type { Identity } from "@rallypoint/domain/contracts";
 import { levelLabel, levelStep } from "@rallypoint/domain/profile";
+import {
+  rankLabel,
+  rankSpoken,
+  rankedCategories,
+} from "@rallypoint/domain/ranked";
+import type { RankedCategory } from "@rallypoint/domain/ranked";
 import type {
   MyProfile,
   ProfileActivity,
@@ -322,6 +329,69 @@ export function TitlePill({ title }: { title: unknown }) {
       <Medallion badge={shown.key} level={shown.level} size={18} decorative />
       {levelTitle(shown.key, shown.level)}
     </span>
+  );
+}
+
+/**
+ * A person's ranks (D-26), e.g. "Gold · Doubles", one pill each. The words
+ * carry the meaning, spoken as "Doubles rank: Gold"; the trophy only
+ * decorates. Anything unrecognised shows nothing.
+ */
+export function RankPills({ ranks }: { ranks: unknown }) {
+  return rankedCategories(ranks).map((c) => (
+    <span
+      key={`${c.activity}:${c.format}`}
+      data-slot="rank-pill"
+      className="ml-2 inline-flex max-w-full items-center gap-1 truncate rounded-full border border-border bg-muted px-2 py-0.5 align-middle text-xs leading-[1.6] font-semibold whitespace-nowrap text-foreground"
+    >
+      <TrophyIcon size={14} weight="fill" aria-hidden="true" />
+      <span aria-hidden="true">{rankLabel(c)}</span>
+      <span className="sr-only">{rankSpoken(c)}</span>
+    </span>
+  ));
+}
+
+/**
+ * Ranked play, in a card of its own under Plays (D-26): each ranked
+ * activity with its ranks. Kept apart from the self-rated levels, which
+ * ranked results never change. Nothing shows until a rank is earned.
+ */
+function Ranked({ ranks }: { ranks: RankedCategory[] }) {
+  const { catalog } = useActivities();
+  if (!ranks.length) return null;
+  const activities = [...new Set(ranks.map((c) => c.activity))];
+  return (
+    <section aria-labelledby="ranked-title">
+      <h2 id="ranked-title" className="mt-8 mb-3">
+        Ranked
+      </h2>
+      <ul className="m-0 list-none overflow-hidden rounded-lg bg-card p-0 shadow-sm">
+        {activities.map((key) => {
+          const activity = catalog?.find((c) => c.key === key);
+          return (
+            <li
+              key={key}
+              className="flex min-h-15 items-center gap-3 border-t border-border py-2 pr-4 pl-3 first:border-t-0"
+            >
+              <span
+                className="inline-flex size-10 flex-none items-center justify-center rounded-full bg-success text-success-foreground"
+                aria-hidden="true"
+              >
+                <ActivityIcon icon={activity?.icon ?? key} size={22} />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3 gap-y-1 [&_[data-slot=rank-pill]]:ml-0">
+                <span className="min-w-0 font-semibold wrap-anywhere">
+                  {activity?.name ?? key}
+                </span>
+                <span className="inline-flex flex-wrap gap-1.5">
+                  <RankPills ranks={ranks.filter((c) => c.activity === key)} />
+                </span>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
@@ -730,6 +800,7 @@ function ProfileView({
   badges,
   stats,
   activities,
+  ranks,
   owner,
 }: {
   name: string;
@@ -737,6 +808,7 @@ function ProfileView({
   badges: ShelfBadge[];
   stats: BadgesView["stats"];
   activities: ProfileActivity[] | null;
+  ranks: RankedCategory[];
   owner?: OwnerParts;
 }) {
   const shelf = owner ? badges : badges.filter((b) => b.level > 0);
@@ -806,6 +878,7 @@ function ProfileView({
             ]}
           />
           <Plays activities={activities} owner={!!owner} />
+          <Ranked ranks={ranks} />
           {shelf.length ? (
             <div className="mt-8 mb-3 flex items-center justify-between gap-3 [&_h2]:m-0">
               <h2>Badges</h2>
@@ -919,6 +992,7 @@ export function ProfilePage() {
         badges={shelf}
         stats={view?.stats ?? { played: 0, hosted: 0, groups: 0 }}
         activities={profile.data?.profile.activities ?? null}
+        ranks={rankedCategories(view?.ranks)}
         owner={{
           profileId: identity.data?.profileId ?? null,
           status,
@@ -1067,6 +1141,7 @@ export function PersonProfilePage() {
         badges={shelf}
         stats={profile.stats}
         activities={profile.activities}
+        ranks={rankedCategories(profile.ranks)}
       />
     </>
   );

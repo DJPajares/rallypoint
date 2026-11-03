@@ -245,6 +245,8 @@ export interface RegistrationView {
     attendance?: SeatAttendance[];
     /** The badge this person chose to show, while it is still earned. */
     title?: RosterTitle | null;
+    /** Ranks in this session's activity (D-26); empty when unranked. */
+    ranks?: RankedCategory[];
     /** Organizers/co-hosts only; whether this party can be removed right now (P-28). */
     removable?: boolean;
     /** Organizers/co-hosts only; who removed this party and when (P-28). */
@@ -265,5 +267,6 @@ import type {
   SplitSummary,
 } from "./fees.ts";
 import type { RosterTitle } from "./badges.ts";
+import type { RankedCategory } from "./ranked.ts";
 import type { SkillLevel } from "./activities.ts";
 import type { SentInvite } from "./contracts.ts";
