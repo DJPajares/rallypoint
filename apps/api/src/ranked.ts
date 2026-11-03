@@ -1,10 +1,13 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { z } from "zod";
+import { rankedSessionForm } from "@rallypoint/domain/ranked-booking";
 import { normalizeSearch } from "@rallypoint/domain/ranked-search";
+import type { MySearch } from "@rallypoint/domain/ranked-search";
+import { InputError, normalizeSession } from "@rallypoint/domain/session";
 import { ApiError, json, parse, readBody, uuid, uuidParam } from "./http";
 import type { ApiEnv } from "./identity";
-import { notAvailable, requireUser } from "./identity";
+import { actorName, notAvailable, requireUser } from "./identity";
 
 // Ranked searches (D-26, WDL-421).
 const conflicts: Record<string, string> = {
@@ -15,10 +18,13 @@ const conflicts: Record<string, string> = {
   own_invite: "This is your own invite. Share the link with your partner.",
   invite_closed:
     "This invite has already been answered, cancelled or has run out.",
-  search_matched:
-    "You’ve been matched. Accept or decline the match instead.",
+  search_matched: "You’ve been matched. Accept or decline the match instead.",
   proposal_closed: "This match has already been settled or has run out.",
   cannot_widen: "You can widen your search after 3 days without a match.",
+  booking_taken: "Another player is already booking the court.",
+  booking_closed: "This match can’t be booked right now.",
+  not_booker:
+    "Only the player booking the court can do that, and only while their 48 hours last.",
   idempotency_conflict:
     "This request key was already used for different details.",
 };
@@ -42,6 +48,15 @@ async function call(
     throw new ApiError(409, error.message, conflicts[error.message]);
   if (missing[error.message])
     throw new ApiError(404, "not_found", missing[error.message]);
+  if (
+    error.message === "activity_duration_limit" ||
+    error.message === "activity_capacity_limit"
+  )
+    throw new ApiError(
+      422,
+      error.message,
+      "A ranked match can last from 30 minutes to 4 hours.",
+    );
   if (error.code === "23514")
     throw new ApiError(422, "invalid_input", "Check your search choices.");
   throw new ApiError(
@@ -68,6 +83,15 @@ const start = z.object({
 });
 const plain = z.object({ operationKey });
 const answer = z.object({ operationKey, accept: z.boolean() });
+const booking = z.object({
+  operationKey,
+  location: z.string().max(300),
+  mapsLink: z.string().max(500),
+  startLocal: z.string().max(16),
+  endLocal: z.string().max(16),
+  cost: z.string().max(22),
+  timeZone: z.string().max(100),
+});
 const body = async <T>(c: Context<ApiEnv>, schema: z.ZodType<T>) =>
   parse(
     schema,
@@ -149,6 +173,64 @@ export const ranked = new Hono<ApiEnv>()
         p_key: b.operationKey,
         p_match: c.req.param("match"),
         p_accept: b.accept,
+      }),
+    );
+  })
+  .post(`${match}/claim`, requireUser, async (c) => {
+    const b = await body(c, plain);
+    return json(
+      await call(c, "claim_booking", {
+        p_key: b.operationKey,
+        p_match: c.req.param("match"),
+      }),
+    );
+  })
+  .post(`${match}/release`, requireUser, async (c) => {
+    const b = await body(c, plain);
+    return json(
+      await call(c, "release_booking", {
+        p_key: b.operationKey,
+        p_match: c.req.param("match"),
+      }),
+    );
+  })
+  // The booker's court, time and cost become an ordinary session, checked by
+  // the same rules as the session form (WDL-424).
+  .post(`${match}/book`, requireUser, async (c) => {
+    const b = await body(c, booking);
+    const mine = (await call(c, "read_my_search", {})) as MySearch;
+    const found = mine.match;
+    if (!found || found.id !== c.req.param("match"))
+      throw new ApiError(404, "not_found", missing.match_not_found);
+    let details;
+    try {
+      details = normalizeSession(
+        rankedSessionForm(
+          {
+            format: found.format,
+            players: found.players.length,
+            location: b.location,
+            mapsLink: b.mapsLink,
+            startLocal: b.startLocal,
+            endLocal: b.endLocal,
+            cost: b.cost,
+            timeZone: b.timeZone,
+          },
+          new Date(),
+        ),
+        true,
+      );
+    } catch (e) {
+      if (e instanceof InputError)
+        throw new ApiError(422, "invalid_input", e.message);
+      throw e;
+    }
+    return json(
+      await call(c, "book_match", {
+        p_key: b.operationKey,
+        p_match: c.req.param("match"),
+        p_details: details,
+        p_host_name: (await actorName(c, "Organizer")).name,
       }),
     );
   })

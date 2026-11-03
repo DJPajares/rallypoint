@@ -109,7 +109,7 @@ test("session saves respect the activity's limits", async (t) => {
     assert.equal(response.status, 422);
     assert.equal(
       body.error.message,
-      "Pickleball sessions can have 4 to 24 spots.",
+      "Pickleball sessions can have 2 to 24 spots.",
     );
     assert.equal((await publish({ capacity: "24" })).response.status, 200);
   });
