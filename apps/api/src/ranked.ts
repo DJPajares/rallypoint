@@ -21,6 +21,13 @@ const conflicts: Record<string, string> = {
   search_matched: "You’ve been matched. Accept or decline the match instead.",
   proposal_closed: "This match has already been settled or has run out.",
   cannot_widen: "You can widen your search after 3 days without a match.",
+  result_not_open:
+    "You can report the result once check-in has closed, 30 minutes after the start.",
+  result_settled: "This match’s result is already settled.",
+  already_reported: "Your side has already reported the result.",
+  nothing_to_answer: "There’s no result from the other side to answer yet.",
+  not_checked_in:
+    "Only players who checked in can report or confirm the result.",
   check_in_closed:
     "Check-in is open from 30 minutes before the start to 30 minutes after.",
   booking_taken: "Another player is already booking the court.",
@@ -85,6 +92,14 @@ const start = z.object({
 });
 const plain = z.object({ operationKey });
 const answer = z.object({ operationKey, accept: z.boolean() });
+const reported = z.object({ operationKey, won: z.boolean() });
+const agreed = z.object({ operationKey, agree: z.boolean() });
+// An absence decided the match just before this answer; it stands (WDL-425).
+function unlessSettled(data: unknown) {
+  if (data && typeof data === "object" && "settledFirst" in data)
+    throw new ApiError(409, "result_settled", conflicts.result_settled);
+  return data;
+}
 const booking = z.object({
   operationKey,
   location: z.string().max(300),
@@ -243,6 +258,30 @@ export const ranked = new Hono<ApiEnv>()
         p_key: b.operationKey,
         p_match: c.req.param("match"),
       }),
+    );
+  })
+  .post(`${match}/report`, requireUser, async (c) => {
+    const b = await body(c, reported);
+    return json(
+      unlessSettled(
+        await call(c, "report_result", {
+          p_key: b.operationKey,
+          p_match: c.req.param("match"),
+          p_won: b.won,
+        }),
+      ),
+    );
+  })
+  .post(`${match}/answer-result`, requireUser, async (c) => {
+    const b = await body(c, agreed);
+    return json(
+      unlessSettled(
+        await call(c, "answer_result", {
+          p_key: b.operationKey,
+          p_match: c.req.param("match"),
+          p_agree: b.agree,
+        }),
+      ),
     );
   })
   .all(`${match}/:action`, requireUser, () => notAvailable())
