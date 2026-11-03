@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { ClockIcon } from "@phosphor-icons/react/dist/csr/Clock";
 import { UserIcon } from "@phosphor-icons/react/dist/csr/User";
 import { UsersIcon } from "@phosphor-icons/react/dist/csr/Users";
 import {
@@ -22,6 +24,8 @@ import {
   searchWindows,
 } from "@rallypoint/domain/ranked-search";
 import type {
+  MatchView,
+  MySearch,
   SearchError,
   SearchInvite,
   SearchView,
@@ -31,8 +35,6 @@ import { ListSkeleton } from "./skeletons";
 import { useApi } from "./use-api";
 import { useMutation } from "./use-mutation";
 
-type Mine = { search: SearchView | null; invites: SearchInvite[] };
-
 const errorClass = "mt-2 mb-0 text-sm font-medium text-danger-foreground";
 const cardClass = "rounded-lg border border-border bg-card p-5";
 const dateLabel = (value: string) =>
@@ -41,6 +43,18 @@ const dateLabel = (value: string) =>
     day: "numeric",
     month: "short",
   });
+const dateTimeLabel = (value: string) =>
+  new Date(value).toLocaleString(undefined, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+const regionLabel = (regions: string[]) =>
+  regions.length > 1
+    ? `the ${regions.join(" and ")} regions`
+    : `the ${regions[0] ?? ""} region`;
 const formatLabel = (format: string) =>
   format === "doubles" ? "Doubles" : "Singles";
 const windowLabel = (key: string) =>
@@ -51,18 +65,30 @@ const inviteUrl = (token: string) =>
     : `${window.location.origin}/ranked/invite/${token}`;
 
 /**
- * Ranked play (D-26, WDL-421): look for a ranked pickleball match. One search
- * at a time; it looks for 7 days. Doubles waits for the partner to accept.
- * Matches will show here when the app is opened (no alerts outside the app).
+ * Ranked play (D-26, WDL-421, WDL-422): look for a ranked pickleball match.
+ * One search at a time; it looks for 7 days. Doubles waits for the partner to
+ * accept. A match found shows here when the app is opened (no alerts outside
+ * the app), and everyone has 48 hours to accept it.
  */
 export function RankedPage() {
   const [refresh, setRefresh] = useState(0);
-  const mine = useApi<Mine>("/api/ranked/search", false, String(refresh));
-  const reload = () => setRefresh((n) => n + 1);
+  const mine = useApi<MySearch>("/api/ranked/search", false, String(refresh));
+  // After an action, focus moves to the card that now says what happened.
+  const focusStatus = useRef(false);
+  const reload = () => {
+    focusStatus.current = true;
+    setRefresh((n) => n + 1);
+  };
   useEffect(() => {
     document.title = "Ranked · RallyPoint";
   }, []);
+  useEffect(() => {
+    if (!focusStatus.current || !mine.data) return;
+    focusStatus.current = false;
+    document.querySelector<HTMLElement>("[data-ranked-status]")?.focus();
+  }, [mine.data]);
   const search = mine.data?.search ?? null;
+  const match = mine.data?.match ?? null;
   const active = search && search.state !== "ended";
   return (
     <section
@@ -84,7 +110,9 @@ export function RankedPage() {
           {mine.data?.invites.map((invite) => (
             <InviteCard key={invite.token} invite={invite} onDone={reload} />
           ))}
-          {search && active ? (
+          {match ? (
+            <MatchCard match={match} onDone={reload} />
+          ) : search && active ? (
             <ActiveSearch search={search} onDone={reload} />
           ) : (
             <>
@@ -102,7 +130,10 @@ function Choices({ search }: { search: SearchView }) {
   return (
     <dl className="my-3 grid gap-1 text-sm [&_dd]:m-0 [&_dt]:font-semibold">
       <dt>Areas</dt>
-      <dd>{search.areas.map((a) => a.label).join(", ")}</dd>
+      <dd>
+        {search.areas.map((a) => a.label).join(", ")}
+        {search.wide ? `, and the rest of ${regionLabel(search.regions)}` : ""}
+      </dd>
       {search.courts.length ? (
         <>
           <dt>Courts</dt>
@@ -119,6 +150,15 @@ function Choices({ search }: { search: SearchView }) {
   );
 }
 
+const returnedLabel: Record<NonNullable<SearchView["returned"]>, string> = {
+  declined:
+    "The other side declined your last match, so you’re searching again with your place kept.",
+  lapsed:
+    "Your last match ran out before everyone accepted, so you’re searching again with your place kept.",
+  unbooked:
+    "Your last match wasn’t booked within 4 days, so you’re searching again with your place kept.",
+};
+
 function ActiveSearch({
   search,
   onDone,
@@ -127,10 +167,11 @@ function ActiveSearch({
   onDone: () => void;
 }) {
   const cancel = useMutation<unknown>(onDone);
+  const widen = useMutation<unknown>(onDone);
   const waiting = search.state === "waiting_partner";
   return (
     <section className={cardClass} aria-labelledby="active-title">
-      <h2 id="active-title" className="m-0">
+      <h2 id="active-title" className="m-0" tabIndex={-1} data-ranked-status>
         {waiting
           ? search.partner
             ? `Waiting for ${search.partner.name} to accept`
@@ -140,12 +181,39 @@ function ActiveSearch({
       {waiting ? null : search.partner ? (
         <p className="mt-1 mb-0">With {search.partner.name}</p>
       ) : null}
+      {search.returned ? (
+        <p className="mt-2 mb-0">{returnedLabel[search.returned]}</p>
+      ) : null}
       <Choices search={search} />
       <p className="m-0 text-sm text-muted-foreground">
         {waiting
           ? `The invite is open until ${dateLabel(search.endsAt)}.`
           : `Searching until ${dateLabel(search.endsAt)}. We’ll show your match here when you open the app, so check back daily.`}
       </p>
+      {search.canWiden ? (
+        <div className="mt-4 rounded-md bg-muted p-3">
+          <p className="m-0">
+            No match yet. Look across all of {regionLabel(search.regions)}?
+          </p>
+          {widen.error ? (
+            <p role="alert" className={errorClass}>
+              {widen.error}
+            </p>
+          ) : null}
+          {widen.recovery}
+          <Button
+            className="mt-3"
+            disabled={widen.busy}
+            onClick={() =>
+              widen.run(`/api/ranked/search/${search.id}/widen`, {})
+            }
+          >
+            {widen.busy
+              ? "Widening…"
+              : `Look across ${regionLabel(search.regions)}`}
+          </Button>
+        </div>
+      ) : null}
       {cancel.error ? (
         <p role="alert" className={errorClass}>
           {cancel.error}
@@ -187,12 +255,18 @@ function EndedSearch({
       ? `${search.partner?.name ?? "Your partner"} declined.`
       : search.endReason === "cancelled"
         ? "It was cancelled."
-        : search.endReason === "unanswered"
-          ? `${search.partner?.name ?? "Your partner"} didn’t answer in time.`
-          : "It ran out without a match.";
+        : search.endReason === "declined_match"
+          ? "You declined the match."
+          : search.endReason === "partner_declined_match"
+            ? `${search.partner?.name ?? "Your partner"} declined the match.`
+            : search.endReason === "match_lapsed"
+              ? "The match ran out before everyone accepted."
+              : search.endReason === "unanswered"
+                ? `${search.partner?.name ?? "Your partner"} didn’t answer in time.`
+                : "It ran out without a match.";
   return (
     <section className={cardClass} aria-labelledby="ended-title">
-      <h2 id="ended-title" className="m-0">
+      <h2 id="ended-title" className="m-0" tabIndex={-1} data-ranked-status>
         Your last {formatLabel(search.format)} search ended
       </h2>
       <p className="mt-1 mb-0 text-muted-foreground">{why}</p>
@@ -212,6 +286,150 @@ function EndedSearch({
       >
         {restart.busy ? "Starting…" : "Search again"}
       </Button>
+    </section>
+  );
+}
+
+function Names({ people }: { people: MatchView["players"] }) {
+  return (
+    <>
+      {people.map((p, i) => (
+        <span key={p.profileId ?? i}>
+          {i ? ", " : ""}
+          {p.profileId ? (
+            <Link href={`/people/${p.profileId}`}>{p.name}</Link>
+          ) : (
+            p.name
+          )}
+        </span>
+      ))}
+    </>
+  );
+}
+
+function MatchCard({
+  match,
+  onDone,
+}: {
+  match: MatchView;
+  onDone: () => void;
+}) {
+  const answer = useMutation<unknown>(onDone);
+  const partner = match.players.filter((p) => p.side === "yours" && !p.you);
+  const opponents = match.players.filter((p) => p.side === "theirs");
+  const waiting = match.players.filter((p) => !p.accepted).length;
+  const open = match.state === "proposed";
+  const heading =
+    match.state === "confirmed"
+      ? "Match on"
+      : match.state === "expired"
+        ? "This match ran out"
+        : `${formatLabel(match.format)} match found`;
+  const status =
+    match.state === "confirmed"
+      ? "Everyone’s in. Booking the court comes next; if it isn’t booked within 4 days, you’ll all search again."
+      : match.state === "expired"
+        ? "Not everyone accepted in time. Nobody is penalised, and this clears within a minute."
+        : match.myAnswer
+          ? `You accepted. Waiting for ${waiting} more, until ${dateTimeLabel(match.respondBy)}.`
+          : `Accept by ${dateTimeLabel(match.respondBy)}. If anyone declines or doesn’t answer, nobody is penalised.`;
+  return (
+    <section className={cardClass} aria-labelledby="match-title">
+      <h2 id="match-title" className="m-0" tabIndex={-1} data-ranked-status>
+        {heading}
+      </h2>
+      <p className="mt-1 mb-0 text-muted-foreground">{status}</p>
+      <dl className="my-3 grid gap-1 text-sm [&_dd]:m-0 [&_dt]:font-semibold">
+        {partner.length ? (
+          <>
+            <dt>Your partner</dt>
+            <dd>
+              <Names people={partner} />
+            </dd>
+          </>
+        ) : null}
+        <dt>{opponents.length > 1 ? "Opponents" : "Opponent"}</dt>
+        <dd>
+          <Names people={opponents} />
+        </dd>
+        <dt>Area</dt>
+        <dd>{match.area.label}</dd>
+        {match.court ? (
+          <>
+            <dt>Court</dt>
+            <dd>
+              {match.court.name}
+              {match.court.mapsUrl ? (
+                <>
+                  {" · "}
+                  <a
+                    href={match.court.mapsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Map
+                  </a>
+                </>
+              ) : null}
+            </dd>
+          </>
+        ) : null}
+        <dt>When</dt>
+        <dd>{match.window ? windowLabel(match.window) : "Any time"}</dd>
+      </dl>
+      {open ? (
+        <ul
+          aria-label="Answers"
+          className="m-0 grid list-none gap-1 p-0 text-sm"
+        >
+          {match.players.map((p, i) => (
+            <li key={p.profileId ?? i} className="flex items-center gap-2">
+              {p.accepted ? (
+                <CheckCircleIcon size={18} aria-hidden="true" />
+              ) : (
+                <ClockIcon size={18} aria-hidden="true" />
+              )}
+              {p.you ? "You" : p.name}: {p.accepted ? "Accepted" : "Waiting"}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {answer.error ? (
+        <p role="alert" className={errorClass}>
+          {answer.error}
+        </p>
+      ) : null}
+      {answer.recovery}
+      {open && !match.myAnswer ? (
+        <>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button
+              variant="primary"
+              disabled={answer.busy}
+              onClick={() =>
+                answer.run(`/api/ranked/matches/${match.id}/answer`, {
+                  accept: true,
+                })
+              }
+            >
+              Accept
+            </Button>
+            <Button
+              disabled={answer.busy}
+              onClick={() =>
+                answer.run(`/api/ranked/matches/${match.id}/answer`, {
+                  accept: false,
+                })
+              }
+            >
+              Decline
+            </Button>
+          </div>
+          <p className="mt-2 mb-0 text-sm text-muted-foreground">
+            Declining ends your search.
+          </p>
+        </>
+      ) : null}
     </section>
   );
 }

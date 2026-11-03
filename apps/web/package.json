@@ -16,6 +16,7 @@
     "@opennextjs/cloudflare": "1.20.13",
     "@phosphor-icons/react": "2.1.10",
     "@rallypoint/api": "workspace:*",
+    "@rallypoint/database": "workspace:*",
     "@rallypoint/domain": "workspace:*",
     "@rallypoint/email": "workspace:*",
     "@rallypoint/ui": "workspace:*",
