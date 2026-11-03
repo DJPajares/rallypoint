@@ -54,7 +54,8 @@ test("a Maps link is optional but must be an https address", () => {
     "http://maps.google.com/x",
     "maps.google.com",
     "javascript:alert(1)",
-    `https://example.com/${"a".repeat(500)}`,
+    "data:text/html,hi",
+    "//maps.google.com/x",
   ]) {
     const r = normalizeCourt({
       area: "pasir-ris",
@@ -64,4 +65,36 @@ test("a Maps link is optional but must be an https address", () => {
     assert.deepEqual(fields(r), ["mapsLink"], link);
     assert.equal(r.errors[0].message, "Use a link that starts with https://.");
   }
+});
+
+test("a Maps link is saved as the browser reads it", () => {
+  const saved = (mapsLink) => {
+    const r = normalizeCourt({ area: "bedok", name: "Court", mapsLink });
+    return r.ok ? r.value.mapsUrl : r.errors[0].message;
+  };
+  assert.equal(
+    saved("https://www.google.com/maps/search/?query=Bedok Hall"),
+    "https://www.google.com/maps/search/?query=Bedok%20Hall",
+  );
+  assert.equal(saved("HTTPS://maps.app.goo.gl/x"), "https://maps.app.goo.gl/x");
+  assert.equal(
+    saved("https://maps.app.goo.gl/a\nb"),
+    "https://maps.app.goo.gl/ab",
+  );
+  assert.equal(
+    saved(`https://maps.app.goo.gl/${"a".repeat(480)}`),
+    "Use a link of up to 500 characters.",
+  );
+});
+
+test("a court name needs a letter or a plain digit", () => {
+  for (const name of ["①", "²", "Ⅻ"])
+    assert.equal(
+      normalizeCourt({ area: "bedok", name, mapsLink: "" }).ok,
+      false,
+      name,
+    );
+  assert.ok(
+    normalizeCourt({ area: "bedok", name: "Court 2", mapsLink: "" }).ok,
+  );
 });

@@ -217,3 +217,66 @@ test("courts store no location coordinates and no adder in reads", () => {
     "area_key,created_at,created_by,id,maps_url,name",
   );
 });
+
+test("the database names the field it refuses", () => {
+  const actor = sql(
+    "select id from auth.users where email='organizer@rallypoint.test';",
+  );
+  const refuse = (area, courtName, link) =>
+    assert.throws(
+      () =>
+        sql(
+          `select api.add_court('${actor}','${crypto.randomUUID()}','${area}','${courtName}',${link === null ? "null" : `'${link}'`});`,
+        ),
+      (e) =>
+        String(e.stderr).includes(
+          `invalid_${area === "atlantis" ? "area" : courtName === "①" ? "name" : "link"}`,
+        ),
+    );
+  refuse("atlantis", name("Court"), null);
+  refuse("bedok", "①", null);
+  refuse("bedok", name("Court"), "https://maps.app.goo.gl/a b");
+});
+
+test("checking an interrupted add finds the court", async () => {
+  const me = await person("check");
+  const key = crypto.randomUUID();
+  const { court } = await (
+    await add(
+      me,
+      { area: "clementi", name: name("Clementi Hall"), mapsLink: "" },
+      key,
+    )
+  ).json();
+  const r = await request(`/api/operations/${key}`, me);
+  assert.equal(r.status, 200);
+  const body = await r.json();
+  assert.equal(body.operationKey, key);
+  assert.equal(body.court.id, court.id);
+});
+
+test("links are saved as browsers read them", async () => {
+  const me = await person("links");
+  const r = await add(me, {
+    area: "bedok",
+    name: name("Bedok Link"),
+    mapsLink: "HTTPS://www.google.com/maps/search/?query=Bedok Hall",
+  });
+  assert.equal(r.status, 200);
+  assert.equal(
+    (await r.json()).court.mapsUrl,
+    "https://www.google.com/maps/search/?query=Bedok%20Hall",
+  );
+});
+
+test("areas are in order of the names people see", async () => {
+  const { regions } = await (await request("/api/areas")).json();
+  for (const region of regions) {
+    const labels = region.areas.map((a) => a.label);
+    assert.deepEqual(
+      labels,
+      [...labels].sort((a, b) => a.localeCompare(b)),
+      region.name,
+    );
+  }
+});

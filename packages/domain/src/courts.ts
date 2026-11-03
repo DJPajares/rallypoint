@@ -55,7 +55,8 @@ export function normalizeCourt(
   const typed = input.name.trim();
   // Invisible format characters are removed; line breaks are refused.
   const name = typed.replace(/\p{Cf}/gu, "").trim();
-  if (/\p{Cc}/u.test(typed) || !/[\p{L}\p{N}]/u.test(name)) {
+  // A letter or a plain digit (0-9 in any script); ① or Ⅻ alone won't do.
+  if (/\p{Cc}/u.test(typed) || !/[\p{L}\p{Nd}]/u.test(name)) {
     errors.push({
       field: "name",
       message: "Name the court with letters or numbers.",
@@ -76,12 +77,18 @@ export function normalizeCourt(
     } catch {
       url = null;
     }
-    if (!url || url.protocol !== "https:" || link.length > maxLink) {
+    // Saved as the browser reads it: spaces encoded, scheme in lower case.
+    if (!url || url.protocol !== "https:") {
       errors.push({
         field: "mapsLink",
         message: "Use a link that starts with https://.",
       });
-    } else mapsUrl = link;
+    } else if (url.href.length > maxLink) {
+      errors.push({
+        field: "mapsLink",
+        message: `Use a link of up to ${maxLink} characters.`,
+      });
+    } else mapsUrl = url.href;
   }
 
   return errors.length

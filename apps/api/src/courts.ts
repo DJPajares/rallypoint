@@ -16,6 +16,13 @@ const conflicts: Record<string, string> = {
     "This request key was already used for different details.",
 };
 
+// What the database refused, by field.
+const refusals: Record<string, string> = {
+  invalid_area: "Choose an area from the list.",
+  invalid_name: "Name the court with letters or numbers.",
+  invalid_link: "Use a link that starts with https://.",
+};
+
 async function call(
   c: Context<ApiEnv>,
   name: string,
@@ -29,7 +36,11 @@ async function call(
   if (conflicts[error.message])
     throw new ApiError(409, error.message, conflicts[error.message]);
   if (error.code === "23514")
-    throw new ApiError(422, "invalid_input", "Choose an area from the list.");
+    throw new ApiError(
+      422,
+      "invalid_input",
+      refusals[error.message] ?? "Check the court’s details.",
+    );
   throw new ApiError(
     503,
     "service_unavailable",

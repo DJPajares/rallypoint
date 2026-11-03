@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { MapPinIcon } from "@phosphor-icons/react/dist/csr/MapPin";
 import {
@@ -36,15 +36,23 @@ export function CourtsPage() {
   const [link, setLink] = useState("");
   const [errors, setErrors] = useState<CourtError[]>([]);
   const [added, setAdded] = useState(0);
+  // The field to focus once it has rendered and the form is usable again.
+  const focusTo = useRef<string | null>(null);
   const add = useMutation<{ court: Court }>(({ court }) => {
     setName("");
     setLink("");
     setAdded((n) => n + 1);
+    focusTo.current = fieldIds.name;
     toast(`${court.name} added.`);
   });
   useEffect(() => {
     document.title = "Courts · RallyPoint";
   }, []);
+  useEffect(() => {
+    if (!focusTo.current || add.busy) return;
+    document.getElementById(focusTo.current)?.focus();
+    focusTo.current = null;
+  }, [errors, added, add.busy]);
   const regions = areas.data?.regions ?? [];
   const label = regions
     .flatMap((r) => r.areas)
@@ -57,8 +65,8 @@ export function CourtsPage() {
     const court = normalizeCourt({ area, name, mapsLink: link });
     if (!court.ok) {
       setErrors(court.errors);
-      // Take the person to the first field that needs fixing.
-      document.getElementById(fieldIds[court.errors[0].field])?.focus();
+      // After the errors render, so the field is read with its message.
+      focusTo.current = fieldIds[court.errors[0].field];
       return;
     }
     setErrors([]);
