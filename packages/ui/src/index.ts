@@ -36,7 +36,7 @@ export {
   SelectField,
   SwitchField,
 } from "./components/fields";
-export type { Option } from "./components/fields";
+export type { Option, OptionGroup } from "./components/fields";
 export {
   formatLocalDateTime,
   joinLocalDateTime,

@@ -20,7 +20,9 @@ import { PopoverContent } from "./ui/popover";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
@@ -295,35 +297,60 @@ export interface Option {
   label: string;
 }
 
-/** A short list of fixed choices, styled like the other controls (shadcn Select). */
+/** Choices under a heading, e.g. areas under their region. */
+export interface OptionGroup {
+  label: string;
+  options: Option[];
+}
+
+/**
+ * A list of fixed choices, styled like the other controls (shadcn Select).
+ * Pass `groups` instead of `options` to show the choices under headings.
+ */
 export function SelectField({
   id,
   value,
   onChange,
   options,
+  groups,
+  placeholder,
   disabled,
   "aria-describedby": describedBy,
 }: ControlProps & {
   value: string;
   onChange: (value: string) => void;
-  options: Option[];
-}) {
+  placeholder?: string;
+} & (
+    | { options: Option[]; groups?: never }
+    | { groups: OptionGroup[]; options?: never }
+  )) {
+  const items = options ?? groups.flatMap((group) => group.options);
+  const item = (option: Option) => (
+    <SelectItem key={option.value} value={option.value}>
+      {option.label}
+    </SelectItem>
+  );
   return (
     <Select
-      items={options}
-      value={value}
+      items={items}
+      // With a placeholder, an empty value means nothing chosen yet; without
+      // one, "" is a real choice (e.g. "No rating").
+      value={placeholder && !value ? null : value}
       onValueChange={(next) => next !== null && onChange(String(next))}
       disabled={disabled}
     >
       <SelectTrigger id={id} aria-describedby={describedBy}>
-        <SelectValue />
+        <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent sideOffset={8} alignItemWithTrigger={false}>
-        {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
+        {options
+          ? options.map(item)
+          : groups.map((group) => (
+              <SelectGroup key={group.label}>
+                <SelectLabel>{group.label}</SelectLabel>
+                {group.options.map(item)}
+              </SelectGroup>
+            ))}
       </SelectContent>
     </Select>
   );

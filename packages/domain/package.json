@@ -16,7 +16,8 @@
     "./run-again": "./src/run-again.ts",
     "./my-sessions": "./src/my-sessions.ts",
     "./profile": "./src/profile.ts",
-    "./ranked": "./src/ranked.ts"
+    "./ranked": "./src/ranked.ts",
+    "./courts": "./src/courts.ts"
   },
   "scripts": {
     "lint": "oxlint src",
