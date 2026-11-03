@@ -17,12 +17,15 @@ const conflicts: Record<string, string> = {
     "This invite has already been answered, cancelled or has run out.",
   search_matched:
     "You’ve been matched. Accept or decline the match instead.",
+  proposal_closed: "This match has already been settled or has run out.",
+  cannot_widen: "You can widen your search after 3 days without a match.",
   idempotency_conflict:
     "This request key was already used for different details.",
 };
 const missing: Record<string, string> = {
   search_not_found: "That search isn’t available.",
   invite_not_found: "This invite isn’t available.",
+  match_not_found: "That match isn’t available.",
 };
 
 async function call(
@@ -74,6 +77,7 @@ const body = async <T>(c: Context<ApiEnv>, schema: z.ZodType<T>) =>
   );
 
 const one = `/ranked/search/:search{${uuidParam}}`;
+const match = `/ranked/matches/:match{${uuidParam}}`;
 const invite = `/ranked/invites/:token{${uuidParam}}`;
 
 export const ranked = new Hono<ApiEnv>()
@@ -128,7 +132,27 @@ export const ranked = new Hono<ApiEnv>()
       }),
     );
   })
+  .post(`${one}/widen`, requireUser, async (c) => {
+    const b = await body(c, plain);
+    return json(
+      await call(c, "widen_search", {
+        p_key: b.operationKey,
+        p_search: c.req.param("search"),
+      }),
+    );
+  })
   .all(`${one}/:action`, requireUser, () => notAvailable())
+  .post(`${match}/answer`, requireUser, async (c) => {
+    const b = await body(c, answer);
+    return json(
+      await call(c, "answer_match", {
+        p_key: b.operationKey,
+        p_match: c.req.param("match"),
+        p_accept: b.accept,
+      }),
+    );
+  })
+  .all(`${match}/:action`, requireUser, () => notAvailable())
   .get(invite, requireUser, async (c) => {
     const data = await call(c, "read_search_invite", {
       p_token: c.req.param("token"),

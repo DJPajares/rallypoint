@@ -42,7 +42,7 @@ export interface SearchError {
 export interface SearchView {
   id: string;
   format: SearchFormat;
-  state: "waiting_partner" | "searching" | "ended";
+  state: "waiting_partner" | "searching" | "matched" | "ended";
   endReason: "expired" | "unanswered" | "cancelled" | "declined" | null;
   /** When a waiting invite lapses, or when searching stops. */
   endsAt: string;
@@ -54,6 +54,40 @@ export interface SearchView {
   partner: { profileId: string | null; name: string } | null;
   /** The starter's shareable invite, while it can still be used. */
   inviteToken: string | null;
+  /** Looking across the whole region of the chosen areas. */
+  wide: boolean;
+  /** Unmatched for 3 days: the player may widen to `regions`. */
+  canWiden: boolean;
+  regions: string[];
+}
+
+/** A proposed or confirmed match as one of its players sees it (WDL-422). */
+export interface MatchView {
+  id: string;
+  format: SearchFormat;
+  /** "expired": the 48 hours ran out; the queue settles it within a minute. */
+  state: "proposed" | "confirmed" | "expired";
+  area: { key: string; label: string };
+  court: { id: string; name: string; mapsUrl: string | null } | null;
+  /** Null means any time. */
+  window: SearchWindow | null;
+  respondBy: string;
+  /** Your side first, you first within it. */
+  players: Array<{
+    profileId: string | null;
+    name: string;
+    side: "yours" | "theirs";
+    accepted: boolean;
+    you: boolean;
+  }>;
+  myAnswer: "accepted" | null;
+}
+
+/** What the Ranked page reads. */
+export interface MySearch {
+  search: SearchView | null;
+  invites: SearchInvite[];
+  match: MatchView | null;
 }
 
 /** A doubles invite as the invited person sees it. */

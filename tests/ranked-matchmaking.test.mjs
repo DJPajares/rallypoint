@@ -302,3 +302,154 @@ test("a matched search can't be cancelled or replaced", async () => {
   assert.equal(again.status, 409);
   assert.equal(await code(again), "search_active");
 });
+
+const answer = (actor, match, accept, operationKey = key()) =>
+  request(`/api/ranked/matches/${match}/answer`, actor, {
+    operationKey,
+    accept,
+  });
+const widen = (actor, searchId) =>
+  request(`/api/ranked/search/${searchId}/widen`, actor, {
+    operationKey: key(),
+  });
+async function mine(actor) {
+  const r = await request("/api/ranked/search", actor);
+  assert.equal(r.status, 200);
+  return r.json();
+}
+async function paired() {
+  const [a, b] = [await person(), await person()];
+  const sa = search([a], { age: "3 hours" }),
+    sb = search([b]);
+  assert.equal(run().proposed, 1);
+  return { a, b, sa, sb, id: matchOf(a) };
+}
+
+test("everyone accepting confirms the match", async () => {
+  const { a, b, sa, sb, id } = await paired();
+  let r = await answer(a, id, true);
+  assert.equal(r.status, 200);
+  let body = await r.json();
+  assert.equal(body.match.id, id);
+  assert.equal(body.match.state, "proposed");
+  assert.equal(body.match.myAnswer, "accepted");
+  assert.equal(body.match.area.key, "tampines");
+  assert.equal(body.search.state, "matched");
+  r = await answer(b, id, true);
+  assert.equal(r.status, 200);
+  body = await r.json();
+  assert.equal(body.match.state, "confirmed");
+  assert.deepEqual(
+    body.match.players.map((p) => [p.name, p.side, p.accepted, p.you]),
+    [
+      [b.name, "yours", true, true],
+      [a.name, "theirs", true, false],
+    ],
+  );
+  assert.ok(sql(`select confirmed_at from app.ranked_matches where id = '${id}';`));
+  assert.equal(stateOf(sa), "matched");
+  assert.equal(stateOf(sb), "matched");
+});
+
+test("a decline cancels and puts the other side back first with its wait", async () => {
+  const { a, b, sa, sb, id } = await paired();
+  const waited = sql(`select started_at from app.ranked_searches where id = '${sa}';`);
+  const r = await answer(b, id, false);
+  assert.equal(r.status, 200);
+  const body = await r.json();
+  assert.equal(body.match, null);
+  assert.equal(body.search.state, "ended");
+  assert.equal(stateOf(sb), "cancelled");
+  assert.equal(stateOf(sa), "searching");
+  assert.equal(
+    sql(`select started_at from app.ranked_searches where id = '${sa}';`),
+    waited,
+  );
+  assert.equal(
+    sql(`select state || '|' || end_reason from app.ranked_matches where id = '${id}';`),
+    "cancelled|declined",
+  );
+  assert.equal(matchOf(a), "");
+  const [c, d] = [await person(), await person()];
+  search([c]);
+  search([d], { age: "1 hour" });
+  assert.equal(run().proposed, 1);
+  assert.ok(matchOf(a));
+  assert.equal(matchOf(a), matchOf(d));
+  assert.equal(matchOf(c), "");
+});
+
+test("going back to the queue gives back the time spent waiting on answers", async () => {
+  const { b, sa, id } = await paired();
+  sql(`update app.ranked_searches set matched_at = matched_at - interval '47 hours'
+    where match_id = '${id}';`);
+  const before = Number(
+    sql(`select extract(epoch from ends_at) from app.ranked_searches where id = '${sa}';`),
+  );
+  assert.equal((await answer(b, id, false)).status, 200);
+  const after = Number(
+    sql(`select extract(epoch from ends_at) from app.ranked_searches where id = '${sa}';`),
+  );
+  assert.ok(Math.abs(after - before - 47 * 3600) < 120, `${after - before}`);
+});
+
+test("48 hours without every answer lets the proposal lapse", async () => {
+  const { a, b, sa, sb, id } = await paired();
+  assert.equal((await answer(a, id, true)).status, 200);
+  sql(`update app.ranked_matches set respond_by = now() - interval '1 minute' where id = '${id}';`);
+  assert.equal((await mine(a)).match.state, "expired");
+  const late = await answer(b, id, true);
+  assert.equal(late.status, 409);
+  assert.equal(await code(late), "proposal_closed");
+  assert.equal(run().expired, 1);
+  assert.equal(stateOf(sa), "searching");
+  assert.equal(stateOf(sb), "cancelled");
+  assert.equal(
+    sql(`select state || '|' || end_reason from app.ranked_matches where id = '${id}';`),
+    "cancelled|expired",
+  );
+  assert.equal(matchOf(a), "");
+  assert.equal((await mine(a)).match, null);
+});
+
+test("a retried accept with the same key changes nothing", async () => {
+  const { a, id } = await paired();
+  const operationKey = key();
+  const first = await answer(a, id, true, operationKey);
+  const second = await answer(a, id, true, operationKey);
+  assert.equal(first.status, 200);
+  assert.equal(second.status, 200);
+  assert.deepEqual((await second.json()).match, (await first.json()).match);
+});
+
+test("only the players can read or answer a match, and no numbers show", async () => {
+  const { a, id } = await paired();
+  const outsider = await person();
+  const r = await answer(outsider, id, true);
+  assert.equal(r.status, 404);
+  assert.equal((await mine(outsider)).match, null);
+  const text = JSON.stringify(await mine(a));
+  assert.doesNotMatch(text, /"(mu|phi|sigma|skill|rating|standing|band)"/);
+});
+
+test("widening needs three days and only happens on request", async () => {
+  const a = await person();
+  const sa = search([a], { areas: ["tampines"], age: "2 days" });
+  let view = (await mine(a)).search;
+  assert.equal(view.canWiden, false);
+  assert.equal(view.wide, false);
+  let r = await widen(a, sa);
+  assert.equal(r.status, 409);
+  assert.equal(await code(r), "cannot_widen");
+  sql(`update app.ranked_searches set started_at = started_at - interval '1 day' where id = '${sa}';`);
+  view = (await mine(a)).search;
+  assert.equal(view.canWiden, true);
+  assert.deepEqual(view.regions, ["East"]);
+  const outsider = await person();
+  assert.equal((await widen(outsider, sa)).status, 404);
+  r = await widen(a, sa);
+  assert.equal(r.status, 200);
+  view = (await r.json()).search;
+  assert.equal(view.wide, true);
+  assert.equal(view.canWiden, false);
+});
