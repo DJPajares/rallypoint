@@ -17,7 +17,8 @@
     "./my-sessions": "./src/my-sessions.ts",
     "./profile": "./src/profile.ts",
     "./ranked": "./src/ranked.ts",
-    "./courts": "./src/courts.ts"
+    "./courts": "./src/courts.ts",
+    "./ranked-search": "./src/ranked-search.ts"
   },
   "scripts": {
     "lint": "oxlint src",
