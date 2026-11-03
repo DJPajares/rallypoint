@@ -479,3 +479,61 @@ test("widening needs three days and only happens on request", async () => {
   assert.equal(view.wide, true);
   assert.equal(view.canWiden, false);
 });
+
+test("a declined opponent isn't proposed again within 7 days", async () => {
+  const { a, b, id } = await paired();
+  assert.equal((await answer(b, id, false)).status, 200);
+  search([b]);
+  assert.equal(run().proposed, 0);
+  assert.equal(matchOf(a), "");
+});
+
+test("everyone left out of a match is told what happened", async () => {
+  const [a, b, partner] = [await person(), await person(), await person()];
+  search([a, partner], { format: "doubles", age: "1 hour" });
+  const [c, d] = [await person(), await person()];
+  search([c, d], { format: "doubles" });
+  assert.equal(run().proposed, 1);
+  const id = matchOf(a);
+  assert.equal((await answer(a, id, false)).status, 200);
+  assert.equal((await mine(a)).search.endReason, "declined_match");
+  assert.equal((await mine(partner)).search.endReason, "partner_declined_match");
+  for (const p of [c, d]) {
+    const view = (await mine(p)).search;
+    assert.equal(view.state, "searching");
+    assert.equal(view.returned, "declined");
+    assert.equal(matchOf(p), "");
+  }
+  assert.equal(matchOf(partner), "");
+  // A lapse: the side that accepted searches again, the other is told it ran out.
+  const [e, f] = [await person(), await person()];
+  search([e], { age: "1 hour" });
+  search([f]);
+  sql(`update app.ranked_searches set state = 'cancelled' where starter_id in ('${c.id}', '${b.id}');`);
+  assert.equal(run().proposed, 1);
+  const lapse = matchOf(e);
+  assert.equal((await answer(e, lapse, true)).status, 200);
+  sql(`update app.ranked_matches set respond_by = now() - interval '1 minute' where id = '${lapse}';`);
+  assert.equal(run().expired, 1);
+  assert.equal((await mine(e)).search.returned, "lapsed");
+  assert.equal((await mine(f)).search.endReason, "match_lapsed");
+});
+
+test("a confirmed match nobody books in 4 days lets everyone search again", async () => {
+  const { a, b, sa, sb, id } = await paired();
+  assert.equal((await answer(a, id, true)).status, 200);
+  assert.equal((await answer(b, id, true)).status, 200);
+  run();
+  assert.equal(stateOf(sa), "matched");
+  sql(`update app.ranked_matches set confirmed_at = now() - interval '4 days 1 minute' where id = '${id}';`);
+  run();
+  assert.equal(stateOf(sa), "searching");
+  assert.equal(stateOf(sb), "searching");
+  assert.equal(
+    sql(`select state || '|' || end_reason from app.ranked_matches where id = '${id}';`),
+    "cancelled|unbooked",
+  );
+  assert.equal((await mine(a)).search.returned, "unbooked");
+  assert.equal(matchOf(a), "");
+  assert.equal(matchOf(b), "");
+});

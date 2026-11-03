@@ -43,7 +43,17 @@ export interface SearchView {
   id: string;
   format: SearchFormat;
   state: "waiting_partner" | "searching" | "matched" | "ended";
-  endReason: "expired" | "unanswered" | "cancelled" | "declined" | null;
+  endReason:
+    | "expired"
+    | "unanswered"
+    | "cancelled"
+    | "declined"
+    | "declined_match"
+    | "partner_declined_match"
+    | "match_lapsed"
+    | null;
+  /** Searching again after a match fell through, for a day afterwards. */
+  returned: "declined" | "lapsed" | "unbooked" | null;
   /** When a waiting invite lapses, or when searching stops. */
   endsAt: string;
   role: "starter" | "partner";

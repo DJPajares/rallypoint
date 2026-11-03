@@ -150,6 +150,15 @@ function Choices({ search }: { search: SearchView }) {
   );
 }
 
+const returnedLabel: Record<NonNullable<SearchView["returned"]>, string> = {
+  declined:
+    "The other side declined your last match, so you’re searching again with your place kept.",
+  lapsed:
+    "Your last match ran out before everyone accepted, so you’re searching again with your place kept.",
+  unbooked:
+    "Your last match wasn’t booked within 4 days, so you’re searching again with your place kept.",
+};
+
 function ActiveSearch({
   search,
   onDone,
@@ -171,6 +180,9 @@ function ActiveSearch({
       </h2>
       {waiting ? null : search.partner ? (
         <p className="mt-1 mb-0">With {search.partner.name}</p>
+      ) : null}
+      {search.returned ? (
+        <p className="mt-2 mb-0">{returnedLabel[search.returned]}</p>
       ) : null}
       <Choices search={search} />
       <p className="m-0 text-sm text-muted-foreground">
@@ -243,9 +255,15 @@ function EndedSearch({
       ? `${search.partner?.name ?? "Your partner"} declined.`
       : search.endReason === "cancelled"
         ? "It was cancelled."
-        : search.endReason === "unanswered"
-          ? `${search.partner?.name ?? "Your partner"} didn’t answer in time.`
-          : "It ran out without a match.";
+        : search.endReason === "declined_match"
+          ? "You declined the match."
+          : search.endReason === "partner_declined_match"
+            ? `${search.partner?.name ?? "Your partner"} declined the match.`
+            : search.endReason === "match_lapsed"
+              ? "The match ran out before everyone accepted."
+              : search.endReason === "unanswered"
+                ? `${search.partner?.name ?? "Your partner"} didn’t answer in time.`
+                : "It ran out without a match.";
   return (
     <section className={cardClass} aria-labelledby="ended-title">
       <h2 id="ended-title" className="m-0" tabIndex={-1} data-ranked-status>
@@ -309,7 +327,7 @@ function MatchCard({
         : `${formatLabel(match.format)} match found`;
   const status =
     match.state === "confirmed"
-      ? "Everyone’s in. Booking the court comes next."
+      ? "Everyone’s in. Booking the court comes next; if it isn’t booked within 4 days, you’ll all search again."
       : match.state === "expired"
         ? "Not everyone accepted in time. Nobody is penalised, and this clears within a minute."
         : match.myAnswer
