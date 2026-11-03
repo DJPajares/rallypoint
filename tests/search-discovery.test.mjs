@@ -220,6 +220,8 @@ test("a bad time zone or query is refused with 422", async () => {
     (await bad({ from: sgMidnight(), tz: "Asia/Singapore", q: "x" })).status,
     422,
   );
+  // JavaScript reads "2026" as a date; the database doesn't.
+  assert.equal((await bad({ from: "2026", tz: "Asia/Singapore" })).status, 422);
   assert.equal((await request("/api/search/sessions")).status, 401);
 });
 
@@ -303,4 +305,24 @@ test("clubs: browsing lists public groups by size; a search shows a private grou
   assert.equal(openRow.members, 1);
   assert.deepEqual(Object.keys(closedRow).sort(), ["name", "visibility"]);
   assert.ok(!JSON.stringify(found).includes(closed));
+});
+
+test("a name that is just someone's email prefix is never findable", async () => {
+  const email = `sd-${nonce}-plain@rallypoint.test`;
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password: fixturePassword,
+    email_confirm: true,
+  });
+  assert.ok(!error && data.user);
+  const prefix = email.split("@")[0];
+  sql(`select api.ensure_my_profile('${data.user.id}', '${prefix}');`);
+  const viewer = await person(`Prefixseeker ${nonce}`);
+  const people = await (
+    await request(`/api/search/people?q=${encodeURIComponent(prefix)}`, viewer)
+  ).json();
+  assert.deepEqual(people.people, []);
+  const host = await login(email);
+  await publish({ ...host }, `Prefix hosted ${nonce}`, { days: 7 });
+  assert.deepEqual(await sessions(viewer, prefix), []);
 });

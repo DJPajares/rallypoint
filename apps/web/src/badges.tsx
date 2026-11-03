@@ -1161,11 +1161,11 @@ function ProfileVisibility({ initial }: { initial: boolean }) {
         disabled={busy}
         description={
           discoverable
-            ? "Anyone signed in can find you in Search."
-            : "Only people who already have your link see it."
+            ? "Public profile: anyone signed in can find you by name."
+            : "Private profile: only people who already have your link see it."
         }
       >
-        {discoverable ? "Public profile" : "Private profile"}
+        Show me in Search
       </SwitchField>
       {error ? (
         <p role="alert" className="m-0 text-sm text-danger-foreground">

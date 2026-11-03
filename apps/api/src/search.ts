@@ -14,10 +14,13 @@ const optionalQuery = z.object({
   q: z.string().trim().min(2).max(40).optional(),
 });
 const sessionsQuery = optionalQuery.extend({
+  // A full ISO instant: JavaScript reads more shapes as dates than Postgres does.
   from: z
     .string()
     .max(40)
-    .refine((v) => !Number.isNaN(Date.parse(v))),
+    .regex(
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,6})?)?(Z|[+-]\d{2}:\d{2})$/,
+    ),
   tz: z.string().min(1).max(100),
 });
 const refused = "Type 2 to 40 characters to search.";
@@ -31,7 +34,7 @@ async function read(
     p_actor_id: c.var.user.id,
     ...args,
   });
-  if (error?.code === "23514")
+  if (error && ["23514", "22007", "22008"].includes(error.code))
     throw new ApiError(422, "invalid_input", refused);
   if (error)
     throw new ApiError(

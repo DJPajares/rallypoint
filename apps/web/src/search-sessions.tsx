@@ -134,7 +134,9 @@ export function SearchSessions({
           </ul>
           {fullDay ? (
             <p className="m-0 text-sm text-muted-foreground">
-              Showing the first {perDay} sessions for this day.
+              {filtered
+                ? `This day has more than ${perDay} sessions, and filters only look through the first ${perDay}. Search by name to narrow it down.`
+                : `Showing the first ${perDay} sessions for this day.`}
             </p>
           ) : null}
         </>
@@ -154,9 +156,13 @@ export function SearchSessions({
       ) : (
         <Empty
           text={
-            query
-              ? "No sessions match on this day."
-              : "Nothing on this day yet."
+            fullDay && filtered
+              ? `No matches in the first ${perDay} sessions of this day. Search by name to narrow it down.`
+              : filtered
+                ? "No sessions match these filters on this day."
+                : query
+                  ? "No sessions match on this day."
+                  : "Nothing on this day yet."
           }
           action={
             next ? (
@@ -218,7 +224,7 @@ function DayStrip({
     <div
       role="tablist"
       aria-label="Day"
-      className="flex snap-x gap-2 overflow-x-auto pb-1 [scrollbar-width:none]"
+      className="flex snap-x gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [@media(hover:hover)]:[scrollbar-width:thin]"
     >
       {days.map((d, i) => {
         const selected = d.key === value;
