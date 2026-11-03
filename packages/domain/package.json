@@ -18,7 +18,8 @@
     "./profile": "./src/profile.ts",
     "./ranked": "./src/ranked.ts",
     "./courts": "./src/courts.ts",
-    "./ranked-search": "./src/ranked-search.ts"
+    "./ranked-search": "./src/ranked-search.ts",
+    "./ranked-alerts": "./src/ranked-alerts.ts"
   },
   "scripts": {
     "lint": "oxlint src",
