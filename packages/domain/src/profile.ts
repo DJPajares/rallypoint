@@ -67,7 +67,7 @@ export interface PublicProfile {
   badges: Array<{ key: string; level: number }>;
   stats: { played: number; hosted: number; groups: number };
   activities: ProfileActivity[];
-  /** Ranked categories with a rank (D-26); absent from an older server. */
+  /** Calibrated categories with their medal (D-26); absent from an older server. */
   ranks?: RankedCategory[];
 }
 

@@ -4,7 +4,7 @@
 // only names and draws them. Nothing here reads payments, no-shows or
 // reliability. Each badge has five levels, and a level has the same colour on
 // every badge.
-import type { RankedCategory } from "./ranked.ts";
+import type { CalibratingCategory, RankedCategory } from "./ranked.ts";
 
 export type BadgeKey =
   | "rally"
@@ -63,8 +63,8 @@ export interface BadgesView {
   badges: BadgeState[];
   title: RosterTitle | null;
   stats: { played: number; hosted: number; groups: number };
-  /** The owner's ranked categories with a rank (D-26). */
-  ranks?: RankedCategory[];
+  /** The owner's medals, and categories still calibrating (D-26). */
+  ranks?: Array<RankedCategory | CalibratingCategory>;
 }
 
 // The app and its database can ship minutes apart; a response of the other

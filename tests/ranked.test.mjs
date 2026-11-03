@@ -55,7 +55,7 @@ const apply = (format, winners, losers, resultId = crypto.randomUUID()) =>
   sql(
     `select app.apply_ranked_result('${resultId}','pickleball','${format}',${ids(winners)},${ids(losers)},now());`,
   );
-// The display scale: what rank thresholds are measured on.
+// The display scale of the hidden skill, as the standing's target reads it.
 function rating(user, format = "singles") {
   const row = sql(
     `select round((173.7178*mu+1500)::numeric,4),round((173.7178*phi)::numeric,4),matches from app.ranked_ratings where user_id='${user}' and activity_key='pickleball' and format='${format}';`,
@@ -182,7 +182,10 @@ test("concurrent results for a shared player both apply", async () => {
     await player("cx2"),
     await player("cy2"),
   ];
-  for (const u of [shared, alone]) preset(u, "singles", 1600, 120);
+  for (const u of [shared, alone]) {
+    preset(u, "singles", 1600, 120);
+    setStanding(u, 1000);
+  }
   for (const u of [x, y, x2, y2]) preset(u, "singles", 1500, 150);
   const run = (opponent) =>
     sqlAsync(
@@ -193,7 +196,7 @@ test("concurrent results for a shared player both apply", async () => {
   apply("singles", [alone], [y2]);
   const state = (u) =>
     sql(
-      `select round(mu::numeric,9),round(phi::numeric,9),round(sigma::numeric,9),matches from app.ranked_ratings where user_id='${u}' and format='singles';`,
+      `select round(mu::numeric,9),round(phi::numeric,9),round(sigma::numeric,9),matches,standing from app.ranked_ratings where user_id='${u}' and format='singles';`,
     );
   assert.equal(state(shared), state(alone));
 });
@@ -224,8 +227,16 @@ const ensureProfile = (user, activities = "[]") =>
   );
 const profileOf = (profileId) =>
   JSON.parse(sql(`select api.read_profile('${profileId}');`));
-const atRank = (r, matches = 5) =>
-  sql(`select coalesce(app.ranked_rank((${r}-1500)/173.7178,${matches}),'');`);
+const medalAt = (standing) =>
+  JSON.parse(sql(`select app.ranked_medal(${standing});`));
+const standingOf = (user, format = "singles") =>
+  sql(
+    `select coalesce(standing::text,'') from app.ranked_ratings where user_id='${user}' and format='${format}';`,
+  );
+const setStanding = (user, standing) =>
+  sql(
+    `update app.ranked_ratings set standing=${standing} where user_id='${user}' and format='singles';`,
+  );
 async function winMany(user, format, times) {
   for (let i = 0; i < times; i++) {
     const others = [];
@@ -237,33 +248,80 @@ async function winMany(user, format, times) {
   }
 }
 
-test("unranked until 5 matches and singles separate from doubles", async () => {
+test("nothing public until calibrated, and singles separate from doubles", async () => {
   const p = await player("u5");
   await winMany(p, "singles", 4);
   assert.equal(sql(`select app.visible_ranks('${p}')::text;`), "[]");
+  assert.equal(standingOf(p), "", "no standing while calibrating");
   await winMany(p, "singles", 1);
   const ranks = JSON.parse(sql(`select app.visible_ranks('${p}');`));
   assert.equal(ranks.length, 1);
   assert.deepEqual(Object.keys(ranks[0]).sort(), [
     "activity",
     "format",
-    "rank",
+    "medal",
+    "stars",
   ]);
   assert.equal(ranks[0].activity, "pickleball");
   assert.equal(ranks[0].format, "singles");
 });
 
-test("rank names follow the thresholds", () => {
-  assert.equal(atRank(1399.9), "Bronze");
-  assert.equal(atRank(1400), "Silver");
-  assert.equal(atRank(1549.9), "Silver");
-  assert.equal(atRank(1550), "Gold");
-  assert.equal(atRank(1700), "Platinum");
-  assert.equal(atRank(1850), "Diamond");
-  assert.equal(atRank(1900, 4), "", "Unranked shows nothing");
+test("medals and stars follow the standing", () => {
+  assert.deepEqual(medalAt(0), { medal: "Rookie", stars: 1 });
+  assert.deepEqual(medalAt(499), { medal: "Rookie", stars: 5 });
+  assert.deepEqual(medalAt(500), { medal: "Contender", stars: 1 });
+  assert.deepEqual(medalAt(1499), { medal: "Challenger", stars: 5 });
+  assert.deepEqual(medalAt(1500), { medal: "Veteran", stars: 1 });
+  assert.deepEqual(medalAt(2499), { medal: "Elite", stars: 5 });
+  assert.deepEqual(medalAt(2500), { medal: "Master", stars: null });
 });
 
-test("public profile shows ranked categories only and no numbers", async () => {
+test("calibration places no higher than Challenger 5", async () => {
+  const [streak, slump] = [await player("cal-w"), await player("cal-l")];
+  await winMany(streak, "singles", 5);
+  assert.equal(standingOf(streak), "1499");
+  for (let i = 0; i < 5; i++)
+    apply(
+      "singles",
+      [await player(`cl${crypto.randomUUID().slice(0, 8)}`)],
+      [slump],
+    );
+  const placed = medalAt(Number(standingOf(slump)));
+  assert.equal(placed.medal, "Rookie");
+});
+
+test("after calibration a match moves about 25, leaning toward skill", async () => {
+  const at = async (label, skill, standing, won) => {
+    const [me, them] = [await player(label), await player(`${label}-o`)];
+    preset(me, "singles", skill, 100);
+    preset(them, "singles", skill, 100);
+    setStanding(me, standing);
+    if (won) apply("singles", [me], [them]);
+    else apply("singles", [them], [me]);
+    return Number(standingOf(me));
+  };
+  // Skill 1500 points at standing 1250: a plain ±25.
+  assert.equal(await at("even-w", 1500, 1250, true), 1275);
+  assert.equal(await at("even-l", 1500, 1250, false), 1225);
+  // A standing well below the skill climbs faster and falls slower.
+  assert.equal(await at("low-w", 1500, 500, true), 535);
+  assert.equal(await at("low-l", 1500, 500, false), 485);
+  // Never below 0.
+  assert.equal(await at("floor", 1000, 10, false), 0);
+});
+
+test("the owner sees calibration and nobody else does", async () => {
+  const p = await player("calib");
+  const profileId = ensureProfile(p);
+  await winMany(p, "doubles", 3);
+  assert.deepEqual(profileOf(profileId).ranks, []);
+  const mine = JSON.parse(sql(`select api.read_my_badges('${p}');`));
+  assert.deepEqual(mine.ranks, [
+    { activity: "pickleball", format: "doubles", calibrating: 3 },
+  ]);
+});
+
+test("public profile shows calibrated categories only and no numbers", async () => {
   const p = await player("pp");
   const profileId = ensureProfile(p);
   await winMany(p, "doubles", 5);
@@ -272,10 +330,17 @@ test("public profile shows ranked categories only and no numbers", async () => {
   assert.equal(profile.ranks.length, 1);
   assert.equal(profile.ranks[0].format, "doubles");
   assert.match(
-    profile.ranks[0].rank,
-    /^(Bronze|Silver|Gold|Platinum|Diamond)$/,
+    profile.ranks[0].medal,
+    /^(Rookie|Contender|Challenger|Veteran|Elite|Master)$/,
   );
-  for (const secret of ['"mu"', '"phi"', '"sigma"', '"rating"', '"matches"'])
+  for (const secret of [
+    '"mu"',
+    '"phi"',
+    '"sigma"',
+    '"rating"',
+    '"matches"',
+    '"standing"',
+  ])
     assert.ok(!raw.includes(secret), `profile leaks ${secret}`);
   const mine = JSON.parse(sql(`select api.read_my_badges('${p}');`));
   assert.deepEqual(mine.ranks, profile.ranks);
@@ -338,6 +403,7 @@ test("roster shows ranks for the session's activity only", async () => {
   const pickleball = await rosterFor("Pickleball");
   assert.equal(pickleball.ranks.length, 1);
   assert.equal(pickleball.ranks[0].format, "singles");
+  assert.equal(pickleball.ranks[0].medal, "Challenger");
   const workshop = await rosterFor("Workshop");
   assert.deepEqual(workshop.ranks, []);
 });

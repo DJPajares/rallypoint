@@ -1,45 +1,87 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  calibratingCategories,
+  calibratingLabel,
+  calibratingSpoken,
   rankLabel,
   rankSpoken,
   rankedCategories,
 } from "../packages/domain/src/ranked.ts";
 
-test("rankLabel names rank and format", () => {
+const veteran = {
+  activity: "pickleball",
+  format: "doubles",
+  medal: "Veteran",
+  stars: 3,
+};
+const master = {
+  activity: "pickleball",
+  format: "singles",
+  medal: "Master",
+  stars: null,
+};
+
+test("rankLabel names the medal, its stars and the format", () => {
+  assert.equal(rankLabel(veteran), "Veteran ★★★ · Doubles");
+  assert.equal(rankLabel(master), "Master · Singles");
   assert.equal(
-    rankLabel({ activity: "pickleball", format: "doubles", rank: "Gold" }),
-    "Gold · Doubles",
-  );
-  assert.equal(
-    rankLabel({
-      activity: "badminton",
-      format: "mixed-doubles",
-      rank: "Diamond",
-    }),
-    "Diamond · Mixed doubles",
+    rankLabel({ ...veteran, format: "mixed-doubles", stars: 1 }),
+    "Veteran ★ · Mixed doubles",
   );
 });
 
-test("rankedCategories drops unknown ranks and shapes", () => {
-  const good = { activity: "pickleball", format: "singles", rank: "Silver" };
+test("rankSpoken says the stars in words", () => {
+  assert.equal(rankSpoken(veteran), "Doubles: Veteran, 3 of 5 stars");
+  assert.equal(
+    rankSpoken({ ...veteran, stars: 1 }),
+    "Doubles: Veteran, 1 of 5 stars",
+  );
+  assert.equal(rankSpoken(master), "Singles: Master");
+});
+
+test("rankedCategories drops unknown medals and shapes", () => {
   assert.deepEqual(
     rankedCategories([
-      good,
-      { activity: "pickleball", format: "doubles", rank: "Unranked" },
-      { activity: "pickleball", rank: "Gold" },
+      veteran,
+      master,
+      { ...veteran, medal: "Gold" },
+      { ...veteran, stars: 6 },
+      { ...veteran, stars: null },
+      { ...master, stars: 2 },
+      { activity: "pickleball", format: "doubles", calibrating: 3 },
       null,
-      "Gold",
+      "Veteran",
     ]),
-    [good],
+    [veteran, master],
   );
   assert.deepEqual(rankedCategories(undefined), []);
-  assert.deepEqual(rankedCategories({ ranks: [good] }), []);
 });
 
-test("rankSpoken says it is a rank, without the dot", () => {
+test("calibration reads as matches played of 5", () => {
+  const calibrating = {
+    activity: "pickleball",
+    format: "doubles",
+    calibrating: 3,
+  };
+  assert.deepEqual(
+    calibratingCategories([
+      calibrating,
+      veteran,
+      { ...calibrating, calibrating: 5 },
+    ]),
+    [calibrating],
+  );
+  assert.equal(calibratingLabel(calibrating), "Calibrating · 3 of 5");
+});
+
+test("calibration is spoken as matches played", () => {
   assert.equal(
-    rankSpoken({ activity: "pickleball", format: "doubles", rank: "Gold" }),
-    "Doubles rank: Gold",
+    calibratingSpoken({
+      activity: "pickleball",
+      format: "doubles",
+      calibrating: 3,
+    }),
+    "Doubles: calibrating, 3 of 5 matches played",
   );
 });
