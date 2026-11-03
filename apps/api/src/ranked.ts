@@ -21,6 +21,8 @@ const conflicts: Record<string, string> = {
   search_matched: "You’ve been matched. Accept or decline the match instead.",
   proposal_closed: "This match has already been settled or has run out.",
   cannot_widen: "You can widen your search after 3 days without a match.",
+  check_in_closed:
+    "Check-in is open from 30 minutes before the start to 30 minutes after.",
   booking_taken: "Another player is already booking the court.",
   booking_closed: "This match can’t be booked right now.",
   not_booker:
@@ -231,6 +233,15 @@ export const ranked = new Hono<ApiEnv>()
         p_match: c.req.param("match"),
         p_details: details,
         p_host_name: (await actorName(c, "Organizer")).name,
+      }),
+    );
+  })
+  .post(`${match}/check-in`, requireUser, async (c) => {
+    const b = await body(c, plain);
+    return json(
+      await call(c, "ranked_check_in", {
+        p_key: b.operationKey,
+        p_match: c.req.param("match"),
       }),
     );
   })

@@ -284,3 +284,136 @@ test("booking needs a confirmed match and the booker's claim", async () => {
   const bad = await book(a, id, booking({ endLocal: booking().startLocal }));
   assert.equal(bad.status, 422);
 });
+
+// A singles match booked by its first player.
+async function booked() {
+  const { a, b, id } = await confirmed();
+  assert.equal((await claim(a, id)).status, 200);
+  assert.equal((await book(a, id)).status, 200);
+  const [sessionId, slug] =
+    sql(`select s.id || '|' || s.slug from app.sessions s
+    join app.ranked_matches m on m.session_id = s.id where m.id = '${id}';`).split(
+      "|",
+    );
+  return { a, b, id, sessionId, slug };
+}
+const partyOf = (p, sessionId) =>
+  sql(
+    `select id from app.parties where session_id = '${sessionId}' and user_id = '${p.id}';`,
+  );
+// Booked sessions are guarded against edits; tests move times past the guard.
+const editDetails = (sessionId, field, offset) =>
+  sql(`begin; alter table app.sessions disable trigger protect_booked_session;
+    update app.sessions set details = jsonb_set(details, '{${field}}', to_jsonb(now() + interval '${offset}'))
+      where id = '${sessionId}';
+    alter table app.sessions enable trigger protect_booked_session; commit;`);
+const moveStart = (sessionId, offset) =>
+  editDetails(sessionId, "startsAt", offset);
+const checkIn = (actor, id) =>
+  request(`/api/ranked/matches/${id}/check-in`, actor, { operationKey: key() });
+const withdraw = (actor, slug, partyId, operationKey = key()) =>
+  request(`/api/registrations/${slug}/withdraw`, actor, {
+    operationKey,
+    partyId,
+  });
+const attend = (actor, slug, partyId) =>
+  request(`/api/registrations/${slug}/attendance`, actor, {
+    operationKey: key(),
+    partyId,
+    seat: 1,
+    state: "checked_in",
+    revision: 0,
+  });
+const seat = (partyId) =>
+  sql(`select state || '|' || changed_by || '|' || revision from app.seat_attendance
+    where party_id = '${partyId}' and seat = 1;`);
+
+test("players check themselves in only inside the window", async () => {
+  const { a, id, sessionId } = await booked();
+  moveStart(sessionId, "31 minutes");
+  let r = await checkIn(a, id);
+  assert.equal(r.status, 409);
+  assert.equal(await code(r), "check_in_closed");
+  moveStart(sessionId, "29 minutes");
+  assert.equal((await checkIn(a, id)).status, 200);
+  const party = partyOf(a, sessionId);
+  assert.equal(seat(party), `checked_in|${a.id}|1`);
+  assert.equal((await checkIn(a, id)).status, 200);
+  assert.equal(seat(party), `checked_in|${a.id}|1`);
+  moveStart(sessionId, "-31 minutes");
+  r = await checkIn(a, id);
+  assert.equal(r.status, 409);
+  assert.equal(await code(r), "check_in_closed");
+});
+
+test("nobody checks in someone else", async () => {
+  const { a, b, slug, sessionId } = await booked();
+  moveStart(sessionId, "10 minutes");
+  const r = await attend(a, slug, partyOf(b, sessionId));
+  assert.equal(r.status, 409);
+  assert.equal(await code(r), "ranked_match_session");
+  assert.equal(seat(partyOf(b, sessionId)), "");
+});
+
+test("withdrawing before the cutoff ends the ranked match and keeps the session", async () => {
+  const { a, b, id, slug, sessionId } = await booked();
+  const operationKey = key();
+  const r = await withdraw(b, slug, partyOf(b, sessionId), operationKey);
+  assert.equal(r.status, 200, await r.clone().text());
+  assert.equal(
+    sql(`select state from app.sessions where id = '${sessionId}';`),
+    "published",
+  );
+  assert.equal(
+    sql(`select state from app.parties where id = '${partyOf(b, sessionId)}';`),
+    "withdrawn",
+  );
+  assert.equal(
+    sql(
+      `select state || '|' || end_reason || '|' || ended_by from app.ranked_matches where id = '${id}';`,
+    ),
+    `cancelled|withdrawn|${b.id}`,
+  );
+  assert.equal((await mine(b)).search.endReason, "withdrew_match");
+  const back = (await mine(a)).search;
+  assert.equal(back.state, "searching");
+  assert.equal(back.returned, "withdrawn");
+  const endsAt = back.endsAt;
+  assert.equal(
+    (await withdraw(b, slug, partyOf(b, sessionId), operationKey)).status,
+    200,
+  );
+  assert.equal((await mine(a)).search.endsAt, endsAt);
+  // An unranked session again: the organizer records attendance as usual.
+  assert.equal((await attend(a, slug, partyOf(a, sessionId))).status, 200);
+});
+
+test("withdrawing after the cutoff is kept for Results as a no-show", async () => {
+  const { b, id, slug, sessionId } = await booked();
+  editDetails(sessionId, "cutoffAt", "-1 minute");
+  assert.equal((await withdraw(b, slug, partyOf(b, sessionId))).status, 200);
+  assert.equal(
+    sql(`select state from app.ranked_matches where id = '${id}';`),
+    "confirmed",
+  );
+  assert.notEqual(
+    sql(`select coalesce(no_show_at::text, '') from app.ranked_match_players
+      where match_id = '${id}' and user_id = '${b.id}';`),
+    "",
+  );
+});
+
+test("the booker can't cancel or remove players while the match is on", async () => {
+  const { a, b, slug, sessionId } = await booked();
+  const cancelled = await request(`/api/sessions/${sessionId}/cancel`, a, {
+    operationKey: key(),
+  });
+  assert.equal(cancelled.status, 409);
+  assert.equal(await code(cancelled), "ranked_match_session");
+  const removed = await request(`/api/registrations/${slug}/remove`, a, {
+    operationKey: key(),
+    partyId: partyOf(b, sessionId),
+  });
+  assert.equal(removed.status, 409);
+  assert.equal(await code(removed), "ranked_match_session");
+});

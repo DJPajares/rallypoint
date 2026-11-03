@@ -46,6 +46,8 @@ async function rpc(db: Database, name: string, args: Record<string, unknown>) {
         "You do not have organizer access to this group.",
       );
     const conflicts: Record<string, string> = {
+      ranked_match_session:
+        "This is a ranked match: players check themselves in, and nobody can be removed or the session cancelled while it’s on. Withdraw from the match instead.",
       stale_version:
         "This session changed. Reload it before saving your edits.",
       idempotency_conflict:
