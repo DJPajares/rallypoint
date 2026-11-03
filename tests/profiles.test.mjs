@@ -211,6 +211,8 @@ test("a public profile shows only its page fields", async (t) => {
     "badges",
     "name",
     "profileId",
+    // Ranked categories with a rank (D-26); empty when none.
+    "ranks",
     "stats",
     "title",
   ]);

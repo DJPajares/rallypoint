@@ -391,6 +391,8 @@ test("registration ordering, integrity, fee and privacy contract", async (t) => 
             "primaryName",
             // The public link to their profile; null until they have one.
             "profileId",
+            // Ranks in this session's activity (D-26); empty when none.
+            "ranks",
             "seats",
             // The badge a person chose to show (D-16); null when none.
             "title",

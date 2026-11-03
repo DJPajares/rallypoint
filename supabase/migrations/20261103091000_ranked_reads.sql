@@ -97,9 +97,9 @@ begin
 end;
 $$;
 
-revoke all on function app.badge_thresholds(),app.badge_items(uuid),api.read_my_badges(uuid),api.read_profile(uuid)
+revoke all on function api.read_my_badges(uuid),api.read_profile(uuid)
   from public,anon,authenticated;
-grant execute on function app.badge_thresholds(),app.badge_items(uuid),api.read_my_badges(uuid),api.read_profile(uuid)
+grant execute on function api.read_my_badges(uuid),api.read_profile(uuid)
   to service_role;
 
 -- Roster entries carry ranks for the session's activity; otherwise as in
