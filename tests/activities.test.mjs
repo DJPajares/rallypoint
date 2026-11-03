@@ -85,7 +85,7 @@ test("the catalog is public, ordered and cacheable", async () => {
   );
   const pickleball = activities[0];
   assert.deepEqual(pickleball.limits, {
-    minCapacity: 4,
+    minCapacity: 2,
     maxCapacity: 24,
     minDurationMinutes: 30,
     maxDurationMinutes: 240,
