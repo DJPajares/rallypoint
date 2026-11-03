@@ -21,6 +21,14 @@ export type RankedAlert =
       deadline: string;
     }
   | {
+      kind: "book";
+      key: string;
+      matchId: string;
+      /** You claimed it: enter the court and time. Otherwise anyone can. */
+      claimed: boolean;
+      deadline: string;
+    }
+  | {
       kind: "widen";
       key: string;
       searchId: string;
@@ -51,6 +59,23 @@ export function rankedAlerts(
       format: match.format,
       deadline: match.respondBy,
     });
+  const booking = match?.state === "confirmed" ? match.booking : null;
+  if (match && booking) {
+    const deadline =
+      booking.state === "claimed" && booking.you
+        ? booking.claimUntil
+        : booking.state === "open"
+          ? booking.bookBy
+          : null;
+    if (deadline && open(deadline, now))
+      alerts.push({
+        kind: "book",
+        key: `book:${match.id}`,
+        matchId: match.id,
+        claimed: booking.state === "claimed",
+        deadline,
+      });
+  }
   for (const invite of mine.invites)
     if (open(invite.endsAt, now))
       alerts.push({

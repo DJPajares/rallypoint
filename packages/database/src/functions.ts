@@ -46,6 +46,16 @@ export const functions: Record<string, Record<string, string>> = {
     p_accept: "boolean",
   },
   widen_search: { ...actor, p_key: "uuid", p_search: "uuid" },
+  claim_booking: { ...actor, p_key: "uuid", p_match: "uuid" },
+  ranked_check_in: { ...actor, p_key: "uuid", p_match: "uuid" },
+  release_booking: { ...actor, p_key: "uuid", p_match: "uuid" },
+  book_match: {
+    ...actor,
+    p_key: "uuid",
+    p_match: "uuid",
+    p_details: "jsonb",
+    p_host_name: "text",
+  },
   list_courts: { ...actor, p_area_key: "text" },
   add_court: {
     ...actor,

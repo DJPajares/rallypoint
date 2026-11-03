@@ -19,6 +19,8 @@ type Action =
   | "request"
   | "answer";
 const conflicts: Record<string, string> = {
+  ranked_match_session:
+    "This is a ranked match: players check themselves in, and nobody can be removed or the session cancelled while it’s on. Withdraw from the match instead.",
   split_undo_requires_review: "Review a new split before restoring this share.",
   split_not_finalized:
     "This is still an estimate. Finalize the split before recording payment.",

@@ -51,9 +51,11 @@ export interface SearchView {
     | "declined_match"
     | "partner_declined_match"
     | "match_lapsed"
+    | "withdrew_match"
+    | "partner_withdrew_match"
     | null;
   /** Searching again after a match fell through, for a day afterwards. */
-  returned: "declined" | "lapsed" | "unbooked" | null;
+  returned: "declined" | "lapsed" | "unbooked" | "withdrawn" | null;
   /** When a waiting invite lapses, or when searching stops. */
   endsAt: string;
   role: "starter" | "partner";
@@ -89,8 +91,36 @@ export interface MatchView {
     side: "yours" | "theirs";
     accepted: boolean;
     you: boolean;
+    /** Checked themselves in to the booked session (WDL-424). */
+    checkedIn: boolean;
   }>;
   myAnswer: "accepted" | null;
+  /** Once everyone has accepted: booking the court (WDL-424). */
+  booking: MatchBooking | null;
+  /** Once booked: when players can check themselves in. */
+  checkIn: { opensAt: string; closesAt: string; you: boolean } | null;
+}
+
+export interface MatchBooking {
+  state: "open" | "claimed" | "booked";
+  bookerName: string | null;
+  /** You are the one booking (or who booked). */
+  you: boolean;
+  /** While claimed: when the booker's 48 hours end. */
+  claimUntil: string | null;
+  /** The match is let go if nobody books by then. */
+  bookBy: string;
+  session: {
+    slug: string;
+    startsAt: string;
+    location: string;
+    /** Withdrawing is free until then; after it, it counts as not showing up. */
+    cutoffAt: string;
+    currency: string;
+    totalMinor: number;
+    /** An equal share of the court cost, before the organizer finalizes. */
+    shareMinor: number;
+  } | null;
 }
 
 /** What the Ranked page reads. */
