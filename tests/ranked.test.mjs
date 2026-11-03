@@ -183,3 +183,190 @@ test("concurrent results for a shared player both apply", async () => {
   assert.deepEqual(await Promise.all([run(x), run(y)]), ["t", "t"]);
   assert.equal(rating(shared).matches, 2);
 });
+
+const base = process.env.RALLYPOINT_TEST_URL ?? "http://127.0.0.1:3000";
+assert.ok(["127.0.0.1", "localhost"].includes(new URL(base).hostname));
+async function login(email) {
+  const { data, error } = await createClient(
+    env.SUPABASE_URL,
+    env.SUPABASE_PUBLISHABLE_KEY,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  ).auth.signInWithPassword({ email, password: fixturePassword });
+  assert.ok(!error && data.session, "Synthetic sign-in must succeed");
+  return { id: data.user.id, token: data.session.access_token };
+}
+const request = (path, actor, body) =>
+  fetch(base + path, {
+    method: body ? "POST" : "GET",
+    headers: {
+      ...(actor ? { Authorization: `Bearer ${actor.token}` } : {}),
+      ...(body ? { "Content-Type": "application/json" } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+const ensureProfile = (user, activities = "[]") =>
+  sql(
+    `select api.save_my_profile('${user}','Ranked ${nonce}','Ranked ${nonce}','${activities}'::jsonb)->>'profileId';`,
+  );
+const profileOf = (profileId) =>
+  JSON.parse(sql(`select api.read_profile('${profileId}');`));
+const atRank = (r, matches = 5) =>
+  sql(`select coalesce(app.ranked_rank((${r}-1500)/173.7178,${matches}),'');`);
+async function winMany(user, format, times) {
+  for (let i = 0; i < times; i++) {
+    const others = [];
+    for (let j = 0; j < (format === "doubles" ? 3 : 1); j++)
+      others.push(await player(`w${crypto.randomUUID().slice(0, 8)}`));
+    if (format === "doubles")
+      apply(format, [user, others[0]], [others[1], others[2]]);
+    else apply(format, [user], others);
+  }
+}
+
+test("unranked until 5 matches and singles separate from doubles", async () => {
+  const p = await player("u5");
+  await winMany(p, "singles", 4);
+  assert.equal(sql(`select app.visible_ranks('${p}')::text;`), "[]");
+  await winMany(p, "singles", 1);
+  const ranks = JSON.parse(sql(`select app.visible_ranks('${p}');`));
+  assert.equal(ranks.length, 1);
+  assert.deepEqual(Object.keys(ranks[0]).sort(), [
+    "activity",
+    "format",
+    "rank",
+  ]);
+  assert.equal(ranks[0].activity, "pickleball");
+  assert.equal(ranks[0].format, "singles");
+});
+
+test("rank names follow the thresholds", () => {
+  assert.equal(atRank(1399.9), "Bronze");
+  assert.equal(atRank(1400), "Silver");
+  assert.equal(atRank(1549.9), "Silver");
+  assert.equal(atRank(1550), "Gold");
+  assert.equal(atRank(1700), "Platinum");
+  assert.equal(atRank(1850), "Diamond");
+  assert.equal(atRank(1900, 4), "", "Unranked shows nothing");
+});
+
+test("public profile shows ranked categories only and no numbers", async () => {
+  const p = await player("pp");
+  const profileId = ensureProfile(p);
+  await winMany(p, "doubles", 5);
+  const raw = sql(`select api.read_profile('${profileId}')::text;`);
+  const profile = JSON.parse(raw);
+  assert.equal(profile.ranks.length, 1);
+  assert.equal(profile.ranks[0].format, "doubles");
+  assert.match(
+    profile.ranks[0].rank,
+    /^(Bronze|Silver|Gold|Platinum|Diamond)$/,
+  );
+  for (const secret of ['"mu"', '"phi"', '"sigma"', '"rating"', '"matches"'])
+    assert.ok(!raw.includes(secret), `profile leaks ${secret}`);
+  const mine = JSON.parse(sql(`select api.read_my_badges('${p}');`));
+  assert.deepEqual(mine.ranks, profile.ranks);
+});
+
+test("roster shows ranks for the session's activity only", async () => {
+  const organizer = await login("organizer@rallypoint.test");
+  const email = `rk-${nonce}-roster@rallypoint.test`;
+  const { data } = await admin.auth.admin.createUser({
+    email,
+    password: fixturePassword,
+    email_confirm: true,
+    user_metadata: { full_name: `Ranked roster ${nonce}` },
+  });
+  ensureProfile(data.user.id);
+  await winMany(data.user.id, "singles", 5);
+  const me = await login(email);
+  const local = (ms) => new Date(ms).toISOString().slice(0, 16);
+  async function rosterFor(activity) {
+    const now = Date.now();
+    const created = await request(
+      "/api/groups/11111111-1111-4111-8111-111111111111/sessions",
+      organizer,
+      {
+        operationKey: crypto.randomUUID(),
+        groupId: "11111111-1111-4111-8111-111111111111",
+        intent: "publish",
+        details: {
+          title: `Ranked roster ${activity}`,
+          activity,
+          startLocal: local(now + 86400000),
+          endLocal: local(now + 93600000),
+          timeZone: "UTC",
+          location: "Synthetic court",
+          instructions: "Test only",
+          capacity: "4",
+          openLocal: local(now - 3600000),
+          cutoffLocal: local(now + 43200000),
+          fee: "0",
+          currency: "SGD",
+          guests: false,
+        },
+      },
+    );
+    assert.equal(created.status, 200);
+    const s = (await created.json()).session;
+    const joined = await request(`/api/registrations/${s.slug}`, me, {
+      operationKey: crypto.randomUUID(),
+      version: s.version,
+      seats: 1,
+      guestName: "",
+      consent: true,
+    });
+    assert.equal(joined.status, 200);
+    const view = (
+      await (await request(`/api/registrations/${s.slug}`, organizer)).json()
+    ).registration;
+    return view.roster.find((r) => r.primaryName === `Ranked ${nonce}`);
+  }
+  const pickleball = await rosterFor("Pickleball");
+  assert.equal(pickleball.ranks.length, 1);
+  assert.equal(pickleball.ranks[0].format, "singles");
+  const workshop = await rosterFor("Workshop");
+  assert.deepEqual(workshop.ranks, []);
+});
+
+test("seed rating follows the self-rated level only before the first match", async () => {
+  const seed = (u) =>
+    Number(
+      sql(`select app.ranked_seed_rating('${u}','pickleball','singles');`),
+    );
+  const none = await player("sn");
+  assert.equal(seed(none), 1550);
+  for (const [level, expected] of [
+    ["beginner", 1325],
+    ["intermediate", 1550],
+    ["advanced", 1775],
+  ]) {
+    const u = await player(`s${level}`);
+    ensureProfile(u, JSON.stringify([{ name: "Pickleball", level }]));
+    assert.equal(seed(u), expected);
+  }
+  const played = await player("splayed");
+  ensureProfile(
+    played,
+    JSON.stringify([{ name: "Pickleball", level: "advanced" }]),
+  );
+  await winMany(played, "singles", 1);
+  assert.ok(Math.abs(seed(played) - rating(played).r) < 0.001);
+});
+
+test("self-rated levels and badges are unchanged by results", async () => {
+  const p = await player("unch");
+  const profileId = ensureProfile(
+    p,
+    JSON.stringify([{ name: "Pickleball", level: "beginner" }]),
+  );
+  const before = profileOf(profileId);
+  const badgesBefore = JSON.parse(sql(`select api.read_my_badges('${p}');`));
+  await winMany(p, "singles", 5);
+  const after = profileOf(profileId);
+  assert.deepEqual(after.activities, before.activities);
+  assert.deepEqual(after.badges, before.badges);
+  assert.deepEqual(
+    JSON.parse(sql(`select api.read_my_badges('${p}');`)).badges,
+    badgesBefore.badges,
+  );
+});
