@@ -168,6 +168,15 @@ export const functions: Record<string, Record<string, string>> = {
   read_shared_session: { p_slug: "uuid", p_actor_id: "uuid" },
   session_access_options: { ...actor, p_query: "text" },
   search_groups: { ...actor, p_query: "text" },
+  search_sessions: {
+    ...actor,
+    p_from: "timestamptz",
+    p_time_zone: "text",
+    p_query: "text",
+  },
+  search_people: { ...actor, p_query: "text" },
+  search_clubs: { ...actor, p_query: "text" },
+  set_profile_discoverable: { ...actor, p_discoverable: "boolean" },
   read_operation: { ...actor, p_key: "uuid" },
   save_session: {
     ...actor,

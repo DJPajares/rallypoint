@@ -85,6 +85,22 @@ export const profiles = new Hono<ApiEnv>()
     });
   })
   .all("/me/profile", requireUser, () => notAvailable())
+  // D-27: whether Search can find you. Public unless you turn it off.
+  .post("/me/profile/discoverable", requireUser, async (c) => {
+    const parsed = z
+      .object({ discoverable: z.boolean() })
+      .strict()
+      .safeParse(await readBody(c.req.raw));
+    if (!parsed.success)
+      throw new ApiError(400, "invalid_input", "Choose public or private.");
+    const { data, error } = await c.var.db.rpc("set_profile_discoverable", {
+      p_actor_id: c.var.user.id,
+      p_discoverable: parsed.data.discoverable,
+    });
+    if (error) throw unavailable();
+    return json(data);
+  })
+  .all("/me/profile/discoverable", requireUser, () => notAvailable())
   // Public: anyone holding the link can read the page's own fields, nothing else.
   .get(`/people/${id}`, async (c) => {
     connection(c.env);
