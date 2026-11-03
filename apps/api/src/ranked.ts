@@ -15,6 +15,8 @@ const conflicts: Record<string, string> = {
   own_invite: "This is your own invite. Share the link with your partner.",
   invite_closed:
     "This invite has already been answered, cancelled or has run out.",
+  search_matched:
+    "You’ve been matched. Accept or decline the match instead.",
   idempotency_conflict:
     "This request key was already used for different details.",
 };

@@ -38,6 +38,7 @@ export const functions: Record<string, Record<string, string>> = {
   },
   cancel_search: { ...actor, p_key: "uuid", p_search: "uuid" },
   restart_search: { ...actor, p_key: "uuid", p_search: "uuid" },
+  run_matchmaking: { p_limit: "integer" },
   list_courts: { ...actor, p_area_key: "text" },
   add_court: {
     ...actor,
