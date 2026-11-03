@@ -63,6 +63,7 @@ import {
   Notice,
   Sheet,
   StatRow,
+  SwitchField,
 } from "@rallypoint/ui";
 import { useAuth } from "./auth-context";
 import { useApi } from "./use-api";
@@ -1052,6 +1053,11 @@ export function ProfilePage() {
           email: session?.user.email ?? null,
         }}
       />
+      {profile.data ? (
+        <ProfileVisibility
+          initial={profile.data.profile.discoverable !== false}
+        />
+      ) : null}
       <BadgeDetails
         state={open ? badgeOrEmpty(view, open) : null}
         onClose={() => setOpen(null)}
@@ -1109,6 +1115,64 @@ export function ProfilePage() {
         </form>
       </Sheet>
     </>
+  );
+}
+
+/**
+ * Whether Search can find you by name (D-27): public by default, one quiet
+ * row at the foot of your profile. Your page stays reachable by its link.
+ */
+function ProfileVisibility({ initial }: { initial: boolean }) {
+  const { session } = useAuth();
+  const [discoverable, setDiscoverable] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function change(next: boolean) {
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/me/profile/discoverable", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ discoverable: next }),
+        signal: AbortSignal.timeout(10000),
+      });
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(result.error?.message ?? "Please try again.");
+      setDiscoverable(result.discoverable);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section
+      aria-label="Profile visibility"
+      className="mx-auto mt-6 max-w-form"
+    >
+      <SwitchField
+        checked={discoverable}
+        onCheckedChange={(next) => void change(next)}
+        disabled={busy}
+        description={
+          discoverable
+            ? "Anyone signed in can find you in Search."
+            : "Only people who already have your link see it."
+        }
+      >
+        {discoverable ? "Public profile" : "Private profile"}
+      </SwitchField>
+      {error ? (
+        <p role="alert" className="m-0 text-sm text-danger-foreground">
+          {error}
+        </p>
+      ) : null}
+    </section>
   );
 }
 
