@@ -8,12 +8,10 @@ import {
 } from "react";
 interface Frame {
   enterDetail: () => () => void;
-  setCreateHref: (href: string | null) => void;
   openCreate: () => void;
 }
 export const FrameContext = createContext<Frame>({
   enterDetail: () => () => {},
-  setCreateHref: () => {},
   openCreate: () => {},
 });
 /**
@@ -25,14 +23,6 @@ export function useDetailChrome() {
   useEffect(() => enterDetail(), [enterDetail]);
 }
 export const useFrame = () => useContext(FrameContext);
-/** Inside a group, the create button skips the picker and opens that group's form. */
-export function useCreateTarget(href: string | null) {
-  const { setCreateHref } = useContext(FrameContext);
-  useEffect(() => {
-    setCreateHref(href);
-    return () => setCreateHref(null);
-  }, [href, setCreateHref]);
-}
 const phoneQuery = "(max-width: 767px)";
 export function useIsPhone() {
   return useSyncExternalStore(

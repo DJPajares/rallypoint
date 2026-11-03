@@ -642,6 +642,8 @@ export function Workspace() {
             ? `${groups.length} ${groups.length === 1 ? "group" : "groups"}${admin ? ` · you run ${admin}` : ""}`
             : undefined
         }
+        createHref={groups.length ? "/groups/new" : undefined}
+        createLabel="Start a group"
       />
       {workspace.loading ? (
         <ListSkeleton label="Finding your groups…" rows={4} />

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarDotsIcon } from "@phosphor-icons/react/dist/csr/CalendarDots";
 import { HouseIcon } from "@phosphor-icons/react/dist/csr/House";
-import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { TrophyIcon } from "@phosphor-icons/react/dist/csr/Trophy";
 import { UsersThreeIcon } from "@phosphor-icons/react/dist/csr/UsersThree";
 import type { Icon } from "@phosphor-icons/react";
@@ -65,35 +65,19 @@ function Brand({ href }: { href: string }) {
   );
 }
 /**
- * The phone bar's raised create button. Tablet and desktop have none: each
- * page that can add something shows its own button where the action belongs.
+ * The phone bar's raised button: Search, reachable from every tab. Tablet and
+ * desktop reach Search from the menu. Adding something lives on the pages that
+ * can add it, as a button beside their title.
  */
-function CreateButton({
-  href,
-  onPick,
-}: {
-  href: string | null;
-  onPick: () => void;
-}) {
-  const className =
-    "absolute top-[calc(var(--spacing-create)/-2)] left-1/2 z-2 inline-flex size-create -translate-x-1/2 items-center justify-center rounded-full border-0 bg-primary text-primary-foreground shadow-lift transition-[background-color,box-shadow,transform] duration-200 ease-standard hover:bg-primary-hover hover:shadow-lift-hover focus-visible:outline-offset-4 active:translate-y-px";
-  const content = <PlusIcon size={28} aria-hidden="true" />;
-  // Inside a group the button goes straight to that group's form; elsewhere it
-  // asks which group first. Same place, same icon, either way.
-  return href ? (
-    <Link className={className} href={href} aria-label="New session">
-      {content}
-    </Link>
-  ) : (
-    <button
-      type="button"
-      className={className}
-      aria-label="New session"
-      aria-haspopup="dialog"
-      onClick={onPick}
+function SearchButton() {
+  return (
+    <Link
+      className="absolute top-[calc(var(--spacing-create)/-2)] left-1/2 z-2 inline-flex size-create -translate-x-1/2 items-center justify-center rounded-full border-0 bg-primary text-primary-foreground shadow-lift transition-[background-color,box-shadow,transform] duration-200 ease-standard hover:bg-primary-hover hover:shadow-lift-hover focus-visible:outline-offset-4 active:translate-y-px"
+      href="/search"
+      aria-label="Search"
     >
-      {content}
-    </button>
+      <MagnifyingGlassIcon size={28} weight="bold" aria-hidden="true" />
+    </Link>
   );
 }
 export function Shell({ children }: { children: ReactNode }) {
@@ -102,14 +86,13 @@ export function Shell({ children }: { children: ReactNode }) {
   const signedIn = loading ? hint : !!session;
   const pathname = usePathname();
   const [detailDepth, setDetailDepth] = useState(0);
-  const [createHref, setCreateHref] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
   const enterDetail = useCallback(() => {
     setDetailDepth((depth) => depth + 1);
     return () => setDetailDepth((depth) => depth - 1);
   }, []);
   const frame = useMemo(
-    () => ({ enterDetail, setCreateHref, openCreate: () => setPicking(true) }),
+    () => ({ enterDetail, openCreate: () => setPicking(true) }),
     [enterDetail],
   );
   const closePicker = useCallback(() => setPicking(false), []);
@@ -205,7 +188,7 @@ export function Shell({ children }: { children: ReactNode }) {
                   })}
                 </ul>
               </nav>
-              <CreateButton href={createHref} onPick={() => setPicking(true)} />
+              <SearchButton />
             </div>
           ) : null}
           <Sheet open={picking} onClose={closePicker} title="New session">

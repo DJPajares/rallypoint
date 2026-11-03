@@ -28,29 +28,36 @@ export function TabHero({
   title,
   summary,
   onCreate,
+  createHref,
+  createLabel = "New session",
 }: {
   title: ReactNode;
   summary?: ReactNode;
-  /** New session, shown on tablet and desktop where there's no + tab. */
+  /** The page's add button, beside its title at every size: opens the picker. */
   onCreate?: () => void;
+  /** Or goes straight to a form. */
+  createHref?: string;
+  createLabel?: string;
 }) {
+  const createClass = cx(
+    buttonClass({ variant: "primary" }),
+    "col-start-2! row-span-2 row-start-1 inline-flex",
+  );
   return (
     <header className="grid grid-cols-[1fr_auto] items-end gap-x-4 gap-y-2 *:col-start-1 [&_h1]:m-0 [&_h1]:text-display-md [&_h1]:leading-[1.05]">
       <h1>{title}</h1>
       {summary ? (
         <p className="m-0 text-base text-muted-foreground">{summary}</p>
       ) : null}
-      {onCreate ? (
-        <button
-          type="button"
-          className={cx(
-            buttonClass({ variant: "primary" }),
-            "col-start-2! row-span-2 row-start-1 hidden md:inline-flex",
-          )}
-          onClick={onCreate}
-        >
+      {createHref ? (
+        <Link className={createClass} href={createHref}>
           <PlusIcon size={18} weight="bold" aria-hidden="true" />
-          New session
+          {createLabel}
+        </Link>
+      ) : onCreate ? (
+        <button type="button" className={createClass} onClick={onCreate}>
+          <PlusIcon size={18} weight="bold" aria-hidden="true" />
+          {createLabel}
         </button>
       ) : null}
     </header>
