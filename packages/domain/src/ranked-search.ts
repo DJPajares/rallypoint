@@ -51,9 +51,11 @@ export interface SearchView {
     | "declined_match"
     | "partner_declined_match"
     | "match_lapsed"
+    | "withdrew_match"
+    | "partner_withdrew_match"
     | null;
   /** Searching again after a match fell through, for a day afterwards. */
-  returned: "declined" | "lapsed" | "unbooked" | null;
+  returned: "declined" | "lapsed" | "unbooked" | "withdrawn" | null;
   /** When a waiting invite lapses, or when searching stops. */
   endsAt: string;
   role: "starter" | "partner";
@@ -108,7 +110,17 @@ export interface MatchBooking {
   claimUntil: string | null;
   /** The match is let go if nobody books by then. */
   bookBy: string;
-  session: { slug: string; startsAt: string; location: string } | null;
+  session: {
+    slug: string;
+    startsAt: string;
+    location: string;
+    /** Withdrawing is free until then; after it, it counts as not showing up. */
+    cutoffAt: string;
+    currency: string;
+    totalMinor: number;
+    /** An equal share of the court cost, before the organizer finalizes. */
+    shareMinor: number;
+  } | null;
 }
 
 /** What the Ranked page reads. */

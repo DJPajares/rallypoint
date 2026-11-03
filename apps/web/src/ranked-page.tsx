@@ -32,8 +32,9 @@ import type {
   SearchInvite,
   SearchView,
 } from "@rallypoint/domain/ranked-search";
+import { feeLabel } from "@rallypoint/domain/session";
 import { useRankedAlerts } from "./ranked-alerts";
-import { regionLabel } from "./ranked-labels";
+import { endedLabel, regionLabel, returnedLabel } from "./ranked-labels";
 import { ShareButton } from "./share-button";
 import { ListSkeleton } from "./skeletons";
 import { useApi } from "./use-api";
@@ -152,15 +153,6 @@ function Choices({ search }: { search: SearchView }) {
   );
 }
 
-const returnedLabel: Record<NonNullable<SearchView["returned"]>, string> = {
-  declined:
-    "The other side declined your last match, so you’re searching again with your place kept.",
-  lapsed:
-    "Your last match ran out before everyone accepted, so you’re searching again with your place kept.",
-  unbooked:
-    "Your last match wasn’t booked within 4 days, so you’re searching again with your place kept.",
-};
-
 function ActiveSearch({
   search,
   onDone,
@@ -252,20 +244,7 @@ function EndedSearch({
   onDone: (answer: unknown) => void;
 }) {
   const restart = useMutation<unknown>(onDone);
-  const why =
-    search.endReason === "declined"
-      ? `${search.partner?.name ?? "Your partner"} declined.`
-      : search.endReason === "cancelled"
-        ? "It was cancelled."
-        : search.endReason === "declined_match"
-          ? "You declined the match."
-          : search.endReason === "partner_declined_match"
-            ? `${search.partner?.name ?? "Your partner"} declined the match.`
-            : search.endReason === "match_lapsed"
-              ? "The match ran out before everyone accepted."
-              : search.endReason === "unanswered"
-                ? `${search.partner?.name ?? "Your partner"} didn’t answer in time.`
-                : "It ran out without a match.";
+  const why = endedLabel(search);
   return (
     <section className={cardClass} aria-labelledby="ended-title">
       <h2 id="ended-title" className="m-0" tabIndex={-1} data-ranked-status>
@@ -472,8 +451,18 @@ function BookingPanel({
 }) {
   const claim = useMutation<unknown>(onDone);
   const checkIn = useMutation<unknown>(onDone);
-  // Read once: whether the check-in window is open doesn't need to tick.
-  const [now] = useState(() => Date.now());
+  // The clock moves on its own so the check-in button appears on time.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (booking.state !== "booked") return;
+    const tick = () => setNow(Date.now());
+    const timer = setInterval(tick, 30_000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [booking.state]);
   if (booking.state === "open")
     return (
       <div className="mt-4 grid gap-2">
@@ -514,6 +503,18 @@ function BookingPanel({
           <dd>{session.location}</dd>
           <dt>Starts</dt>
           <dd>{dateTimeLabel(session.startsAt)}</dd>
+          <dt>Cost</dt>
+          <dd>
+            {session.totalMinor
+              ? `${feeLabel({ currency: session.currency, feeMinor: session.totalMinor })} in total · about ${feeLabel({ currency: session.currency, feeMinor: session.shareMinor })} each, paid to ${booking.you ? "you" : (booking.bookerName ?? "the booker")}`
+              : "Free"}
+          </dd>
+          <dt>Free to withdraw</dt>
+          <dd>
+            {now < Date.parse(session.cutoffAt)
+              ? `Until ${dateTimeLabel(session.cutoffAt)}. After that, withdrawing counts as not showing up.`
+              : "No longer: withdrawing now counts as not showing up."}
+          </dd>
         </dl>
       ) : null}
       <ul

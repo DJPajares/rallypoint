@@ -444,3 +444,82 @@ test("the match card shows who is booking, then the session and check-in times",
     [false, false],
   );
 });
+
+const updateAs = (actor, sessionId, patch) =>
+  sql(`select api.update_session('${actor.id}', gen_random_uuid(), '${sessionId}', 'update',
+    (select version from app.sessions where id = '${sessionId}'),
+    (select details from app.sessions where id = '${sessionId}') || '${JSON.stringify(patch)}'::jsonb) is not null;`);
+const refused = (run) => {
+  try {
+    run();
+    return "allowed";
+  } catch (e) {
+    return String(e.stderr).match(/ERROR:\s+(\w+)/)?.[1] ?? "error";
+  }
+};
+
+test("while the match is on, the booker can't move the time or change spots, access or cost", async () => {
+  const { a, sessionId } = await booked();
+  const later =
+    sql(`select to_jsonb((details->>'startsAt')::timestamptz + interval '1 hour')
+    from app.sessions where id = '${sessionId}';`);
+  for (const patch of [
+    { startsAt: JSON.parse(later) },
+    { capacity: "3" },
+    { access: "public" },
+    { totalMinor: 9900, fee: "99" },
+  ])
+    assert.equal(
+      refused(() => updateAs(a, sessionId, patch)),
+      "ranked_match_session",
+      JSON.stringify(patch),
+    );
+  assert.equal(
+    refused(() => updateAs(a, sessionId, { title: "Ranked Singles, court 2" })),
+    "allowed",
+  );
+});
+
+test("the match card shows the cost, each share and the free-cancellation deadline", async () => {
+  const { b } = await booked();
+  const session = (await mine(b)).match.booking.session;
+  assert.equal(session.totalMinor, 2400);
+  assert.equal(session.shareMinor, 1200);
+  assert.equal(session.currency, "SGD");
+  assert.equal(
+    Date.parse(session.startsAt) - Date.parse(session.cutoffAt),
+    24 * 3600000,
+  );
+});
+
+test("a claim never outlasts the four days to book", async () => {
+  const { a, id } = await confirmed();
+  sql(
+    `update app.ranked_matches set confirmed_at = now() - interval '3 days 12 hours' where id = '${id}';`,
+  );
+  assert.equal((await claim(a, id)).status, 200);
+  assert.equal(
+    sql(
+      `select claim_until = confirmed_at + interval '4 days' from app.ranked_matches where id = '${id}';`,
+    ),
+    "t",
+  );
+});
+
+test("when the booker withdraws before the cutoff, the session they ran is cancelled", async () => {
+  const { a, b, id, slug, sessionId } = await booked();
+  assert.equal((await withdraw(a, slug, partyOf(a, sessionId))).status, 200);
+  assert.equal(
+    sql(`select state from app.sessions where id = '${sessionId}';`),
+    "cancelled",
+  );
+  assert.equal(
+    sql(
+      `select state || '|' || end_reason from app.ranked_matches where id = '${id}';`,
+    ),
+    "cancelled|withdrawn",
+  );
+  const back = (await mine(b)).search;
+  assert.equal(back.state, "searching");
+  assert.equal(back.returned, "withdrawn");
+});
