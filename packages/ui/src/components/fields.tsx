@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { NumberField } from "@base-ui/react/number-field";
 import { Popover as PopoverPrimitive } from "@base-ui/react/popover";
@@ -26,12 +26,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { Input } from "./ui/input";
 import { Switch } from "./ui/switch";
 import {
   formatLocalDateTime,
   joinLocalDateTime,
   splitLocalDateTime,
-  timeSlots,
 } from "../datetime";
 
 interface ControlProps {
@@ -59,6 +59,7 @@ export function DateTimeField({
   title = "Choose date and time",
   placeholder = "Pick a date and time",
   defaultTime = "18:00",
+  allowPast = false,
   "aria-describedby": describedBy,
 }: ControlProps & {
   value: string;
@@ -68,6 +69,8 @@ export function DateTimeField({
   placeholder?: string;
   /** Used when a date is picked before any time. */
   defaultTime?: string;
+  /** Days before today can't be picked unless this is set. */
+  allowPast?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const phone = useIsPhone();
@@ -110,9 +113,11 @@ export function DateTimeField({
   const done = buttonClass({ variant: "primary", size: "sm" });
   const panel = (doneButton: ReactNode) => (
     <DateTimePanel
+      id={id}
       value={value}
       onChange={onChange}
       defaultTime={defaultTime}
+      allowPast={allowPast}
       done={doneButton}
       inSheet={phone}
     />
@@ -177,19 +182,28 @@ const calendarClasses = {
 };
 
 function DateTimePanel({
+  id,
   value,
   onChange,
   defaultTime,
+  allowPast,
   done,
   inSheet,
 }: {
+  id: string;
   value: string;
   onChange: (value: string) => void;
   defaultTime: string;
+  allowPast: boolean;
   done: ReactNode;
   inSheet: boolean;
 }) {
   const { date, time } = splitLocalDateTime(value);
+  // Today, from its first moment: earlier days are greyed out and can't be picked.
+  const [today] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  });
   return (
     <>
       <div
@@ -201,6 +215,7 @@ function DateTimePanel({
           selected={date ?? undefined}
           defaultMonth={date ?? undefined}
           showOutsideDays
+          disabled={allowPast ? undefined : { before: today }}
           onSelect={(day) => {
             if (day) onChange(joinLocalDateTime(day, time ?? defaultTime));
           }}
@@ -213,11 +228,11 @@ function DateTimePanel({
               ),
           }}
         />
-        <TimeSlots
+        <TimeInput
+          id={`${id}-time`}
           value={time}
           disabled={!date}
-          inSheet={inSheet}
-          onPick={(slot) => date && onChange(joinLocalDateTime(date, slot))}
+          onPick={(next) => date && onChange(joinLocalDateTime(date, next))}
         />
       </div>
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
@@ -238,56 +253,43 @@ function DateTimePanel({
   );
 }
 
-function TimeSlots({
+/**
+ * The time, as shadcn's date-and-time picker does it: a plain time input
+ * beside the calendar, typed or chosen with the device's own wheel.
+ */
+function TimeInput({
+  id,
   value,
   disabled,
-  inSheet,
   onPick,
 }: {
+  id: string;
   value: string | null;
   disabled: boolean;
-  inSheet: boolean;
-  onPick: (slot: string) => void;
+  onPick: (time: string) => void;
 }) {
-  const list = useRef<HTMLDivElement>(null);
-  const slots = useMemo(() => {
-    const all = timeSlots(15);
-    // An existing off-grid time (say 19:10) stays choosable.
-    return value && !all.some((slot) => slot.value === value)
-      ? [...all, ...timeSlots(0, [value])].sort((a, b) =>
-          a.value.localeCompare(b.value),
-        )
-      : all;
-  }, [value]);
-  useEffect(() => {
-    list.current
-      ?.querySelector<HTMLElement>('[aria-pressed="true"], [data-anchor]')
-      ?.scrollIntoView({ block: "center", inline: "center" });
-  }, []);
   return (
-    <div
-      ref={list}
-      // A column beside the calendar; on a phone one swipeable row under it.
-      className={cn(
-        "flex max-h-popover-list w-24 flex-col gap-1 overflow-y-auto overscroll-contain p-1 [scrollbar-width:thin] max-md:max-h-none max-md:w-auto max-md:max-w-[calc(var(--spacing-day)*7)] max-md:flex-row max-md:overflow-x-auto max-md:overflow-y-hidden",
-        inSheet && "self-stretch max-md:max-w-none",
-      )}
-      role="group"
-      aria-label={disabled ? "Time (pick a date first)" : "Time"}
-    >
-      {slots.map((slot) => (
-        <button
-          key={slot.value}
-          type="button"
-          className="min-h-control-sm flex-none rounded-full border border-border bg-card px-3 text-sm whitespace-nowrap text-foreground tabular-nums transition-colors duration-150 ease-standard not-disabled:hover:border-muted-foreground disabled:cursor-not-allowed disabled:opacity-45 aria-pressed:border-transparent aria-pressed:bg-primary aria-pressed:font-bold aria-pressed:text-primary-foreground"
-          aria-pressed={slot.value === value}
-          data-anchor={slot.value === "18:00" || undefined}
-          disabled={disabled}
-          onClick={() => onPick(slot.value)}
-        >
-          {slot.label}
-        </button>
-      ))}
+    <div className="grid content-start gap-2 max-md:w-full">
+      <label htmlFor={id} className="text-sm font-semibold">
+        Time
+      </label>
+      <Input
+        id={id}
+        type="time"
+        step={60}
+        value={value ?? ""}
+        disabled={disabled}
+        aria-describedby={disabled ? `${id}-hint` : undefined}
+        onChange={(event) => {
+          if (event.target.value) onPick(event.target.value);
+        }}
+        className="w-36 appearance-none bg-background tabular-nums max-md:w-full [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+      />
+      {disabled ? (
+        <p id={`${id}-hint`} className="m-0 text-xs text-muted-foreground">
+          Pick a date first.
+        </p>
+      ) : null}
     </div>
   );
 }
