@@ -38,13 +38,3 @@ export function formatLocalDateTime(value: string) {
   }).format(date);
   return `${day} · ${timeLabel(time)}`;
 }
-/** Every time of day at the given minute step, or exactly the given times. */
-export function timeSlots(step: number, only?: string[]) {
-  const values =
-    only ??
-    Array.from({ length: (24 * 60) / step }, (_, i) => {
-      const minutes = i * step;
-      return `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
-    });
-  return values.map((value) => ({ value, label: timeLabel(value) }));
-}
