@@ -66,6 +66,7 @@ export {
   rowSubClass,
   rowTrailClass,
   toneClass,
+  type PillTone,
 } from "./components/list-classes";
 // shadcn/ui primitives screens use directly (D-24).
 export { Input } from "./components/ui/input";

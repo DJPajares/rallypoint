@@ -301,7 +301,7 @@ function SessionRow({ row }: { row: SearchSession }) {
               {row.title || "Untitled session"}
             </strong>
             {row.happeningNow ? (
-              <Pill tone="success">Happening now</Pill>
+              <Pill tone="highlight">Happening now</Pill>
             ) : null}
           </span>
           <span className="truncate text-sm text-muted-foreground">

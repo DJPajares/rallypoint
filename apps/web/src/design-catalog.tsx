@@ -37,6 +37,7 @@ import {
   Ticket,
   TicketMeta,
   TicketTime,
+  Pill,
 } from "@rallypoint/ui";
 // shadcn's names first, then the roles RallyPoint adds.
 const colors = [
@@ -48,6 +49,10 @@ const colors = [
   "border",
   "input",
   "primary",
+  "secondary",
+  "secondary-foreground",
+  "tertiary",
+  "tertiary-foreground",
   "ring",
   "chrome",
   "stub",
@@ -204,6 +209,13 @@ export function DesignCatalog() {
         <StatusBanner tone="danger" icon={<WarningIcon size={22} />}>
           <h2>Session cancelled</h2>
         </StatusBanner>
+        <p className="m-0 flex flex-wrap gap-2">
+          <Pill tone="highlight">Happening now</Pill>
+          <Pill tone="success">Confirmed</Pill>
+          <Pill tone="warning">Waiting</Pill>
+          <Pill tone="neutral">Closed</Pill>
+          <Pill tone="danger">Cancelled</Pill>
+        </p>
         <Notice retry={() => {}}>The session could not be loaded.</Notice>
         <Notice tone="warning">The result has not been confirmed.</Notice>
         <Pending>Checking your place…</Pending>

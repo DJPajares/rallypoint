@@ -12,10 +12,15 @@ export const rowTextClass = "grid min-w-0";
 export const rowTitleClass = "truncate font-semibold";
 export const rowSubClass = "text-sm text-muted-foreground";
 export const rowTrailClass = "inline-flex flex-none items-center gap-2";
-/** A status colour pair; the words and icon carry the meaning. */
-export const toneClass: Record<Tone, string> = {
+/**
+ * A status colour pair; the words and icon carry the meaning. `highlight` is
+ * the Crest Yellow tertiary for something live or waiting, not a status.
+ */
+export type PillTone = Tone | "highlight";
+export const toneClass: Record<PillTone, string> = {
   success: "bg-success text-success-foreground",
   warning: "bg-warning text-warning-foreground",
   neutral: "bg-neutral text-neutral-foreground",
   danger: "bg-danger text-danger-foreground",
+  highlight: "bg-tertiary text-tertiary-foreground",
 };
