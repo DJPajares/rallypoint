@@ -2,7 +2,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 import { cn } from "../lib/utils";
 import { cardClass } from "../classes";
 import { Badge as BadgePrimitive } from "./ui/badge";
-/** The default surface for grouped content; `accent` is the graphite block. */
+/** The default surface for grouped content; `accent` is the solid green block. */
 export function Card({
   as: Tag = "div",
   tone,

@@ -3,15 +3,15 @@ import { mkdir, writeFile } from "node:fs/promises";
 // Run from apps/web. When the mark changes, bump the ?v= on the manifest's
 // icon URLs too: installed apps and browsers otherwise keep the old picture.
 await mkdir("public/icons", { recursive: true });
-// Graphite tile, white "r", orange dot. The maskable icon keeps the mark inside
+// Forest Green tile, white "r", Mandarin Orange dot (PRD D-28). The maskable icon keeps the mark inside
 // the 80% safe zone so launchers can crop it to any shape.
 const mark = (scale) => {
   const offset = (512 - 512 * scale) / 2;
-  return `<g transform="translate(${offset} ${offset}) scale(${scale})"><text x="150" y="362" font-family="Arial" font-size="340" font-weight="bold" fill="#ffffff">r</text><circle cx="332" cy="340" r="32" fill="#ff6b1a"/></g>`;
+  return `<g transform="translate(${offset} ${offset}) scale(${scale})"><text x="150" y="362" font-family="Arial" font-size="340" font-weight="bold" fill="#ffffff">r</text><circle cx="332" cy="340" r="32" fill="#fd550a"/></g>`;
 };
 const svg = (scale) =>
   Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="#25282d"/>${mark(scale)}</svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="#015d47"/>${mark(scale)}</svg>`,
   );
 const png = (size, scale = 1) =>
   sharp(svg(scale)).resize(size, size).png().toBuffer();

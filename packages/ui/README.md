@@ -29,12 +29,18 @@ Tailwind's own colour palette is removed, so only these colours exist.
 - shadcn's names come first: `background`/`foreground`, `card`, `popover`,
   `primary`, `secondary`, `muted`, `accent`, `destructive`, `border`, `input`
   and `ring`. A surface pairs with its `-foreground` colour for the text on it.
-- `primary`: orange. Use it for the one primary action on a screen, with
-  `primary-foreground` text; `primary-hover` is its hover fill.
-- `chrome`: graphite on light and orange on dark. Use it for active and
-  selected marks, with `chrome-foreground` on it.
-- `stub`: the graphite ticket stub and other blocks that stay graphite in both
-  themes.
+- Brand (PRD D-28): Mandarin Orange is primary, Forest Green is secondary and
+  Crest Yellow is tertiary. Neutral surfaces carry the screen; each brand
+  colour has one job.
+- `primary`: Mandarin Orange. Use it for the one primary action on a screen,
+  with `primary-foreground` (dark) text; `primary-hover` is its hover fill.
+- `secondary`: a soft Forest Green tint with green ink, for supporting marks.
+- `tertiary`: Crest Yellow with green ink, a rare highlight for something live
+  or waiting for you (`<Pill tone="highlight">`). Never a status or an action,
+  and never text or an edge on light surfaces.
+- `chrome`: Forest Green (lifted in dark mode). Use it for active and selected
+  marks and filled seats, with `chrome-foreground` on it.
+- `stub`: the Forest Green ticket stub and other solid green blocks.
 - `link`, `scrim`, `qr-backdrop` and `brand` cover links, overlays, QR quiet
   zones and the logo.
 - Status tones: `success`, `warning`, `neutral` and `danger` are soft surfaces;
@@ -45,21 +51,21 @@ Tailwind's own colour palette is removed, so only these colours exist.
 
 ## Components
 
-| Component                                            | Use                                                                                             |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `Button`, `buttonClass()`                            | Actions. Use `buttonClass()` on links that look like buttons                                    |
-| `IconButton`, `iconButtonClass()`                    | Round icon-only chips                                                                           |
-| `Card`, `cardClass()`, `Badge`, `IconTile`, `Avatar` | Surfaces and labels                                                                             |
-| `Kicker`, `Lede`, `Help`                             | Text roles around titles and fields                                                             |
-| `Pending`, `Notice`, `StatusBanner`, `EmptyState`    | Feedback                                                                                        |
-| `Ticket`, `TicketTime`, `TicketMeta`, `SpotsMeter`   | Session pieces                                                                                  |
-| `Field`, `Divider`                                   | Labels, help text and section breaks for forms                                                  |
-| `DateTimeField`                                      | Date and time picker. A calendar plus 15-minute slots in a popover, or a bottom sheet on phones |
-| `SelectField`                                        | A short list of fixed choices, such as currencies                                               |
-| `NumberStepper`                                      | A whole number with − and + buttons                                                             |
-| `AffixInput`                                         | A text input with a fixed prefix, such as a currency code                                       |
-| `SwitchField`, `CheckField`                          | An on/off setting, and a checkbox row                                                           |
-| `Sheet`                                              | A modal bottom sheet (native `<dialog>`)                                                        |
+| Component                                            | Use                                                                                         |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `Button`, `buttonClass()`                            | Actions. Use `buttonClass()` on links that look like buttons                                |
+| `IconButton`, `iconButtonClass()`                    | Round icon-only chips                                                                       |
+| `Card`, `cardClass()`, `Badge`, `IconTile`, `Avatar` | Surfaces and labels                                                                         |
+| `Kicker`, `Lede`, `Help`                             | Text roles around titles and fields                                                         |
+| `Pending`, `Notice`, `StatusBanner`, `EmptyState`    | Feedback                                                                                    |
+| `Ticket`, `TicketTime`, `TicketMeta`, `SpotsMeter`   | Session pieces                                                                              |
+| `Field`, `Divider`                                   | Labels, help text and section breaks for forms                                              |
+| `DateTimeField`                                      | Date and time picker. A calendar and a time field in a popover, or a bottom sheet on phones |
+| `SelectField`                                        | A short list of fixed choices, such as currencies                                           |
+| `NumberStepper`                                      | A whole number with − and + buttons                                                         |
+| `AffixInput`                                         | A text input with a fixed prefix, such as a currency code                                   |
+| `SwitchField`, `CheckField`                          | An on/off setting, and a checkbox row                                                       |
+| `Sheet`                                              | A modal bottom sheet (native `<dialog>`)                                                    |
 
 Run the app in development and open `/design` to see every token and component
 in both themes. Production builds return 404 for that page.

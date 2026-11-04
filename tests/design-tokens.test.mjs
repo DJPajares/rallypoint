@@ -126,3 +126,16 @@ test("every colour pair meets WCAG AA in light and dark", () => {
   }
   assert.deepEqual(problems, []);
 });
+
+test("the app icons and installed-app colour follow the brand tokens", () => {
+  const script = readFileSync("scripts/icons.mjs", "utf8");
+  const manifest = JSON.parse(
+    readFileSync("apps/web/public/manifest.webmanifest", "utf8"),
+  );
+  assert.match(script, new RegExp(`<rect[^>]*fill="${light.brand}"`, "i"));
+  assert.match(
+    script,
+    new RegExp(`<circle[^>]*fill="${light["brand-orange"]}"`, "i"),
+  );
+  assert.equal(manifest.theme_color.toLowerCase(), light.brand);
+});
