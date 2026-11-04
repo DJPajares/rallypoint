@@ -15,9 +15,14 @@
  *
  * shadcn's names (background, card, primary, muted...) come first. RallyPoint
  * roles shadcn has no name for are added the way the docs add custom colours:
- * chrome, stub, link, scrim, the status tones and the brand.
+ * tertiary, chrome, stub, link, scrim, the status tones and the brand.
  *
- * Colours stay in hex: the brand spec (PRD D-21) is in hex, and shadcn's
+ * The brand colours (PRD D-28) are Mandarin Orange (primary), Forest Green
+ * (secondary) and Crest Yellow (tertiary), used roughly 10/30/few: neutral
+ * surfaces carry the screen, green marks what is chosen and structural
+ * blocks, orange is the one action, and yellow is a rare highlight.
+ *
+ * Colours stay in hex: the brand spec (PRD D-28) is in hex, and shadcn's
  * design-system guidance keeps a brand's hex values rather than converting
  * them to its default OKLCH.
  *
@@ -56,6 +61,8 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+  --color-tertiary: var(--tertiary);
+  --color-tertiary-foreground: var(--tertiary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
@@ -190,13 +197,21 @@
   --card-foreground: #1c1e21;
   --popover: #ffffff;
   --popover-foreground: #1c1e21;
-  /* The one primary action per screen. Orange fill, always with dark text:
-     white on orange fails contrast. */
-  --primary: #ff6b1a;
+  /* Primary, Mandarin Orange: the one action per screen. Always dark text
+     (5.2:1); white on orange fails contrast. Hover lightens, so the text
+     keeps its contrast. */
+  --primary: #fd550a;
   --primary-foreground: #1c1e21;
-  --primary-hover: #f25c0a;
-  --secondary: #ecebe8;
-  --secondary-foreground: #1c1e21;
+  --primary-hover: #ff6b2b;
+  /* Secondary, Forest Green: as a soft tint with green ink for supporting
+     marks; the solid green is chrome, stub and brand below. */
+  --secondary: #e3efea;
+  --secondary-foreground: #015d47;
+  /* Tertiary, Crest Yellow: a rare highlight (something live, something
+     waiting for you), never a status and never an action. Green ink on it
+     (6.4:1); it is too pale to sit as text or an edge on light surfaces. */
+  --tertiary: #e0f354;
+  --tertiary-foreground: #015d47;
   --muted: #ecebe8;
   --muted-foreground: #5c6067;
   --accent: #ecebe8;
@@ -205,23 +220,24 @@
   --border: #e4e2de;
   /* Field outlines, and other edges that need to read stronger than border. */
   --input: #d3d1cc;
-  --ring: #c2410c;
+  /* Orange ink: links and focus need 4.5:1 on light surfaces (5.3:1). */
+  --ring: #b83a00;
 
-  /* Chrome: active states, selected marks, filled seats. Graphite on light,
-     orange on dark. */
-  --chrome: #25282d;
+  /* Chrome, Forest Green: active states, selected marks, filled seats.
+     White on it is 7.9:1. Dark mode lifts it so it still reads on black. */
+  --chrome: #015d47;
   --chrome-foreground: #ffffff;
-  /* The ticket stub and other graphite blocks that stay graphite in dark mode. */
-  --stub: #25282d;
+  /* The ticket stub and other solid green blocks. */
+  --stub: #015d47;
   --stub-foreground: #ffffff;
-  --link: #c2410c;
+  --link: #b83a00;
   --scrim: rgb(16 17 19 / 0.45);
   /* Behind uploaded QR codes: scanners need a light quiet zone in dark mode too. */
   --qr-backdrop: #ffffff;
 
   /* Status tones: a soft surface and the ink on it. Always show the status in
-     words and an icon too, never by colour alone. Warning leans yellow so it
-     never reads as the orange action. */
+     words and an icon too, never by colour alone. Warning is amber: warmer
+     than the lime Crest Yellow highlight and softer than the orange action. */
   --success: #e2f4ea;
   --success-foreground: #146c43;
   --warning: #fbf0c9;
@@ -232,9 +248,9 @@
   --danger-foreground: #b42318;
 
   /* Brand: the mark looks the same in every theme. */
-  --brand: #25282d;
+  --brand: #015d47;
   --brand-foreground: #ffffff;
-  --brand-orange: #ff6b1a;
+  --brand-orange: #fd550a;
 
   --shadow-color: rgb(28 30 33 / 0.08);
 
@@ -285,23 +301,27 @@
   --card-foreground: #efeeec;
   --popover: #1a1b1e;
   --popover-foreground: #efeeec;
-  --primary: #ff7a29;
+  --primary: #fd550a;
   --primary-foreground: #101113;
-  --primary-hover: #ff9a57;
-  --secondary: #141517;
-  --secondary-foreground: #efeeec;
+  --primary-hover: #ff7a40;
+  --secondary: #12302a;
+  --secondary-foreground: #5fd0ab;
+  --tertiary: #e0f354;
+  --tertiary-foreground: #015d47;
   --muted: #141517;
   --muted-foreground: #a7a9ad;
   --accent: #141517;
   --accent-foreground: #efeeec;
   --border: #2a2c30;
   --input: #3d4046;
-  --ring: #ff8a3d;
+  --ring: #ff7a40;
 
-  --chrome: #ff8a3d;
+  /* Forest Green lifted for black (7.9:1 both ways); the brand green itself
+     is 2.4:1 on black, too dark to mark anything. */
+  --chrome: #3dbb92;
   --chrome-foreground: #101113;
-  --stub: #33363c;
-  --link: #ff8a3d;
+  --stub: #0e4537;
+  --link: #ff7a40;
   --scrim: rgb(0 0 0 / 0.6);
 
   --success: #133527;

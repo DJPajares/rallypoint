@@ -39,7 +39,7 @@ export function iconButtonClass(flat = false) {
     buttonVariants({ variant: flat ? "flat" : "floating", size: "icon" }),
   );
 }
-/** The default surface for grouped content; `accent` is the graphite block. */
+/** The default surface for grouped content; `accent` is the solid green block. */
 export function cardClass(tone: "default" | "accent" = "default") {
   return cn(
     "rounded-lg border border-border bg-card p-5",

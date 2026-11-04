@@ -13,8 +13,8 @@ import {
   rowTitleClass,
   rowTrailClass,
   toneClass,
+  type PillTone,
 } from "./list-classes";
-import type { Tone } from "./feedback";
 
 // The quiet building blocks (PRD D-15/D-17): repeated things are rows in one
 // inset group, not a card each.
@@ -97,7 +97,7 @@ export function Pill({
   icon,
   children,
 }: {
-  tone: Tone;
+  tone: PillTone;
   icon?: ReactNode;
   children: ReactNode;
 }) {

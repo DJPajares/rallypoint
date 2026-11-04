@@ -222,7 +222,7 @@ export function FloatingMenu({ signedIn }: { signedIn: boolean }) {
           </span>
           {waiting && !expanded ? (
             <span
-              className="absolute -top-1 -right-1 min-w-5 rounded-full bg-primary px-1 text-center text-xs leading-5 font-bold text-primary-foreground"
+              className="absolute -top-1 -right-1 min-w-5 rounded-full bg-tertiary px-1 text-center text-xs leading-5 font-bold text-tertiary-foreground ring-2 ring-tertiary-foreground"
               aria-hidden="true"
             >
               {waiting}
