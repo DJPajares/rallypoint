@@ -44,6 +44,11 @@ export {
 } from "./datetime";
 export { Sheet } from "./components/sheet";
 export {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "./components/ui/popover";
+export {
   ListGroup,
   ListRow,
   Pill,

@@ -27,10 +27,12 @@ import {
   Field,
   Input,
   Notice,
+  Segmented,
   Sheet,
   useToast,
 } from "@rallypoint/ui";
 import { useAuth } from "./auth-context";
+import { VisibilityInfo } from "./profile-visibility";
 import { useApi } from "./use-api";
 import { useActivities } from "./use-activities";
 import { DetailPage, StickyActions } from "./ui";
@@ -41,6 +43,8 @@ const errorClass = "mt-2 mb-0 text-sm font-medium text-danger-foreground";
 type Level = "" | SkillLevel;
 interface Draft {
   name: string;
+  /** Search can find this profile by name (D-27). */
+  discoverable: boolean;
   presets: Record<string, { on: boolean; level: Level }>;
   custom: Array<{ id: number; name: string; level: Level }>;
 }
@@ -52,6 +56,7 @@ const asLevel = (level: SkillLevel | null): Level => level ?? "";
 function startingDraft(profile: MyProfile, listed: readonly Activity[]): Draft {
   const draft: Draft = {
     name: profile.name,
+    discoverable: profile.discoverable !== false,
     presets: Object.fromEntries(
       listed.map((a) => [a.name, { on: false, level: "" as Level }]),
     ),
@@ -88,7 +93,11 @@ function activitiesOf(draft: Draft): ProfileActivity[] {
 
 // What the form would save, so "changed" means changed and not merely touched.
 const snapshot = (draft: Draft) =>
-  JSON.stringify({ name: draft.name, activities: activitiesOf(draft) });
+  JSON.stringify({
+    name: draft.name,
+    activities: activitiesOf(draft),
+    discoverable: draft.discoverable,
+  });
 
 /**
  * The self-rating for one activity: every level with what it means for that
@@ -266,6 +275,23 @@ function EditForm({
     setErrors([]);
     setBusy(true);
     try {
+      // Public or private first, so the saved profile below reads it back.
+      if (draft.discoverable !== (saved.discoverable !== false)) {
+        const visibility = await fetch("/api/me/profile/discoverable", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ discoverable: draft.discoverable }),
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!visibility.ok) {
+          unconfirmed();
+          setBusy(false);
+          return;
+        }
+      }
       // The whole profile replaces the old one and the last save wins, so
       // sending it again after an unclear result is safe.
       const response = await fetch("/api/me/profile", {
@@ -390,6 +416,23 @@ function EditForm({
               Anyone with your profile link sees your name, what you play and
               your levels.
             </p>
+            <div className="mt-5 grid gap-2">
+              <span className="inline-flex items-center gap-1 font-semibold">
+                Profile
+                <VisibilityInfo />
+              </span>
+              <Segmented
+                label="Profile"
+                options={[
+                  { value: "public", label: "Public" },
+                  { value: "private", label: "Private" },
+                ]}
+                value={draft.discoverable ? "public" : "private"}
+                onChange={(value) =>
+                  setDraft({ ...draft, discoverable: value === "public" })
+                }
+              />
+            </div>
           </div>
 
           <section aria-labelledby="plays-heading">
