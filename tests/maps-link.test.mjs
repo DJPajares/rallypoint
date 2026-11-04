@@ -110,3 +110,18 @@ test("booked session without a link keeps descriptive edits non-material", async
   await save(f, { title: "Corrected title" });
   assert.equal(latestChange(f), "f");
 });
+
+test("the table's own rule is the reviewed one, so a share link is never refused", async (t) => {
+  const f = await splitFixture(t);
+  const rule = f.sql(
+    `select pg_get_constraintdef(oid) from pg_constraint where conname = 'sessions_maps_link_check' and conrelid = 'app.sessions'::regclass;`,
+  );
+  for (const host of [
+    "www\\.google\\.com/maps",
+    "maps\\.google\\.com",
+    "maps\\.app\\.goo\\.gl/",
+    "goo\\.gl/maps/",
+  ])
+    assert.ok(rule.includes(host), `the rule must allow ${host}`);
+  assert.match(rule, /length\(\(details ->> 'mapsLink'::text\)\) >= 1/);
+});
