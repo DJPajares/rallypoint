@@ -119,7 +119,7 @@ test("the table's own rule is the reviewed one, so a share link is never refused
   for (const host of [
     "www\\.google\\.com/maps",
     "maps\\.google\\.com",
-    "maps\\.app\\.goo\\.gl/",
+    "maps\\.a[p]{2}\\.goo\\.gl/",
     "goo\\.gl/maps/",
   ])
     assert.ok(rule.includes(host), `the rule must allow ${host}`);
