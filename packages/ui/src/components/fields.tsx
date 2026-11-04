@@ -269,8 +269,11 @@ function TimeInput({
   onPick: (time: string) => void;
 }) {
   return (
-    <div className="grid content-start gap-2 max-md:w-full">
-      <label htmlFor={id} className="text-sm font-semibold">
+    // Beside the calendar the label sits above; on a phone, where the field
+    // is alone in its row, label and field share one line and the field stays
+    // as wide as a time needs.
+    <div className="grid content-start gap-2 max-md:w-full max-md:grid-cols-[1fr_auto] max-md:items-center max-md:gap-x-4">
+      <label htmlFor={id} className="text-sm font-semibold max-md:text-base">
         Time
       </label>
       <Input
@@ -283,10 +286,13 @@ function TimeInput({
         onChange={(event) => {
           if (event.target.value) onPick(event.target.value);
         }}
-        className="w-36 appearance-none bg-background tabular-nums max-md:w-full [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+        className="w-36 appearance-none bg-background tabular-nums [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
       />
       {disabled ? (
-        <p id={`${id}-hint`} className="m-0 text-xs text-muted-foreground">
+        <p
+          id={`${id}-hint`}
+          className="m-0 text-xs text-muted-foreground max-md:col-span-2"
+        >
           Pick a date first.
         </p>
       ) : null}
